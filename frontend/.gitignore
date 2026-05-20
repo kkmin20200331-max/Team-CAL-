@@ -1,0 +1,26 @@
+# 의존성 패키지
+node_modules/
+
+# 빌드 결과물 (Vite)
+dist/
+dist-ssr/
+
+# 로그 파일
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dev-server.log
+
+# 환경변수 (가장 중요)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 에디터 설정
+.vscode/
+.idea/
