@@ -6,17 +6,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+@RestController
+@RequestMapping("/api")
 public class TestApi {
 
-    @RestController
-    @RequestMapping("/api")
-    public class TestController {
-
-        @GetMapping("/hello")
-        public Map<String, String> hello() {
-            return Map.of("message", "Spring Boot 연결 성공");
-        }
+    @GetMapping("/hello")
+    public Map<String, String> hello() {
+        return Map.of("message", "Spring Boot \uC5F0\uACB0 \uC131\uACF5!");
     }
-
-
 }
