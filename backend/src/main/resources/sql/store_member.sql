@@ -3,7 +3,7 @@ create table store_member(
     store_id varchar2(21 char) references store(id) on delete cascade,
     user_id varchar2(21 char) references users(id) on delete cascade,
     member_role varchar2(20 char) not null,
-    user_level varchar2(20 char) not null,
+    user_level varchar2(20 char) default 'NEWBIE' not null ,
     approval_status varchar2(20 char) not null,
     joined_at timestamp default current_timestamp
 );

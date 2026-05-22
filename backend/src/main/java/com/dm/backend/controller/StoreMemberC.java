@@ -1,7 +1,7 @@
 package com.dm.backend.controller;
 
-import com.dm.backend.service.StoreService;
-import com.dm.backend.vo.StoreVo;
+import com.dm.backend.service.StoreMemberService;
+import com.dm.backend.vo.StoreMemberVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,33 +12,21 @@ import java.util.List;
 public class StoreMemberC {
 
     @Autowired
-    private StoreService storeService;
+    private StoreMemberService storeMemberService;
 
-    //가게등록
+    //승인요청 - id, store_id, user_id 필요 나머지는 고정된 값으로 설정해둠
     @PostMapping
-    public void registerStore(@RequestBody StoreVo storeVo) {
-        storeService.registerStore(storeVo);
+    public void approveRegister(StoreMemberVo storeMemberVo) {
+        storeMemberService.approveRegister(storeMemberVo);
     }
-    //가게조회 user_id 필요 (그 유저가 관리하는 가게 전체 조회)
-    @GetMapping
-    public List<StoreVo> getStoreList(@RequestParam String user_id) {
-        return storeService.getStoreList(user_id);
-    }
-    //가게 하나 조회 store_id 필요
-    @GetMapping("/{id}")
-    public StoreVo getStore(@PathVariable String id) {
-        return storeService.getStore(id);
-    }
-    //가게 정보 수정 (바뀐 정보 수정, 기존 정보 유지 storeVo 객체 전체 정보 필요 )
+
+    //승인거절, 승인수락, 유저 등급 설정 (수정 정보만 바꾸어서 객체로 받음, 나머지는 기존 정보 그대로 필요)
     @PutMapping
-    public void updateStore(@RequestBody StoreVo storeVo) {
-        storeService.updateStore(storeVo);
+    public void updateStoreMember(StoreMemberVo storeMemberVo) {
+        storeMemberService.updateStoreMember(storeMemberVo);
     }
-    //가게 삭제 store_id 필요
-    @DeleteMapping
-    public void delStore(@RequestParam String id) {
-        storeService.delStore(id);
-    }
+
+
 
 
 }

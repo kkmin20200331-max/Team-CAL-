@@ -9,9 +9,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StoreMemberVo {
     private String id;
-    private String name;
-    private String address;
-    private String capacity;
-    private String open_time;
-    private String close_time;
+    private String store_id;
+    private String user_id;
+    private String member_role;
+    private String user_level;
+    private String approval_status;
 }

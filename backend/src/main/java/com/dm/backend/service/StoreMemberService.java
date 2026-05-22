@@ -1,7 +1,7 @@
 package com.dm.backend.service;
 
-import com.dm.backend.mapper.StoreMapper;
-import com.dm.backend.vo.StoreVo;
+import com.dm.backend.mapper.StoreMemberMapper;
+import com.dm.backend.vo.StoreMemberVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,26 +11,15 @@ import java.util.List;
 public class StoreMemberService {
 
     @Autowired
-    private StoreMapper storeMapper;
+    private StoreMemberMapper storeMemberMapper;
 
 
-    public void registerStore(StoreVo storeVo) {
-        storeMapper.registerStore(storeVo);
+
+    public void approveRegister(StoreMemberVo storeMemberVo) {
+        storeMemberMapper.approveRegister(storeMemberVo);
     }
 
-    public List<StoreVo> getStoreList(String userId) {
-        return storeMapper.getStoreList(userId);
-    }
-
-    public StoreVo getStore(String id) {
-        return storeMapper.getStore(id);
-    }
-
-    public void updateStore(StoreVo storeVo) {
-        storeMapper.updateStore(storeVo);
-    }
-
-    public void delStore(String id) {
-        storeMapper.delStore(id);
+    public void updateStoreMember(StoreMemberVo storeMemberVo) {
+        storeMemberMapper.updateStoreMember(storeMemberVo);
     }
 }

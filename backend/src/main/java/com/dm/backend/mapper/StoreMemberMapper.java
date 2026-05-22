@@ -1,6 +1,6 @@
 package com.dm.backend.mapper;
 
-import com.dm.backend.vo.StoreVo;
+import com.dm.backend.vo.StoreMemberVo;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
@@ -8,18 +8,10 @@ import java.util.List;
 @Mapper
 public interface StoreMemberMapper {
 
-    @Insert("insert into store values (#{id}, #{name}, #{address}, #{capacity}, #{open_time}, #{close_time})")
-    void registerStore(StoreVo storeVo);
 
-    @Select("select * from store where id = (select store_id from store_member where user_id = #{userId})")
-    List<StoreVo> getStoreList(String userId);
+    @Insert("insert into store_member values (#{id}, #{store_id}, #{user_id},'guest','NEWBIE', 'pending')")
+    void approveRegister(StoreMemberVo storeMemberVo);
 
-    @Select("select * from store where id = #{id}")
-    StoreVo getStore(String id);
-
-    @Update("update store set name = #{name} and address = #{address} and capacity = #{capacity} and open_time = #{open_time} and close_time = #{close_time} where id = #{id}")
-    void updateStore(StoreVo storeVo);
-
-    @Delete("delete from store where id = #{id}")
-    void delStore(String id);
+    @Update("update store_member set approval_status = #{approval_status} and member_role = #{member_role} and user_level = #{user_level} where id = #{id}")
+    void updateStoreMember(StoreMemberVo storeMemberVo);
 }
