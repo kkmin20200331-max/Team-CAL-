@@ -1,9 +1,7 @@
 package com.dm.backend.mapper;
 
 import com.dm.backend.vo.UserVo;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
@@ -18,4 +16,10 @@ public interface UserMapper {
 
      @Insert("insert into users  values (#{id}, #{username}, #{password}, #{name}, #{phone}, #{role}, #{status})")
     void registerUser(UserVo userVo);
+
+     @Update("update users set username = #{username} and password = #{password} and name = #{name} and phone = #{phone} where id = #{id}")
+    void approveStaff(UserVo userVo);
+
+     @Delete("delete from users where id = #{id}")
+    void delUser(String id);
 }

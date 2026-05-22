@@ -27,4 +27,12 @@ public class UserService {
     public void registerUser(UserVo userVo) {
         userMapper.registerUser(userVo);
     }
+
+    public void approveStaff(UserVo userVo) {
+        userMapper.approveStaff(userVo);
+    }
+
+    public void delUser(String id) {
+        userMapper.delUser(id);
+    }
 }

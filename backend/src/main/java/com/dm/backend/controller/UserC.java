@@ -31,4 +31,17 @@ public class UserC {
     public List<UserVo>getGuest(@RequestParam String store_id, @RequestParam String role){
         return userservice.getGuest(store_id, role);
     }
+
+    //개인정보수정(바뀐 정보만 수정하고 기존 정보는 그대로 담아서 UserVo 객체로 전달)
+    @PutMapping
+    public void approveStaff(@RequestBody UserVo userVo){
+        userservice.approveStaff(userVo);
+    }
+
+    //유저 삭제 로직 id 필요
+    @DeleteMapping
+    public void delUser(@RequestParam String id){
+        userservice.delUser(id);
+    }
+
 }
