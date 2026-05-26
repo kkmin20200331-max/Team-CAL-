@@ -6,11 +6,14 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 // TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
 
+// 👇 [수정 1] Props 타입에 상태 변경 함수 2개를 추가합니다.
 type Props = {
   navigation: LoginScreenNavigationProp;
+  setIsLoggedIn: (value: boolean) => void;
+  setUserStatus: (status: string) => void;
 };
 
-export default function LoginScreen({ navigation }: Props) {
+export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus }: Props) {
   // [퀴즈 1] 이메일(email)과 비밀번호(password)를 초기값 빈 문자열("")로 가지는 객체 상태(inputs)를 만들어보세요.
   const [inputs, setInputs] = useState({email : "", password : ""});
   
@@ -25,11 +28,21 @@ export default function LoginScreen({ navigation }: Props) {
     console.log(`${name} 항목에 입력된 값:`, text);
   };
 
-  const handleLogin = () => {
-    console.log("로그인 시도 데이터:", inputs);
-    if(!email || !password){
-      Alert.alert("입력 오류", "이메일과 비밀번호를 모두 입력해주세요.");
-      return;
+const handleLogin = async () => {
+    try {
+      // 1. 서버에 로그인(아이디/비번) 요청을 보냅니다.
+      // const response = await api.post('/login', { email, password });
+      
+      // 2. 서버에서 "이 유저는 승인 대기 중(pending)입니다" 라는 응답을 받았다고 가정합니다.
+      const fetchedUserStatus = 'pending'; // or 'active'
+
+      // 3. 네비게이션 이동이 아닌, 상태값을 변경합니다.
+      // 상태가 변하는 순간 App.js의 조건문이 다시 실행되어 화면이 자동으로 넘어갑니다.
+      setUserStatus(fetchedUserStatus); 
+      setIsLoggedIn(true);              
+
+    } catch (error) {
+      console.log('로그인 실패', error);
     }
   };
 
@@ -92,7 +105,7 @@ const styles = StyleSheet.create({
     marginBottom: 15 
   },
   button: { 
-    backgroundColor: '#28a745', 
+    backgroundColor: '#8B5CF6', 
     padding: 15, 
     borderRadius: 8, 
     alignItems: 'center',
