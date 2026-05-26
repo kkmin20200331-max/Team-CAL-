@@ -34,7 +34,7 @@ const handleLogin = async () => {
       // const response = await api.post('/login', { email, password });
       
       // 2. 서버에서 "이 유저는 승인 대기 중(pending)입니다" 라는 응답을 받았다고 가정합니다.
-      const fetchedUserStatus = 'pending'; // or 'active'
+      const fetchedUserStatus = 'active'; // or 'active' = 관리자 승인 후 화면(대시보드)
 
       // 3. 네비게이션 이동이 아닌, 상태값을 변경합니다.
       // 상태가 변하는 순간 App.js의 조건문이 다시 실행되어 화면이 자동으로 넘어갑니다.
