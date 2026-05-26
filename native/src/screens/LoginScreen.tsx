@@ -1,7 +1,7 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
 // TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
@@ -27,6 +27,10 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleLogin = () => {
     console.log("로그인 시도 데이터:", inputs);
+    if(!email || !password){
+      Alert.alert("입력 오류", "이메일과 비밀번호를 모두 입력해주세요.");
+      return;
+    }
   };
 
   return (
@@ -77,7 +81,6 @@ const styles = StyleSheet.create({
     fontSize: 24, 
     fontWeight: 'bold', 
     marginBottom: 40,
-    // [퀴즈 5] 모바일에서는 텍스트가 기본적으로 왼쪽으로 어색하게 쏠릴 수 있습니다.
     // 타이틀 텍스트가 화면 가로 중앙에 예쁘게 배치되도록 정렬 속성을 추가해보세요.
     textAlign: 'center' // <-- 텍스트 중앙 정렬 속성
   },
