@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
+import axios from 'axios';
 
 // Auth pages
 import Login from './pages/auth/Login';
@@ -29,9 +31,25 @@ import EmployeePayroll from './pages/employee/EmployeePayroll';
 import EmployeeBoard from './pages/employee/EmployeeBoard';
 
 export default function App() {
+  const [apiMessage, setApiMessage] = useState('Spring Boot \uC5F0\uACB0 \uD655\uC778 \uC911...');
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:8080/api/hello')
+      .then((res) => {
+        setApiMessage(res.data.message);
+      })
+      .catch(() => {
+        setApiMessage('Spring Boot \uC5F0\uACB0 \uC2E4\uD328');
+      });
+  }, []);
+
   return (
     <ThemeProvider attribute="class" defaultTheme="light">
       <Router>
+        <div className="border-b bg-white px-4 py-2 text-sm font-medium text-slate-700">
+          {'API \uC0C1\uD0DC'}: {apiMessage}
+        </div>
         <Routes>
           {/*{Auth routes}*/}
             {/* 첫 화면(/)으로 접속 시 새로 만든 통합 로그인 화면으로 자동 리다이렉트 */}
