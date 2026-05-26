@@ -8,8 +8,18 @@ import java.util.List;
 @Mapper
 public interface StoreMapper {
 
+    @Insert("insert into store values(#{id}, #{name}, #{address}, #{capacity}, #{open_time}, #{close_time})")
+    void registerStore(StoreVo storeVo);
 
+    @Select("select * from store where user_id = #{user_id}")
+    List<StoreVo> getStoreList(String user_id);
 
+    @Select("select * from store where id = #{id}")
+    StoreVo getStore(String id);
 
-    void approveRegister(StoreVo storeVo);
+    @Update("update store set name = #{name} and address = #{address} and capacity = #{capacity} and open_time = #{open_time} and close_time = #{close_time} where id = #{id}")
+    void updateStore(StoreVo storeVo);
+
+    @Delete("delete from store where id = #{id}")
+    void delStore(String id);
 }

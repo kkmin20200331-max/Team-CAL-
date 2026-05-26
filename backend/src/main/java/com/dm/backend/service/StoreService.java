@@ -18,8 +18,8 @@ public class StoreService {
         storeMapper.registerStore(storeVo);
     }
 
-    public List<StoreVo> getStoreList(String userId) {
-        return storeMapper.getStoreList(userId);
+    public List<StoreVo> getStoreList(String user_id) {
+        return storeMapper.getStoreList(user_id);
     }
 
     public StoreVo getStore(String id) {
