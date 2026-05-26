@@ -24,6 +24,11 @@ public class UserService {
         return null;
     }
 
+    // 로그인
+    public UserVo login(String username, String password) {
+        return userMapper.login(username, password);
+    }
+
     public void registerUser(UserVo userVo) {
         userMapper.registerUser(userVo);
     }
