@@ -7,6 +7,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import PendingScreen from './src/screens/PendingScreen';
+import BranchSelectScreen from './src/screens/BranchSelectScreen';
 
 // 스택 네비게이터 생성
 const Stack = createStackNavigator();
@@ -14,7 +15,7 @@ const Stack = createStackNavigator();
 export default function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태 관리
-  const [userStatus, setUserStatus] = useState("pending"); // 사용자 상태 관리
+  const [userStatus, setUserStatus] = useState("pending"); // 사용자 상태 관리r
 
 return (
     <NavigationContainer>
