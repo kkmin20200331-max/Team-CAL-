@@ -24,11 +24,6 @@ public class UserService {
         return null;
     }
 
-    // 로그인
-    public UserVo login(String username, String password) {
-        return userMapper.login(username, password);
-    }
-
     public void registerUser(UserVo userVo) {
         userMapper.registerUser(userVo);
     }
@@ -40,4 +35,15 @@ public class UserService {
     public void delUser(String id) {
         userMapper.delUser(id);
     }
+
+    public UserVo login(UserVo userVo) {
+        UserVo member = userMapper.login(userVo);
+
+        if (member != null) {
+            member.setPassword(null);
+        }
+
+        return member;
+    }
+
 }
