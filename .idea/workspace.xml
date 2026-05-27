@@ -5,15 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5af5765c-5ada-4d69-af1c-3a06dd127dfc" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/com/dm/backend/controller/AuthC.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/src/app/components/api/auth.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/frontend/tsconfig.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/dm/backend/BackendApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/dm/backend/BackendApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/dm/backend/mapper/UserMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/dm/backend/mapper/UserMapper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/dm/backend/service/UserService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/dm/backend/service/UserService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/auth/Login.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/auth/Login.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/pages/auth/Signup.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/pages/auth/Signup.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/app/components/api/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/components/api/auth.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -94,7 +87,7 @@
       <workItem from="1779347184833" duration="300000" />
       <workItem from="1779347499985" duration="5853000" />
       <workItem from="1779419654525" duration="14726000" />
-      <workItem from="1779777375984" duration="13183000" />
+      <workItem from="1779777375984" duration="18200000" />
     </task>
     <servers />
   </component>
