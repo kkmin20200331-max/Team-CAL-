@@ -11,9 +11,10 @@ type Props = {
   navigation: LoginScreenNavigationProp;
   setIsLoggedIn: (value: boolean) => void;
   setUserStatus: (status: string) => void;
+  setHasSelectedBranch: (value: boolean) => void;
 };
 
-export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus }: Props) {
+export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, setHasSelectedBranch }: Props) {
   // [퀴즈 1] 이메일(email)과 비밀번호(password)를 초기값 빈 문자열("")로 가지는 객체 상태(inputs)를 만들어보세요.
   const [inputs, setInputs] = useState({email : "", password : ""});
   
@@ -34,12 +35,15 @@ const handleLogin = async () => {
       // const response = await api.post('/login', { email, password });
       
       // 2. 서버에서 "이 유저는 승인 대기 중(pending)입니다" 라는 응답을 받았다고 가정합니다.
-      const fetchedUserStatus = 'active'; // or 'active' = 관리자 승인 후 화면(대시보드)
+      const fetchedUserStatus = 'pending'; // or 'active' = 관리자 승인 후 화면(대시보드)
 
       // 3. 네비게이션 이동이 아닌, 상태값을 변경합니다.
       // 상태가 변하는 순간 App.js의 조건문이 다시 실행되어 화면이 자동으로 넘어갑니다.
       setUserStatus(fetchedUserStatus); 
-      setIsLoggedIn(true);              
+      setIsLoggedIn(true);          
+      
+      // 👇 2. 로그인 성공 시, 지점 선택 여부를 무조건 false로 초기화합니다.
+      setHasSelectedBranch(false);
 
     } catch (error) {
       console.log('로그인 실패', error);

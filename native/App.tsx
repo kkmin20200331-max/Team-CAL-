@@ -15,7 +15,11 @@ const Stack = createStackNavigator();
 export default function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태 관리
-  const [userStatus, setUserStatus] = useState("pending"); // 사용자 상태 관리r
+  const [userStatus, setUserStatus] = useState('pending'); // 사용자 상태 관리
+  // 👇 2. 지점 선택 여부를 관리하는 상태 추가 (초기값: false)
+  const [hasSelectedBranch, setHasSelectedBranch] = useState(false); // 지점 선택 관리
+
+  console.log('userStatus:', userStatus);
 
 return (
     <NavigationContainer>
@@ -33,6 +37,8 @@ return (
                   // 👇 화살표 함수로 감싸서 값만 전달하도록 명확히 수정합니다.
                   setIsLoggedIn={setIsLoggedIn}
                   setUserStatus={setUserStatus}
+                  // 👇 로그아웃 후 다시 로그인할 때를 위해 함수를 넘겨줍니다.
+                  setHasSelectedBranch={setHasSelectedBranch}
                 />
               )}
             </Stack.Screen>
@@ -42,7 +48,17 @@ return (
               options={{ title: '회원가입' }} 
             />
           </>
-        ) : userStatus === 'active' ? (
+        ) : !hasSelectedBranch ? (
+          // 👇 [상태 1.5] 로그인은 했지만 지점 선택을 안 한 경우 (새로 추가됨!)
+          <Stack.Screen name="BranchSelect" options={{ headerShown: false }}>
+            {({ navigation }) => (
+              <BranchSelectScreen 
+                navigation={navigation} 
+                setHasSelectedBranch={setHasSelectedBranch} 
+              />
+            )}
+          </Stack.Screen>
+          ): userStatus === 'active' ? (
           // [상태 2] 로그인 + 승인 완료
           <Stack.Screen name="Dashboard" options={{ headerShown: false }}>
             {/* props 대신 { navigation } 만 구조분해할당으로 받아서 넘겨줍니다 */}
