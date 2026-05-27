@@ -35,4 +35,15 @@ public class UserService {
     public void delUser(String id) {
         userMapper.delUser(id);
     }
+
+    public UserVo login(UserVo userVo) {
+        UserVo member = userMapper.login(userVo);
+
+        if (member != null) {
+            member.setPassword(null);
+        }
+
+        return member;
+    }
+
 }
