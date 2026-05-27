@@ -8,6 +8,7 @@ import SignupScreen from './src/screens/SignupScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import PendingScreen from './src/screens/PendingScreen';
 import BranchSelectScreen from './src/screens/BranchSelectScreen';
+import QRCheckInScreen from './src/screens/QRCheckInScreen';
 
 // 스택 네비게이터 생성
 const Stack = createStackNavigator();
@@ -60,6 +61,8 @@ return (
           </Stack.Screen>
           ): userStatus === 'active' ? (
           // [상태 2] 로그인 + 승인 완료
+          // <> </> 한 화면 안에 두 개가 있으면 빈 태그로 감싸줘야 합니다.
+          <> 
           <Stack.Screen name="Dashboard" options={{ headerShown: false }}>
             {/* props 대신 { navigation } 만 구조분해할당으로 받아서 넘겨줍니다 */}
             {({ navigation }) => (
@@ -69,6 +72,14 @@ return (
               />
             )}
           </Stack.Screen>
+
+          {/* 👇 대시보드와 형제 위치에 QR 화면을 추가합니다. */}
+            <Stack.Screen 
+              name="QRCheckIn" 
+              component={QRCheckInScreen} 
+              options={{ headerShown: false }} 
+            />
+        </>
         ) : (
           // [상태 3] 로그인 + 승인 대기
           <Stack.Screen name="Pending" options={{ headerShown: false }}>

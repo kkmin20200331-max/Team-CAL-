@@ -1,7 +1,8 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet,  } from 'react-native';
+import axios from 'axios';
 
 // TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
@@ -31,11 +32,16 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
 
 const handleLogin = async () => {
     try {
+    //   // 👈 버튼을 누르는 순간 백엔드(10.0.2.2)에 내 정보를 보냄 (POST 요청) / 8000 fastAPI
+    // const response = await axios.post('http://10.0.2.2:8000/api/users/login', {
+    //   id: email,
+    //   password: password
+    // });
       // 1. 서버에 로그인(아이디/비번) 요청을 보냅니다.
       // const response = await api.post('/login', { email, password });
       
       // 2. 서버에서 "이 유저는 승인 대기 중(pending)입니다" 라는 응답을 받았다고 가정합니다.
-      const fetchedUserStatus = 'pending'; // or 'active' = 관리자 승인 후 화면(대시보드)
+      const fetchedUserStatus = 'active'; // or 'active' = 관리자 승인 후 화면(대시보드)
 
       // 3. 네비게이션 이동이 아닌, 상태값을 변경합니다.
       // 상태가 변하는 순간 App.js의 조건문이 다시 실행되어 화면이 자동으로 넘어갑니다.
@@ -52,7 +58,7 @@ const handleLogin = async () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>CAL 로그인</Text>
+      <Text style={styles.title}>バイトメート</Text>
 
       {/* [퀴즈 3] 이메일 입력창: value와 onChangeText 속성을 알맞게 연결해보세요. */}
       <TextInput
