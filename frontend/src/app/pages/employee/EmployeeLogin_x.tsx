@@ -8,7 +8,7 @@ import { Switch } from '../../components/ui/switch';
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Smartphone } from 'lucide-react';
 
-export default function EmployeeLogin() {
+export default function EmployeeLogin_x() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [language, setLanguage] = useState('ko');
@@ -25,6 +25,7 @@ export default function EmployeeLogin() {
       username: '아이디',
       password: '비밀번호',
       login: '로그인',
+      signup: '회원가입',
       language: '언어',
       darkMode: '다크 모드'
     },
@@ -34,6 +35,7 @@ export default function EmployeeLogin() {
       username: 'Username',
       password: 'Password',
       login: 'Login',
+      signup: 'Sign Up',
       language: 'Language',
       darkMode: 'Dark Mode'
     },
@@ -43,6 +45,7 @@ export default function EmployeeLogin() {
       username: 'ユーザー名',
       password: 'パスワード',
       login: 'ログイン',
+      signup: '会員登録',
       language: '言語',
       darkMode: 'ダークモード'
     }
@@ -75,6 +78,10 @@ export default function EmployeeLogin() {
 
             <Button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
               {t.login}
+            </Button>
+
+            <Button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
+              {t.signup}
             </Button>
           </form>
 

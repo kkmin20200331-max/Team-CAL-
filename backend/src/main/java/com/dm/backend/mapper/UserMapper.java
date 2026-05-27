@@ -22,4 +22,7 @@ public interface UserMapper {
 
      @Delete("delete from users where id = #{id}")
     void delUser(String id);
+
+    @Select("SELECT * FROM users WHERE username = #{username} AND password = #{password}")
+    UserVo login(UserVo userVo);
 }
