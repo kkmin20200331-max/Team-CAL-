@@ -4,8 +4,11 @@ import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import axios from 'axios';
 
+// Auth pages
+import Login from './pages/auth/Login';
+import SignUp from './pages/auth/Signup';
+
 // Admin pages
-import AdminLogin from './pages/admin/AdminLogin';
 import BranchSelection from './pages/admin/BranchSelection';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import WeeklySchedule from './pages/admin/WeeklySchedule';
@@ -19,7 +22,6 @@ import CustomerAnalytics from './pages/admin/CustomerAnalytics';
 import MultibranchDashboard from './pages/admin/MultibranchDashboard';
 
 // Employee pages
-import EmployeeLogin from './pages/employee/EmployeeLogin';
 import EmployeeHome from './pages/employee/EmployeeHome';
 import MySchedule from './pages/employee/MySchedule';
 import QRCheckIn from './pages/employee/QRCheckIn';
@@ -49,11 +51,15 @@ export default function App() {
           {'API \uC0C1\uD0DC'}: {apiMessage}
         </div>
         <Routes>
-          {/* Root redirect */}
-          <Route path="/" element={<Navigate to="/admin" replace />} />
+          {/*{Auth routes}*/}
+            {/* 첫 화면(/)으로 접속 시 새로 만든 통합 로그인 화면으로 자동 리다이렉트 */}
+            <Route path="/" element={<Navigate to="/auth/login" replace />} />
+            {/* /auth 로 들어와도 자동으로 /auth/login 으로 안전하게 이동 */}
+            <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/signup" element={<SignUp />} />
 
           {/* Admin routes */}
-          <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/branch-selection" element={<BranchSelection />} />
           <Route path="/admin/dashboard/:branchId" element={<AdminDashboard />} />
           <Route path="/admin/multibranch" element={<MultibranchDashboard />} />
@@ -67,7 +73,6 @@ export default function App() {
           <Route path="/admin/analytics/:branchId" element={<CustomerAnalytics />} />
 
           {/* Employee routes */}
-          <Route path="/employee" element={<EmployeeLogin />} />
           <Route path="/employee/home" element={<EmployeeHome />} />
           <Route path="/employee/schedule" element={<MySchedule />} />
           <Route path="/employee/checkin" element={<QRCheckIn />} />
