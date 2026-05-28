@@ -70,6 +70,7 @@ class PersonDetector:
         predict_args: dict[str, Any] = {
             "verbose": False,
             "conf": resolved_confidence,
+            "classes": [0],
         }
         if resolved_image_size:
             predict_args["imgsz"] = resolved_image_size

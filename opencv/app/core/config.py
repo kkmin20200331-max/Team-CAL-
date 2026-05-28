@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     max_frame_retries: int = 3
     inference_workers: int = 2
     max_pending_frames: int = 20
+    sender_queue_max_size: int = 100
+    spring_send_retry: int = 3
+    spring_send_timeout_sec: float = 3.0
+    failed_payload_log: str = "logs/failed_payloads.log"
 
     @property
     def default_model_name(self) -> str:

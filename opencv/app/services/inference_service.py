@@ -1,4 +1,5 @@
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+from dataclasses import dataclass, field
 from datetime import datetime
 from threading import Thread, local
 
@@ -6,13 +7,58 @@ from app.core.config import settings
 from app.core.logger import get_logger
 from app.core.state import inference_state
 from app.schemas.request import CameraStartRequest, SourceType
-from app.schemas.response import CameraStartResponse, DetectionResponse
+from app.schemas.response import AggregatedCongestionResponse, CameraStartResponse, DetectionResponse
 from app.services.spring_client import spring_client
-from app.vision.camera_reader import CameraReader
 from app.vision.frame_sampler import FrameSampler
 from app.vision.person_detector import PersonDetector
+from app.vision.sources import create_video_source
+from app.vision.sources.base import VideoSource
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class AggregationBucket:
+    interval_sec: int
+    target_sample_count: int
+    samples: list[DetectionResponse] = field(default_factory=list)
+
+    def add(self, payload: DetectionResponse) -> AggregatedCongestionResponse | None:
+        self.samples.append(payload)
+        if len(self.samples) >= self.target_sample_count:
+            return self.flush()
+        return None
+
+    def flush(self) -> AggregatedCongestionResponse | None:
+        if not self.samples:
+            return None
+
+        customer_counts = [sample.customerCount for sample in self.samples]
+        confidence_values = [sample.confidenceAvg for sample in self.samples]
+        processing_values = [sample.processingMs for sample in self.samples]
+        last_sample = self.samples[-1]
+        summary = AggregatedCongestionResponse(
+            storeId=last_sample.storeId,
+            cameraId=last_sample.cameraId,
+            measuredAt=last_sample.measuredAt,
+            intervalSec=self.interval_sec,
+            avgCustomerCount=round(sum(customer_counts) / len(customer_counts), 2),
+            maxCustomerCount=max(customer_counts),
+            minCustomerCount=min(customer_counts),
+            lastCustomerCount=last_sample.customerCount,
+            sampleCount=len(self.samples),
+            confidenceAvg=round(sum(confidence_values) / len(confidence_values), 4),
+            processingMsAvg=round(sum(processing_values) / len(processing_values), 2),
+            processedFrames=len(self.samples),
+            droppedFrames=0,
+            modelName=last_sample.modelName,
+            imageSize=last_sample.imageSize,
+            confidenceThreshold=last_sample.confidenceThreshold,
+            sourceType=last_sample.sourceType,
+            status="SUCCESS",
+        )
+        self.samples = []
+        return summary
 
 
 class InferenceService:
@@ -32,6 +78,7 @@ class InferenceService:
             model_name=request.modelName,
             image_size=request.imageSize,
             confidence_threshold=request.confidence,
+            workers=max(1, settings.inference_workers),
         )
         worker.start()
         return CameraStartResponse(
@@ -39,6 +86,7 @@ class InferenceService:
             storeId=request.storeId,
             cameraId=request.cameraId,
             intervalSec=request.intervalSec,
+            aggregationIntervalSec=request.aggregationIntervalSec,
             message="inference loop started",
         )
 
@@ -52,6 +100,9 @@ class InferenceService:
 
     def status(self):
         return inference_state.snapshot()
+
+    def metrics(self):
+        return inference_state.metrics()
 
     def infer_image_bytes(
         self,
@@ -97,27 +148,33 @@ class InferenceService:
         return payload
 
     def _run_loop(self, request: CameraStartRequest) -> None:
-        reader = CameraReader(request.source, request.sourceType)
+        video_source = create_video_source(request.source, request.sourceType)
         sampler = FrameSampler(request.intervalSec)
         retry_count = 0
         sample_index = 0
         pending: set[Future] = set()
+        target_sample_count = max(1, -(-request.aggregationIntervalSec // request.intervalSec))
+        aggregation_bucket = AggregationBucket(
+            interval_sec=request.aggregationIntervalSec,
+            target_sample_count=target_sample_count,
+        )
 
         try:
-            reader.open()
+            video_source.open()
             self.detector.load(request.modelName)
             logger.info("[CAMERA] source connected: %s", request.source)
             stop_message = "stopped"
 
             with ThreadPoolExecutor(max_workers=max(1, settings.inference_workers)) as executor:
                 while self._should_sample_next(request, sampler):
-                    frame = self._read_sample_frame(reader, request, sample_index)
+                    frame = self._read_sample_frame(video_source, request, sample_index)
                     if frame is None:
                         if request.sourceType == SourceType.VIDEO_FILE:
                             logger.info("[CAMERA] video finished: %s", request.source)
                             stop_message = "video ended"
                             break
                         retry_count += 1
+                        inference_state.mark_dropped_frame()
                         if retry_count >= settings.max_frame_retries:
                             raise RuntimeError("frame read failed after max retries")
                         logger.error("[ERROR] frame read failed. retry=%s/%s", retry_count, settings.max_frame_retries)
@@ -126,20 +183,32 @@ class InferenceService:
                     retry_count = 0
                     sample_index += 1
                     pending.add(executor.submit(self._process_frame, request, frame))
+                    inference_state.mark_queue_size(len(pending))
                     logger.info("[CAMERA] sample queued: index=%s pending=%s", sample_index, len(pending))
 
                     if len(pending) >= max(1, settings.max_pending_frames):
-                        pending = self._drain_completed(pending, wait_for_one=True)
+                        pending = self._drain_completed(
+                            pending,
+                            wait_for_one=True,
+                            aggregation_bucket=aggregation_bucket,
+                        )
                     else:
-                        pending = self._drain_completed(pending, wait_for_one=False)
+                        pending = self._drain_completed(
+                            pending,
+                            wait_for_one=False,
+                            aggregation_bucket=aggregation_bucket,
+                        )
 
                 while pending and not inference_state.stop_event.is_set():
-                    pending = self._drain_completed(pending, wait_for_one=True)
+                    pending = self._drain_completed(pending, wait_for_one=True, aggregation_bucket=aggregation_bucket)
+                summary = aggregation_bucket.flush()
+                if summary is not None:
+                    self._send_aggregate(summary)
         except Exception as exc:
             inference_state.mark_error(str(exc))
             logger.error("[ERROR] inference loop failed: %s", exc)
         finally:
-            reader.close()
+            video_source.close()
             inference_state.mark_stopped(stop_message if "stop_message" in locals() else "stopped")
 
     def _should_sample_next(self, request: CameraStartRequest, sampler: FrameSampler) -> bool:
@@ -149,10 +218,8 @@ class InferenceService:
             return True
         return sampler.wait_next(inference_state.stop_event)
 
-    def _read_sample_frame(self, reader: CameraReader, request: CameraStartRequest, sample_index: int):
-        if request.sourceType == SourceType.VIDEO_FILE:
-            return reader.read_at_second(sample_index * request.intervalSec)
-        return reader.read()
+    def _read_sample_frame(self, video_source: VideoSource, request: CameraStartRequest, sample_index: int):
+        return video_source.read_sample(sample_index, request.intervalSec)
 
     def _process_frame(self, request: CameraStartRequest, frame) -> DetectionResponse:
         detector = self._thread_detector()
@@ -184,7 +251,12 @@ class InferenceService:
             self._worker_local.detector = detector
         return detector
 
-    def _drain_completed(self, pending: set[Future], wait_for_one: bool) -> set[Future]:
+    def _drain_completed(
+        self,
+        pending: set[Future],
+        wait_for_one: bool,
+        aggregation_bucket: AggregationBucket,
+    ) -> set[Future]:
         if not pending:
             return pending
 
@@ -195,17 +267,20 @@ class InferenceService:
             remaining = pending - done
 
         for future in done:
-            self._handle_frame_result(future)
+            payload = self._handle_frame_result(future)
+            summary = aggregation_bucket.add(payload)
+            if summary is not None:
+                self._send_aggregate(summary)
+        inference_state.mark_queue_size(len(remaining))
         return remaining
 
-    def _handle_frame_result(self, future: Future) -> None:
+    def _handle_frame_result(self, future: Future) -> DetectionResponse:
         payload = future.result()
-        send_success = spring_client.send_congestion(payload)
         inference_state.mark_result(
             customer_count=payload.customerCount,
             confidence_avg=payload.confidenceAvg,
             measured_at=payload.measuredAt,
-            send_success=send_success,
+            send_success=inference_state.snapshot().lastSendSuccess or False,
             model_name=payload.modelName,
             image_size=payload.imageSize,
             confidence_threshold=payload.confidenceThreshold,
@@ -219,6 +294,21 @@ class InferenceService:
             payload.customerCount,
             payload.confidenceAvg,
             payload.processingMs,
+        )
+        return payload
+
+    def _send_aggregate(self, summary: AggregatedCongestionResponse) -> None:
+        summary.droppedFrames = inference_state.metrics().droppedFrames
+        send_success = spring_client.send_congestion(summary)
+        inference_state.mark_send_result(send_success, summary.measuredAt)
+        logger.info(
+            "[AGGREGATE] measuredAt=%s avg=%s max=%s min=%s samples=%s sent=%s",
+            summary.measuredAt.isoformat(),
+            summary.avgCustomerCount,
+            summary.maxCustomerCount,
+            summary.minCustomerCount,
+            summary.sampleCount,
+            send_success,
         )
 
     def _build_payload(
