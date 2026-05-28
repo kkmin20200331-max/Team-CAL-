@@ -4,15 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5af5765c-5ada-4d69-af1c-3a06dd127dfc" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/calpeace.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/com/dm/backend/controller/UserC.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/com/dm/backend/controller/UserC.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/dist/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/dist/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/app/components/api/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/app/components/api/auth.ts" afterDir="false" />
-    </list>
+    <list default="true" id="5af5765c-5ada-4d69-af1c-3a06dd127dfc" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -95,7 +87,7 @@
       <workItem from="1779347499985" duration="5853000" />
       <workItem from="1779419654525" duration="14726000" />
       <workItem from="1779777375984" duration="13183000" />
-      <workItem from="1779851111156" duration="2968000" />
+      <workItem from="1779851111156" duration="3179000" />
     </task>
     <servers />
   </component>
