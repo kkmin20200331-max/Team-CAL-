@@ -1,8 +1,8 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet,  } from 'react-native';
-import axios from 'axios';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { loginAPI } from '../../api/auth';
 
 // TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
@@ -17,44 +17,33 @@ type Props = {
 
 export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, setHasSelectedBranch }: Props) {
   // [퀴즈 1] 이메일(email)과 비밀번호(password)를 초기값 빈 문자열("")로 가지는 객체 상태(inputs)를 만들어보세요.
-  const [inputs, setInputs] = useState({email : "", password : ""});
+  const [inputs, setInputs] = useState({id : "", password : ""});
   
   // 비구조화 할당으로 inputs에서 값을 뽑아둡니다.
-  const { email, password } = inputs;
+  const { id, password } = inputs;
 
   // [퀴즈 2] 텍스트가 입력될 때마다 상태를 업데이트해주는 함수를 완성해보세요.
   // 힌트: 기존 객체를 복사하고, name 키를 가진 값을 text로 덮어씌워야 합니다.
   const handleInputChange = (name: string, text: string) => {
     // 빈칸
     setInputs({ ...inputs, [name]: text });
-    console.log(`${name} 항목에 입력된 값:`, text);
   };
 
 const handleLogin = async () => {
-    try {
-    //   // 👈 버튼을 누르는 순간 백엔드(10.0.2.2)에 내 정보를 보냄 (POST 요청) / 8000 fastAPI
-    // const response = await axios.post('http://10.0.2.2:8000/api/users/login', {
-    //   id: email,
-    //   password: password
-    // });
-      // 1. 서버에 로그인(아이디/비번) 요청을 보냅니다.
-      // const response = await api.post('/login', { email, password });
-      
-      // 2. 서버에서 "이 유저는 승인 대기 중(pending)입니다" 라는 응답을 받았다고 가정합니다.
-      const fetchedUserStatus = 'active'; // or 'active' = 관리자 승인 후 화면(대시보드)
+  try {
+    const response = await loginAPI(id, password);
+    const data = response.data;
+    // 메모: App.tsx의 분기값이 소문자(active/pending)이므로 백엔드 상태값을 맞춰줍니다.
+    const fetchedUserStatus = (data.status ?? '').toLowerCase();
 
-      // 3. 네비게이션 이동이 아닌, 상태값을 변경합니다.
-      // 상태가 변하는 순간 App.js의 조건문이 다시 실행되어 화면이 자동으로 넘어갑니다.
-      setUserStatus(fetchedUserStatus); 
-      setIsLoggedIn(true);          
-      
-      // 👇 2. 로그인 성공 시, 지점 선택 여부를 무조건 false로 초기화합니다.
-      setHasSelectedBranch(false);
+    setUserStatus(fetchedUserStatus);
+    setIsLoggedIn(true);
+    setHasSelectedBranch(false);
 
-    } catch (error) {
-      console.log('로그인 실패', error);
-    }
-  };
+  } catch (error) {
+    Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인해주세요.");
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -63,9 +52,9 @@ const handleLogin = async () => {
       {/* [퀴즈 3] 이메일 입력창: value와 onChangeText 속성을 알맞게 연결해보세요. */}
       <TextInput
         style={styles.input}
-        placeholder="이메일을 입력하세요"
-        value={email}
-        onChangeText={(text) => handleInputChange('email', text)}
+        placeholder="아이디를 입력하세요"
+        value={id}
+        onChangeText={(text) => handleInputChange('id', text)}
       />
 
       {/* [퀴즈 4] 비밀번호 입력창: 연결은 이메일과 동일합니다. 

@@ -75,8 +75,6 @@ export default function App() {
   // 👇 2. 지점 선택 여부를 관리하는 상태 추가 (초기값: false)
   const [hasSelectedBranch, setHasSelectedBranch] = useState(false); // 지점 선택 관리
 
-  console.log('userStatus:', userStatus);
-
 return (
     <NavigationContainer>
       {/* 조건부 렌더링 시 initialRouteName은 생략해도 됩니다. */}

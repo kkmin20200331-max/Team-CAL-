@@ -13,7 +13,7 @@ type Props = {
 const PendingScreen = ({ navigation, setIsLoggedIn }: Props) => {
   // 상태 새로고침 (실제로는 API 재호출 로직이 들어갑니다)
   const handleRefresh = () => {
-    console.log('승인 상태 확인 요청');
+    // 메모: 승인 상태 조회 API가 연결되면 여기에서 재호출합니다.
   };
 
   // 👇 [수정] goBack 대신 상태를 로그아웃(false)으로 변경합니다.

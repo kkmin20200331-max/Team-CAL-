@@ -11,7 +11,7 @@ type Props = {
 
 const DashboardScreen = ({ navigation, setIsLoggedIn }: Props) => {
   
-  const handleNotification = () => console.log('알림 화면으로 이동');
+  const handleNotification = () => navigation.navigate('Notifications');
   const handleQRCheckIn = () => navigation.navigate('QRCheckIn');
 
   return (
