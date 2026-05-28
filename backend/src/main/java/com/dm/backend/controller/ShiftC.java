@@ -12,18 +12,31 @@ import java.util.List;
 public class ShiftC {
     @Autowired
     private ShiftService shiftService;
-
+    //근무표 등록
     @PostMapping
-    public void registerShift(ShiftVO shiftVO){
+    public void registerShift(@RequestBody ShiftVO shiftVO){
         shiftService.registerShift(shiftVO);
     }
 
-    // 근무표 조회 (달력 UI용 기간별 전체 조회 - store_id, start_date, end_date 필요)
+    // 근무표 조회 (달력 UI용 기간별 전체 조회 - store_id, start_date, end_date 필요) 관리자용
     @GetMapping
     public List<ShiftVO> getShiftList(@RequestParam String store_id,
                                       @RequestParam String start_date,
                                       @RequestParam String end_date) {
         return shiftService.getShiftList(store_id, start_date, end_date);
+    }
+    //직원용 기간 내 근무 조회
+    @GetMapping("/staff")
+    public List<ShiftVO> getMyShiftList(
+            @RequestParam String user_id,
+            @RequestParam String start_date,
+            @RequestParam String end_date
+    ){
+        return shiftService.getMyShiftList(
+                user_id,
+                start_date,
+                end_date
+        );
     }
 
     // 근무 하나 조회 id 필요

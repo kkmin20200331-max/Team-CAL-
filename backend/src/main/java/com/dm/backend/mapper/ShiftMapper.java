@@ -3,6 +3,7 @@ package com.dm.backend.mapper;
 import com.dm.backend.vo.ShiftVO;
 import org.apache.ibatis.annotations.*;
 
+import java.util.Date;
 import java.util.List;
 
 @Mapper
@@ -26,4 +27,49 @@ public interface ShiftMapper {
 
     @Delete("delete from shift where id = #{id}")
     void delShift(String id);
+
+    //중복검사
+    @Select("""
+    select count(*)
+    from shift
+    where user_id = #{user_id}
+    and work_date = #{work_date}
+    and start_at = #{start_at}
+    and end_at = #{end_at}
+""")
+    int existsShift(
+            @Param("user_id") String user_id,
+            @Param("work_date") Date work_date,
+            @Param("start_at") Date start_at,
+            @Param("end_at") Date end_at
+    );
+//근무시간 충돌 검사
+    @Select("""
+    select count(*)
+    from shift
+    where user_id = #{user_id}
+    and work_date = #{work_date}
+    and start_at < #{end_at}
+    and end_at > #{start_at}
+""")
+    int checkShiftConflict(
+            @Param("user_id") String user_id,
+            @Param("work_date") Date work_date,
+            @Param("start_at") Date start_at,
+            @Param("end_at") Date end_at
+    );
+    //직원용 기간 내 근무 조회
+    @Select("""
+    select *
+    from shift
+    where user_id = #{user_id}
+    and work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+    and work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+    order by work_date, start_at
+""")
+    List<ShiftVO> getMyShiftList(
+            @Param("user_id") String user_id,
+            @Param("start_date") String start_date,
+            @Param("end_date") String end_date
+    );
 }

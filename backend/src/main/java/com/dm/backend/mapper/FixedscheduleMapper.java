@@ -21,4 +21,57 @@ public interface FixedscheduleMapper {
 
     @Delete("delete from fixed_schedule where id = #{id}")
     void delFixedSchedule(String id);
+
+    @Select("""
+                select count(*)
+                from fixed_schedule
+                where store_id = #{store_id}
+                and user_id = #{user_id}
+                and weekday = #{weekday}
+                and start_time = #{start_time}
+                and end_time = #{end_time}
+            """)
+    int existsFixedSchedule(
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id,
+            @Param("weekday") String weekday,
+            @Param("start_time") String start_time,
+            @Param("end_time") String end_time
+    );
+
+    @Select("""
+    select count(*)
+    from fixed_schedule
+    where store_id = #{store_id}
+    and user_id = #{user_id}
+    and weekday = #{weekday}
+    and start_time < #{end_time}
+    and end_time > #{start_time}
+""")
+    int checkFixedScheduleConflict(
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id,
+            @Param("weekday") String weekday,
+            @Param("start_time") String start_time,
+            @Param("end_time") String end_time
+    );
+
+    @Select("""
+    select count(*)
+    from fixed_schedule
+    where store_id = #{store_id}
+    and user_id = #{user_id}
+    and weekday = #{weekday}
+    and id != #{id}
+    and start_time < #{end_time}
+    and end_time > #{start_time}
+""")
+    int checkFixedScheduleConflictForUpdate(
+            @Param("id") String id,
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id,
+            @Param("weekday") String weekday,
+            @Param("start_time") String start_time,
+            @Param("end_time") String end_time
+    );
 }

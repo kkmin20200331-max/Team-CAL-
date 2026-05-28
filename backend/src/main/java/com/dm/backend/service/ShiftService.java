@@ -27,18 +27,58 @@ public class ShiftService {
     private FixedscheduleMapper fixedscheduleMapper;
 
     public void registerShift(ShiftVO shiftVO) {
-        shiftmapper.registerShift(shiftVO);
+        int exists = shiftmapper.existsShift(
+                shiftVO.getUser_id(),
+                shiftVO.getWork_date(),
+                shiftVO.getStart_at(),
+                shiftVO.getEnd_at()
+        );
+        int conflict = shiftmapper.checkShiftConflict(
+                shiftVO.getUser_id(),
+                shiftVO.getWork_date(),
+                shiftVO.getStart_at(),
+                shiftVO.getEnd_at()
+        );
+
+
+        if(exists == 0 && conflict == 0){
+            shiftmapper.registerShift(shiftVO);
+        }else{
+            throw new RuntimeException("이미 해당 시간에 근무가 존재합니다.");
+        }
     }
 
     public List<ShiftVO> getShiftList(String store_id, String start_date, String end_date) {
         return shiftmapper.getShiftList(store_id, start_date, end_date);
     }
-
+    public List<ShiftVO> getMyShiftList(
+            String user_id,
+            String start_date,
+            String end_date
+    ){
+        return shiftmapper.getMyShiftList(
+                user_id,
+                start_date,
+                end_date
+        );
+    }
     public ShiftVO getShift(String id) {
         return shiftmapper.getShift(id);
     }
 
     public void updateShift(ShiftVO shiftVO) {
+        int conflict =
+                shiftmapper.checkShiftConflict(
+                        shiftVO.getUser_id(),
+                        shiftVO.getWork_date(),
+                        shiftVO.getStart_at(),
+                        shiftVO.getEnd_at()
+                );
+
+        if(conflict > 0){
+            throw new RuntimeException("이미 해당 시간에 근무가 존재합니다.");
+        }
+
         shiftmapper.updateShift(shiftVO);
     }
 
@@ -78,7 +118,7 @@ public class ShiftService {
 
                     // VO 세팅 (MyBatis가 LocalDateTime도 자동으로 Oracle TIMESTAMP로 매핑해줍니다)
                     ShiftVO shiftVo = new ShiftVO();
-                    shiftVo.setId("SHF_" + UUID.randomUUID().toString().substring(0, 15));
+                    shiftVo.setId("SHF_" + UUID.randomUUID());
                     shiftVo.setStore_id(store_id);
                     shiftVo.setUser_id(pattern.getUser_id());
 
@@ -89,7 +129,7 @@ public class ShiftService {
                     shiftVo.setStatus("SCHEDULED");
 
                     // DB 저장
-                    shiftmapper.registerShift(shiftVo);
+                    registerShift(shiftVo);
                 }
             }
         }
