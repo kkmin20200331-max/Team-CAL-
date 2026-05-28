@@ -27,12 +27,7 @@ public class ShiftService {
     private FixedscheduleMapper fixedscheduleMapper;
 
     public void registerShift(ShiftVO shiftVO) {
-        int exists = shiftmapper.existsShift(
-                shiftVO.getUser_id(),
-                shiftVO.getWork_date(),
-                shiftVO.getStart_at(),
-                shiftVO.getEnd_at()
-        );
+
         int conflict = shiftmapper.checkShiftConflict(
                 shiftVO.getUser_id(),
                 shiftVO.getWork_date(),
@@ -41,7 +36,7 @@ public class ShiftService {
         );
 
 
-        if(exists == 0 && conflict == 0){
+        if(conflict == 0){
             shiftmapper.registerShift(shiftVO);
         }else{
             throw new RuntimeException("이미 해당 시간에 근무가 존재합니다.");
@@ -68,7 +63,8 @@ public class ShiftService {
 
     public void updateShift(ShiftVO shiftVO) {
         int conflict =
-                shiftmapper.checkShiftConflict(
+                shiftmapper.checkShiftConflictForUpdate(
+                        shiftVO.getId(),
                         shiftVO.getUser_id(),
                         shiftVO.getWork_date(),
                         shiftVO.getStart_at(),
