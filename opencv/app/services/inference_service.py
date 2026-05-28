@@ -1,5 +1,6 @@
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from datetime import datetime
-from threading import Thread
+from threading import Thread, local
 
 from app.core.config import settings
 from app.core.logger import get_logger
@@ -17,6 +18,7 @@ logger = get_logger(__name__)
 class InferenceService:
     def __init__(self) -> None:
         self.detector = PersonDetector()
+        self._worker_local = local()
 
     def start(self, request: CameraStartRequest) -> CameraStartResponse:
         if inference_state.snapshot().running:
@@ -99,67 +101,40 @@ class InferenceService:
         sampler = FrameSampler(request.intervalSec)
         retry_count = 0
         sample_index = 0
+        pending: set[Future] = set()
 
         try:
             reader.open()
+            self.detector.load(request.modelName)
             logger.info("[CAMERA] source connected: %s", request.source)
             stop_message = "stopped"
 
-            while self._should_sample_next(request, sampler):
-                frame = self._read_sample_frame(reader, request, sample_index)
-                if frame is None:
-                    if request.sourceType == SourceType.VIDEO_FILE:
-                        logger.info("[CAMERA] video finished: %s", request.source)
-                        stop_message = "video ended"
-                        break
-                    retry_count += 1
-                    if retry_count >= settings.max_frame_retries:
-                        raise RuntimeError("frame read failed after max retries")
-                    logger.error("[ERROR] frame read failed. retry=%s/%s", retry_count, settings.max_frame_retries)
-                    continue
+            with ThreadPoolExecutor(max_workers=max(1, settings.inference_workers)) as executor:
+                while self._should_sample_next(request, sampler):
+                    frame = self._read_sample_frame(reader, request, sample_index)
+                    if frame is None:
+                        if request.sourceType == SourceType.VIDEO_FILE:
+                            logger.info("[CAMERA] video finished: %s", request.source)
+                            stop_message = "video ended"
+                            break
+                        retry_count += 1
+                        if retry_count >= settings.max_frame_retries:
+                            raise RuntimeError("frame read failed after max retries")
+                        logger.error("[ERROR] frame read failed. retry=%s/%s", retry_count, settings.max_frame_retries)
+                        continue
 
-                retry_count = 0
-                sample_index += 1
-                detection = self.detector.detect(
-                    frame,
-                    model_name=request.modelName,
-                    image_size=request.imageSize,
-                    confidence_threshold=request.confidence,
-                )
-                annotated_image = self._annotate_frame(frame, detection.boxes)
-                payload = self._build_payload(
-                    store_id=request.storeId,
-                    camera_id=request.cameraId,
-                    source_type=request.sourceType.value,
-                    customer_count=detection.customer_count,
-                    confidence_avg=detection.confidence_avg,
-                    processing_ms=detection.processing_ms,
-                    model_name=detection.model_name,
-                    image_size=detection.image_size,
-                    confidence_threshold=detection.confidence_threshold,
-                    boxes=detection.boxes,
-                    annotated_image=annotated_image,
-                )
-                send_success = spring_client.send_congestion(payload)
-                inference_state.mark_result(
-                    customer_count=payload.customerCount,
-                    confidence_avg=payload.confidenceAvg,
-                    measured_at=payload.measuredAt,
-                    send_success=send_success,
-                    model_name=payload.modelName,
-                    image_size=payload.imageSize,
-                    confidence_threshold=payload.confidenceThreshold,
-                    processing_ms=payload.processingMs,
-                    boxes=payload.boxes,
-                    annotated_image=payload.annotatedImage,
-                )
-                logger.info(
-                    "[INFERENCE] measuredAt=%s count=%s confidenceAvg=%s processingMs=%s",
-                    payload.measuredAt.isoformat(),
-                    payload.customerCount,
-                    payload.confidenceAvg,
-                    payload.processingMs,
-                )
+                    retry_count = 0
+                    sample_index += 1
+                    pending.add(executor.submit(self._process_frame, request, frame))
+                    logger.info("[CAMERA] sample queued: index=%s pending=%s", sample_index, len(pending))
+
+                    if len(pending) >= max(1, settings.max_pending_frames):
+                        pending = self._drain_completed(pending, wait_for_one=True)
+                    else:
+                        pending = self._drain_completed(pending, wait_for_one=False)
+
+                while pending and not inference_state.stop_event.is_set():
+                    pending = self._drain_completed(pending, wait_for_one=True)
         except Exception as exc:
             inference_state.mark_error(str(exc))
             logger.error("[ERROR] inference loop failed: %s", exc)
@@ -178,6 +153,73 @@ class InferenceService:
         if request.sourceType == SourceType.VIDEO_FILE:
             return reader.read_at_second(sample_index * request.intervalSec)
         return reader.read()
+
+    def _process_frame(self, request: CameraStartRequest, frame) -> DetectionResponse:
+        detector = self._thread_detector()
+        detection = detector.detect(
+            frame,
+            model_name=request.modelName,
+            image_size=request.imageSize,
+            confidence_threshold=request.confidence,
+        )
+        annotated_image = self._annotate_frame(frame, detection.boxes)
+        return self._build_payload(
+            store_id=request.storeId,
+            camera_id=request.cameraId,
+            source_type=request.sourceType.value,
+            customer_count=detection.customer_count,
+            confidence_avg=detection.confidence_avg,
+            processing_ms=detection.processing_ms,
+            model_name=detection.model_name,
+            image_size=detection.image_size,
+            confidence_threshold=detection.confidence_threshold,
+            boxes=detection.boxes,
+            annotated_image=annotated_image,
+        )
+
+    def _thread_detector(self) -> PersonDetector:
+        detector = getattr(self._worker_local, "detector", None)
+        if detector is None:
+            detector = PersonDetector()
+            self._worker_local.detector = detector
+        return detector
+
+    def _drain_completed(self, pending: set[Future], wait_for_one: bool) -> set[Future]:
+        if not pending:
+            return pending
+
+        if wait_for_one:
+            done, remaining = wait(pending, return_when=FIRST_COMPLETED)
+        else:
+            done = {future for future in pending if future.done()}
+            remaining = pending - done
+
+        for future in done:
+            self._handle_frame_result(future)
+        return remaining
+
+    def _handle_frame_result(self, future: Future) -> None:
+        payload = future.result()
+        send_success = spring_client.send_congestion(payload)
+        inference_state.mark_result(
+            customer_count=payload.customerCount,
+            confidence_avg=payload.confidenceAvg,
+            measured_at=payload.measuredAt,
+            send_success=send_success,
+            model_name=payload.modelName,
+            image_size=payload.imageSize,
+            confidence_threshold=payload.confidenceThreshold,
+            processing_ms=payload.processingMs,
+            boxes=payload.boxes,
+            annotated_image=payload.annotatedImage,
+        )
+        logger.info(
+            "[INFERENCE] measuredAt=%s count=%s confidenceAvg=%s processingMs=%s",
+            payload.measuredAt.isoformat(),
+            payload.customerCount,
+            payload.confidenceAvg,
+            payload.processingMs,
+        )
 
     def _build_payload(
         self,

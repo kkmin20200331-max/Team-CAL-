@@ -21,14 +21,14 @@ class DetectionResult:
 class PersonDetector:
     def __init__(self) -> None:
         self._models: dict[str, Any] = {}
-        self.model_name = settings.model_name
+        self.model_name = settings.default_model_name
 
     @property
     def is_loaded(self) -> bool:
         return bool(self._models)
 
     def load(self, model_name: str | None = None):
-        resolved_model_name = model_name or settings.model_name
+        resolved_model_name = Path(model_name or settings.default_model_name).stem
         if resolved_model_name in self._models:
             self.model_name = resolved_model_name
             return self._models[resolved_model_name]
@@ -39,10 +39,15 @@ class PersonDetector:
 
         model_path = Path("models") / f"{resolved_model_name}.pt"
         configured_path = Path(settings.model_path)
-        if configured_path.exists() and resolved_model_name == settings.model_name:
+        configured_yolo_model = Path(settings.yolo_model)
+        if configured_yolo_model.exists() and resolved_model_name == configured_yolo_model.stem:
+            selected_model = configured_yolo_model
+        elif configured_path.exists() and resolved_model_name == Path(settings.model_path).stem:
             selected_model = configured_path
         elif model_path.exists():
             selected_model = model_path
+        elif resolved_model_name == settings.default_model_name:
+            selected_model = configured_yolo_model
         else:
             selected_model = Path(f"{resolved_model_name}.pt")
 
@@ -57,7 +62,7 @@ class PersonDetector:
         image_size: int | None = None,
         confidence_threshold: float | None = None,
     ) -> DetectionResult:
-        resolved_model_name = model_name or settings.model_name
+        resolved_model_name = Path(model_name or settings.default_model_name).stem
         resolved_image_size = image_size
         resolved_confidence = confidence_threshold or settings.confidence_threshold
         model = self.load(resolved_model_name)

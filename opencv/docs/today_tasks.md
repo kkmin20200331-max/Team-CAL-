@@ -29,7 +29,14 @@ FastAPI 기반 YOLO 인원 감지 서버를 발표와 시연이 가능한 상태
   - 중지: `POST /api/v1/camera/stop`
   - 영상 업로드: `POST /api/v1/camera/upload-video`
   - `VIDEO_FILE`은 `0초, intervalSec초, intervalSec*2초...` 위치의 프레임을 샘플링
+  - 프레임 샘플링과 YOLO 추론을 분리하고, 추론은 `INFERENCE_WORKERS` 설정값에 따라 병렬 처리
   - 영상이 끝나면 자동으로 종료
+- 영상 추론 병렬 처리 개선
+  - 기존 직렬 구조는 `프레임 읽기 -> YOLO 추론 -> 결과 저장/전송 -> 다음 프레임` 순서라서 추론 시간이 길면 샘플링 간격이 밀릴 수 있었음
+  - 개선 후에는 프레임을 먼저 샘플링해서 추론 대기열에 넣고, `ThreadPoolExecutor` 워커가 병렬로 YOLO 추론 수행
+  - 워커마다 별도 `PersonDetector`를 사용해서 YOLO 모델 인스턴스 공유 위험을 줄임
+  - 루프 시작 시 모델을 미리 로드해서 최초 weight 다운로드/로드가 여러 워커에서 동시에 발생하지 않도록 처리
+  - 관련 설정: `INFERENCE_WORKERS=2`, `MAX_PENDING_FRAMES=20`
 - `/experiment` 실험 페이지 정리
   - Start / Status / Stop 버튼
   - 이미지 업로드 후 즉시 추론
@@ -70,10 +77,12 @@ Confidence: 0.3
 Store ID: 1
 Camera ID: CAM-VIDEO-001
 Source Type: VIDEO_FILE
-Interval Sec: 5
+Interval Sec: 1
 Video Model: yolo11s
 Video Image Size: 960
 Video Confidence: 0.3
+Inference Workers: 2
+Max Pending Frames: 20
 ```
 
 비교 테스트 옵션:
@@ -93,7 +102,10 @@ Confidence: 0.25, 0.3, 0.5
 
 2. 영상 5개 추론 결과 정리
    - Built-in Sample로 5개 영상 순서대로 실행
-   - `intervalSec=5`, `imageSize=960`, `confidence=0.3` 기준 사용
+   - `intervalSec=1`, `imageSize=960`, `confidence=0.3` 기준 사용
+   - 10초 영상이면 약 1초 간격으로 샘플링되는지 확인
+   - 로그에서 `sample queued`가 샘플 개수만큼 찍히는지 확인
+   - 추론 시간이 길어도 프레임 샘플링이 크게 밀리지 않는지 확인
    - `lastCustomerCount`, `lastConfidenceAvg`, `lastMeasuredAt` 확인
    - 마지막 annotated frame 캡처 저장
 
@@ -143,7 +155,7 @@ http://127.0.0.1:8000/experiment
 Store ID: 1
 Camera ID: CAM-VIDEO-001
 Source Type: VIDEO_FILE
-Interval Sec: 5
+Interval Sec: 1
 Video Model: yolo11s
 Video Image Size: 960
 Video Confidence: 0.3
@@ -161,7 +173,7 @@ Video Confidence: 0.3
 ```text
 카페 내부 혼잡도를 한산, 보통, 혼잡 3단계로 나누어 총 30장의 이미지로 YOLO 기반 사람 탐지 성능을 검증했습니다. 탐지 결과는 단순 인원 수뿐 아니라 박스 위치와 confidence를 함께 확인하여, 조명이나 가림 현상으로 일부 인물이 누락되는 한계까지 분석했습니다.
 
-영상 테스트는 전체 프레임을 모두 분석하지 않고 5초 간격으로 프레임을 샘플링하는 방식으로 진행했습니다. 이 방식은 서버 부하를 줄이면서도 매장 혼잡도 변화를 주기적으로 확인할 수 있도록 설계했습니다.
+영상 테스트는 전체 프레임을 모두 분석하지 않고 설정한 intervalSec 간격으로 프레임을 샘플링하는 방식으로 진행했습니다. 프레임 수집과 YOLO 추론을 분리하고 추론은 병렬 워커로 처리하여, 추론 시간이 길어도 샘플링 간격이 크게 밀리지 않도록 개선했습니다.
 ```
 
 ## Test Commands
