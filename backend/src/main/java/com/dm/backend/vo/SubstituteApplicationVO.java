@@ -4,16 +4,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-
-public class SubstituteApplyVO {
+public class SubstituteApplicationVO {
     private String id;
-    private String substitute_request_id;
+
+    private String substitute_post_id;
+
     private String applicant_user_id;
+
+    private String message;
+
     private String status;
-    private Timestamp applied_at;
+
+    private LocalDateTime applied_at;
 }

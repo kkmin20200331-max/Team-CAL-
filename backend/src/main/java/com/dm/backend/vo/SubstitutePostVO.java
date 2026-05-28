@@ -4,19 +4,25 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.sql.Timestamp;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SubstituteRequestVO {
+public class SubstitutePostVO {
     private String id;
+
     private String shift_id;
-    private Date work_date;
-    private String start_at;
-    private String end_at;
-    private int pay_rate;
+
+    private String store_id;
+
+    private String requester_user_id;
+
+    private String reason;
+
     private String status;
-    private Timestamp created_at;
+
+    private LocalDateTime created_at;
+
+    private LocalDateTime closed_at;
 }

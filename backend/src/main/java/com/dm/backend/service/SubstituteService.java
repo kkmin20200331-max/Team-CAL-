@@ -1,13 +1,13 @@
 package com.dm.backend.service;
 
 import com.dm.backend.mapper.SubstituteMapper;
-import com.dm.backend.mapper.ShiftMapper;
-import com.dm.backend.vo.SubstituteRequestVO;
-import com.dm.backend.vo.SubstituteApplyVO;
-import com.dm.backend.vo.ShiftVO;
+import com.dm.backend.vo.SubstituteApplicationVO;
+import com.dm.backend.vo.SubstituteHistoryVO;
+import com.dm.backend.vo.SubstitutePostVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -16,41 +16,66 @@ public class SubstituteService {
     @Autowired
     private SubstituteMapper substituteMapper;
 
-    @Autowired
-    private ShiftMapper shiftMapper; // 💡 기존 쉬프트 매퍼 주입받아 재활용
+    public void createPost(SubstitutePostVO postVO) {
+        substituteMapper.createPost(postVO);
 
-    public void createRequest(SubstituteRequestVO request) {
-        substituteMapper.insertRequest(request);
+        substituteMapper.updateShiftStatus(
+                postVO.getShift_id(),
+                "SUBSTITUTE_OPEN"
+        );
     }
 
-    public List<SubstituteRequestVO> getOpenRequests() {
-        return substituteMapper.selectOpenRequests();
+    public List<SubstitutePostVO> getPostList(String store_id) {
+        return substituteMapper.getPostList(store_id);
     }
 
-    public List<SubstituteApplyVO> getApplies(String substitute_request_id) {
-        return substituteMapper.selectAppliesByRequestId(substitute_request_id);
+    public void apply(SubstituteApplicationVO applicationVO) {
+        substituteMapper.apply(applicationVO);
     }
 
-    public void insertApply(SubstituteApplyVO apply) {
-        substituteMapper.insertApply(apply);
+    public List<SubstituteApplicationVO> getApplicationList(String post_id) {
+        return substituteMapper.getApplicationList(post_id);
     }
 
     @Transactional
-    public void approveMatching(String applyId, String requestId, String shiftId, String applicantUserId) {
-        // 1. 지원 내역 및 구인글 상태 변경
-        substituteMapper.updateApplyStatus(applyId, "APPROVED");
-        substituteMapper.updateRequestStatus(requestId, "CLOSED");
+    public void approveSubstitute(
+            String shift_id,
+            String selectedUser_id,
+            SubstituteHistoryVO historyVO
+    ) {
 
-        // 2. 💡 [질문자님 지적 반영] 기존 updateShift 메서드 그대로 재활용하기
-        // 기존 스케줄 정보를 단건 조회로 안전하게 꺼내옵니다.
-        ShiftVO existingShift = shiftMapper.getShift(shiftId);
+        substituteMapper.updateShiftUser(
+                shift_id,
+                selectedUser_id
+        );
 
-        if (existingShift != null) {
-            // 근무자 ID(user_id)만 대타 신청자 ID로 쏙 바꿔치기합니다.
-            existingShift.setUser_id(applicantUserId);
+        substituteMapper.updateShiftStatus(
+                shift_id,
+                "SUBSTITUTED"
+        );
 
-            // 이미 존재하던 updateShift 메서드에 그대로 집어넣어서 업데이트 실행!
-            shiftMapper.updateShift(existingShift);
-        }
+        substituteMapper.insertHistory(historyVO);
+    }
+
+    public void cancelApplication(String id) {
+        substituteMapper.cancelApplication(id);
+    }
+
+    public List<SubstituteApplicationVO> getMyApplications(String user_id) {
+        return substituteMapper.getMyApplications(user_id);
+    }
+
+    public void cancelPost(String post_id) {
+        // 모집글에 연결된 shift 조회
+        String shift_id = substituteMapper.getShiftIdByPostId(post_id);
+
+        // 모집글 취소
+        substituteMapper.cancelPost(post_id);
+
+        // shift 상태 원복
+        substituteMapper.updateShiftStatus(
+                shift_id,
+                "SCHEDULED"
+        );
     }
 }
