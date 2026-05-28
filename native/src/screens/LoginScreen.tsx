@@ -17,10 +17,10 @@ type Props = {
 
 export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, setHasSelectedBranch }: Props) {
   // [퀴즈 1] 이메일(email)과 비밀번호(password)를 초기값 빈 문자열("")로 가지는 객체 상태(inputs)를 만들어보세요.
-  const [inputs, setInputs] = useState({id : "", password : ""});
   
   // 비구조화 할당으로 inputs에서 값을 뽑아둡니다.
-  const { id, password } = inputs;
+  const [inputs, setInputs] = useState({username : "", password : ""});
+  const { username, password } = inputs;
 
   // [퀴즈 2] 텍스트가 입력될 때마다 상태를 업데이트해주는 함수를 완성해보세요.
   // 힌트: 기존 객체를 복사하고, name 키를 가진 값을 text로 덮어씌워야 합니다.
@@ -31,7 +31,7 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
 
 const handleLogin = async () => {
   try {
-    const response = await loginAPI(id, password);
+    const response = await loginAPI(username, password);
     const data = response.data;
     // 메모: App.tsx의 분기값이 소문자(active/pending)이므로 백엔드 상태값을 맞춰줍니다.
     const fetchedUserStatus = (data.status ?? '').toLowerCase();
@@ -41,6 +41,7 @@ const handleLogin = async () => {
     setHasSelectedBranch(false);
 
   } catch (error) {
+    console.error("로그인 에러:", error);
     Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인해주세요.");
   }
 };
@@ -53,8 +54,8 @@ const handleLogin = async () => {
       <TextInput
         style={styles.input}
         placeholder="아이디를 입력하세요"
-        value={id}
-        onChangeText={(text) => handleInputChange('id', text)}
+        value={username}
+        onChangeText={(text) => handleInputChange('username', text)}
       />
 
       {/* [퀴즈 4] 비밀번호 입력창: 연결은 이메일과 동일합니다. 
