@@ -22,4 +22,8 @@ public class StoreMemberService {
     public void updateStoreMember(StoreMemberVo storeMemberVo) {
         storeMemberMapper.updateStoreMember(storeMemberVo);
     }
+
+    public void deleteStoreMember(String store_id, String user_id) {
+        storeMemberMapper.deleteStoreMember(store_id, user_id);
+    }
 }

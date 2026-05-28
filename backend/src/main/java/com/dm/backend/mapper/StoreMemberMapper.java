@@ -14,4 +14,7 @@ public interface StoreMemberMapper {
 
     @Update("update store_member set approval_status = #{approval_status} and member_role = #{member_role} and user_level = #{user_level} where id = #{id}")
     void updateStoreMember(StoreMemberVo storeMemberVo);
+
+    @Delete("delete from store_member where store_id = #{store_id} and user_id = #{user_id}")
+    void deleteStoreMember(String store_id, String user_id);
 }

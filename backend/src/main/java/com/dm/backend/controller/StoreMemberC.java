@@ -26,7 +26,11 @@ public class StoreMemberC {
         storeMemberService.updateStoreMember(storeMemberVo);
     }
 
-
+    //매장탈퇴 혹은 직원삭제
+    @DeleteMapping
+    public void deleteStoreMember(@RequestParam String store_id, String user_id){
+        storeMemberService.deleteStoreMember(store_id, user_id);
+    }
 
 
 }
