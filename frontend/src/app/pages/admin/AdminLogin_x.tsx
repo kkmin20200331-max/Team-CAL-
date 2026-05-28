@@ -8,7 +8,7 @@ import { Switch } from '../../components/ui/switch';
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Briefcase } from 'lucide-react';
 
-export default function AdminLogin() {
+export default function AdminLogin_x() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const [language, setLanguage] = useState('ko');
@@ -28,6 +28,7 @@ export default function AdminLogin() {
       username: '아이디',
       password: '비밀번호',
       login: '로그인',
+      signup: '회원가입',
       language: '언어',
       darkMode: '다크 모드'
     },
@@ -37,6 +38,7 @@ export default function AdminLogin() {
       username: 'Username',
       password: 'Password',
       login: 'Login',
+      signup: 'Sign Up',
       language: 'Language',
       darkMode: 'Dark Mode'
     },
@@ -46,6 +48,7 @@ export default function AdminLogin() {
       username: 'ユーザー名',
       password: 'パスワード',
       login: 'ログイン',
+      signup: '会員登録',
       language: '言語',
       darkMode: 'ダークモード'
     }
@@ -94,6 +97,10 @@ export default function AdminLogin() {
 
             <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
               {t.login}
+            </Button>
+
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+              {t.signup}
             </Button>
           </form>
 
