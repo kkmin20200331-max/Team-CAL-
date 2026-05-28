@@ -2,6 +2,8 @@ package com.dm.backend.mapper;
 
 import com.dm.backend.vo.ShiftVO;
 import org.apache.ibatis.annotations.*;
+//@param
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -18,12 +20,18 @@ public interface ShiftMapper {
             "order by work_date, start_at")
     List<ShiftVO> getShiftList(String store_id, String start_date, String end_date);
 
-    @Select("select * from shift where id = #{id}")
-    ShiftVO getShift(String id);
-
     @Update("update shift set store_id = #{store_id}, user_id = #{user_id}, work_date = #{work_date}, start_at = #{start_at}, end_at = #{end_at}, status = #{status} where id = #{id}")
     void updateShift(ShiftVO shiftVO);
 
     @Delete("delete from shift where id = #{id}")
     void delShift(String id);
+
+    // 직원 개인 근무표 조회 (user_id + 기간)
+    @Select("SELECT * FROM shift WHERE user_id = #{user_id} " +
+            "AND work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD') " +
+            "AND work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD') " +
+            "ORDER BY work_date, start_at")
+    List<ShiftVO> getShiftListByUser(@Param("user_id") String user_id,
+                                     @Param("start_date") String start_date,
+                                     @Param("end_date") String end_date);
 }
