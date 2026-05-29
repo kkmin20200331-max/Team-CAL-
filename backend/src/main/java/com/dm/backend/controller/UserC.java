@@ -61,4 +61,11 @@ public class UserC {
         userservice.delUser(id);
     }
 
+    // 경민 수정 5/29 15:12
+    // 직원 승인 (GUEST → STAFF)
+    @PutMapping("/approve")
+    public void approveUser(@RequestParam String id) {
+        userservice.approveUser(id);
+    }
+
 }

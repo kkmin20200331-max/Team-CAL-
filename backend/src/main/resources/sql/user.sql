@@ -25,3 +25,4 @@ INSERT INTO users (id, username, password, name, phone, role, status)
 VALUES ('U7yZ8aB9_c0DeF1gH2iJ4', 'guest_choi', 'hash_pw_guest_123', '최대기', '010-7777-8888', 'GUEST', 'PENDING');
 
 select * from users;
+
