@@ -34,4 +34,9 @@ public interface ShiftMapper {
     List<ShiftVO> getShiftListByUser(@Param("user_id") String user_id,
                                      @Param("start_date") String start_date,
                                      @Param("end_date") String end_date);
+
+    // 경민 수정 5/29 17:36
+    @Select("SELECT * FROM shift WHERE id = #{id}")
+    ShiftVO getShift(String id);
+
 }
