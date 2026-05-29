@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { signupAPI } from '../../api/auth';
+import axios from 'axios';
 
 // TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
@@ -11,22 +13,19 @@ type Props = {
 
 export default function SignupScreen({ navigation }: Props) {
   // [퀴즈 1] 상태 초기화
-  const [inputs, setInputs] = useState({email : "", password : "", passwordCheck : "", name : ""});
+  const [inputs, setInputs] = useState({id : "", password : "", passwordCheck : "", name : "", phone: ""});
   
   // 비구조화 할당
-  const { email, password, passwordCheck, name } = inputs;
+  const { id, password, passwordCheck, name, phone } = inputs;
 
   // [퀴즈 2] 입력 핸들러
   const handleInputChange = (name: string, text: string) => {
     setInputs({ ...inputs, [name]: text });
-    console.log(`${name} 항목에 입력된 값:`, text);
   };
 
   // 회원가입 버튼 로직
-  const handleSignup = () => {
-    console.log("가입 버튼 눌림!");
-    
-    if (!email || !password || !passwordCheck || !name) {
+  const handleSignup = async () => {
+    if (!id || !password || !passwordCheck || !name || !phone) {
       Alert.alert("입력 오류", "모든 항목을 입력해주세요.");
       return; 
     }
@@ -36,23 +35,48 @@ export default function SignupScreen({ navigation }: Props) {
       return;
     }
 
-    console.log("백엔드로 보낼 가입 데이터:", inputs);
+    try {
+    // 2. 백엔드로 보낼 데이터 조립
+    // 백엔드의 UserVo(username)와 프론트의 변수(id) 이름을 맞춰줍니다.
+    // 메모: 백엔드는 id/status를 자동 생성하지 않으므로 RN에서 함께 전달합니다.
+    const signupData = {
+      id: `U_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`.slice(0, 21),
+      username: id,
+      password,
+      name,
+      phone,
+      role: "ADMIN" as const,
+      status: "ACTIVE" as const,
+    };
     
+    // 3. 백엔드 API 호출!
+    await signupAPI(signupData);
+
+    // 4. 통신 성공 시 화면 이동 및 알림
     Alert.alert("가입 성공", `${name}님 환영합니다!`, [
       { text: "확인", onPress: () => navigation.goBack() }
     ]);
+
+  } catch (error) {
+  if (axios.isAxiosError(error) && error.response) {
+    Alert.alert("가입 실패", `서버 오류: ${error.response.status}`);
+  } else if (axios.isAxiosError(error) && error.request) {
+    Alert.alert("가입 실패", "백엔드 서버에 연결할 수 없습니다.");
+  } else {
+    Alert.alert("가입 실패", "알 수 없는 오류가 발생했습니다.");
+  }
+}
   }; // handleSignup 끝
 
-  // 💡 여기서부터 바로 return이 이어져야 합니다!
   return (
     <View style={styles.container}>
       <Text style={styles.title}>회원가입 화면</Text>
       
       <TextInput
         style={styles.input}
-        placeholder="이메일"
-        value={email}
-        onChangeText={(text) => handleInputChange('email', text)}
+        placeholder="아이디"
+        value={id}
+        onChangeText={(text) => handleInputChange('id', text)}
       />
 
       <TextInput
@@ -79,6 +103,14 @@ export default function SignupScreen({ navigation }: Props) {
         onChangeText={(text)=> handleInputChange('name', text)}
       />
 
+      <TextInput
+        style={styles.input}
+        placeholder="전화번호 (예: 010-1234-5678)"
+        value={phone}
+        onChangeText={(text)=> handleInputChange('phone', text)}
+        keyboardType="phone-pad"
+      />
+
       <TouchableOpacity style={styles.button} onPress={handleSignup}>
         <Text style={styles.buttonText}>가입 완료</Text>
       </TouchableOpacity>
@@ -98,8 +130,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 30, textAlign: 'center' },
   input: { borderWidth: 1, borderColor: '#ddd', padding: 15, borderRadius: 8, marginBottom: 15 },
-  button: { backgroundColor: '#28a745', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  backButton: { marginTop: 20, alignItems: 'center' },
-  backButtonText: { color: '#666', fontSize: 14 }
+  button: { backgroundColor: '#8B5CF6', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });

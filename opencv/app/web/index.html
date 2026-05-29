@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShiftOps AI Experiment</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --panel-soft: #f0f4f8;
+      --line: #d9e2ec;
+      --text: #16202a;
+      --muted: #607080;
+      --primary: #0ea5a4;
+      --primary-dark: #0f766e;
+      --danger: #dc2626;
+      --warn: #c2410c;
+      --ok: #15803d;
+      --radius: 8px;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      font-family: Arial, "Noto Sans KR", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    header {
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 440px) 1fr;
+      gap: 18px;
+      width: min(1280px, 100%);
+      padding: 18px;
+      margin: 0 auto;
+    }
+
+    section {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .panel-body {
+      padding: 18px;
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 40px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--text);
+      background: #fff;
+      font-size: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    button,
+    a.button {
+      min-height: 38px;
+      padding: 9px 13px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      color: #fff;
+      background: var(--primary);
+      cursor: pointer;
+      font-weight: 800;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    button:hover,
+    a.button:hover {
+      background: var(--primary-dark);
+    }
+
+    button.secondary,
+    a.button.secondary {
+      color: var(--text);
+      border-color: var(--line);
+      background: var(--panel-soft);
+    }
+
+    button.secondary:hover,
+    a.button.secondary:hover {
+      background: #e2e8f0;
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    button.danger:hover {
+      background: #b91c1c;
+    }
+
+    .status-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--warn);
+    }
+
+    .dot.ok { background: var(--ok); }
+    .dot.off { background: var(--muted); }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+    }
+
+    .metric b {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 5px;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    pre {
+      min-height: 320px;
+      max-height: 520px;
+      margin: 0;
+      padding: 14px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: #dbeafe;
+      background: #111827;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .image-result {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(240px, 360px);
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .preview-box,
+    .box-list {
+      min-height: 220px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+      overflow: hidden;
+    }
+
+    .preview-box {
+      display: grid;
+      place-items: center;
+      padding: 10px;
+    }
+
+    .preview-box img {
+      display: block;
+      max-width: 100%;
+      max-height: 520px;
+      border-radius: 6px;
+    }
+
+    .empty-preview {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .box-list {
+      padding: 12px;
+      overflow: auto;
+    }
+
+    .box-list h3 {
+      margin: 0 0 10px;
+      font-size: 14px;
+    }
+
+    .box-item {
+      display: grid;
+      gap: 4px;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .box-item + .box-item {
+      margin-top: 8px;
+    }
+
+    .box-item b {
+      color: var(--primary-dark);
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    .note {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .image-result {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ShiftOps AI 실험 페이지</h1>
+    <p>Java 서버 없이 FastAPI API를 직접 호출해서 입력값과 추론 결과를 확인합니다.</p>
+  </header>
+
+  <main>
+    <section>
+      <div class="panel-head">
+        <h2>입력값</h2>
+        <a class="button secondary" href="/docs" target="_blank" rel="noreferrer">Swagger</a>
+      </div>
+      <div class="panel-body">
+        <form id="cameraForm">
+          <div class="grid-2">
+            <label>
+              Store ID
+              <input id="storeId" type="number" min="1" value="1" required />
+            </label>
+            <label>
+              Camera ID
+              <input id="cameraId" value="CAM-001" required />
+            </label>
+          </div>
+
+          <label>
+            Source
+            <input id="source" value="videos/test_store.mp4" required />
+          </label>
+
+          <div class="grid-2">
+            <label>
+              Source Type
+              <select id="sourceType">
+                <option value="VIDEO_FILE">VIDEO_FILE</option>
+                <option value="WEBCAM">WEBCAM</option>
+                <option value="RTSP">RTSP</option>
+              </select>
+            </label>
+            <label>
+              Interval Sec
+              <input id="intervalSec" type="number" min="1" max="3600" value="10" required />
+            </label>
+          </div>
+
+          <div class="actions">
+            <button type="submit">Start</button>
+            <button class="secondary" type="button" id="statusBtn">Status</button>
+            <button class="danger" type="button" id="stopBtn">Stop</button>
+          </div>
+        </form>
+
+        <p class="note">웹캠 테스트는 Source에 0을 넣고 Source Type을 WEBCAM으로 선택하면 됩니다.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel-head">
+        <h2>결과 확인</h2>
+        <div class="status-line"><span id="runDot" class="dot off"></span><span id="runText">확인 전</span></div>
+      </div>
+      <div class="panel-body">
+        <div class="cards">
+          <div class="metric"><b>Running</b><span id="mRunning">-</span></div>
+          <div class="metric"><b>Customer Count</b><span id="mCount">-</span></div>
+          <div class="metric"><b>Confidence Avg</b><span id="mConfidence">-</span></div>
+          <div class="metric"><b>Last Send</b><span id="mSend">-</span></div>
+        </div>
+        <div class="image-result">
+          <div class="preview-box" id="previewBox">
+            <span class="empty-preview">이미지 추론 후 탐지 박스가 여기에 표시됩니다.</span>
+          </div>
+          <div class="box-list">
+            <h3>Person Boxes <span id="boxCount">(0)</span></h3>
+            <div id="boxItems" class="empty-preview">아직 box 결과가 없습니다.</div>
+          </div>
+        </div>
+        <pre id="output">아직 호출한 API가 없습니다.</pre>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel-head">
+        <h2>이미지 1장 테스트</h2>
+      </div>
+      <div class="panel-body">
+        <form id="imageForm">
+          <div class="grid-2">
+            <label>
+              Model
+              <select id="modelName">
+                <option value="yolo11s" selected>yolo11s</option>
+                <option value="yolov8n">yolov8n</option>
+                <option value="yolov8s">yolov8s</option>
+              </select>
+            </label>
+            <label>
+              Image Size
+              <select id="imageSize">
+                <option value="640">640</option>
+                <option value="960">960</option>
+                <option value="1280">1280</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Confidence
+            <select id="confidence">
+              <option value="0.25">0.25</option>
+              <option value="0.3" selected>0.3</option>
+              <option value="0.5">0.5</option>
+            </select>
+          </label>
+          <label>
+            Image File
+            <input id="imageFile" type="file" accept="image/*" required />
+          </label>
+          <div class="actions">
+            <button type="submit">Infer Image</button>
+          </div>
+        </form>
+        <p class="note">이미지 추론은 opencv-python, ultralytics, numpy 설치 후 동작합니다.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="panel-head">
+        <h2>영상 테스트</h2>
+      </div>
+      <div class="panel-body">
+        <form id="videoForm">
+          <div class="grid-2">
+            <label>
+              Video Model
+              <select id="videoModelName">
+                <option value="yolo11s" selected>yolo11s</option>
+                <option value="yolov8n">yolov8n</option>
+                <option value="yolov8s">yolov8s</option>
+              </select>
+            </label>
+            <label>
+              Video Image Size
+              <select id="videoImageSize">
+                <option value="640">640</option>
+                <option value="960" selected>960</option>
+                <option value="1280">1280</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Video Confidence
+            <select id="videoConfidence">
+              <option value="0.25">0.25</option>
+              <option value="0.3" selected>0.3</option>
+              <option value="0.5">0.5</option>
+            </select>
+          </label>
+          <div class="grid-2">
+            <label>
+              Video Camera ID
+              <input id="videoCameraId" value="CAM-VIDEO-001" required />
+            </label>
+            <label>
+              Video Interval Sec
+              <input id="videoIntervalSec" type="number" min="1" max="3600" value="5" required />
+            </label>
+          </div>
+          <label>
+            Upload Video File
+            <input id="videoFile" type="file" accept="video/*" />
+          </label>
+          <label>
+            Built-in Sample
+            <select id="sampleVideo">
+              <option value="">업로드 대신 샘플을 쓰려면 선택</option>
+              <option value="test_assets/videos/cafe_low.mp4">cafe_low.mp4</option>
+              <option value="test_assets/videos/cafe_medium.mp4">cafe_medium.mp4</option>
+              <option value="test_assets/videos/cafe_busy.mp4">cafe_busy.mp4</option>
+              <option value="test_assets/videos/cafe_counter_queue.mp4">cafe_counter_queue.mp4</option>
+              <option value="test_assets/videos/cafe_seat_area.mp4">cafe_seat_area.mp4</option>
+            </select>
+          </label>
+          <div class="actions">
+            <button type="submit">Start Video</button>
+          </div>
+        </form>
+        <p class="note">기본은 영상 파일을 업로드해서 실행합니다. 파일 없이 테스트하려면 Built-in Sample에서 샘플을 선택하고 Start Video를 누르면 됩니다.</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const output = document.querySelector("#output");
+    const runDot = document.querySelector("#runDot");
+    const runText = document.querySelector("#runText");
+    const fields = {
+      storeId: document.querySelector("#storeId"),
+      cameraId: document.querySelector("#cameraId"),
+      source: document.querySelector("#source"),
+      sourceType: document.querySelector("#sourceType"),
+      intervalSec: document.querySelector("#intervalSec"),
+      imageFile: document.querySelector("#imageFile"),
+      mRunning: document.querySelector("#mRunning"),
+      mCount: document.querySelector("#mCount"),
+      mConfidence: document.querySelector("#mConfidence"),
+      mSend: document.querySelector("#mSend"),
+      modelName: document.querySelector("#modelName"),
+      imageSize: document.querySelector("#imageSize"),
+      confidence: document.querySelector("#confidence"),
+      sampleVideo: document.querySelector("#sampleVideo"),
+      videoCameraId: document.querySelector("#videoCameraId"),
+      videoIntervalSec: document.querySelector("#videoIntervalSec"),
+      videoFile: document.querySelector("#videoFile"),
+      videoModelName: document.querySelector("#videoModelName"),
+      videoImageSize: document.querySelector("#videoImageSize"),
+      videoConfidence: document.querySelector("#videoConfidence"),
+    };
+    const previewBox = document.querySelector("#previewBox");
+    const boxCount = document.querySelector("#boxCount");
+    const boxItems = document.querySelector("#boxItems");
+
+    function cameraPayload() {
+      return {
+        storeId: Number(fields.storeId.value),
+        cameraId: fields.cameraId.value,
+        source: fields.source.value,
+        sourceType: fields.sourceType.value,
+        intervalSec: Number(fields.intervalSec.value),
+      };
+    }
+
+    let pollTimer = null;
+
+    function showResult(title, data, request = null) {
+      const requestText = request ? `\n\nRequest\n${JSON.stringify(request, null, 2)}` : "";
+      output.textContent = `${title}${requestText}\n\nResponse\n${JSON.stringify(displayData(data), null, 2)}`;
+      updateMetrics(data);
+      updateImageResult(data);
+    }
+
+    function displayData(data) {
+      if (!data || typeof data !== "object") return data;
+      return {
+        ...data,
+        annotatedImage: data.annotatedImage ? "[annotated image shown above]" : data.annotatedImage,
+      };
+    }
+
+    function showError(title, error) {
+      output.textContent = `${title}\n\n${error}`;
+    }
+
+    function updateMetrics(data) {
+      if (!data || typeof data !== "object") return;
+      const running = data.running ?? "-";
+      fields.mRunning.textContent = String(running);
+      fields.mCount.textContent = data.lastCustomerCount ?? data.customerCount ?? "-";
+      fields.mConfidence.textContent = data.lastConfidenceAvg ?? data.confidenceAvg ?? "-";
+      fields.mSend.textContent = data.lastSendSuccess ?? "-";
+
+      runDot.className = `dot ${running === true ? "ok" : running === false ? "off" : ""}`;
+      runText.textContent = data.statusMessage || (running === true ? "실행 중" : running === false ? "중지됨" : "결과 표시");
+      if (running === true) {
+        startPolling();
+      } else if (running === false) {
+        stopPolling();
+      }
+    }
+
+    function updateImageResult(data) {
+      if (!data || typeof data !== "object") return;
+      if (data.annotatedImage) {
+        previewBox.innerHTML = `<img src="${data.annotatedImage}" alt="탐지 박스가 표시된 이미지" />`;
+      }
+
+      if (!Array.isArray(data.boxes)) return;
+      boxCount.textContent = `(${data.boxes.length})`;
+      if (data.boxes.length === 0) {
+        boxItems.className = "empty-preview";
+        boxItems.textContent = "감지된 person box가 없습니다.";
+        return;
+      }
+
+      boxItems.className = "";
+      boxItems.innerHTML = data.boxes
+        .map((box, index) => `
+          <div class="box-item">
+            <b>#${index + 1} confidence ${box.confidence}</b>
+            <span>x1 ${box.x1}, y1 ${box.y1}, x2 ${box.x2}, y2 ${box.y2}</span>
+          </div>
+        `)
+        .join("");
+    }
+
+    function startPolling() {
+      if (pollTimer) return;
+      pollTimer = window.setInterval(async () => {
+        try {
+          const data = await requestJson("/api/v1/camera/status");
+          showResult("GET /api/v1/camera/status", data);
+        } catch (error) {
+          showError("Status polling failed", error.message);
+        }
+      }, 2000);
+    }
+
+    function stopPolling() {
+      if (!pollTimer) return;
+      window.clearInterval(pollTimer);
+      pollTimer = null;
+    }
+
+    async function requestJson(url, options = {}) {
+      const response = await fetch(url, options);
+      const text = await response.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = text;
+      }
+      if (!response.ok) {
+        throw new Error(typeof data === "string" ? data : JSON.stringify(data, null, 2));
+      }
+      return data;
+    }
+
+    document.querySelector("#cameraForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const request = cameraPayload();
+      try {
+        const data = await requestJson("/api/v1/camera/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+        });
+        showResult("POST /api/v1/camera/start", data, request);
+      } catch (error) {
+        showError("Start failed", error.message);
+      }
+    });
+
+    document.querySelector("#statusBtn").addEventListener("click", async () => {
+      try {
+        const data = await requestJson("/api/v1/camera/status");
+        showResult("GET /api/v1/camera/status", data);
+      } catch (error) {
+        showError("Status failed", error.message);
+      }
+    });
+
+    document.querySelector("#stopBtn").addEventListener("click", async () => {
+      try {
+        const data = await requestJson("/api/v1/camera/stop", { method: "POST" });
+        showResult("POST /api/v1/camera/stop", data);
+      } catch (error) {
+        showError("Stop failed", error.message);
+      }
+    });
+
+    document.querySelector("#imageForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const file = fields.imageFile.files[0];
+      if (!file) return;
+
+      const params = new URLSearchParams({
+        storeId: fields.storeId.value,
+        cameraId: fields.cameraId.value || "IMAGE-UPLOAD",
+        modelName: fields.modelName.value,
+        imageSize: fields.imageSize.value,
+        confidence: fields.confidence.value,
+      });
+      const request = {
+        storeId: Number(fields.storeId.value),
+        cameraId: fields.cameraId.value || "IMAGE-UPLOAD",
+        modelName: fields.modelName.value,
+        inferenceImageSize: Number(fields.imageSize.value),
+        confidence: Number(fields.confidence.value),
+        imageName: file.name,
+        imageBytes: file.size,
+      };
+      const body = new FormData();
+      body.append("image", file);
+
+      try {
+        const data = await requestJson(`/api/v1/inference/image?${params.toString()}`, {
+          method: "POST",
+          body,
+        });
+        showResult("POST /api/v1/inference/image", data, request);
+      } catch (error) {
+        showError("Image inference failed", error.message);
+      }
+    });
+
+    function videoPayload(source) {
+      return {
+        storeId: Number(fields.storeId.value),
+        cameraId: fields.videoCameraId.value || "CAM-VIDEO-001",
+        source,
+        sourceType: "VIDEO_FILE",
+        intervalSec: Number(fields.videoIntervalSec.value || 5),
+        modelName: fields.videoModelName.value,
+        imageSize: Number(fields.videoImageSize.value),
+        confidence: Number(fields.videoConfidence.value),
+      };
+    }
+
+    async function startVideo(source, title) {
+      const request = videoPayload(source);
+      fields.cameraId.value = request.cameraId;
+      fields.source.value = request.source;
+      fields.sourceType.value = "VIDEO_FILE";
+      fields.intervalSec.value = request.intervalSec;
+
+      const data = await requestJson("/api/v1/camera/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+      });
+      showResult(title, data, request);
+    }
+
+    document.querySelector("#videoForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const file = fields.videoFile.files[0];
+
+      try {
+        if (file) {
+          const body = new FormData();
+          body.append("video", file);
+          const uploaded = await requestJson("/api/v1/camera/upload-video", {
+            method: "POST",
+            body,
+          });
+          await startVideo(uploaded.source, "POST /api/v1/camera/upload-video + start");
+          return;
+        }
+
+        if (fields.sampleVideo.value) {
+          await startVideo(fields.sampleVideo.value, "POST /api/v1/camera/start built-in sample");
+          return;
+        }
+
+        showError("Video start failed", "영상 파일을 선택하거나 Built-in Sample을 선택하세요.");
+      } catch (error) {
+        showError("Video start failed", error.message);
+      }
+    });
+
+    requestJson("/api/v1/camera/status")
+      .then((data) => showResult("GET /api/v1/camera/status", data))
+      .catch((error) => showError("Initial status failed", error.message));
+  </script>
+</body>
+</html>
