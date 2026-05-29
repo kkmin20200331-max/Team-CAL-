@@ -39,11 +39,6 @@ public class ShiftC {
         );
     }
 
-    // 근무 하나 조회 id 필요
-    @GetMapping("/{id}")
-    public ShiftVO getShift(@PathVariable String id) {
-        return shiftService.getShift(id);
-    }
     // 근무 수정
     @PutMapping
     public void updateShift(@RequestBody ShiftVO shiftVo) {
@@ -54,6 +49,15 @@ public class ShiftC {
     @DeleteMapping
     public void delShift(@RequestParam String id) {
         shiftService.delShift(id);
+    }
+
+    // 직원 개인 근무표 조회
+    // 예시: GET /api/shift/user?user_id=USR_xxx&start_date=2026-05-01&end_date=2026-05-31
+    @GetMapping("/staff")
+    public List<ShiftVO> getShiftListByUser(@RequestParam String user_id,
+                                            @RequestParam String start_date,
+                                            @RequestParam String end_date) {
+        return shiftService.getShiftListByUser(user_id, start_date, end_date);
     }
 
     // [핵심] 고정 스케줄 패턴을 이용한 특정 기간 근무표 일괄 자동 생성 엔진 호출

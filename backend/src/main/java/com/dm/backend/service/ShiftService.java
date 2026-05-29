@@ -46,20 +46,6 @@ public class ShiftService {
     public List<ShiftVO> getShiftList(String store_id, String start_date, String end_date) {
         return shiftmapper.getShiftList(store_id, start_date, end_date);
     }
-    public List<ShiftVO> getMyShiftList(
-            String user_id,
-            String start_date,
-            String end_date
-    ){
-        return shiftmapper.getMyShiftList(
-                user_id,
-                start_date,
-                end_date
-        );
-    }
-    public ShiftVO getShift(String id) {
-        return shiftmapper.getShift(id);
-    }
 
     public void updateShift(ShiftVO shiftVO) {
         int conflict =
@@ -81,6 +67,12 @@ public class ShiftService {
     public void delShift(String id) {
         shiftmapper.delShift(id);
     }
+
+    // 직원 개인 근무표 조회
+    public List<ShiftVO> getShiftListByUser(String user_id, String start_date, String end_date) {
+        return shiftmapper.getShiftListByUser(user_id, start_date, end_date);
+    }
+
     @Transactional
     public void generateAutomatedShifts(String store_id, String start_date, String end_date) {
         // 1. 매장의 고정 스케줄 패턴 리스트 가져오기
