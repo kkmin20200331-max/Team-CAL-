@@ -10,6 +10,10 @@ const MyPageScreen = ({ route, navigation }: any) => {
   const [themeModalVisible, setThemeModalVisible] = useState(false);
   const [themeMode, setThemeMode] = useState('시스템 설정'); // 기본값
 
+  // ✅ 언어 설정 상태 관리
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [language, setLanguage] = useState('한국어'); // 기본값
+
   // 백엔드에서 데이터가 아직 전달되지 않았을 경우를 대비한 안전장치(Fallback)
   const name = userInfo?.name || '사용자';
   const role = userInfo?.role || 'STAFF';
@@ -57,7 +61,8 @@ const MyPageScreen = ({ route, navigation }: any) => {
           <Text style={styles.sectionTitle}>앱 설정</Text>
           {/* ✅ 클릭 시 모달창을 띄우고, 선택된 모드를 버튼 이름에 보여줍니다. */}
           {renderMenuItem('🌙', `화면 모드 (${themeMode})`, () => setThemeModalVisible(true))}
-          {renderMenuItem('🌐', '언어 설정', () => {})}
+          {/* ✅ 언어 설정도 모달창 연결 */}
+          {renderMenuItem('🌐', `언어 설정 (${language})`, () => setLanguageModalVisible(true))}
           {renderMenuItem('🔔', '알림 설정', () => {})}
         </View>
 
@@ -90,6 +95,32 @@ const MyPageScreen = ({ route, navigation }: any) => {
                 }}
               >
                 <Text style={[styles.modalOptionText, themeMode === mode && styles.modalOptionTextSelected]}>{mode}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* ✅ 언어 설정용 팝업(Modal) */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={languageModalVisible}
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setLanguageModalVisible(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>언어 설정</Text>
+            {['한국어', 'English', '日本語'].map((lang) => (
+              <TouchableOpacity
+                key={lang}
+                style={[styles.modalOption, language === lang && styles.modalOptionSelected]}
+                onPress={() => {
+                  setLanguage(lang);
+                  setLanguageModalVisible(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, language === lang && styles.modalOptionTextSelected]}>{lang}</Text>
               </TouchableOpacity>
             ))}
           </View>
