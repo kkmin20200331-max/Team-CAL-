@@ -18,7 +18,8 @@ public interface UserMapper {
     @Insert("insert into users (id, username, password, name, phone, role, status) values (#{id}, #{username}, #{password}, #{name}, #{phone}, #{role}, #{status})")
     void registerUser(UserVo userVo);
 
-    @Update("update users set username = #{username} and password = #{password} and name = #{name} and phone = #{phone} where id = #{id}")
+    // 선민 수정 5/29 15:09
+    @Update("update users set username = #{username}, password = #{password}, name = #{name}, phone = #{phone} where id = #{id}")
     void approveStaff(UserVo userVo);
 
     @Delete("delete from users where id = #{id}")

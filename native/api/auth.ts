@@ -3,7 +3,7 @@ import axios from 'axios';
 // ✅ [수정] 안드로이드 에뮬레이터용 주소(10.0.2.2)로 직접 연결합니다.
 // (만약 본인 스마트폰 기계로 직접 연결해서 테스트 중이시라면 PC의 IP주소 예: 192.168.x.x 를 넣으셔야 합니다)
 const API = axios.create({
-  baseURL: 'http://10.1.82.139:8080/api', // 테스트용 하드코딩 주소
+  baseURL: 'http://10.100.0.227:8080/api',   
   // baseURL: process.env.EXPO_PUBLIC_API_BASE_URL, // 기존 환경변수 코드 주석 처리
 });
 
@@ -27,3 +27,7 @@ export const signupAPI = (data: {
   selectedBrand?: string;
   selectedBranch?: string;
 }) => API.post('/users', data);
+
+// ✅ [추가] 개인정보 수정 API
+export const updateProfileAPI = (data: any) => 
+  API.put(`/users`, data);

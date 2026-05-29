@@ -15,6 +15,7 @@ import QRCheckInScreen from './src/screens/QRCheckInScreen';
 import MyPageScreen from './src/screens/MyPageScreen';
 import NotificationScreen from './src/screens/NotificationScreen';
 import ScheduleScreen from './src/screens/ScheduleScreen';
+import ProfileEditScreen from './src/screens/ProfileEditScreen';
 
 // ✅ [정리] 중복 선언된 Stack은 하나만 남기고, Tab 네비게이터를 생성합니다.
 const Stack = createStackNavigator();
@@ -25,7 +26,8 @@ const Tab = createBottomTabNavigator();
 // ---------------------------------------------------------
 function MainTabNavigator({ route }: any) {
   // App에서 넘겨받은 전역 상태 변경 함수를 가져옵니다.
-  const { setIsLoggedIn } = route.params;
+  // ✅ setUserInfo를 추가로 받아옵니다.
+  const { setIsLoggedIn, userInfo, setUserInfo } = route.params;
 
   return (
     <Tab.Navigator
@@ -61,7 +63,7 @@ function MainTabNavigator({ route }: any) {
       <Tab.Screen 
         name="MyPage" 
         component={MyPageScreen} 
-        initialParams={{ setIsLoggedIn }} // 로그아웃 기능을 위해 함수 전달
+        initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} // 정보 업데이트 함수까지 전달
         options={{ title: '마이페이지', tabBarIcon: () => <Text>👤</Text> }} 
       />
     </Tab.Navigator>
@@ -74,9 +76,11 @@ export default function App() {
   const [userStatus, setUserStatus] = useState('pending'); // 사용자 상태 관리
   // 👇 2. 지점 선택 여부를 관리하는 상태 추가 (초기값: false)
   const [hasSelectedBranch, setHasSelectedBranch] = useState(false); // 지점 선택 관리
+  // 👇 3. 로그인한 유저의 정보를 통째로 저장하는 상태 추가
+  const [userInfo, setUserInfo] = useState<any>(null);
 
 return (
-    <NavigationContainer>
+  <NavigationContainer>
       {/* 조건부 렌더링 시 initialRouteName은 생략해도 됩니다. */}
       <Stack.Navigator>
         
@@ -93,6 +97,8 @@ return (
                   setUserStatus={setUserStatus}
                   // 👇 로그아웃 후 다시 로그인할 때를 위해 함수를 넘겨줍니다.
                   setHasSelectedBranch={setHasSelectedBranch}
+                  // 👇 로그인 성공 시 백엔드에서 받은 유저 정보를 저장할 함수
+                  setUserInfo={setUserInfo}
                 />
               )}
             </Stack.Screen>
@@ -120,7 +126,7 @@ return (
             <Stack.Screen 
               name="MainTab" 
               component={MainTabNavigator} 
-              initialParams={{ setIsLoggedIn }} // 탭 내부에서 로그아웃 가능하게 함수 전달
+              initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} // 탭 내부에서 로그아웃 가능하게 함수 전달, 유저 정보 전달
               options={{ headerShown: false }} 
             />
 
@@ -128,6 +134,13 @@ return (
             <Stack.Screen 
               name="QRCheckIn" 
               component={QRCheckInScreen} 
+              options={{ headerShown: false }} 
+            />
+
+          {/* 👇 개인정보 수정 화면 추가 (탭 바를 덮도록 Stack에 추가) */}
+            <Stack.Screen 
+              name="ProfileEdit" 
+              component={ProfileEditScreen} 
               options={{ headerShown: false }} 
             />
         </>
@@ -146,6 +159,6 @@ return (
         {/* ▲ 조건부 로직 끝 ▲ */}
         
       </Stack.Navigator>
-    </NavigationContainer>
+  </NavigationContainer>
   );
 }

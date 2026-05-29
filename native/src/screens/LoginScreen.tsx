@@ -13,9 +13,10 @@ type Props = {
   setIsLoggedIn: (value: boolean) => void;
   setUserStatus: (status: string) => void;
   setHasSelectedBranch: (value: boolean) => void;
+  setUserInfo: (value: any) => void;
 };
 
-export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, setHasSelectedBranch }: Props) {
+export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, setHasSelectedBranch, setUserInfo }: Props) {
   // [퀴즈 1] 이메일(email)과 비밀번호(password)를 초기값 빈 문자열("")로 가지는 객체 상태(inputs)를 만들어보세요.
   
   // 비구조화 할당으로 inputs에서 값을 뽑아둡니다.
@@ -39,6 +40,9 @@ const handleLogin = async () => {
     setUserStatus(fetchedUserStatus);
     setIsLoggedIn(true);
     setHasSelectedBranch(false);
+
+    // ✅ [수정] 백엔드에서 받은 실제 유저 정보를 App.tsx에 저장합니다.
+    setUserInfo(data);
 
   } catch (error) {
     console.error("로그인 에러:", error);
