@@ -22,9 +22,9 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 // ---------------------------------------------------------
-// ✅ [추가 4] 실제 하단 탭의 구조를 정의하는 컴포넌트
+// ✅ [직원용] 하단 탭 네비게이터
 // ---------------------------------------------------------
-function MainTabNavigator({ route }: any) {
+function StaffTabNavigator({ route }: any) {
   // App에서 넘겨받은 전역 상태 변경 함수를 가져옵니다.
   // ✅ setUserInfo를 추가로 받아옵니다.
   const { setIsLoggedIn, userInfo, setUserInfo } = route.params;
@@ -49,6 +49,7 @@ function MainTabNavigator({ route }: any) {
       <Tab.Screen 
         name="Schedule" 
         component={ScheduleScreen} 
+        initialParams={{ userInfo }} // ✅ API 통신을 위해 유저 정보 전달
         options={{ title: '내 스케줄', tabBarIcon: () => <Text>📅</Text> }} 
       />
 
@@ -65,6 +66,48 @@ function MainTabNavigator({ route }: any) {
         component={MyPageScreen} 
         initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} // 정보 업데이트 함수까지 전달
         options={{ title: '마이페이지', tabBarIcon: () => <Text>👤</Text> }} 
+      />
+    </Tab.Navigator>
+  );
+}
+
+// ---------------------------------------------------------
+// ✅ [관리자용] 하단 탭 네비게이터
+// ---------------------------------------------------------
+function AdminTabNavigator({ route }: any) {
+  const { setIsLoggedIn, userInfo, setUserInfo } = route.params;
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        // 관리자는 탭 색상을 다르게(예: 주황/빨강) 주어 시각적으로 확실히 구분되게 합니다.
+        tabBarActiveTintColor: '#FF5A5F',   
+        tabBarInactiveTintColor: '#9CA3AF',
+        headerShown: false,                 
+      }}
+    >
+      {/* 관리자 1. 매장 관리 홈 (임시로 기존 대시보드 연결, 추후 AdminDashboardScreen으로 교체) */}
+      <Tab.Screen 
+        name="AdminHome" 
+        options={{ title: '매장 관리', tabBarIcon: () => <Text>🏪</Text> }}
+      >
+        {(props) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
+      </Tab.Screen>
+
+      {/* ✅ [추가] 관리자 2. 스케줄 관리 탭 */}
+      <Tab.Screen
+        name="AdminSchedule"
+        component={ScheduleScreen}
+        initialParams={{ userInfo }} // API 통신을 위해 유저 정보 전달
+        options={{ title: '스케줄 관리', tabBarIcon: () => <Text>📅</Text> }}
+      />
+
+      {/* 관리자 3. 설정 (마이페이지 공통 사용) */}
+      <Tab.Screen 
+        name="AdminSettings" 
+        component={MyPageScreen} 
+        initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} 
+        options={{ title: '설정', tabBarIcon: () => <Text>⚙️</Text> }} 
       />
     </Tab.Navigator>
   );
@@ -122,13 +165,23 @@ return (
             // <> </> 한 화면 안에 두 개가 있으면 빈 태그로 감싸줘야 합니다.
             <> 
             {/* [상태 2] 승인 완료 (메인 서비스 영역) */}
-            {/* ✅ [수정] DashboardScreen 대신 위에서 만든 MainTabNavigator를 연결합니다. */}
-            <Stack.Screen 
-              name="MainTab" 
-              component={MainTabNavigator} 
-              initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} // 탭 내부에서 로그아웃 가능하게 함수 전달, 유저 정보 전달
-              options={{ headerShown: false }} 
-            />
+            
+            {/* ✅ [권한별 분기] 로그인한 유저의 role을 확인하여 다른 화면을 보여줍니다. */}
+            {userInfo?.role === 'ADMIN' ? (
+              <Stack.Screen 
+                name="AdminTab" 
+                component={AdminTabNavigator} 
+                initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
+                options={{ headerShown: false }} 
+              />
+            ) : (
+              <Stack.Screen 
+                name="StaffTab" 
+                component={StaffTabNavigator} 
+                initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
+                options={{ headerShown: false }} 
+              />
+            )}
 
           {/* 👇 대시보드와 형제 위치에 QR 화면을 추가합니다. */}
             <Stack.Screen 

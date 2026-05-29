@@ -23,6 +23,9 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
   const [inputs, setInputs] = useState({username : "", password : ""});
   const { username, password } = inputs;
 
+  // ✅ [추가] 관리자/직원 로그인 선택 상태 (기본값: 직원)
+  const [loginRole, setLoginRole] = useState<'STAFF' | 'ADMIN'>('STAFF');
+
   // [퀴즈 2] 텍스트가 입력될 때마다 상태를 업데이트해주는 함수를 완성해보세요.
   // 힌트: 기존 객체를 복사하고, name 키를 가진 값을 text로 덮어씌워야 합니다.
   const handleInputChange = (name: string, text: string) => {
@@ -41,8 +44,8 @@ const handleLogin = async () => {
     setIsLoggedIn(true);
     setHasSelectedBranch(false);
 
-    // ✅ [수정] 백엔드에서 받은 실제 유저 정보를 App.tsx에 저장합니다.
-    setUserInfo(data);
+    // ✅ [수정] 로그인 시 토글에서 선택한 권한(role)을 강제로 덮어씌워 App.tsx로 전달합니다.
+    setUserInfo({ ...data, role: loginRole });
 
   } catch (error) {
     console.error("로그인 에러:", error);
@@ -53,6 +56,24 @@ const handleLogin = async () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>バイトメート</Text>
+
+      {/* ✅ [추가] 관리자 / 직원 선택 토글 UI */}
+      <View style={styles.roleToggleContainer}>
+        <TouchableOpacity 
+          style={[styles.roleButton, loginRole === 'STAFF' && styles.roleButtonActive]} 
+          onPress={() => setLoginRole('STAFF')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.roleButtonText, loginRole === 'STAFF' && styles.roleButtonTextActive]}>직원</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.roleButton, loginRole === 'ADMIN' && styles.roleButtonActive]} 
+          onPress={() => setLoginRole('ADMIN')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.roleButtonText, loginRole === 'ADMIN' && styles.roleButtonTextActive]}>관리자 (점주)</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* [퀴즈 3] 이메일 입력창: value와 onChangeText 속성을 알맞게 연결해보세요. */}
       <TextInput
@@ -100,6 +121,36 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     // 타이틀 텍스트가 화면 가로 중앙에 예쁘게 배치되도록 정렬 속성을 추가해보세요.
     textAlign: 'center' // <-- 텍스트 중앙 정렬 속성
+  },
+  // --- 토글 버튼 스타일 ---
+  roleToggleContainer: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 4,
+  },
+  roleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  roleButtonActive: {
+    backgroundColor: '#FFFFFF',
+    elevation: 2, // 안드로이드 그림자
+    shadowColor: '#000', // iOS 그림자
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  roleButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  roleButtonTextActive: {
+    color: '#8B5CF6',
   },
   input: { 
     borderWidth: 1, 

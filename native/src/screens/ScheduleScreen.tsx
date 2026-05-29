@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, Alert, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { getMyScheduleAPI, requestLeaveAPI } from '../../api/auth';
 
 // 1. 데이터의 형태(타입)를 먼저 정의해 줍니다.
 interface ScheduleItem {
@@ -27,14 +28,46 @@ const weekDates = [
   { date: '27', day: '수' }, { date: '28', day: '목' }, { date: '29', day: '금' }, { date: '30', day: '토' },
 ];
 
-const ScheduleScreen = () => {
+const ScheduleScreen = ({ route }: any) => {
+  // App.tsx에서 넘겨준 유저 정보
+  const { userInfo } = route?.params || {};
+
   // 선택된 날짜 상태 (기본값: 오늘인 26일로 세팅)
   const [selectedDate, setSelectedDate] = useState('26');
+  
+  // ✅ 백엔드에서 불러온 스케줄을 담을 상태 (기본값으로 더미 데이터를 넣어두어 화면이 비어보이지 않게 함)
+  const [scheduleData, setScheduleData] = useState<ScheduleItem[]>(dummySchedule);
+  const [loading, setLoading] = useState(false);
 
   // 휴무 신청 모달 상태 관리
   const [isLeaveModalVisible, setLeaveModalVisible] = useState(false);
   const [leaveReason, setLeaveReason] = useState('');
   const [selectedShiftForLeave, setSelectedShiftForLeave] = useState<ScheduleItem | null>(null);
+
+  // ✅ 화면이 렌더링될 때 백엔드에서 내 스케줄 가져오기
+  useEffect(() => {
+    fetchMySchedule();
+  }, [userInfo]);
+
+  const fetchMySchedule = async () => {
+    if (!userInfo) return;
+    
+    try {
+      setLoading(true);
+      // 매장명(store_id)과 아이디를 백엔드로 보냄
+      const storeId = userInfo.store_id || userInfo.brandName || 'default_store';
+      const response = await getMyScheduleAPI(userInfo.username, storeId);
+      
+      // 백엔드에 데이터가 실제로 있다면 덮어씌움
+      if (response.data && response.data.length > 0) {
+        setScheduleData(response.data);
+      }
+    } catch (error) {
+      console.log('스케줄 불러오기 에러 (임시 더미 데이터 사용 중):', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 상태에 따른 배지 스타일 렌더링 함수
   const renderStatusBadge = (status: string) => {
@@ -55,16 +88,30 @@ const ScheduleScreen = () => {
   };
 
   // 모달에서 '신청하기' 눌렀을 때 처리
-  const handleSubmitLeaveRequest = () => {
+  const handleSubmitLeaveRequest = async () => {
     if (!leaveReason.trim()) {
       Alert.alert('알림', '휴무 사유를 입력해주세요.');
       return;
     }
     
-    // TODO: 백엔드 API 연동 시 이곳에서 axios.post('/api/leave_request') 등을 호출합니다.
-    Alert.alert('신청 완료', '점주에게 휴무 승인 요청이 전송되었습니다.');
-    setLeaveModalVisible(false);
-    setSelectedShiftForLeave(null);
+    try {
+      // ✅ 백엔드 DTO(LeaveRequestVO) 규격에 맞춰 데이터 전송
+      await requestLeaveAPI({
+        shift_id: selectedShiftForLeave!.id,
+        user_id: userInfo?.username || 'unknown',
+        reason: leaveReason
+      });
+
+      Alert.alert('신청 완료', '점주에게 휴무 승인 요청이 전송되었습니다.');
+      setLeaveModalVisible(false);
+      setSelectedShiftForLeave(null);
+      
+      // 신청 완료 후 스케줄 새로고침
+      fetchMySchedule();
+    } catch (error) {
+      console.error('휴무 신청 에러:', error);
+      Alert.alert('신청 실패', '휴무 신청 중 오류가 발생했습니다.');
+    }
   };
 
   // 근무 카드 컴포넌트
@@ -139,13 +186,17 @@ const ScheduleScreen = () => {
       </View>
 
       {/* 근무 카드 리스트 */}
-      <FlatList
-        data={dummySchedule}
-        renderItem={renderShiftCard}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color="#2563EB" /></View>
+      ) : (
+        <FlatList
+          data={scheduleData} // 더미 대신 상태 데이터 사용
+          renderItem={renderShiftCard}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {/* 휴무 신청 사유 입력 모달 */}
       <Modal

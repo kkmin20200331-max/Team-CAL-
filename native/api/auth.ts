@@ -31,3 +31,11 @@ export const signupAPI = (data: {
 // ✅ [추가] 개인정보 수정 API
 export const updateProfileAPI = (data: any) => 
   API.put(`/users`, data);
+
+// ✅ [추가] 내 스케줄 조회 API (직원용)
+export const getMyScheduleAPI = (userId: string, storeId: string) => 
+  API.get(`/shifts/my?user_id=${userId}&store_id=${storeId}`);
+
+// ✅ [추가] 휴무 신청 API
+export const requestLeaveAPI = (data: { shift_id: string; user_id: string; reason: string }) => 
+  API.post(`/leave-requests`, data);
