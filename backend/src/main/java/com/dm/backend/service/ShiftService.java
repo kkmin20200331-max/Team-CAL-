@@ -36,9 +36,9 @@ public class ShiftService {
         );
 
 
-        if(conflict == 0){
+        if (conflict == 0) {
             shiftmapper.registerShift(shiftVO);
-        }else{
+        } else {
             throw new RuntimeException("이미 해당 시간에 근무가 존재합니다.");
         }
     }
@@ -57,7 +57,7 @@ public class ShiftService {
                         shiftVO.getEnd_at()
                 );
 
-        if(conflict > 0){
+        if (conflict > 0) {
             throw new RuntimeException("이미 해당 시간에 근무가 존재합니다.");
         }
 
@@ -121,5 +121,9 @@ public class ShiftService {
                 }
             }
         }
+    }
+
+    public List<ShiftVO> getMyShiftList(String user_id, String start_date, String end_date) {
+        return shiftmapper.getMyShiftList(user_id, start_date, end_date);
     }
 }
