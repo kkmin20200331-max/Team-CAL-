@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Modal, Pressable, Switch } from 'react-native';
 
 // ✅ navigation 객체를 받아오도록 파라미터 추가
 const MyPageScreen = ({ route, navigation }: any) => {
@@ -13,6 +13,9 @@ const MyPageScreen = ({ route, navigation }: any) => {
   // ✅ 언어 설정 상태 관리
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [language, setLanguage] = useState('한국어'); // 기본값
+
+  // ✅ 알림 설정 상태 관리 (기본값: 켜짐)
+  const [isPushEnabled, setIsPushEnabled] = useState(true);
 
   // 백엔드에서 데이터가 아직 전달되지 않았을 경우를 대비한 안전장치(Fallback)
   const name = userInfo?.name || '사용자';
@@ -29,6 +32,23 @@ const MyPageScreen = ({ route, navigation }: any) => {
       </View>
       <Text style={styles.menuArrow}>›</Text>
     </TouchableOpacity>
+  );
+
+  // 스위치(토글)가 있는 메뉴 항목을 그리기 위한 함수
+  const renderSwitchItem = (icon: string, title: string, value: boolean, onValueChange: (val: boolean) => void) => (
+    <View style={styles.menuItem}>
+      <View style={styles.menuLeft}>
+        <Text style={styles.menuIcon}>{icon}</Text>
+        <Text style={styles.menuTitle}>{title}</Text>
+      </View>
+      <Switch
+        trackColor={{ false: '#D1D5DB', true: '#34C759' }} // 꺼졌을 때 회색, 켜졌을 때 초록색
+        thumbColor={'#FFFFFF'}
+        ios_backgroundColor="#D1D5DB"
+        onValueChange={onValueChange}
+        value={value}
+      />
+    </View>
   );
 
   return (
@@ -63,7 +83,8 @@ const MyPageScreen = ({ route, navigation }: any) => {
           {renderMenuItem('🌙', `화면 모드 (${themeMode})`, () => setThemeModalVisible(true))}
           {/* ✅ 언어 설정도 모달창 연결 */}
           {renderMenuItem('🌐', `언어 설정 (${language})`, () => setLanguageModalVisible(true))}
-          {renderMenuItem('🔔', '알림 설정', () => {})}
+          {/* ✅ 알림 설정은 스위치 UI로 연결 */}
+          {renderSwitchItem('🔔', '앱 푸시 알림', isPushEnabled, setIsPushEnabled)}
         </View>
 
         {/* 로그아웃 버튼 */}
