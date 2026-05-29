@@ -158,6 +158,8 @@ return (
               <BranchSelectScreen 
                 navigation={navigation} 
                 setHasSelectedBranch={setHasSelectedBranch} 
+                userInfo={userInfo}
+                setUserInfo={setUserInfo}
               />
             )}
           </Stack.Screen>

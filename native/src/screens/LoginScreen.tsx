@@ -42,7 +42,9 @@ const handleLogin = async () => {
 
     setUserStatus(fetchedUserStatus);
     setIsLoggedIn(true);
-    setHasSelectedBranch(false);
+    
+    // ✅ [수정] 백엔드에서 받아온 데이터(data)에 이미 지점 정보가 있는지 확인하여, 있으면 지점 선택을 건너뜁니다.
+    setHasSelectedBranch(Boolean(data.store_id || data.branchName || data.brandName));
 
     // ✅ [수정] 로그인 시 토글에서 선택한 권한(role)을 강제로 덮어씌워 App.tsx로 전달합니다.
     setUserInfo({ ...data, role: loginRole });
