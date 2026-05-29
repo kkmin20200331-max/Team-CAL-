@@ -10,118 +10,185 @@ import java.util.List;
 @Mapper
 public interface SubstituteMapper {
 
-    @Insert("""
-                insert into substitute_post
-                values(
-                    #{id},
-                    #{shift_id},
-                    #{store_id},
-                    #{requester_user_id},
-                    #{reason},
-                    #{status},
-                    #{created_at},
-                    #{closed_at}
-                )
-            """)
-    void createPost(SubstitutePostVO postVO);
+    // =========================
+    // [공통]
+    // =========================
 
+    // 모집글 목록 조회
     @Select("""
-                select *
-                from substitute_post
-                where store_id = #{store_id}
-                order by created_at desc
+            SELECT *
+            FROM substitute_post
+            WHERE store_id = #{store_id}
+            ORDER BY created_at DESC
             """)
     List<SubstitutePostVO> getPostList(String store_id);
 
-    @Insert("""
-                insert into substitute_application
-                values(
-                    #{id},
-                    #{substitute_post_id},
-                    #{applicant_user_id},
-                    #{message},
-                    #{status},
-                    #{applied_at}
-                )
-            """)
-    void apply(SubstituteApplicationVO applicationVO);
 
+    // =========================
+    // [관리자]
+    // =========================
+
+    // 특정 모집글 지원자 목록 조회
     @Select("""
-                select *
-                from substitute_application
-                where substitute_post_id = #{postId}
+            SELECT *
+            FROM substitute_application
+            WHERE substitute_post_id = #{post_id}
+            ORDER BY applied_at
             """)
-    List<SubstituteApplicationVO> getApplicationList(String post_id);
-
-    @Update("""
-                update shift
-                set status = #{status}
-                where id = #{shift_id}
-            """)
-    void updateShiftStatus(
-            @Param("shiftId") String shift_id,
-            @Param("status") String status
+    List<SubstituteApplicationVO> getApplicationList(
+            String post_id
     );
 
+    // 근무자 변경
     @Update("""
-                update shift
-                set user_id = #{user_id}
-                where id = #{shift_id}
+            UPDATE shift
+            SET user_id = #{user_id}
+            WHERE id = #{shift_id}
             """)
     void updateShiftUser(
             @Param("shift_id") String shift_id,
             @Param("user_id") String user_id
     );
 
+    // 근무 상태 변경
+    @Update("""
+            UPDATE shift
+            SET status = #{status}
+            WHERE id = #{shift_id}
+            """)
+    void updateShiftStatus(
+            @Param("shift_id") String shift_id,
+            @Param("status") String status
+    );
+
+    // 대타 승인 이력 저장
     @Insert("""
-                insert into substitute_history
-                values(
-                    #{id},
-                    #{shift_id},
-                    #{store_id},
-                    #{original_user_id},
-                    #{substitute_user_id},
-                    #{approved_by},
-                    #{approved_at}
-                )
+            INSERT INTO substitute_history
+            VALUES (
+                #{id},
+                #{shift_id},
+                #{store_id},
+                #{original_user_id},
+                #{substitute_user_id},
+                #{approved_by},
+                #{approved_at}
+            )
             """)
     void insertHistory(SubstituteHistoryVO historyVO);
 
+    // 모집글 취소
     @Update("""
-                update substitute_application
-                set status = 'CANCELLED'
-                where id = #{id}
+            UPDATE substitute_post
+            SET status = 'CANCELLED',
+                closed_at = SYSTIMESTAMP
+            WHERE id = #{post_id}
             """)
-    void cancelApplication(String id);
-
-    @Select("""
-                select *
-                from substitute_application
-                where applicant_user_id = #{user_id}
-                order by applied_at desc
-            """)
-    List<SubstituteApplicationVO> getMyApplications(String user_id);
+    void cancelPost(String post_id);
 
     // 모집글에 연결된 shift 조회
     @Select("""
-        select shift_id
-        from substitute_post
-        where id = #{post_id}
-    """)
-    String getShiftIdByPostId(
-            String post_id
-    );
+            SELECT shift_id
+            FROM substitute_post
+            WHERE id = #{post_id}
+            """)
+    String getShiftIdByPostId(String post_id);
 
-    // 모집글 취소
+
+    // =========================
+    // [직원]
+    // =========================
+
+    // 모집글 생성
+    @Insert("""
+            INSERT INTO substitute_post
+            VALUES(
+                #{id},
+                #{shift_id},
+                #{store_id},
+                #{requester_user_id},
+                #{reason},
+                #{status},
+                #{created_at},
+                #{closed_at}
+            )
+            """)
+    void createPost(SubstitutePostVO postVO);
+
+    // 대타 지원
+    @Insert("""
+            INSERT INTO substitute_application
+            VALUES(
+                #{id},
+                #{substitute_post_id},
+                #{applicant_user_id},
+                #{message},
+                #{status},
+                #{applied_at}
+            )
+            """)
+    void apply(SubstituteApplicationVO applicationVO);
+
+    // 지원 단건 조회
+    @Select("""
+            SELECT *
+            FROM substitute_application
+            WHERE id = #{id}
+            """)
+    SubstituteApplicationVO getApplication(String id);
+
+    // 지원 취소
     @Update("""
-        update substitute_post
-        set status = 'CANCELLED',
-            closed_at = systimestamp
-        where id = #{post_id}
-    """)
-    void cancelPost(
-            String post_id
+            UPDATE substitute_application
+            SET status = 'CANCELLED'
+            WHERE id = #{id}
+            """)
+    void cancelApplication(String id);
+
+    // 내 지원 내역 조회
+    @Select("""
+            SELECT *
+            FROM substitute_application
+            WHERE applicant_user_id = #{user_id}
+            ORDER BY applied_at DESC
+            """)
+    List<SubstituteApplicationVO> getMyApplications(
+            @Param("user_id") String user_id
     );
 
+    // 내 지원내역 상태별 조회
+    @Select("""
+            SELECT *
+            FROM substitute_application
+            WHERE applicant_user_id = #{user_id}
+            AND status = #{status}
+            ORDER BY applied_at DESC
+            """)
+    List<SubstituteApplicationVO> getMyApplicationsByStatus(
+            @Param("user_id") String user_id,
+            @Param("status") String status
+    );
 
+    // 내가 작성한 모집글 조회
+    @Select("""
+            SELECT *
+            FROM substitute_post
+            WHERE requester_user_id = #{user_id}
+            ORDER BY created_at DESC
+            """)
+    List<SubstitutePostVO> getMyPosts(
+            @Param("user_id") String user_id
+    );
+
+    // 내가 작성한 모집글 상태별 조회
+    @Select("""
+            SELECT *
+            FROM substitute_post
+            WHERE requester_user_id = #{user_id}
+            AND status = #{status}
+            ORDER BY created_at DESC
+            """)
+    List<SubstitutePostVO> getMyPostsByStatus(
+            @Param("user_id") String user_id,
+            @Param("status") String status
+    );
 }

@@ -16,15 +16,11 @@ public class SubstituteC {
     @Autowired
     private SubstituteService substituteService;
 
-    // 모집글 생성
-    @PostMapping
-    public void createPost(
-            @RequestBody SubstitutePostVO postVO
-    ) {
-        substituteService.createPost(postVO);
-    }
+    // =========================
+    // [공통]
+    // =========================
 
-    // 모집글 목록
+    // 모집글 목록 조회
     @GetMapping
     public List<SubstitutePostVO> getPostList(
             @RequestParam String store_id
@@ -32,24 +28,21 @@ public class SubstituteC {
         return substituteService.getPostList(store_id);
     }
 
-    // 지원
-    @PostMapping("/apply")
-    public void apply(
-            @RequestBody SubstituteApplicationVO applicationVO
-    ) {
-        substituteService.apply(applicationVO);
-    }
 
-    // 지원자 조회
-    @GetMapping("/application")
+    // =========================
+    // [관리자]
+    // =========================
+
+    // 특정 모집글 지원자 조회
+    @GetMapping("/manager")
     public List<SubstituteApplicationVO> getApplicationList(
             @RequestParam String post_id
     ) {
         return substituteService.getApplicationList(post_id);
     }
 
-    // 관리자 승인
-    @PutMapping
+    // 대타 승인
+    @PutMapping("/manager")
     public void approveSubstitute(
             @RequestParam String shift_id,
             @RequestParam String selected_user_id,
@@ -62,28 +55,64 @@ public class SubstituteC {
         );
     }
 
-    //대타 신청 취소
-    @DeleteMapping("/application")
-    public void cancelApplication(
-            @RequestParam String id
-    ) {
-        substituteService.cancelApplication(id);
-    }
-
-    //내 대타 지원 목록 조회
-    @GetMapping("/my-application")
-    public List<SubstituteApplicationVO> getMyApplications(
-            @RequestParam String user_id
-    ) {
-        return substituteService.getMyApplications(user_id);
-    }
-
     // 모집글 취소
-    @PutMapping("/cancel")
+    @DeleteMapping("/manager")
     public void cancelPost(
             @RequestParam String post_id
     ) {
         substituteService.cancelPost(post_id);
     }
 
+
+    // =========================
+    // [직원]
+    // =========================
+
+    // 모집글 등록
+    @PostMapping("/staff")
+    public void createPost(
+            @RequestBody SubstitutePostVO postVO
+    ) {
+        substituteService.createPost(postVO);
+    }
+
+    // 대타 지원
+    @PostMapping("/staff/apply")
+    public void apply(
+            @RequestBody SubstituteApplicationVO applicationVO
+    ) {
+        substituteService.apply(applicationVO);
+    }
+
+    // 지원 취소
+    @DeleteMapping("/staff")
+    public void cancelApplication(
+            @RequestParam String id
+    ) {
+        substituteService.cancelApplication(id);
+    }
+
+    // 내 지원 내역 조회
+    @GetMapping("/staff")
+    public List<SubstituteApplicationVO> getMyApplications(
+            @RequestParam String user_id,
+            @RequestParam(required = false) String status
+    ) {
+        return substituteService.getMyApplications(
+                user_id,
+                status
+        );
+    }
+
+    // 내가 등록한 모집글 조회
+    @GetMapping("/staff/post")
+    public List<SubstitutePostVO> getMyPosts(
+            @RequestParam String user_id,
+            @RequestParam(required = false) String status
+    ) {
+        return substituteService.getMyPosts(
+                user_id,
+                status
+        );
+    }
 }
