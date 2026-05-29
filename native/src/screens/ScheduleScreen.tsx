@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, Alert, Modal, TextInput } from 'react-native';
 
 // 1. 데이터의 형태(타입)를 먼저 정의해 줍니다.
 interface ScheduleItem {
@@ -31,6 +31,11 @@ const ScheduleScreen = () => {
   // 선택된 날짜 상태 (기본값: 오늘인 26일로 세팅)
   const [selectedDate, setSelectedDate] = useState('26');
 
+  // 휴무 신청 모달 상태 관리
+  const [isLeaveModalVisible, setLeaveModalVisible] = useState(false);
+  const [leaveReason, setLeaveReason] = useState('');
+  const [selectedShiftForLeave, setSelectedShiftForLeave] = useState<ScheduleItem | null>(null);
+
   // 상태에 따른 배지 스타일 렌더링 함수
   const renderStatusBadge = (status: string) => {
     switch(status) {
@@ -40,6 +45,26 @@ const ScheduleScreen = () => {
       case 'OFF': return <View style={[styles.badge, styles.badgeOff]}><Text style={styles.badgeTextOff}>휴무</Text></View>;
       default: return null;
     }
+  };
+
+  // 휴무 신청 버튼 클릭 시 모달 열기
+  const handleOpenLeaveModal = (item: ScheduleItem) => {
+    setSelectedShiftForLeave(item);
+    setLeaveReason('');
+    setLeaveModalVisible(true);
+  };
+
+  // 모달에서 '신청하기' 눌렀을 때 처리
+  const handleSubmitLeaveRequest = () => {
+    if (!leaveReason.trim()) {
+      Alert.alert('알림', '휴무 사유를 입력해주세요.');
+      return;
+    }
+    
+    // TODO: 백엔드 API 연동 시 이곳에서 axios.post('/api/leave_request') 등을 호출합니다.
+    Alert.alert('신청 완료', '점주에게 휴무 승인 요청이 전송되었습니다.');
+    setLeaveModalVisible(false);
+    setSelectedShiftForLeave(null);
   };
 
   // 근무 카드 컴포넌트
@@ -71,7 +96,7 @@ const ScheduleScreen = () => {
         {item.status === 'SCHEDULED' && (
           <TouchableOpacity 
             style={styles.leaveButton}
-            onPress={() => Alert.alert('휴무 신청', '점주에게 휴무 승인 요청을 하시겠습니까?')}
+            onPress={() => handleOpenLeaveModal(item)}
           >
             <Text style={styles.leaveButtonText}>휴무 신청 / 대타 구하기</Text>
           </TouchableOpacity>
@@ -121,6 +146,44 @@ const ScheduleScreen = () => {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
+
+      {/* 휴무 신청 사유 입력 모달 */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isLeaveModalVisible}
+        onRequestClose={() => setLeaveModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>휴무 신청 / 대타 구하기</Text>
+            {selectedShiftForLeave && (
+              <Text style={styles.modalSubtitle}>
+                {selectedShiftForLeave.fullDate} ({selectedShiftForLeave.day}) {selectedShiftForLeave.time}
+              </Text>
+            )}
+            
+            <TextInput
+              style={styles.reasonInput}
+              placeholder="휴무 사유를 상세히 적어주세요 (예: 병원 진료, 학교 시험 등)"
+              placeholderTextColor="#9CA3AF"
+              value={leaveReason}
+              onChangeText={setLeaveReason}
+              multiline={true}
+              textAlignVertical="top"
+            />
+            
+            <View style={styles.modalButtonGroup}>
+              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setLeaveModalVisible(false)}>
+                <Text style={styles.modalCancelText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSubmitButton} onPress={handleSubmitLeaveRequest}>
+                <Text style={styles.modalSubmitText}>신청하기</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -198,7 +261,19 @@ const styles = StyleSheet.create({
     borderRadius: 8, 
     alignItems: 'center' 
   },
-  leaveButtonText: { color: '#374151', fontSize: 14, fontWeight: '600' }
+  leaveButtonText: { color: '#374151', fontSize: 14, fontWeight: '600' },
+  
+  // 모달 스타일
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '85%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 8, textAlign: 'center' },
+  modalSubtitle: { fontSize: 14, color: '#6B7280', marginBottom: 20, textAlign: 'center' },
+  reasonInput: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 12, height: 100, fontSize: 15, color: '#111827', backgroundColor: '#F9FAFB', marginBottom: 20 },
+  modalButtonGroup: { flexDirection: 'row', gap: 12 },
+  modalCancelButton: { flex: 1, backgroundColor: '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  modalCancelText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
+  modalSubmitButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  modalSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' }
 });
 
 export default ScheduleScreen;

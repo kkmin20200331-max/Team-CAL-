@@ -7,10 +7,15 @@ type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 type Props = {
   navigation: DashboardScreenNavigationProp;
   setIsLoggedIn?: (value: boolean) => void; 
+  userInfo?: any; // App.tsx에서 전달받은 유저 정보
 };
 
-const DashboardScreen = ({ navigation, setIsLoggedIn }: Props) => {
+const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   
+  // 백엔드에서 전달받은 정보 파싱 (없을 경우 기본값)
+  const userName = userInfo?.name || '사용자';
+  const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
+
   const handleNotification = () => navigation.navigate('Notifications');
   const handleQRCheckIn = () => navigation.navigate('QRCheckIn');
 
@@ -34,6 +39,12 @@ const DashboardScreen = ({ navigation, setIsLoggedIn }: Props) => {
       {/* 2. 메인 컨텐츠 영역 */}
       <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
         
+        {/* ▼ 환영 인사 영역 추가 ▼ */}
+        <View style={styles.greetingSection}>
+          <Text style={styles.greetingText}>안녕하세요, {userName} 님! 👋</Text>
+          <Text style={styles.greetingSubText}>{storeName} | {userInfo?.role === 'ADMIN' ? '관리자' : '일반 직원'}</Text>
+        </View>
+
         {/* ▼ 오늘의 근무 카드 시작 ▼ */}
         <View style={styles.card}>
           {/* 타이틀 행 */}
@@ -51,7 +62,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn }: Props) => {
           </View>
           <View style={styles.workInfoRow}>
             <Text style={styles.infoIcon}>📍</Text>
-            <Text style={styles.infoText}>컴포즈 미금점</Text>
+            <Text style={styles.infoText}>{storeName}</Text>
           </View>
 
           {/* 구분선 */}
@@ -182,6 +193,22 @@ const styles = StyleSheet.create({
     padding: 16, // 스크롤 뷰 전체의 안쪽 여백
   },
   
+  // --- 환영 인사 스타일 ---
+  greetingSection: {
+    marginBottom: 20,
+  },
+  greetingText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  greetingSubText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+
   // --- 카드 컴포넌트 스타일 ---
   card: {
     backgroundColor: '#FFFFFF',

@@ -42,7 +42,7 @@ function MainTabNavigator({ route }: any) {
         name="Home" 
         options={{ title: '홈', tabBarIcon: () => <Text>🏠</Text> }}
       >
-        {(props) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} />}
+        {(props) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
       </Tab.Screen>
 
       {/* 2. 내 스케줄 탭 */}
