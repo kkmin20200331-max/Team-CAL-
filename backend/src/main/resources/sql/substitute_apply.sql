@@ -6,4 +6,5 @@ CREATE TABLE SUBSTITUTE_APPLY (
                                   applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 INSERT INTO substitute_apply VALUES ('SA_Park_20260525', 'SR_Lee_20260525', 'U9L0mN1o_P2qR3sT4uV53', 'APPLIED', CURRENT_TIMESTAMP);
+
 select * from substitute_apply;
