@@ -76,5 +76,4 @@ insert into users (
            'GUEST',
            'PENDING' );
 
-select *
-  from users;
+select * from users;
