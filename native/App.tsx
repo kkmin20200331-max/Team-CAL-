@@ -16,6 +16,7 @@ import MyPageScreen from './src/screens/MyPageScreen';
 import NotificationScreen from './src/screens/NotificationScreen';
 import ScheduleScreen from './src/screens/ScheduleScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
+import BoardScreen from './src/screens/BoardScreen'; // ✅ [추가] 게시판 화면 불러오기
 
 // ✅ [정리] 중복 선언된 Stack은 하나만 남기고, Tab 네비게이터를 생성합니다.
 const Stack = createStackNavigator();
@@ -196,6 +197,13 @@ return (
             <Stack.Screen 
               name="ProfileEdit" 
               component={ProfileEditScreen} 
+              options={{ headerShown: false }} 
+            />
+
+          {/* 👇 게시판 전체 보기 화면 추가 (탭 바를 덮도록 Stack에 추가) */}
+            <Stack.Screen 
+              name="Board" 
+              component={BoardScreen} 
               options={{ headerShown: false }} 
             />
         </>

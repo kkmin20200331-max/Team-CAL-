@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator, Modal } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getMyScheduleAPI } from '../../api/auth';
 
@@ -20,6 +20,23 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   // ✅ 오늘의 근무 상태 관리
   const [todayShift, setTodayShift] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  // ✅ 이번 주 통계 상태 관리
+  const [weeklyStats, setWeeklyStats] = useState({ totalHours: 0, expectedSalary: 0 });
+
+  // ✅ 게시판 데이터 및 모달 상태 관리
+  const [isPostModalVisible, setPostModalVisible] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+
+  const dummyPosts = [
+    { id: '1', title: '가을 시즌 신메뉴 출시 안내', date: '2026.08.25', content: '가을 시즌 신메뉴가 곧 출시됩니다!\n\n레시피 및 상세 매뉴얼은 추후 관리자가 업로드 할 예정이니 꼭 확인해 주세요.', badge: 'NEW' },
+    { id: '2', title: '보건증 만료 재확인 요청', date: '2026.05.28', content: '안녕하세요, 점주입니다.\n\n최근 보건증 만료일이 도래하는 직원분들이 많습니다. 각자 마이페이지에서 보건증 유효기간을 확인하시고, 만료 전 반드시 보건소에 방문하시어 갱신해 주시기 바랍니다.', badge: null },
+    { id: '3', title: '김선민 CAL 입사 경축', date: '2026.09.20', content: '새로운 팀원 김선민님이 CAL에 합류하셨습니다!\n모두 반갑게 인사하며 따뜻한 환영 부탁드립니다. 🎉', badge: '중요!' },
+  ];
+
+  const handleOpenPost = (post: any) => {
+    setSelectedPost(post);
+    setPostModalVisible(true);
+  };
 
   useEffect(() => {
     fetchTodaySchedule();
@@ -36,12 +53,33 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
 
     // 🚨 UI 테스트를 위해 임시로 사용할 더미 데이터
     const dummySchedule = [
+      { id: '0', fullDate: '2026-05-31', date: '31', day: '일', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
       { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
       { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
       { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: '휴무', storeName: '-', status: 'OFF' },
-      { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '17:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
+      { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '14:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
       { id: '5', fullDate: '2026-06-06', date: '06', day: '금', time: '14:00 - 22:00', storeName: storeName, status: 'SUBSTITUTE_REQ' },
     ];
+    
+    // ✅ 스케줄 더미 데이터를 기반으로 이번 주 총 근무 시간과 예상 급여를 자동 계산합니다.
+    let calculatedMinutes = 0;
+    dummySchedule.forEach(item => {
+      if (item.status !== 'OFF' && item.time && item.time.includes(' - ')) {
+        const [start, end] = item.time.split(' - ');
+        const [sH, sM] = start.split(':').map(Number);
+        const [eH, eM] = end.split(':').map(Number);
+        
+        let diff = (eH * 60 + eM) - (sH * 60 + sM);
+        if (diff < 0) diff += 24 * 60; // 새벽을 넘기는 근무 (예: 22:00 - 02:00) 처리
+        calculatedMinutes += diff;
+      }
+    });
+
+    const calculatedHours = Math.round((calculatedMinutes / 60) * 10) / 10; // 소수점 첫째 자리까지만 표시
+    const dummyStats = {
+      totalHours: calculatedHours,
+      expectedSalary: calculatedHours * 10320 // 2026년 최저시급 10,320원 적용 (원하는 시급으로 변경 가능)
+    };
 
     try {
       const storeId = userInfo.store_id || userInfo.brandName || 'default_store';
@@ -75,6 +113,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
       }
       
       setTodayShift(shift ? { ...shift } : null);
+      setWeeklyStats(dummyStats); // ✅ 나중에 이 부분을 API에서 받아온 값(response.data)으로 교체하면 끝납니다!
       setLoading(false);
     }
   };
@@ -179,7 +218,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
           
           {/* 왼쪽: 이번 주 근무 시간 */}
           <View style={styles.statHalf}>
-            <Text style={styles.statValue}>18.5</Text>
+            <Text style={styles.statValue}>{weeklyStats.totalHours}</Text>
             <Text style={styles.statLabel}>이번 주 근무 시간</Text>
           </View>
 
@@ -188,7 +227,8 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
 
           {/* 오른쪽: 이번 주 예상 급여 */}
           <View style={styles.statHalf}>
-            <Text style={styles.statValue}>166,500</Text>
+            {/* 💡 .toLocaleString()을 붙이면 166500이 자동으로 166,500(콤마 추가)으로 예쁘게 바뀝니다. */}
+            <Text style={styles.statValue}>{weeklyStats.expectedSalary.toLocaleString()}</Text>
             <Text style={styles.statLabel}>이번 주 예상급여</Text>
           </View>
 
@@ -215,50 +255,60 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
         </View>
         {/* ▲ 대타 요청 알림 카드 끝 ▲ */}
 
-        {/* ▼ 최근 공지사항 영역 ▼ */}
+        {/* ▼ 사내 게시판 영역 ▼ */}
         <View style={styles.noticeSection}>
-          <Text style={styles.sectionTitle}>최근 공지사항</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>사내 게시판</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Board')}>
+              <Text style={styles.moreText}>더보기</Text>
+            </TouchableOpacity>
+          </View>
           
-          <TouchableOpacity style={styles.noticeItem}>
-            <View style={styles.noticeTextContainer}>
-              <Text style={styles.noticeItemTitle} numberOfLines={1}>
-                가을 시즌 신메뉴 출시 안내
-              </Text>
-              <View style={styles.newBadge}>
-                <Text style={styles.newBadgeText}>NEW</Text>
-              </View>
-            </View>
-            <Text style={styles.noticeDate}>2026.08.25</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.noticeDivider} />
-
-          <TouchableOpacity style={styles.noticeItem}>
-            <View style={styles.noticeTextContainer}>
-              <Text style={styles.noticeItemTitle} numberOfLines={1}>
-                보건증 만료 재확인 요청
-              </Text>
-            </View>
-            <Text style={styles.noticeDate}>2026.05.28</Text>
-          </TouchableOpacity>
-
-          <View style={styles.noticeDivider} />
-
-          <TouchableOpacity style={styles.noticeItem}>
-            <View style={styles.noticeTextContainer}>
-              <Text style={styles.noticeItemTitle} numberOfLines={1}>
-                김선민 CAL 입사 경축
-              </Text>
-              <View style={styles.newBadge}>
-                <Text style={styles.newBadgeText}>중요!</Text>
-              </View>
-            </View>
-            <Text style={styles.noticeDate}>2026.09.20</Text>
-          </TouchableOpacity>
+          {dummyPosts.map((post, index) => (
+            <React.Fragment key={post.id}>
+              <TouchableOpacity style={styles.noticeItem} onPress={() => handleOpenPost(post)} activeOpacity={0.7}>
+                <View style={styles.noticeTextContainer}>
+                  <Text style={styles.noticeItemTitle} numberOfLines={1}>{post.title}</Text>
+                  {post.badge && (
+                    <View style={styles.newBadge}><Text style={styles.newBadgeText}>{post.badge}</Text></View>
+                  )}
+                </View>
+                <Text style={styles.noticeDate}>{post.date}</Text>
+              </TouchableOpacity>
+              {index < dummyPosts.length - 1 && <View style={styles.noticeDivider} />}
+            </React.Fragment>
+          ))}
         </View>
-        {/* ▲ 최근 공지사항 영역 끝 ▲ */}
+        {/* ▲ 사내 게시판 영역 끝 ▲ */}
 
       </ScrollView>
+
+      {/* ✅ 게시글 상세 보기 팝업(모달) */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isPostModalVisible}
+        onRequestClose={() => setPostModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.postModalContent}>
+            {selectedPost && (
+              <>
+                <Text style={styles.postModalTitle}>{selectedPost.title}</Text>
+                <Text style={styles.postModalDate}>{selectedPost.date}</Text>
+                <View style={styles.postModalDivider} />
+                <ScrollView style={styles.postModalBody} showsVerticalScrollIndicator={false}>
+                  <Text style={styles.postModalText}>{selectedPost.content}</Text>
+                </ScrollView>
+                <TouchableOpacity style={styles.closeModalButton} onPress={() => setPostModalVisible(false)}>
+                  <Text style={styles.closeModalButtonText}>닫기</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -502,11 +552,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  moreText: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 16,
   },
   noticeItem: {
     flexDirection: 'row',
@@ -544,6 +604,17 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#F3F4F6',
   },
+
+  // --- 게시글 상세 모달 스타일 ---
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  postModalContent: { width: '85%', maxHeight: '70%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  postModalTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 8 },
+  postModalDate: { fontSize: 13, color: '#6B7280', marginBottom: 16 },
+  postModalDivider: { height: 1, backgroundColor: '#E5E7EB', marginBottom: 16 },
+  postModalBody: { marginBottom: 20 },
+  postModalText: { fontSize: 15, color: '#374151', lineHeight: 24 },
+  closeModalButton: { backgroundColor: '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  closeModalButtonText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
 });
 
 export default DashboardScreen;

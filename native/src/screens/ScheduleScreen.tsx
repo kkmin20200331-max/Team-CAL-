@@ -15,11 +15,11 @@ interface ScheduleItem {
 
 // 2. 이번 주 근무 더미 데이터
 const dummySchedule: ScheduleItem[] = [
-  { id: '1', fullDate: '2026-05-31', date: '31', day: '월', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'COMPLETED' },
+  { id: '1', fullDate: '2026-05-31', date: '31', day: '일', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'COMPLETED' },
   { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'COMPLETED' },
   { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SCHEDULED' },
   { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: '휴무', storeName: '-', status: 'OFF' },
-  { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '17:00 - 22:00', storeName: '컴포즈 미금점', status: 'SCHEDULED' },
+  { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SCHEDULED' },
   { id: '5', fullDate: '2026-06-06', date: '06', day: '금', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SUBSTITUTE_REQ' },
 ];
 
