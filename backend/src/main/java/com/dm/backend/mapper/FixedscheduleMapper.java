@@ -22,6 +22,18 @@ public interface FixedscheduleMapper {
             String id
     );
 
+    //급여 관리에 필요한 개근 조회
+    @Select("""
+                SELECT *
+                FROM fixed_schedule
+                WHERE user_id = #{user_id}
+                AND store_id = #{store_id}
+                AND active = 'Y'
+            """)
+    List<FixedscheduleVO> getActiveSchedule(
+            @Param("user_id") String user_id,
+            @Param("store_id") String store_id
+    );
 
     // =========================
     // [관리자]

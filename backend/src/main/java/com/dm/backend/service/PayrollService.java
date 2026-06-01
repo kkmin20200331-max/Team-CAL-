@@ -1,18 +1,18 @@
 package com.dm.backend.service;
 
+import com.dm.backend.mapper.FixedscheduleMapper;
 import com.dm.backend.mapper.ShiftMapper;
 import com.dm.backend.mapper.StoreMemberMapper;
+import com.dm.backend.vo.FixedscheduleVO;
 import com.dm.backend.vo.PayrollResultVO;
 import com.dm.backend.vo.ShiftVO;
 import com.dm.backend.vo.StoreMemberVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
+import java.time.*;
+import java.time.temporal.WeekFields;
+import java.util.*;
 
 @Service
 public class PayrollService {
@@ -23,86 +23,330 @@ public class PayrollService {
     @Autowired
     private StoreMemberMapper storeMemberMapper;
 
-    public PayrollResultVO calculateMonthlyPay(String user_id, String store_id, Date start, Date end) {
+    @Autowired
+    private FixedscheduleMapper fixedscheduleMapper;
 
-        StoreMemberVo payInfo = storeMemberMapper.getPayInfo(user_id, store_id);
-        List<ShiftVO> shifts = shiftMapper.getMonthlyShift(user_id, start, end);
+    public PayrollResultVO calculatePayroll(
+            String user_id,
+            String store_id,
+            Date start_date,
+            Date end_date
+    ) {
 
-        double hourlyRate = payInfo.getPay_amount();
+        StoreMemberVo payInfo =
+                storeMemberMapper.getPayInfo(
+                        user_id,
+                        store_id
+                );
+
+        List<ShiftVO> shifts =
+                shiftMapper.getMonthlyShift(
+                        user_id,
+                        start_date,
+                        end_date
+                );
+
+        List<FixedscheduleVO> schedules =
+                fixedscheduleMapper.getActiveSchedule(
+                        user_id,
+                        store_id
+                );
+
+        double pay_amount =
+                payInfo.getPay_amount();
+
+        String pay_type =
+                payInfo.getPay_type();
 
         double baseHours = 0;
+        double basePay = 0;
         double overtimePay = 0;
         double nightPay = 0;
+        double weeklyPay = 0;
 
-        for (ShiftVO s : shifts) {
+        Map<Integer, List<ShiftVO>> weekMap =
+                new HashMap<>();
+
+        // =========================
+        // 주차별 그룹핑
+        // =========================
+
+        for (ShiftVO shift : shifts) {
+
+            LocalDate workDate =
+                    shift.getWork_date()
+                            .toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate();
+
+            int week =
+                    workDate.get(
+                            WeekFields.ISO.weekOfMonth()
+                    );
+
+            weekMap
+                    .computeIfAbsent(
+                            week,
+                            k -> new ArrayList<>()
+                    )
+                    .add(shift);
+        }
+
+        // =========================
+        // 기본급 / 연장 / 야간
+        // =========================
+
+        for (ShiftVO shift : shifts) {
 
             LocalDateTime startTime =
-                    s.getStart_at().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+                    shift.getStart_at()
+                            .toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDateTime();
 
             LocalDateTime endTime =
-                    s.getEnd_at().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+                    shift.getEnd_at()
+                            .toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDateTime();
 
-            double workHours = Duration.between(startTime, endTime).toMinutes() / 60.0;
+            double workHours =
+                    Duration.between(
+                            startTime,
+                            endTime
+                    ).toMinutes() / 60.0;
 
-            // =====================
-            // 기본 / 연장
-            // =====================
-            baseHours += Math.min(workHours, 8.0);
+            baseHours += workHours;
 
-            double overtimeHours = Math.max(workHours - 8.0, 0);
-            overtimePay += overtimeHours * hourlyRate * 1.5;
+            double overtimeHours =
+                    Math.max(
+                            workHours - 8,
+                            0
+                    );
 
-            // =====================
-            // 야간
-            // =====================
-            LocalDateTime cursor = startTime;
+            overtimePay +=
+                    overtimeHours
+                            * pay_amount
+                            * 1.5;
 
-            while (cursor.isBefore(endTime)) {
+            nightPay +=
+                    calculateNightPay(
+                            startTime,
+                            endTime,
+                            pay_amount
+                    );
+        }
 
-                if (isNight(cursor)) {
-                    nightPay += (hourlyRate * 0.5) / 60.0;
+        // =========================
+        // 기본급 계산
+        // =========================
+
+        if ("HOURLY".equalsIgnoreCase(pay_type)) {
+
+            basePay =
+                    baseHours
+                            * pay_amount;
+
+            for (List<ShiftVO> weekShifts : weekMap.values()) {
+
+                double weekHours = 0;
+
+                for (ShiftVO shift : weekShifts) {
+
+                    LocalDateTime startTime =
+                            shift.getStart_at()
+                                    .toInstant()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDateTime();
+
+                    LocalDateTime endTime =
+                            shift.getEnd_at()
+                                    .toInstant()
+                                    .atZone(ZoneId.systemDefault())
+                                    .toLocalDateTime();
+
+                    weekHours +=
+                            Duration.between(
+                                    startTime,
+                                    endTime
+                            ).toMinutes() / 60.0;
                 }
 
-                cursor = cursor.plusMinutes(1);
+                if (
+                        weekHours >= 15
+                                &&
+                                isWeeklyAttendanceComplete(
+                                        weekShifts,
+                                        schedules
+                                )
+                ) {
+
+                    weeklyPay +=
+                            (weekHours / 40.0)
+                                    * pay_amount;
+                }
             }
         }
 
-        double basePay = baseHours * hourlyRate;
+        else if ("MONTHLY".equalsIgnoreCase(pay_type)) {
 
-        // =====================
-        // 주휴수당 (간단 버전)
-        // =====================
-        double weeklyPay = 0;
+            basePay =
+                    pay_amount;
 
-        double totalHours = baseHours;
-        if (totalHours >= 15) {
-            weeklyPay = (totalHours / 40.0) * hourlyRate;
+            weeklyPay = 0;
         }
 
-        // =====================
-        // DTO 반환
-        // =====================
-        PayrollResultVO payVO = new PayrollResultVO();
+        PayrollResultVO result =
+                new PayrollResultVO();
 
-        payVO.setBasePay(basePay);
-        payVO.setOvertimePay(overtimePay);
-        payVO.setNightPay(nightPay);
-        payVO.setWeeklyPay(weeklyPay);
+        result.setBasePay(basePay);
+        result.setOvertimePay(overtimePay);
+        result.setNightPay(nightPay);
+        result.setWeeklyPay(weeklyPay);
 
-        payVO.setTotalPay(
-                basePay + overtimePay + nightPay + weeklyPay
+        result.setTotalPay(
+                basePay
+                        + overtimePay
+                        + nightPay
+                        + weeklyPay
         );
 
-        return payVO;
+        return result;
     }
 
     // =========================
-    // 야간 시간 체크
+    // 주휴 개근 체크
     // =========================
-    private boolean isNight(java.time.LocalDateTime time) {
 
-        int hour = time.getHour();
+    private boolean isWeeklyAttendanceComplete(
+            List<ShiftVO> weekShifts,
+            List<FixedscheduleVO> schedules
+    ) {
 
-        return (hour >= 22 || hour < 6);
+        Set<String> workedDays =
+                new HashSet<>();
+
+        for (ShiftVO shift : weekShifts) {
+
+            LocalDate date =
+                    shift.getWork_date()
+                            .toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate();
+
+            workedDays.add(
+                    convertDay(
+                            date.getDayOfWeek()
+                    )
+            );
+        }
+
+        for (FixedscheduleVO schedule : schedules) {
+
+            if (
+                    !workedDays.contains(
+                            schedule.getWeekday()
+                                    .toUpperCase()
+                    )
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // =========================
+    // 요일 변환
+    // =========================
+
+    private String convertDay(
+            DayOfWeek day
+    ) {
+
+        switch (day) {
+
+            case MONDAY:
+                return "MON";
+
+            case TUESDAY:
+                return "TUE";
+
+            case WEDNESDAY:
+                return "WED";
+
+            case THURSDAY:
+                return "THU";
+
+            case FRIDAY:
+                return "FRI";
+
+            case SATURDAY:
+                return "SAT";
+
+            case SUNDAY:
+                return "SUN";
+
+            default:
+                return "";
+        }
+    }
+
+    // =========================
+    // 야간수당
+    // =========================
+
+    private double calculateNightPay(
+            LocalDateTime start,
+            LocalDateTime end,
+            double hourlyRate
+    ) {
+
+        double nightMinutes = 0;
+
+        LocalDateTime currentDate =
+                start.toLocalDate()
+                        .atStartOfDay();
+
+        while (!currentDate.isAfter(end)) {
+
+            LocalDateTime nightStart =
+                    currentDate.withHour(22);
+
+            LocalDateTime nightEnd =
+                    currentDate.plusDays(1)
+                            .withHour(6);
+
+            LocalDateTime overlapStart =
+                    start.isAfter(nightStart)
+                            ? start
+                            : nightStart;
+
+            LocalDateTime overlapEnd =
+                    end.isBefore(nightEnd)
+                            ? end
+                            : nightEnd;
+
+            if (
+                    overlapStart.isBefore(
+                            overlapEnd
+                    )
+            ) {
+
+                nightMinutes +=
+                        Duration.between(
+                                overlapStart,
+                                overlapEnd
+                        ).toMinutes();
+            }
+
+            currentDate =
+                    currentDate.plusDays(1);
+        }
+
+        return
+                (nightMinutes / 60.0)
+                        * hourlyRate
+                        * 0.5;
     }
 }
