@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Modal, Pressable, Switch } from 'react-native';
+import { useLanguage, Language } from '../contexts/LanguageContext';
 
 // ✅ navigation 객체를 받아오도록 파라미터 추가
 const MyPageScreen = ({ route, navigation }: any) => {
@@ -10,9 +11,9 @@ const MyPageScreen = ({ route, navigation }: any) => {
   const [themeModalVisible, setThemeModalVisible] = useState(false);
   const [themeMode, setThemeMode] = useState('시스템 설정'); // 기본값
 
-  // ✅ 언어 설정 상태 관리
+  // ✅ 전역 언어 설정 가져오기
+  const { language, setLanguage, t } = useLanguage();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
-  const [language, setLanguage] = useState('한국어'); // 기본값
 
   // ✅ 알림 설정 상태 관리 (기본값: 켜짐)
   const [isPushEnabled, setIsPushEnabled] = useState(true);
@@ -62,29 +63,29 @@ const MyPageScreen = ({ route, navigation }: any) => {
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{name} 님</Text>
             <Text style={styles.userRole}>
-              {branch} | {role === 'STAFF' ? '일반 직원' : '관리자'}
+              {branch} | {role === 'STAFF' ? t('staff') : t('admin')}
             </Text>
           </View>
         </View>
 
         {/* 문서 및 정보 관리 섹션 */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>내 정보 관리</Text>
+          <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
           {/* ✅ 이동 시 userInfo와 함께 데이터를 덮어씌울 setUserInfo 함수도 전달합니다. */}
-          {renderMenuItem('👤', '개인정보 수정', () => navigation.navigate('ProfileEdit', { userInfo, setUserInfo }))}
-          {renderMenuItem('📄', '나의 근로계약서', () => {})}
-          {renderMenuItem('🏥', '보건증 관리', () => {})}
+          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo, setUserInfo }))}
+          {renderMenuItem('📄', t('contract'), () => {})}
+          {renderMenuItem('🏥', t('healthCert'), () => {})}
         </View>
 
         {/* 앱 설정 섹션 */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>앱 설정</Text>
+          <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
           {/* ✅ 클릭 시 모달창을 띄우고, 선택된 모드를 버튼 이름에 보여줍니다. */}
-          {renderMenuItem('🌙', `화면 모드 (${themeMode})`, () => setThemeModalVisible(true))}
+          {renderMenuItem('🌙', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
           {/* ✅ 언어 설정도 모달창 연결 */}
-          {renderMenuItem('🌐', `언어 설정 (${language})`, () => setLanguageModalVisible(true))}
+          {renderMenuItem('🌐', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
           {/* ✅ 알림 설정은 스위치 UI로 연결 */}
-          {renderSwitchItem('🔔', '앱 푸시 알림', isPushEnabled, setIsPushEnabled)}
+          {renderSwitchItem('🔔', t('pushAlert'), isPushEnabled, setIsPushEnabled)}
         </View>
 
         {/* 로그아웃 버튼 */}
@@ -92,7 +93,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
           style={styles.logoutButton}
           onPress={() => setIsLoggedIn && setIsLoggedIn(false)}
         >
-          <Text style={styles.logoutButtonText}>로그아웃</Text>
+          <Text style={styles.logoutButtonText}>{t('logout')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -137,7 +138,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
                 key={lang}
                 style={[styles.modalOption, language === lang && styles.modalOptionSelected]}
                 onPress={() => {
-                  setLanguage(lang);
+                  setLanguage(lang as Language);
                   setLanguageModalVisible(false);
                 }}
               >

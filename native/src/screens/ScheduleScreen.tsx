@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { getMyScheduleAPI, requestLeaveAPI } from '../../api/auth';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // 1. 데이터의 형태(타입)를 먼저 정의해 줍니다.
 interface ScheduleItem {
@@ -42,14 +43,15 @@ const generateWeekDates = (base: Date) => {
   sunday.setDate(base.getDate() - day);
 
   const week = [];
-  const days = ['일', '월', '화', '수', '목', '금', '토'];
   for (let i = 0; i < 7; i++) {
     const d = new Date(sunday);
     d.setDate(sunday.getDate() + i);
-    week.push({ fullDate: formatDate(d.getFullYear(), d.getMonth() + 1, d.getDate()), date: String(d.getDate()), day: days[d.getDay()] });
+    week.push({ fullDate: formatDate(d.getFullYear(), d.getMonth() + 1, d.getDate()), date: String(d.getDate()), dayIndex: d.getDay() });
   }
   return week;
 };
+
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 // ✅ 특정 년/월의 전체 달력 데이터를 생성하는 함수 (월간 보기 모달용)
 const generateMonthDates = (year: number, month: number) => {
@@ -96,6 +98,9 @@ const ScheduleScreen = ({ route }: any) => {
   // App.tsx에서 넘겨준 유저 정보
   const { userInfo } = route?.params || {};
 
+  // ✅ 전역 언어 설정 가져오기
+  const { t } = useLanguage();
+
   // ✅ 선택된 날짜 상태 (기본값을 '오늘 날짜'로 자동 세팅)
   const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
   // ✅ 현재 렌더링 기준이 되는 날짜 상태 (주간 달력과 월간 달력의 기준이 됨)
@@ -141,11 +146,11 @@ const ScheduleScreen = ({ route }: any) => {
   // 상태에 따른 배지 스타일 렌더링 함수
   const renderStatusBadge = (status: string) => {
     switch(status) {
-      case 'SCHEDULED': return <View style={[styles.badge, styles.badgeScheduled]}><Text style={styles.badgeTextScheduled}>근무 예정</Text></View>;
-      case 'IN_PROGRESS': return <View style={[styles.badge, styles.badgeInProgress]}><Text style={styles.badgeTextInProgress}>근무 중</Text></View>;
-      case 'COMPLETED': return <View style={[styles.badge, styles.badgeCompleted]}><Text style={styles.badgeTextCompleted}>근무 완료</Text></View>;
-      case 'SUBSTITUTE_REQ': return <View style={[styles.badge, styles.badgeSubstitute]}><Text style={styles.badgeTextSubstitute}>대타 찾는 중</Text></View>;
-      case 'OFF': return <View style={[styles.badge, styles.badgeOff]}><Text style={styles.badgeTextOff}>휴무</Text></View>;
+      case 'SCHEDULED': return <View style={[styles.badge, styles.badgeScheduled]}><Text style={styles.badgeTextScheduled}>{t('scheduled')}</Text></View>;
+      case 'IN_PROGRESS': return <View style={[styles.badge, styles.badgeInProgress]}><Text style={styles.badgeTextInProgress}>{t('inProgress')}</Text></View>;
+      case 'COMPLETED': return <View style={[styles.badge, styles.badgeCompleted]}><Text style={styles.badgeTextCompleted}>{t('completed')}</Text></View>;
+      case 'SUBSTITUTE_REQ': return <View style={[styles.badge, styles.badgeSubstitute]}><Text style={styles.badgeTextSubstitute}>{t('substituteReq')}</Text></View>;
+      case 'OFF': return <View style={[styles.badge, styles.badgeOff]}><Text style={styles.badgeTextOff}>{t('offDay')}</Text></View>;
       default: return null;
     }
   };
@@ -203,11 +208,12 @@ const ScheduleScreen = ({ route }: any) => {
     // 메모: FlatList에서 이미 선택된 날짜로 필터링해서 넘어옵니다.
      // ✅ 실시간 상태 적용 (누락되었던 코드 추가!)
     const currentItem = getRealTimeItem(item);
+    const translatedDay = t(DAY_KEYS[new Date(currentItem.fullDate).getDay()]);
     return (
       <View style={styles.card}>
         {/* 카드 헤더 (날짜 및 배지) */}
         <View style={styles.cardHeader}>
-           <Text style={styles.cardDate}>{currentItem.fullDate} ({currentItem.day})</Text>
+           <Text style={styles.cardDate}>{currentItem.fullDate} ({translatedDay})</Text>
           {renderStatusBadge(currentItem.status)}
         </View>
         
@@ -231,7 +237,7 @@ const ScheduleScreen = ({ route }: any) => {
             style={styles.leaveButton}
              onPress={() => handleOpenLeaveModal(currentItem)}
           >
-            <Text style={styles.leaveButtonText}>휴무 신청 / 대타 구하기</Text>
+            <Text style={styles.leaveButtonText}>{t('leaveRequest')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -243,9 +249,9 @@ const ScheduleScreen = ({ route }: any) => {
       
       {/* 상단 월 표시 헤더 */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{`${baseDate.getFullYear()}년 ${baseDate.getMonth() + 1}월`}</Text>
+        <Text style={styles.headerTitle}>{`${baseDate.getFullYear()}${t('year')} ${baseDate.getMonth() + 1}${t('month')}`}</Text>
         <TouchableOpacity onPress={() => setMonthModalVisible(true)}>
-          <Text style={styles.monthChangeButton}>📅 월간 보기</Text>
+          <Text style={styles.monthChangeButton}>📅 {t('monthlyView')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -258,10 +264,10 @@ const ScheduleScreen = ({ route }: any) => {
 
           {generateWeekDates(baseDate).map((item) => {
             const isSelected = item.fullDate === selectedDate;
-            const isWeekend = item.day === '일' ? '#EF4444' : item.day === '토' ? '#3B82F6' : '#6B7280';
+            const isWeekend = item.dayIndex === 0 ? '#EF4444' : item.dayIndex === 6 ? '#3B82F6' : '#6B7280';
             return (
               <TouchableOpacity key={item.fullDate} style={[styles.dateBox, isSelected && styles.dateBoxSelected]} onPress={() => { setSelectedDate(item.fullDate); setBaseDate(new Date(item.fullDate)); }}>
-                <Text style={[styles.dayText, { color: isSelected ? '#FFFFFF' : isWeekend }]}>{item.day}</Text>
+                <Text style={[styles.dayText, { color: isSelected ? '#FFFFFF' : isWeekend }]}>{t(DAY_KEYS[item.dayIndex])}</Text>
                 <Text style={[styles.dateText, isSelected && styles.dateTextSelected]}>{item.date}</Text>
               </TouchableOpacity>
             );
@@ -287,7 +293,7 @@ const ScheduleScreen = ({ route }: any) => {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>🏖️</Text>
-              <Text style={styles.emptyText}>선택한 날짜에는 근무 일정이 없습니다.</Text>
+              <Text style={styles.emptyText}>{t('noSchedule')}</Text>
             </View>
           }
         />
@@ -302,16 +308,16 @@ const ScheduleScreen = ({ route }: any) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>휴무 신청 / 대타 구하기</Text>
+            <Text style={styles.modalTitle}>{t('leaveRequest')}</Text>
             {selectedShiftForLeave && (
               <Text style={styles.modalSubtitle}>
-                {selectedShiftForLeave.fullDate} ({selectedShiftForLeave.day}) {selectedShiftForLeave.time}
+                {selectedShiftForLeave.fullDate} ({t(DAY_KEYS[new Date(selectedShiftForLeave.fullDate).getDay()])}) {selectedShiftForLeave.time}
               </Text>
             )}
             
             <TextInput
               style={styles.reasonInput}
-              placeholder="휴무 사유를 상세히 적어주세요 (예: 병원 진료, 학교 시험 등)"
+              placeholder={t('leaveReasonPlaceholder')}
               placeholderTextColor="#9CA3AF"
               value={leaveReason}
               onChangeText={setLeaveReason}
@@ -321,10 +327,10 @@ const ScheduleScreen = ({ route }: any) => {
             
             <View style={styles.modalButtonGroup}>
               <TouchableOpacity style={styles.modalCancelButton} onPress={() => setLeaveModalVisible(false)}>
-                <Text style={styles.modalCancelText}>취소</Text>
+                <Text style={styles.modalCancelText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalSubmitButton} onPress={handleSubmitLeaveRequest}>
-                <Text style={styles.modalSubmitText}>신청하기</Text>
+                <Text style={styles.modalSubmitText}>{t('apply')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -342,13 +348,13 @@ const ScheduleScreen = ({ route }: any) => {
           <View style={styles.monthModalContent}>
             <View style={styles.monthModalHeader}>
               <TouchableOpacity onPress={() => moveMonth(-1)} style={styles.arrowButton}><Text style={styles.arrowText}>◀</Text></TouchableOpacity>
-              <Text style={styles.monthModalTitle}>{baseDate.getFullYear()}년 {baseDate.getMonth() + 1}월</Text>
+              <Text style={styles.monthModalTitle}>{baseDate.getFullYear()}{t('year')} {baseDate.getMonth() + 1}{t('month')}</Text>
               <TouchableOpacity onPress={() => moveMonth(1)} style={styles.arrowButton}><Text style={styles.arrowText}>▶</Text></TouchableOpacity>
             </View>
             
             <View style={styles.monthDaysHeader}>
-              {['일', '월', '화', '수', '목', '금', '토'].map(d => (
-                <Text key={d} style={[styles.monthDayText, d === '일' && {color: '#EF4444'}, d === '토' && {color: '#3B82F6'}]}>{d}</Text>
+              {DAY_KEYS.map((d, index) => (
+                <Text key={d} style={[styles.monthDayText, index === 0 && {color: '#EF4444'}, index === 6 && {color: '#3B82F6'}]}>{t(d)}</Text>
               ))}
             </View>
             
@@ -373,7 +379,7 @@ const ScheduleScreen = ({ route }: any) => {
               })}
             </View>
             <TouchableOpacity style={styles.closeModalButton} onPress={() => setMonthModalVisible(false)}>
-              <Text style={styles.closeModalButtonText}>닫기</Text>
+              <Text style={styles.closeModalButtonText}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
         </View>

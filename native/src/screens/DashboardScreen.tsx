@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Act
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getMyScheduleAPI } from '../../api/auth';
 import { NotificationContext } from '../contexts/NotificationContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
@@ -20,6 +21,9 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
 
   // ✅ 전역 상태에서 안 읽은 알림 개수 가져오기
   const { unreadCount } = useContext(NotificationContext);
+
+  // ✅ 전역 언어 설정 가져오기
+  const { t } = useLanguage();
 
   // ✅ 오늘의 근무 상태 관리
   const [todayShift, setTodayShift] = useState<any>(null);
@@ -191,15 +195,15 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
         
         {/* ▼ 환영 인사 영역 추가 ▼ */}
         <View style={styles.greetingSection}>
-          <Text style={styles.greetingText}>안녕하세요, {userName} 님! 👋</Text>
-          <Text style={styles.greetingSubText}>{storeName} | {userInfo?.role === 'ADMIN' ? '관리자' : '일반 직원'}</Text>
+          <Text style={styles.greetingText}>{t('greeting')}, {userName} 님! 👋</Text>
+          <Text style={styles.greetingSubText}>{storeName} | {userInfo?.role === 'ADMIN' ? t('admin') : t('staff')}</Text>
         </View>
 
         {/* ▼ 오늘의 근무 카드 시작 ▼ */}
         <View style={styles.card}>
           {/* 타이틀 행 */}
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>오늘의 근무</Text>
+            <Text style={styles.cardTitle}>{t('todayWork')}</Text>
             {todayShift && (
               <View style={[styles.statusBadge, { backgroundColor: getStatusColor(todayShift.status).bg }]}>
                 <Text style={[styles.statusBadgeText, { color: getStatusColor(todayShift.status).text }]}>{getStatusText(todayShift.status)}</Text>
@@ -245,7 +249,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
           {/* 왼쪽: 이번 주 근무 시간 */}
           <View style={styles.statHalf}>
             <Text style={styles.statValue}>{weeklyStats.totalHours}</Text>
-            <Text style={styles.statLabel}>이번 주 근무 시간</Text>
+            <Text style={styles.statLabel}>{t('weeklyHours')}</Text>
           </View>
 
           {/* 가운데 구분선 */}
@@ -255,7 +259,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
           <View style={styles.statHalf}>
             {/* 💡 .toLocaleString()을 붙이면 166500이 자동으로 166,500(콤마 추가)으로 예쁘게 바뀝니다. */}
             <Text style={styles.statValue}>{weeklyStats.expectedSalary.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>이번 주 예상급여</Text>
+            <Text style={styles.statLabel}>{t('weeklySalary')}</Text>
           </View>
 
         </View>
@@ -286,9 +290,9 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
         {/* ▼ 사내 게시판 영역 ▼ */}
         <View style={styles.noticeSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>사내 게시판</Text>
+            <Text style={styles.sectionTitle}>{t('notice')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Board')}>
-              <Text style={styles.moreText}>더보기</Text>
+              <Text style={styles.moreText}>{t('more')}</Text>
             </TouchableOpacity>
           </View>
           

@@ -9,7 +9,13 @@ export interface NotificationItem {
   isRead: boolean;
 }
 
-export const NotificationContext = createContext<any>(null);
+export interface NotificationContextType {
+  notifications: NotificationItem[];
+  setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>;
+  unreadCount: number;
+}
+
+export const NotificationContext = createContext<NotificationContextType>({} as NotificationContextType);
 
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
   // 기존 알림 화면에 있던 더미 데이터를 이곳(전역)으로 이사시킵니다.
