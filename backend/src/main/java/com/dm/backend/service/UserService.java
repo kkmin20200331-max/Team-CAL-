@@ -15,41 +15,25 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
-    public List<UserVo> getStaff(String store_id) {
-        return userMapper.getStaff(store_id);
-    }
+    // =========================
+    // [공통]
+    // =========================
 
-    // 경민 수정 5/29 15:08
-    public List<UserVo> getGuest(String store_id, String role) {
-        // 전: if(role == "admin" || role == "ADMIN")  → Java에서 String == 은 항상 false
-        if("admin".equalsIgnoreCase(role)){
-            return userMapper.getGuest(store_id);
-        }
-        return null;
-    }
-//    public List<UserVo> getGuest(String store_id, String role) {
-//        if(role == "admin" || role == "ADMIN"){
-//            return userMapper.getGuest(store_id);
-//        }
-//        return null;
-//    }
-
-    // 경민 수정 5/28 17:30
+    // 회원가입
+    // STAFF 신청 시 GUEST 상태로 저장
     public void registerUser(UserVo userVo) {
-    userVo.setId("USR_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
-    if ("STAFF".equalsIgnoreCase(userVo.getRole())) userVo.setRole("GUEST");
-    userVo.setStatus("ACTIVE");
-    userMapper.registerUser(userVo);
+        userVo.setId("USR_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
+
+        if ("STAFF".equalsIgnoreCase(userVo.getRole())) {
+            userVo.setRole("GUEST");
+        }
+
+        userVo.setStatus("ACTIVE");
+
+        userMapper.registerUser(userVo);
     }
 
-    public void approveStaff(UserVo userVo) {
-        userMapper.approveStaff(userVo);
-    }
-
-    public void delUser(String id) {
-        userMapper.delUser(id);
-    }
-
+    // 로그인
     public UserVo login(UserVo userVo) {
         UserVo member = userMapper.login(userVo);
 
@@ -60,10 +44,35 @@ public class UserService {
         return member;
     }
 
-    // 경민 수정 5/29 15:11
-    public void approveUser(String id) {
-        userMapper.approveUser(id);
+    // 개인정보 수정
+    public void approveStaff(UserVo userVo) {
+        userMapper.approveStaff(userVo);
     }
+
+    // 회원 삭제
+    public void delUser(String id) {
+        userMapper.delUser(id);
+    }
+
+
+    // =========================
+    // [관리자]
+    // =========================
+
+    // 승인된 직원 목록 조회
+    public List<UserVo> getStaff(String store_id) {
+        return userMapper.getStaff(store_id);
+    }
+
+    // 승인 대기 직원 목록 조회
+    public List<UserVo> getGuest(String store_id, String role) {
+        if ("admin".equalsIgnoreCase(role)) {
+            return userMapper.getGuest(store_id);
+        }
+        return null;
+    }
+
+
 
 
 
