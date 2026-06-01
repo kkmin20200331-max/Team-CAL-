@@ -1,32 +1,46 @@
-package com.dm.backend.mapper;
+    package com.dm.backend.mapper;
 
-import com.dm.backend.vo.StoreVo;
-import org.apache.ibatis.annotations.*;
+    import com.dm.backend.vo.StoreVo;
+    import org.apache.ibatis.annotations.*;
 
-import java.util.List;
+    import java.util.List;
 
-@Mapper
-public interface StoreMapper {
+    @Mapper
+    public interface StoreMapper {
 
-    @Insert("insert into store values(#{id}, #{name}, #{address}, #{capacity}, #{open_time}, #{close_time})")
-    void registerStore(StoreVo storeVo);
+        // =========================
+        // [관리자]
+        // =========================
+
+        // 가게 등록
+        @Insert("insert into store values(#{id}, #{name}, #{address}, #{capacity}, #{open_time}, #{close_time})")
+        void registerStore(StoreVo storeVo);
+
+        // 내가 관리하는 가게 목록 조회
+        @Select("""
+            SELECT s.*
+            FROM store s
+            JOIN store_member sm
+                ON s.id = sm.store_id
+            WHERE sm.user_id = #{user_id}
+            AND sm.member_role = 'ADMIN'
+            """)
+        List<StoreVo> getStoreList(String user_id);
+
+        // 가게 정보 수정
+        @Update("update store set name = #{name}, address = #{address}, capacity = #{capacity}, open_time = #{open_time}, close_time = #{close_time} where id = #{id}")
+        void updateStore(StoreVo storeVo);
+
+        // 가게 삭제
+        @Delete("delete from store where id = #{id}")
+        void delStore(String id);
 
 
-    // 경민 수정 5/29 15:00
-    // store_member JOIN으로 해당 관리자의 매장만 조회
-    @Select("SELECT s.* FROM store s " +
-            "JOIN store_member sm ON s.id = sm.store_id " +
-            "WHERE sm.user_id = #{user_id} AND sm.member_role = 'ADMIN'")
-    List<StoreVo> getStoreList(String user_id);
-    @Select("select * from store where id = #{id}")
-    StoreVo getStore(String id);
+        // =========================
+        // [공통]
+        // =========================
 
-//    @Select("select * from store where user_id = #{user_id}")
-//    List<StoreVo> getStoreList(String user_id);
-
-    @Update("update store set name = #{name} and address = #{address} and capacity = #{capacity} and open_time = #{open_time} and close_time = #{close_time} where id = #{id}")
-    void updateStore(StoreVo storeVo);
-
-    @Delete("delete from store where id = #{id}")
-    void delStore(String id);
-}
+        // 가게 단건 조회
+        @Select("select * from store where id = #{id}")
+        StoreVo getStore(String id);
+    }
