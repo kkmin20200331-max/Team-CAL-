@@ -10,30 +10,96 @@ interface ScheduleItem {
   day: string;
   time: string;
   storeName: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'OFF' | 'SUBSTITUTE_REQ';
+  status: 'SCHEDULED' | 'COMPLETED' | 'OFF' | 'SUBSTITUTE_REQ' | 'IN_PROGRESS';
 }
 
 // 2. 이번 주 근무 더미 데이터
 const dummySchedule: ScheduleItem[] = [
-  { id: '1', fullDate: '2026-05-25', date: '25', day: '월', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'COMPLETED' },
-  { id: '2', fullDate: '2026-05-26', date: '26', day: '화', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SCHEDULED' },
-  { id: '3', fullDate: '2026-05-27', date: '27', day: '수', time: '휴무', storeName: '-', status: 'OFF' },
-  { id: '4', fullDate: '2026-05-28', date: '28', day: '목', time: '17:00 - 22:00', storeName: '컴포즈 미금점', status: 'SCHEDULED' },
-  { id: '5', fullDate: '2026-05-29', date: '29', day: '금', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SUBSTITUTE_REQ' },
+  { id: '1', fullDate: '2026-05-31', date: '31', day: '월', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'COMPLETED' },
+  { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'COMPLETED' },
+  { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SCHEDULED' },
+  { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: '휴무', storeName: '-', status: 'OFF' },
+  { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '17:00 - 22:00', storeName: '컴포즈 미금점', status: 'SCHEDULED' },
+  { id: '5', fullDate: '2026-06-06', date: '06', day: '금', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SUBSTITUTE_REQ' },
 ];
 
-// 상단 가로 달력용 날짜 데이터
-const weekDates = [
-  { date: '24', day: '일' }, { date: '25', day: '월' }, { date: '26', day: '화' },
-  { date: '27', day: '수' }, { date: '28', day: '목' }, { date: '29', day: '금' }, { date: '30', day: '토' },
-];
+// ✅ 현재 날짜를 기준으로 동적으로 년/월/일을 계산합니다.
+const today = new Date();
+const currentYear = today.getFullYear();
+const currentMonth = today.getMonth() + 1; // getMonth()는 0부터 시작하므로 +1
+const currentDate = today.getDate();
+
+const formatDate = (year: number, month: number, date: number) => {
+  return `${year}-${String(month).padStart(2, '0')}-${String(date).padStart(2, '0')}`;
+};
+
+const initialSelectedDate = formatDate(currentYear, currentMonth, currentDate);
+
+// ✅ 특정 날짜가 속한 1주일(일~토) 데이터를 생성하는 함수
+const generateWeekDates = (base: Date) => {
+  const day = base.getDay();
+  const sunday = new Date(base);
+  sunday.setDate(base.getDate() - day);
+
+  const week = [];
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + i);
+    week.push({ fullDate: formatDate(d.getFullYear(), d.getMonth() + 1, d.getDate()), date: String(d.getDate()), day: days[d.getDay()] });
+  }
+  return week;
+};
+
+// ✅ 특정 년/월의 전체 달력 데이터를 생성하는 함수 (월간 보기 모달용)
+const generateMonthDates = (year: number, month: number) => {
+  const dates = [];
+  const lastDay = new Date(year, month, 0).getDate();
+  const firstDayIndex = new Date(year, month - 1, 1).getDay();
+  
+  for (let i = 0; i < firstDayIndex; i++) dates.push(null); // 1일 이전의 빈 칸 처리
+  for (let i = 1; i <= lastDay; i++) dates.push({ fullDate: formatDate(year, month, i), date: String(i) });
+  return dates;
+};
+
+// ✅ 실시간 시간에 따라 상태(근무 예정, 근무 중, 근무 완료)를 동적으로 계산하는 함수
+const getRealTimeItem = (item: ScheduleItem): ScheduleItem => {
+  if (item.status === 'OFF' || item.status === 'SUBSTITUTE_REQ' || !item.time || !item.time.includes(' - ')) {
+    return item;
+  }
+
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  // 1. 과거 날짜면 무조건 '근무 완료'
+  if (item.fullDate < todayStr) return { ...item, status: 'COMPLETED' };
+  // 2. 미래 날짜면 무조건 '근무 예정'
+  if (item.fullDate > todayStr) return { ...item, status: 'SCHEDULED' };
+
+  // 3. 오늘 날짜인 경우 시간 비교
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const [startStr, endStr] = item.time.split(' - ');
+  const [startH, startM] = startStr.split(':').map(Number);
+  const [endH, endM] = endStr.split(':').map(Number);
+
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+
+  let newStatus: ScheduleItem['status'] = 'COMPLETED';
+  if (currentMinutes < startMinutes) newStatus = 'SCHEDULED';
+  else if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) newStatus = 'IN_PROGRESS';
+  
+  return { ...item, status: newStatus };
+};
 
 const ScheduleScreen = ({ route }: any) => {
   // App.tsx에서 넘겨준 유저 정보
   const { userInfo } = route?.params || {};
 
-  // 선택된 날짜 상태 (기본값: 오늘인 26일로 세팅)
-  const [selectedDate, setSelectedDate] = useState('26');
+  // ✅ 선택된 날짜 상태 (기본값을 '오늘 날짜'로 자동 세팅)
+  const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
+  // ✅ 현재 렌더링 기준이 되는 날짜 상태 (주간 달력과 월간 달력의 기준이 됨)
+  const [baseDate, setBaseDate] = useState(new Date());
   
   // ✅ 백엔드에서 불러온 스케줄을 담을 상태 (기본값으로 더미 데이터를 넣어두어 화면이 비어보이지 않게 함)
   const [scheduleData, setScheduleData] = useState<ScheduleItem[]>(dummySchedule);
@@ -41,6 +107,8 @@ const ScheduleScreen = ({ route }: any) => {
 
   // 휴무 신청 모달 상태 관리
   const [isLeaveModalVisible, setLeaveModalVisible] = useState(false);
+  // ✅ 월간 보기 달력 모달 상태 관리
+  const [isMonthModalVisible, setMonthModalVisible] = useState(false);
   const [leaveReason, setLeaveReason] = useState('');
   const [selectedShiftForLeave, setSelectedShiftForLeave] = useState<ScheduleItem | null>(null);
 
@@ -58,10 +126,11 @@ const ScheduleScreen = ({ route }: any) => {
       const storeId = userInfo.store_id || userInfo.brandName || 'default_store';
       const response = await getMyScheduleAPI(userInfo.username, storeId);
       
-      // 백엔드에 데이터가 실제로 있다면 덮어씌움
-      if (response.data && response.data.length > 0) {
-        setScheduleData(response.data);
-      }
+      // 🚨 UI 테스트를 위해 임시로 백엔드 데이터 덮어씌우기를 주석 처리합니다!
+      // 🚨 (나중에 진짜 6월 데이터를 DB에 넣고 나면 주석을 해제해 주세요)
+      // if (response.data && response.data.length > 0) {
+      //   setScheduleData(response.data);
+      // }
     } catch (error) {
       console.log('스케줄 불러오기 에러 (임시 더미 데이터 사용 중):', error);
     } finally {
@@ -73,6 +142,7 @@ const ScheduleScreen = ({ route }: any) => {
   const renderStatusBadge = (status: string) => {
     switch(status) {
       case 'SCHEDULED': return <View style={[styles.badge, styles.badgeScheduled]}><Text style={styles.badgeTextScheduled}>근무 예정</Text></View>;
+      case 'IN_PROGRESS': return <View style={[styles.badge, styles.badgeInProgress]}><Text style={styles.badgeTextInProgress}>근무 중</Text></View>;
       case 'COMPLETED': return <View style={[styles.badge, styles.badgeCompleted]}><Text style={styles.badgeTextCompleted}>근무 완료</Text></View>;
       case 'SUBSTITUTE_REQ': return <View style={[styles.badge, styles.badgeSubstitute]}><Text style={styles.badgeTextSubstitute}>대타 찾는 중</Text></View>;
       case 'OFF': return <View style={[styles.badge, styles.badgeOff]}><Text style={styles.badgeTextOff}>휴무</Text></View>;
@@ -114,36 +184,52 @@ const ScheduleScreen = ({ route }: any) => {
     }
   };
 
+  // ✅ 주간 달력: 이전/다음 주 이동
+  const moveWeek = (offset: number) => {
+    const newBase = new Date(baseDate);
+    newBase.setDate(newBase.getDate() + offset * 7);
+    setBaseDate(newBase);
+  };
+
+  // ✅ 월간 달력: 이전/다음 달 이동
+  const moveMonth = (offset: number) => {
+    const newBase = new Date(baseDate);
+    newBase.setMonth(newBase.getMonth() + offset);
+    setBaseDate(newBase);
+  };
+
   // 근무 카드 컴포넌트
   const renderShiftCard = ({ item }: { item: ScheduleItem }) => {
-    // 선택한 날짜의 데이터만 보여주거나 전체를 보여줄 수 있습니다. 지금은 리스트 전체를 보여줍니다.
+    // 메모: FlatList에서 이미 선택된 날짜로 필터링해서 넘어옵니다.
+     // ✅ 실시간 상태 적용 (누락되었던 코드 추가!)
+    const currentItem = getRealTimeItem(item);
     return (
-      <View style={[styles.card, item.date === selectedDate && styles.cardHighlighted]}>
+      <View style={styles.card}>
         {/* 카드 헤더 (날짜 및 배지) */}
         <View style={styles.cardHeader}>
-          <Text style={styles.cardDate}>{item.fullDate} ({item.day})</Text>
-          {renderStatusBadge(item.status)}
+           <Text style={styles.cardDate}>{currentItem.fullDate} ({currentItem.day})</Text>
+          {renderStatusBadge(currentItem.status)}
         </View>
         
         {/* 카드 본문 (근무 시간, 지점) */}
         <View style={styles.cardBody}>
           <View style={styles.infoRow}>
             <Text style={styles.infoIcon}>🕒</Text>
-            <Text style={styles.infoText}>{item.time}</Text>
+            <Text style={styles.infoText}>{currentItem.time}</Text>
           </View>
-          {item.status !== 'OFF' && (
+          {currentItem.status !== 'OFF' && (
             <View style={styles.infoRow}>
               <Text style={styles.infoIcon}>📍</Text>
-              <Text style={styles.infoText}>{item.storeName}</Text>
+              <Text style={styles.infoText}>{currentItem.storeName}</Text>
             </View>
           )}
         </View>
 
         {/* 예정된 근무에만 휴무 신청 / 대타 구하기 버튼 표시 */}
-        {item.status === 'SCHEDULED' && (
+        {currentItem.status === 'SCHEDULED' && (
           <TouchableOpacity 
             style={styles.leaveButton}
-            onPress={() => handleOpenLeaveModal(item)}
+             onPress={() => handleOpenLeaveModal(currentItem)}
           >
             <Text style={styles.leaveButtonText}>휴무 신청 / 대타 구하기</Text>
           </TouchableOpacity>
@@ -157,32 +243,34 @@ const ScheduleScreen = ({ route }: any) => {
       
       {/* 상단 월 표시 헤더 */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>2026년 5월</Text>
-        <TouchableOpacity>
+        <Text style={styles.headerTitle}>{`${baseDate.getFullYear()}년 ${baseDate.getMonth() + 1}월`}</Text>
+        <TouchableOpacity onPress={() => setMonthModalVisible(true)}>
           <Text style={styles.monthChangeButton}>📅 월간 보기</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 주간 캘린더 (가로 스크롤) */}
+      {/* ✅ 주간 캘린더 (화살표 이동 방식) */}
       <View style={styles.calendarContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.calendarScroll}>
-          {weekDates.map((item, index) => {
-            const isSelected = item.date === selectedDate;
-            // 일요일은 빨간색, 토요일은 파란색 처리
+        <View style={styles.weekDaysContainer}>
+          <TouchableOpacity onPress={() => moveWeek(-1)} style={styles.arrowButton}>
+            <Text style={styles.arrowText}>◀</Text>
+          </TouchableOpacity>
+
+          {generateWeekDates(baseDate).map((item) => {
+            const isSelected = item.fullDate === selectedDate;
             const isWeekend = item.day === '일' ? '#EF4444' : item.day === '토' ? '#3B82F6' : '#6B7280';
-            
             return (
-              <TouchableOpacity 
-                key={index} 
-                style={[styles.dateBox, isSelected && styles.dateBoxSelected]}
-                onPress={() => setSelectedDate(item.date)}
-              >
+              <TouchableOpacity key={item.fullDate} style={[styles.dateBox, isSelected && styles.dateBoxSelected]} onPress={() => { setSelectedDate(item.fullDate); setBaseDate(new Date(item.fullDate)); }}>
                 <Text style={[styles.dayText, { color: isSelected ? '#FFFFFF' : isWeekend }]}>{item.day}</Text>
                 <Text style={[styles.dateText, isSelected && styles.dateTextSelected]}>{item.date}</Text>
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+
+          <TouchableOpacity onPress={() => moveWeek(1)} style={styles.arrowButton}>
+            <Text style={styles.arrowText}>▶</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 근무 카드 리스트 */}
@@ -190,11 +278,18 @@ const ScheduleScreen = ({ route }: any) => {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color="#2563EB" /></View>
       ) : (
         <FlatList
-          data={scheduleData} // 더미 대신 상태 데이터 사용
+          // 🚨 UI 테스트를 위해 임시로 scheduleData 상태 대신 dummySchedule을 직접 연결합니다.
+          data={dummySchedule.filter((item) => item.fullDate === selectedDate)} 
           renderItem={renderShiftCard}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>🏖️</Text>
+              <Text style={styles.emptyText}>선택한 날짜에는 근무 일정이 없습니다.</Text>
+            </View>
+          }
         />
       )}
 
@@ -235,6 +330,54 @@ const ScheduleScreen = ({ route }: any) => {
           </View>
         </View>
       </Modal>
+
+      {/* ✅ 월간 달력 모달 */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isMonthModalVisible}
+        onRequestClose={() => setMonthModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.monthModalContent}>
+            <View style={styles.monthModalHeader}>
+              <TouchableOpacity onPress={() => moveMonth(-1)} style={styles.arrowButton}><Text style={styles.arrowText}>◀</Text></TouchableOpacity>
+              <Text style={styles.monthModalTitle}>{baseDate.getFullYear()}년 {baseDate.getMonth() + 1}월</Text>
+              <TouchableOpacity onPress={() => moveMonth(1)} style={styles.arrowButton}><Text style={styles.arrowText}>▶</Text></TouchableOpacity>
+            </View>
+            
+            <View style={styles.monthDaysHeader}>
+              {['일', '월', '화', '수', '목', '금', '토'].map(d => (
+                <Text key={d} style={[styles.monthDayText, d === '일' && {color: '#EF4444'}, d === '토' && {color: '#3B82F6'}]}>{d}</Text>
+              ))}
+            </View>
+            
+            <View style={styles.monthGrid}>
+              {generateMonthDates(baseDate.getFullYear(), baseDate.getMonth() + 1).map((item, index) => {
+                if (!item) return <View key={`empty-${index}`} style={styles.monthDateCell} />;
+                const isSelected = item.fullDate === selectedDate;
+                
+                // ✅ 해당 날짜의 일정을 찾아서 상태를 확인합니다. (테스트를 위해 dummySchedule로 바로 연결)
+                const shift = dummySchedule.find((s) => s.fullDate === item.fullDate);
+                const isWork = shift && shift.status !== 'OFF';
+                const isOff = shift && shift.status === 'OFF';
+
+                return (
+                  <TouchableOpacity key={item.fullDate} style={[styles.monthDateCell, isSelected && styles.monthDateCellSelected]} onPress={() => { setSelectedDate(item.fullDate); setBaseDate(new Date(item.fullDate)); setMonthModalVisible(false); }}>
+                    <Text style={[styles.monthDateText, isSelected && styles.monthDateTextSelected]}>{item.date}</Text>
+                    {/* ✅ 글자 바로 아래에 표시될 작은 점(Dot) */}
+                    {isWork && <View style={[styles.workDot, isSelected && { backgroundColor: '#FFFFFF' }]} />}
+                    {isOff && <View style={[styles.offDot, isSelected && { backgroundColor: '#FFFFFF' }]} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity style={styles.closeModalButton} onPress={() => setMonthModalVisible(false)}>
+              <Text style={styles.closeModalButtonText}>닫기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -254,15 +397,17 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
   monthChangeButton: { fontSize: 14, color: '#2563EB', fontWeight: '600' },
   
-  // 달력 영역
-  calendarContainer: { backgroundColor: '#FFFFFF', paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  calendarScroll: { paddingHorizontal: 16, gap: 8 },
+  // ✅ 주간 달력 영역
+  calendarContainer: { backgroundColor: '#FFFFFF', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  weekDaysContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 10 },
+  arrowButton: { paddingHorizontal: 5, paddingVertical: 10 },
+  arrowText: { fontSize: 16, color: '#9CA3AF' },
   dateBox: { 
-    width: 50, 
-    height: 70, 
+    width: 42, 
+    height: 65, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    borderRadius: 12, 
+    borderRadius: 10, 
     backgroundColor: '#F9FAFB' 
   },
   dateBoxSelected: { backgroundColor: '#2563EB' },
@@ -292,6 +437,8 @@ const styles = StyleSheet.create({
   badge: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6 },
   badgeScheduled: { backgroundColor: '#E0F2FE' },
   badgeTextScheduled: { color: '#0284C7', fontSize: 12, fontWeight: '600' },
+  badgeInProgress: { backgroundColor: '#DCFCE7' },
+  badgeTextInProgress: { color: '#16A34A', fontSize: 12, fontWeight: '600' },
   badgeCompleted: { backgroundColor: '#F3F4F6' },
   badgeTextCompleted: { color: '#4B5563', fontSize: 12, fontWeight: '600' },
   badgeSubstitute: { backgroundColor: '#FEF3C7' },
@@ -314,6 +461,11 @@ const styles = StyleSheet.create({
   },
   leaveButtonText: { color: '#374151', fontSize: 14, fontWeight: '600' },
   
+  // 빈 상태(휴무/일정 없음) 표시 스타일
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
+  emptyIcon: { fontSize: 50, marginBottom: 16 },
+  emptyText: { fontSize: 16, color: '#6B7280', fontWeight: '500' },
+
   // 모달 스타일
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '85%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
@@ -324,7 +476,26 @@ const styles = StyleSheet.create({
   modalCancelButton: { flex: 1, backgroundColor: '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   modalCancelText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
   modalSubmitButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  modalSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' }
+  modalSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+
+  // 월간 달력 모달 스타일
+  monthModalContent: { width: '90%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  monthModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  monthModalTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+  monthDaysHeader: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 },
+  monthDayText: { fontSize: 13, fontWeight: '600', color: '#6B7280', width: '14%', textAlign: 'center' },
+  monthGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  monthDateCell: { width: '14%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 5, borderRadius: 20 },
+  monthDateCellSelected: { backgroundColor: '#2563EB' },
+  monthDateText: { fontSize: 15, color: '#374151' },
+  monthDateTextSelected: { color: '#FFFFFF', fontWeight: 'bold' },
+  
+  // ✅ 월간 달력 점(Dot) 스타일 (숫자가 흔들리지 않게 absolute 사용)
+  workDot: { position: 'absolute', bottom: 2, width: 6, height: 6, borderRadius: 3, backgroundColor: '#3B82F6' },
+  offDot: { position: 'absolute', bottom: 2, width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444' },
+  
+  closeModalButton: { marginTop: 20, backgroundColor: '#F3F4F6', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  closeModalButtonText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
 });
 
 export default ScheduleScreen;

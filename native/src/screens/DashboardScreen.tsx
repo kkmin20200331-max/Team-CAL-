@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { getMyScheduleAPI } from '../../api/auth';
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
@@ -15,6 +16,90 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   // 백엔드에서 전달받은 정보 파싱 (없을 경우 기본값)
   const userName = userInfo?.name || '사용자';
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
+
+  // ✅ 오늘의 근무 상태 관리
+  const [todayShift, setTodayShift] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchTodaySchedule();
+  }, [userInfo]);
+
+  const fetchTodaySchedule = async () => {
+    if (!userInfo) return;
+    
+    setLoading(true);
+
+    // 오늘 날짜 문자열 만들기 (예: '2026-06-01')
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    // 🚨 UI 테스트를 위해 임시로 사용할 더미 데이터
+    const dummySchedule = [
+      { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
+      { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
+      { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: '휴무', storeName: '-', status: 'OFF' },
+      { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '17:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
+      { id: '5', fullDate: '2026-06-06', date: '06', day: '금', time: '14:00 - 22:00', storeName: storeName, status: 'SUBSTITUTE_REQ' },
+    ];
+
+    try {
+      const storeId = userInfo.store_id || userInfo.brandName || 'default_store';
+      // 백엔드 API 호출
+      const response = await getMyScheduleAPI(userInfo.username, storeId);
+      
+    } catch (error) {
+      console.log("오늘의 근무 불러오기 에러 (더미 데이터 사용 중):", error);
+    } finally {
+      // 에러가 발생하더라도 화면에 더미 데이터가 무조건 반영되도록 finally 블록에서 처리합니다.
+      const scheduleList = dummySchedule;
+      const shift = scheduleList.find((item: any) => item.fullDate === todayStr);
+      
+      // ✅ 실시간 근무 상태 계산 로직 (더미 데이터에 실시간 적용)
+      if (shift) {
+        if (shift.status !== 'OFF' && shift.status !== 'SUBSTITUTE_REQ' && shift.time && shift.time.includes(' - ')) {
+          const now = new Date();
+          const currentMinutes = now.getHours() * 60 + now.getMinutes();
+          
+          const [startStr, endStr] = shift.time.split(' - ');
+          const [startH, startM] = startStr.split(':').map(Number);
+          const [endH, endM] = endStr.split(':').map(Number);
+          
+          const startMinutes = startH * 60 + startM;
+          const endMinutes = endH * 60 + endM;
+          
+          if (currentMinutes < startMinutes) shift.status = 'SCHEDULED';
+          else if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) shift.status = 'IN_PROGRESS';
+          else shift.status = 'COMPLETED';
+        }
+      }
+      
+      setTodayShift(shift ? { ...shift } : null);
+      setLoading(false);
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch(status) {
+      case 'SCHEDULED': return '근무 예정';
+      case 'IN_PROGRESS': return '근무 중';
+      case 'COMPLETED': return '근무 완료';
+      case 'SUBSTITUTE_REQ': return '대타 찾는 중';
+      case 'OFF': return '휴무';
+      default: return '';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch(status) {
+      case 'SCHEDULED': return { bg: '#E0F2FE', text: '#0284C7' };
+      case 'IN_PROGRESS': return { bg: '#DCFCE7', text: '#16A34A' }; // 초록색 (진행 중 강조)
+      case 'COMPLETED': return { bg: '#F3F4F6', text: '#4B5563' };
+      case 'SUBSTITUTE_REQ': return { bg: '#FEF3C7', text: '#D97706' };
+      case 'OFF': return { bg: '#FEE2E2', text: '#DC2626' };
+      default: return { bg: '#F3F4F6', text: '#4B5563' };
+    }
+  };
 
   const handleNotification = () => navigation.navigate('Notifications');
   const handleQRCheckIn = () => navigation.navigate('QRCheckIn');
@@ -50,29 +135,42 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
           {/* 타이틀 행 */}
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>오늘의 근무</Text>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusBadgeText}>근무 전</Text>
+            {todayShift && (
+              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(todayShift.status).bg }]}>
+                <Text style={[styles.statusBadgeText, { color: getStatusColor(todayShift.status).text }]}>{getStatusText(todayShift.status)}</Text>
+              </View>
+            )}
+          </View>
+
+          {loading ? (
+            <ActivityIndicator size="small" color="#2563EB" style={{ marginVertical: 20 }} />
+          ) : todayShift ? (
+            <>
+              {/* 근무 상세 정보 */}
+              <View style={styles.workInfoRow}>
+                <Text style={styles.infoIcon}>🕒</Text>
+                <Text style={styles.infoText}>{todayShift.time}</Text>
+              </View>
+              {todayShift.status !== 'OFF' && (
+                <View style={styles.workInfoRow}>
+                  <Text style={styles.infoIcon}>📍</Text>
+                  <Text style={styles.infoText}>{todayShift.storeName}</Text>
+                </View>
+              )}
+              {/* 구분선 */}
+              <View style={styles.divider} />
+              {/* 급여 정보 */}
+              <View style={styles.salaryRow}>
+                <Text style={styles.salaryLabel}>예상 일급</Text>
+                <Text style={styles.salaryValue}>72,000원</Text>
+              </View>
+            </>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>🏖️</Text>
+              <Text style={styles.emptyText}>오늘은 근무 일정이 없습니다.</Text>
             </View>
-          </View>
-
-          {/* 근무 상세 정보 */}
-          <View style={styles.workInfoRow}>
-            <Text style={styles.infoIcon}>🕒</Text>
-            <Text style={styles.infoText}>14:00 ~ 22:00 (8시간)</Text>
-          </View>
-          <View style={styles.workInfoRow}>
-            <Text style={styles.infoIcon}>📍</Text>
-            <Text style={styles.infoText}>{storeName}</Text>
-          </View>
-
-          {/* 구분선 */}
-          <View style={styles.divider} />
-
-          {/* 급여 정보 */}
-          <View style={styles.salaryRow}>
-            <Text style={styles.salaryLabel}>예상 급여</Text>
-            <Text style={styles.salaryValue}>72,000원</Text>
-          </View>
+          )}
         </View>
         {/* ▲ 오늘의 근무 카드 끝 ▲ */}
 
@@ -279,6 +377,12 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontWeight: '700',
   },
+
+  // --- 빈 일정 안내 스타일 ---
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
+  emptyIcon: { fontSize: 40, marginBottom: 10 },
+  emptyText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
+
   // --- 반반 통계 카드 스타일 ---
   statsCard: {
     backgroundColor: '#FFFFFF',
