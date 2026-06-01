@@ -64,7 +64,7 @@ public class PayrollService {
         double nightPay = 0;
         double weeklyPay = 0;
 
-        Map<Integer, List<ShiftVO>> weekMap =
+        Map<String, List<ShiftVO>> weekMap =
                 new HashMap<>();
 
         // =========================
@@ -79,14 +79,22 @@ public class PayrollService {
                             .atZone(ZoneId.systemDefault())
                             .toLocalDate();
 
+            int weekYear =
+                    workDate.get(
+                            WeekFields.ISO.weekBasedYear()
+                    );
+
             int week =
                     workDate.get(
-                            WeekFields.ISO.weekOfMonth()
+                            WeekFields.ISO.weekOfWeekBasedYear()
                     );
+
+            String weekKey =
+                    weekYear + "-" + week;
 
             weekMap
                     .computeIfAbsent(
-                            week,
+                            weekKey,
                             k -> new ArrayList<>()
                     )
                     .add(shift);
@@ -127,7 +135,7 @@ public class PayrollService {
             overtimePay +=
                     overtimeHours
                             * pay_amount
-                            * 1.5;
+                            * 0.5;
 
             nightPay +=
                     calculateNightPay(
@@ -146,6 +154,10 @@ public class PayrollService {
             basePay =
                     baseHours
                             * pay_amount;
+
+            // =========================
+            // 주휴수당 계산
+            // =========================
 
             for (List<ShiftVO> weekShifts : weekMap.values()) {
 
@@ -172,23 +184,46 @@ public class PayrollService {
                             ).toMinutes() / 60.0;
                 }
 
-                if (
-                        weekHours >= 15
-                                &&
-                                isWeeklyAttendanceComplete(
-                                        weekShifts,
-                                        schedules
-                                )
-                ) {
-
-                    weeklyPay +=
-                            (weekHours / 40.0)
-                                    * pay_amount;
+                // 주 15시간 미만
+                if (weekHours < 15) {
+                    continue;
                 }
-            }
-        }
 
-        else if ("MONTHLY".equalsIgnoreCase(pay_type)) {
+                // 개근 체크
+                if (!isWeeklyAttendanceComplete(
+                        weekShifts,
+                        schedules
+                )) {
+                    continue;
+                }
+
+                // =========================
+                // 소정근로일수
+                // =========================
+
+                int scheduledDays = schedules.size();
+
+                if (scheduledDays == 0) {
+                    continue;
+                }
+
+                // =========================
+                // 1일 평균 근로시간
+                // =========================
+
+                double averageDailyHours =
+                        weekHours / scheduledDays;
+
+                // =========================
+                // 법정 주휴수당
+                // =========================
+
+                weeklyPay +=
+                        averageDailyHours
+                                * pay_amount;
+            }
+
+        } else if ("MONTHLY".equalsIgnoreCase(pay_type)) {
 
             basePay =
                     pay_amount;
