@@ -242,7 +242,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
             <Text style={styles.alertTitle}>대타 요청이 있습니다</Text>
           </View>
           <Text style={styles.alertDescription}>
-            5월 28일 수요일 17:00 ~ 22:00 대타 가능하신가요?
+            6월 03일 수요일 17:00 ~ 22:00 대타 가능하신가요?
           </Text>
           <View style={styles.buttonGroup}>
             <TouchableOpacity style={styles.acceptButton}>
