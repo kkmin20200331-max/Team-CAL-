@@ -23,4 +23,10 @@ VALUES ('M_003_강남커피_박신입', 'V1StGXR8_Z5jdHi6B-myT', 'U9L0mN1o_P2qR3
 INSERT INTO store_member (id, store_id, user_id, member_role, user_level, approval_status)
 VALUES ('M_004_도쿄라운지_최대기', 'N2xY8pQ3_a1BcDeFgH1jK', 'U7yZ8aB9_c0DeF1gH2iJ4', 'STAFF', 'NEWBIE', 'PENDING');
 
+ALTER TABLE store_member
+    ADD (
+        pay_type VARCHAR2(20),
+        pay_amount NUMBER
+        );
+
 select * from store_member;

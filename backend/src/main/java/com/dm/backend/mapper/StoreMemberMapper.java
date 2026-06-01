@@ -9,11 +9,39 @@ import java.util.List;
 public interface StoreMemberMapper {
 
     // =========================
+    // [공통]
+    // =========================
+
+    //급여기준조회
+    @Select("""
+            SELECT pay_type, pay_amount
+            FROM store_member
+            WHERE user_id = #{user_id}
+            AND store_id = #{store_id}
+            """)
+    StoreMemberVo getPayInfo(
+            @Param("user_id") String user_id,
+            @Param("store_id") String store_id
+    );
+
+    // =========================
     // [직원]
     // =========================
 
     // 매장 근무 신청
-    @Insert("insert into store_member values (#{id}, #{store_id}, #{user_id}, 'guest', 'NEWBIE', 'pending')")
+    @Insert("""
+            insert into store_member
+            values (
+                #{id},
+                #{store_id},
+                #{user_id},
+                #{member_role},
+                #{user_level},
+                #{approval_status},
+                #{pay_type},
+                #{pay_amount}
+            )
+            """)
     void approveRegister(StoreMemberVo storeMemberVo);
 
     // 신청 여부 확인
@@ -38,7 +66,15 @@ public interface StoreMemberMapper {
     // 직원 거절
     // 직원 역할 변경
     // 직원 레벨 변경
-    @Update("update store_member set approval_status = #{approval_status}, member_role = #{member_role}, user_level = #{user_level} where id = #{id}")
+    @Update("""
+            update store_member
+            set approval_status = #{approval_status},
+                member_role = #{member_role},
+                user_level = #{user_level},
+                pay_type = #{pay_type},
+                pay_amount = #{pay_amount}
+            where id = #{id}
+            """)
     void updateStoreMember(StoreMemberVo storeMemberVo);
 
     // 직원 삭제

@@ -30,8 +30,17 @@ public class StoreMemberService {
                 storeMemberVo.getUser_id()
         );
 
-        if(count > 0){
+        if (count > 0) {
             throw new RuntimeException("이미 신청했거나 근무중인 매장입니다.");
+        }
+
+        // 기본값 세팅 (선택)
+        if (storeMemberVo.getPay_type() == null) {
+            storeMemberVo.setPay_type("HOURLY");
+        }
+
+        if (storeMemberVo.getPay_amount() == null) {
+            storeMemberVo.setPay_amount(10320); // 기본 시급
         }
 
         storeMemberMapper.approveRegister(storeMemberVo);

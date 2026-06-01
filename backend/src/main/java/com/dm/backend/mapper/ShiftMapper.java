@@ -23,6 +23,18 @@ public interface ShiftMapper {
             """)
     ShiftVO getShift(String id);
 
+    //월별 근무 데이터 가져오기
+    @Select("""
+            SELECT *
+            FROM shift
+            WHERE user_id = #{user_id}
+            AND work_date BETWEEN #{start_date} AND #{end_date}
+            """)
+    List<ShiftVO> getMonthlyShift(
+            @Param("user_id") String user_id,
+            @Param("start_date") Date start_date,
+            @Param("end_date") Date end_date
+    );
 
     // =========================
     // [관리자]
