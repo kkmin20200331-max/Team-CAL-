@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator, Modal, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getMyScheduleAPI } from '../../api/auth';
 
@@ -22,6 +22,8 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   const [loading, setLoading] = useState(false);
   // ✅ 이번 주 통계 상태 관리
   const [weeklyStats, setWeeklyStats] = useState({ totalHours: 0, expectedSalary: 0 });
+  // ✅ 대타 요청 알림 카드 표시 여부 상태
+  const [isAlertVisible, setIsAlertVisible] = useState(true);
 
   // ✅ 게시판 데이터 및 모달 상태 관리
   const [isPostModalVisible, setPostModalVisible] = useState(false);
@@ -36,6 +38,25 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   const handleOpenPost = (post: any) => {
     setSelectedPost(post);
     setPostModalVisible(true);
+  };
+
+  // ✅ 대타 지원 버튼 클릭 시 팝업 및 처리 핸들러
+  // 백엔드 API 연동이 완료되면 이 함수 내에서 실제로 대타 지원 요청을 보내는 로직(axios.post)으로 교체하면 됩니다.
+  const handleAcceptSubstitute = () => {
+    Alert.alert(
+      "대타 지원 확인",
+      "6월 03일 수요일 17:00 ~ 22:00 대타를 지원하시겠습니까?",
+      [
+        { text: "취소", style: "cancel" },
+        { 
+          text: "지원하기", 
+          onPress: () => {
+            setIsAlertVisible(false); // 카드 숨기기
+            Alert.alert("지원 완료", "대타 지원이 완료되었습니다!\n점주님 승인 후 내 스케줄에 최종 반영됩니다.");
+          } 
+        }
+      ]
+    );
   };
 
   useEffect(() => {
@@ -236,23 +257,25 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
         {/* ▲ 통계 반반 카드 끝 ▲ */}
 
         {/* ▼ 대타 요청 알림 카드 ▼ */}
-        <View style={styles.alertCard}>
-          <View style={styles.alertHeader}>
-            <Text style={styles.alertIcon}>🚨</Text>
-            <Text style={styles.alertTitle}>대타 요청이 있습니다</Text>
+        {isAlertVisible && (
+          <View style={styles.alertCard}>
+            <View style={styles.alertHeader}>
+              <Text style={styles.alertIcon}>🚨</Text>
+              <Text style={styles.alertTitle}>대타 요청이 있습니다</Text>
+            </View>
+            <Text style={styles.alertDescription}>
+              6월 03일 수요일 17:00 ~ 22:00 대타 가능하신가요?
+            </Text>
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity style={styles.acceptButton} onPress={handleAcceptSubstitute}>
+                <Text style={styles.acceptButtonText}>지원하기</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.rejectButton} onPress={() => setIsAlertVisible(false)}>
+                <Text style={styles.rejectButtonText}>거절</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <Text style={styles.alertDescription}>
-            6월 03일 수요일 17:00 ~ 22:00 대타 가능하신가요?
-          </Text>
-          <View style={styles.buttonGroup}>
-            <TouchableOpacity style={styles.acceptButton}>
-              <Text style={styles.acceptButtonText}>지원하기</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.rejectButton}>
-              <Text style={styles.rejectButtonText}>거절</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        )}
         {/* ▲ 대타 요청 알림 카드 끝 ▲ */}
 
         {/* ▼ 사내 게시판 영역 ▼ */}
