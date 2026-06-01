@@ -1,26 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, Modal, Pressable } from 'react-native';
-
-interface NotificationItem {
-  id: string;
-  type: 'SCHEDULE' | 'SYSTEM' | 'NOTICE';
-  title: string;
-  message: string;
-  createdAt: string;
-  isRead: boolean;
-}
-
-// 기존 데이터를 초기값용 배열로 변경
-const initialNotifications: NotificationItem[] = [
-  { id: '1', type: 'SCHEDULE', title: ' 대타 요청 알림', message: '5월 28일 수요일 17:00~22:00 대타 요청이 있습니다. 앱에서 확인 후 지원해주세요!', createdAt: '10분 전', isRead: false },
-  { id: '2', type: 'NOTICE', title: '📢 [공지] 가을 시즌 신메뉴 출시', message: '가을 시즌 신메뉴가 곧 출시됩니다!\n\n게시판에서 레시피 및 상세 매뉴얼을 꼭 확인해 주세요.', createdAt: '1시간 전', isRead: false },
-  { id: '3', type: 'SYSTEM', title: '🏥 보건증 만료 임박', message: '보건증 만료일이 7일 남았습니다.\n보건소 방문 후 마이페이지에서 새 이미지를 업로드해주세요.', createdAt: '어제', isRead: true },
-  { id: '4', type: 'SCHEDULE', title: '✅ 휴무 승인 완료', message: '요청하신 6/3(수) 휴무 신청이 승인되어 스케줄에 반영되었습니다.', createdAt: '2일 전', isRead: true },
-];
+import { NotificationContext, NotificationItem } from '../contexts/NotificationContext';
 
 const NotificationListScreen = () => {
-  // 1. 알림 리스트를 상태(State)로 전환하여 변경 가능하게 만듭니다.
-  const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
+  // ✅ 1. 알림 데이터를 나홀로 상태가 아닌 전역 상태(Context)에서 가져옵니다.
+  const { notifications, setNotifications } = useContext(NotificationContext);
+  
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
 
@@ -30,8 +15,8 @@ const NotificationListScreen = () => {
     setModalVisible(true);
     
     // 🔥 [핵심 추가] 클릭한 알림의 id와 일치하는 아이템만 isRead를 true로 변경합니다.
-    setNotifications(prevNotifications => 
-      prevNotifications.map(noti => 
+    setNotifications((prevNotifications: NotificationItem[]) => 
+      prevNotifications.map((noti: NotificationItem) => 
         noti.id === item.id ? { ...noti, isRead: true } : noti
       )
     );
@@ -44,12 +29,12 @@ const NotificationListScreen = () => {
 
   // ✅ 모든 알림 읽음 처리
   const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(noti => ({ ...noti, isRead: true })));
+    setNotifications((prev: NotificationItem[]) => prev.map((noti: NotificationItem) => ({ ...noti, isRead: true })));
   };
 
   // ✅ 알림 삭제 처리
   const handleDeleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(noti => noti.id !== id));
+    setNotifications((prev: NotificationItem[]) => prev.filter((noti: NotificationItem) => noti.id !== id));
     closeModal();
   };
 

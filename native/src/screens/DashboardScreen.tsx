@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator, Modal, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getMyScheduleAPI } from '../../api/auth';
+import { NotificationContext } from '../contexts/NotificationContext';
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
@@ -16,6 +17,9 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   // 백엔드에서 전달받은 정보 파싱 (없을 경우 기본값)
   const userName = userInfo?.name || '사용자';
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
+
+  // ✅ 전역 상태에서 안 읽은 알림 개수 가져오기
+  const { unreadCount } = useContext(NotificationContext);
 
   // ✅ 오늘의 근무 상태 관리
   const [todayShift, setTodayShift] = useState<any>(null);
@@ -176,7 +180,8 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
           </TouchableOpacity>
           <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}>
             <Text style={styles.notificationIcon}>🔔</Text>
-            <View style={styles.badge} />
+            {/* 💡 안 읽은 알림이 있을 때만 빨간 점 렌더링 */}
+            {unreadCount > 0 && <View style={styles.badge} />}
           </TouchableOpacity>
         </View>
       </View>

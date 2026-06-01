@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 // ✅ [추가 1] 하단 탭 네비게이션을 위해 필요한 라이브러리 임포트
@@ -18,6 +18,9 @@ import ScheduleScreen from './src/screens/ScheduleScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
 import BoardScreen from './src/screens/BoardScreen'; // ✅ [추가] 게시판 화면 불러오기
 
+// ✅ [추가] 알림 전역 상태 관리를 위한 Context 불러오기
+import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
+
 // ✅ [정리] 중복 선언된 Stack은 하나만 남기고, Tab 네비게이터를 생성합니다.
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -29,6 +32,9 @@ function StaffTabNavigator({ route }: any) {
   // App에서 넘겨받은 전역 상태 변경 함수를 가져옵니다.
   // ✅ setUserInfo를 추가로 받아옵니다.
   const { setIsLoggedIn, userInfo, setUserInfo } = route.params;
+
+  // ✅ 안 읽은 알림 개수 가져오기
+  const { unreadCount } = useContext(NotificationContext);
 
   return (
     <Tab.Navigator
@@ -58,7 +64,8 @@ function StaffTabNavigator({ route }: any) {
       <Tab.Screen 
         name="Notifications" 
         component={NotificationScreen} 
-        options={{ title: '알림', tabBarIcon: () => <Text>🔔</Text>, tabBarBadge: 1 }} 
+        // 💡 unreadCount가 0보다 클 때만 숫자를 보여주고, 0이면 배지를 숨깁니다(undefined)
+        options={{ title: '알림', tabBarIcon: () => <Text>🔔</Text>, tabBarBadge: unreadCount > 0 ? unreadCount : undefined }} 
       />
 
       {/* 4. 마이페이지 탭 */}
@@ -124,6 +131,7 @@ export default function App() {
   const [userInfo, setUserInfo] = useState<any>(null);
 
 return (
+  <NotificationProvider>
   <NavigationContainer>
       {/* 조건부 렌더링 시 initialRouteName은 생략해도 됩니다. */}
       <Stack.Navigator>
@@ -223,5 +231,6 @@ return (
         
       </Stack.Navigator>
   </NavigationContainer>
+  </NotificationProvider>
   );
 }
