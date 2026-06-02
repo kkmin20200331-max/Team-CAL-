@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getMyScheduleAPI } from '../../api/auth';
 import { NotificationContext } from '../contexts/NotificationContext';
@@ -15,15 +16,15 @@ type Props = {
 
 const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   
+  // ✅ 전역 언어 설정 가져오기 (가장 먼저 선언해야 아래에서 에러가 발생하지 않습니다!)
+  const { t } = useLanguage();
+
   // 백엔드에서 전달받은 정보 파싱 (없을 경우 기본값)
   const userName = userInfo?.name || t('defaultUserName');
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
 
   // ✅ 전역 상태에서 안 읽은 알림 개수 가져오기
   const { unreadCount } = useContext(NotificationContext);
-
-  // ✅ 전역 언어 설정 가져오기
-  const { t } = useLanguage();
 
   // ✅ 오늘의 근무 상태 관리
   const [todayShift, setTodayShift] = useState<any>(null);
@@ -37,11 +38,24 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   const [isPostModalVisible, setPostModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
 
-  const dummyPosts = [
-    { id: '1', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
-    { id: '2', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
-    { id: '3', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
+  // ✅ 카테고리 탭 목록 정의 (게시판과 동일하게 매핑용으로 추가)
+  const CATEGORIES = [
+    { id: 'ALL', label: 'boardTabAll' },
+    { id: 'NOTICE', label: 'boardTabNotice' },
+    { id: 'MENU', label: 'boardTabMenu' },
+    { id: 'EVENT', label: 'boardTabEvent' },
+    { id: 'MANUAL', label: 'boardTabManual' },
+    { id: 'LOST', label: 'boardTabLost' },
   ];
+
+  const dummyPosts = [
+    { id: '1', category: 'MENU', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
+    { id: '2', category: 'NOTICE', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
+    { id: '3', category: 'NOTICE', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
+  ];
+
+  // ✅ 최신 날짜 순(내림차순)으로 정렬
+  const sortedDummyPosts = [...dummyPosts].sort((a, b) => b.date.localeCompare(a.date));
 
   const handleOpenPost = (post: any) => {
     setSelectedPost(post);
@@ -296,18 +310,24 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
             </TouchableOpacity>
           </View>
           
-          {dummyPosts.map((post, index) => (
+          {sortedDummyPosts.map((post, index) => (
             <React.Fragment key={post.id}>
               <TouchableOpacity style={styles.noticeItem} onPress={() => handleOpenPost(post)} activeOpacity={0.7}>
                 <View style={styles.noticeTextContainer}>
-                  <Text style={styles.noticeItemTitle} numberOfLines={1}>{t(post.title)}</Text>
+                  {/* ✅ 카테고리 배지 추가 */}
+                  <View style={styles.categoryBadge}>
+                    <Text style={styles.categoryBadgeText}>{t(CATEGORIES.find(c => c.id === post.category)?.label || 'boardTabNotice')}</Text>
+                  </View>
+                  <Text style={styles.noticeItemTitle} numberOfLines={1}>
+                    {t(post.title).length > 14 ? t(post.title).substring(0, 14) + '..' : t(post.title)}
+                  </Text>
                   {post.badge && (
                     <View style={styles.newBadge}><Text style={styles.newBadgeText}>{t(post.badge)}</Text></View>
                   )}
                 </View>
                 <Text style={styles.noticeDate}>{post.date}</Text>
               </TouchableOpacity>
-              {index < dummyPosts.length - 1 && <View style={styles.noticeDivider} />}
+              {index < sortedDummyPosts.length - 1 && <View style={styles.noticeDivider} />}
             </React.Fragment>
           ))}
         </View>
@@ -612,6 +632,18 @@ const styles = StyleSheet.create({
     flex: 1, // 글자가 길어지면 줄임표(...) 처리되도록 공간 확보
     paddingRight: 10,
   },
+  categoryBadge: {
+    backgroundColor: '#E5E7EB',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  categoryBadgeText: {
+    color: '#4B5563',
+    fontSize: 10,
+    fontWeight: '700',
+  },
   noticeItemTitle: {
     fontSize: 15,
     color: '#374151',
@@ -640,11 +672,11 @@ const styles = StyleSheet.create({
   // --- 게시글 상세 모달 스타일 ---
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   postModalContent: { width: '85%', maxHeight: '70%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
-  postModalTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 8 },
+  postModalTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827', marginBottom: 10 },
   postModalDate: { fontSize: 13, color: '#6B7280', marginBottom: 16 },
   postModalDivider: { height: 1, backgroundColor: '#E5E7EB', marginBottom: 16 },
   postModalBody: { marginBottom: 20 },
-  postModalText: { fontSize: 15, color: '#374151', lineHeight: 24 },
+  postModalText: { fontSize: 17, color: '#374151', lineHeight: 26 },
   closeModalButton: { backgroundColor: '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   closeModalButtonText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
 });
