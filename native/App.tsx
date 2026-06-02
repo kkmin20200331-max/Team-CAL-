@@ -17,6 +17,7 @@ import NotificationScreen from './src/screens/NotificationScreen';
 import ScheduleScreen from './src/screens/ScheduleScreen';
 import ProfileEditScreen from './src/screens/ProfileEditScreen';
 import BoardScreen from './src/screens/BoardScreen'; // ✅ [추가] 게시판 화면 불러오기
+import SubstituteScreen from './src/screens/SubstituteScreen'; // ✅ [추가] 대타 전용 화면 불러오기
 
 // ✅ [추가] 알림 전역 상태 관리를 위한 Context 불러오기
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
@@ -221,6 +222,13 @@ return (
               <Stack.Screen 
                 name="Board" 
                 component={BoardScreen} 
+                options={{ headerShown: false }} 
+              />
+  
+            {/* 👇 대타 구하기 / 지원하기 화면 추가 */}
+              <Stack.Screen 
+                name="Substitute" 
+                component={SubstituteScreen} 
                 options={{ headerShown: false }} 
               />
           </>

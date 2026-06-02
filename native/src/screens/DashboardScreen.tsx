@@ -281,10 +281,11 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
 
         {/* ▼ 대타 요청 알림 카드 ▼ */}
         {isAlertVisible && (
-          <View style={styles.alertCard}>
-            <View style={styles.alertHeader}>
+          <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('Substitute')} activeOpacity={0.8}>
+            {/* 💡 누를 수 있다는 걸 알려주기 위해 화살표(〉) 추가 */}
+            <View style={styles.alertHeader}> 
               <Text style={styles.alertIcon}>🚨</Text>
-              <Text style={styles.alertTitle}>{t('subReqAlertTitle')}</Text>
+              <Text style={styles.alertTitle}>{t('subReqAlertTitle')} 〉</Text>
             </View>
             <Text style={styles.alertDescription}>
               {t('subReqAlertDesc')}
@@ -297,7 +298,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
                 <Text style={styles.rejectButtonText}>{t('rejectBtn')}</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
         {/* ▲ 대타 요청 알림 카드 끝 ▲ */}
 

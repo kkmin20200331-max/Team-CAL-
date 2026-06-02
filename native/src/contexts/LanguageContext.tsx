@@ -140,6 +140,14 @@ const translations = {
     boardTabLost: '분실물',
     badgeNew: 'NEW',
     badgeImportant: '중요!',
+    // 대타 전용 화면
+    substituteTitle: '대타 구하기 / 지원하기',
+    subTabRequest: '대타 요청 목록',
+    subTabHistory: '내 대타 이력',
+    subPointTotal: '내 누적 인센티브 점수',
+    subPointUnit: '점',
+    subEmptyReq: '현재 올라온 대타 요청이 없습니다.',
+    subEmptyHist: '아직 대타 이력이 없습니다.',
   },
   '日本語': {
     greeting: 'こんにちは',
@@ -271,6 +279,14 @@ const translations = {
     boardTabLost: '忘れ物',
     badgeNew: 'NEW',
     badgeImportant: '重要！',
+    // 대타 전용 화면
+    substituteTitle: '代打探し / 応募',
+    subTabRequest: '代打リクエストリスト',
+    subTabHistory: '自分の代打履歴',
+    subPointTotal: '累積インセンティブポイント',
+    subPointUnit: 'pt',
+    subEmptyReq: '現在、代打リクエストはありません。',
+    subEmptyHist: 'まだ代打履歴がありません。',
   },
   'English': {
     greeting: 'Hello',
@@ -402,6 +418,14 @@ const translations = {
     boardTabLost: 'Lost & Found',
     badgeNew: 'NEW',
     badgeImportant: 'Important!',
+    // Substitute Screen
+    substituteTitle: 'Substitute / Apply',
+    subTabRequest: 'Substitute Requests',
+    subTabHistory: 'My Sub History',
+    subPointTotal: 'Accumulated Incentive Points',
+    subPointUnit: 'pt',
+    subEmptyReq: 'There are no substitute requests currently.',
+    subEmptyHist: 'No substitute history yet.',
   }
 };
 
