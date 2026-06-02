@@ -37,5 +37,10 @@ public class StoreService {
     // 경민 수정 5/29 18:00
     public List<StoreVo> getAllStores() {return storeMapper.getAllStores();}
 
+    // 경민 추가 6/2 15:38
+    // 직원 소속 매장 조회
+    public StoreVo getStoreByUserId(String user_id) {
+        return storeMapper.getStoreByUserId(user_id);
+    }
 
 }

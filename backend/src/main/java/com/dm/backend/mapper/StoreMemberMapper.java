@@ -14,6 +14,11 @@ public interface StoreMemberMapper {
     void approveRegister(StoreMemberVo storeMemberVo);
 
     // 경민 수정 5/29 17:36(and -> ,)
-    @Update("update store_member set approval_status = #{approval_status}, member_role = #{member_role}, user_level = #{user_level} where id = #{id}")
+    // 직원 등급 변경
+//    @Update("update store_member set approval_status = #{approval_status}, member_role = #{member_role}, user_level = #{user_level} where id = #{id}")
+//    void updateStoreMember(StoreMemberVo storeMemberVo);
+
+    // 직원 승인 (user_id + store_id 기준)
+    @Update("UPDATE store_member SET approval_status = 'APPROVED', member_role = 'STAFF' WHERE user_id = #{user_id} AND store_id = #{store_id}")
     void updateStoreMember(StoreMemberVo storeMemberVo);
 }

@@ -10,11 +10,11 @@ public interface UserMapper {
 
     // 경민 수정 5/29 15:05
     // IN 추가
-    @Select("SELECT * FROM users WHERE role = 'staff' and id IN (select user_id from store_member where approval_status = 'APPROVED' and store_id = #{store_id})")
+    @Select("SELECT * FROM users WHERE role = 'STAFF' and id IN (select user_id from store_member where approval_status = 'APPROVED' and store_id = #{store_id})")
     List<UserVo> getStaff(String store_id);
 
     // IN 추가
-    @Select("select * from users where role = 'guest' and id IN (select user_id from store_member where approval_status = 'PENDING' and store_id = #{storeId})")
+    @Select("select * from users where role = 'GUEST' and id IN (select user_id from store_member where approval_status = 'PENDING' and store_id = #{storeId})")
     List<UserVo> getGuest(String storeId);
 
     // 선민 수정 5/28 16:46

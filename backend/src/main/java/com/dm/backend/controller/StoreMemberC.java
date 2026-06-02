@@ -25,10 +25,20 @@ public class StoreMemberC {
     }
 
     //승인거절, 승인수락, 유저 등급 설정 (수정 정보만 바꾸어서 객체로 받음, 나머지는 기존 정보 그대로 필요)
+//    @PutMapping
+//    public void updateStoreMember(StoreMemberVo storeMemberVo) {
+//        storeMemberService.updateStoreMember(storeMemberVo);
+//    }
+
     @PutMapping
-    public void updateStoreMember(StoreMemberVo storeMemberVo) {
-        storeMemberService.updateStoreMember(storeMemberVo);
+    public void updateStoreMember(@RequestParam String user_id, @RequestParam String store_id) {
+        StoreMemberVo vo = new StoreMemberVo();
+        vo.setUser_id(user_id);
+        vo.setStore_id(store_id);
+        storeMemberService.updateStoreMember(vo);
     }
+
+
 
 
 

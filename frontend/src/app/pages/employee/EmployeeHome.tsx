@@ -49,6 +49,7 @@ interface UserInfo {
 export default function EmployeeHome() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
+  const [storeName, setStoreName] = useState<string>('');
   const [shifts, setShifts] = useState<ShiftVO[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,6 +61,11 @@ export default function EmployeeHome() {
     }
     const user: UserInfo = JSON.parse(userStr);
     setCurrentUser(user);
+
+    // 경민 추가 6/2 15:38 - 직원 소속 매장 조회
+    API.get('/store/my', { params: { user_id: user.id } })
+      .then(res => { if (res.data?.name) setStoreName(res.data.name); })
+      .catch(() => {});
 
     const today = new Date();
     const twoWeeksLater = new Date(today);
@@ -158,12 +164,18 @@ export default function EmployeeHome() {
                 <p className="text-blue-100 text-sm">{currentUser?.role ?? ''}</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="text-white relative" onClick={() => {}}>
-              <Bell className="w-5 h-5" />
-              {notifications.filter(n => !n.read).length > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+            <div className="flex items-center gap-2">
+              {/* 경민 추가 6/2 15:38 - 소속 매장명 표시 */}
+              {storeName && (
+                <span className="text-sm text-blue-100 font-medium">{storeName}</span>
               )}
-            </Button>
+              <Button variant="ghost" size="icon" className="text-white relative" onClick={() => {}}>
+                <Bell className="w-5 h-5" />
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Weekly Stats */}

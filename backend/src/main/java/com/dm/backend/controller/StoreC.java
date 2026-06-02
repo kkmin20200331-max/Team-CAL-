@@ -44,4 +44,11 @@ public class StoreC {
     @GetMapping("/all")
     public List<StoreVo> getAllStores() {return storeService.getAllStores();}
 
+    // 경민 추가 6/2 15:38
+    // 직원 소속 매장 조회
+    @GetMapping("/my")
+    public StoreVo getMyStore(@RequestParam String user_id) {
+        return storeService.getStoreByUserId(user_id);
+    }
+
 }

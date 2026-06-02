@@ -33,4 +33,10 @@ public interface StoreMapper {
     // 경민 수정 5/29 18:00
     @Select("SELECT * FROM store")
     List<StoreVo> getAllStores();
+
+    // 경민 추가 6/2 15:38
+    // 직원 소속 매장 조회
+    @Select("SELECT s.* FROM store s JOIN store_member sm ON s.id = sm.store_id WHERE sm.user_id = #{user_id} AND sm.approval_status = 'APPROVED'")
+    StoreVo getStoreByUserId(String user_id);
+
 }
