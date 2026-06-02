@@ -17,6 +17,7 @@ class CameraStartRequest(BaseModel):
     source: str = Field(..., min_length=1)
     sourceType: SourceType = SourceType.VIDEO_FILE
     intervalSec: int = Field(10, ge=1, le=3600)
+    aggregationIntervalSec: int = Field(60, ge=1, le=3600)
     modelName: str = Field(default_factory=lambda: settings.default_model_name)
     imageSize: int = Field(640, ge=320, le=1280)
     confidence: float = Field(0.3, ge=0.01, le=1.0)

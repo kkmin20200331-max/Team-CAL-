@@ -1,617 +1,409 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import {
+  Activity,
   ArrowLeft,
-  TrendingUp,
-  TrendingDown,
-  Users,
-  DollarSign,
-  Star,
-  Calendar,
-  MapPin,
-  Clock,
-  Filter,
-  Download,
+  BarChart3,
   Brain,
-  Target,
-  Award,
-  ThumbsUp
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  CloudSun,
+  Download,
+  LineChart as LineChartIcon,
+  RefreshCw,
+  Sparkles,
+  TrendingUp,
+  Users,
+  Wallet,
+  Zap
 } from 'lucide-react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Line,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar
-} from 'recharts';
 
-interface CustomerSegment {
-  id: string;
-  name: string;
-  count: number;
-  percentage: number;
-  avgSpending: number;
-  visitFrequency: number;
-  characteristics: string[];
-}
+const branchNames: Record<string, string> = {
+  migeum: '컴포즈 미금점',
+  sunae: '컴포즈 수내점',
+  dongcheon: '컴포즈 동천점'
+};
 
-interface AIInsight {
-  id: string;
-  type: 'trend' | 'recommendation' | 'alert' | 'opportunity';
-  title: string;
-  description: string;
-  impact: 'high' | 'medium' | 'low';
-  actionable: boolean;
-}
+const trafficByHour = [
+  { time: '09:00', visitors: 18, sales: 21, staff: 1, recommended: 1 },
+  { time: '10:00', visitors: 24, sales: 27, staff: 1, recommended: 1 },
+  { time: '11:00', visitors: 38, sales: 41, staff: 2, recommended: 2 },
+  { time: '12:00', visitors: 72, sales: 78, staff: 3, recommended: 3 },
+  { time: '13:00', visitors: 68, sales: 73, staff: 3, recommended: 3 },
+  { time: '14:00', visitors: 42, sales: 39, staff: 2, recommended: 2 },
+  { time: '15:00', visitors: 34, sales: 28, staff: 2, recommended: 2 },
+  { time: '16:00', visitors: 39, sales: 33, staff: 2, recommended: 2 },
+  { time: '17:00', visitors: 58, sales: 51, staff: 2, recommended: 3 },
+  { time: '18:00', visitors: 86, sales: 80, staff: 2, recommended: 4 },
+  { time: '19:00', visitors: 94, sales: 87, staff: 3, recommended: 4 },
+  { time: '20:00', visitors: 76, sales: 70, staff: 3, recommended: 3 },
+  { time: '21:00', visitors: 48, sales: 42, staff: 2, recommended: 2 }
+];
 
-const CustomerAnalytics: React.FC = () => {
+const weeklyPattern = [
+  { day: '월', morning: 45, lunch: 132, evening: 168 },
+  { day: '화', morning: 42, lunch: 118, evening: 154 },
+  { day: '수', morning: 48, lunch: 126, evening: 172 },
+  { day: '목', morning: 53, lunch: 141, evening: 188 },
+  { day: '금', morning: 58, lunch: 156, evening: 238 },
+  { day: '토', morning: 74, lunch: 184, evening: 252 },
+  { day: '일', morning: 69, lunch: 176, evening: 214 }
+];
+
+const flowSources = [
+  { name: 'CCTV 집계', value: 46, color: '#2563eb' },
+  { name: 'POS 매출', value: 31, color: '#16a34a' },
+  { name: '스케줄', value: 15, color: '#f97316' },
+  { name: '외부요인', value: 8, color: '#7c3aed' }
+];
+
+const aiInsights = [
+  {
+    label: '인력 부족 예상',
+    title: '오늘 18:00-20:00 응대 지연 가능성이 높습니다',
+    body: '최근 4주 금요일 저녁 방문 흐름과 오늘 예약/날씨 조건을 합산하면 피크 구간 방문량이 평소보다 24% 높게 예상됩니다.',
+    action: '홀 1명 추가 배치',
+    impact: '높음'
+  },
+  {
+    label: '전환율 점검',
+    title: '15:00-17:00 방문 대비 매출 전환이 낮습니다',
+    body: '방문 흐름은 유지되지만 주문 건수는 같은 시간대 평균보다 낮습니다. 직원 증원보다 메뉴 노출이나 세트 안내 점검이 우선입니다.',
+    action: '프로모션 배너 점검',
+    impact: '보통'
+  },
+  {
+    label: '스케줄 최적화',
+    title: '점심 피크 이후 휴게 분산이 필요합니다',
+    body: '12:00-14:00 집중 근무 후 14:30에 휴게가 몰려 16:00 준비 업무가 부족해질 수 있습니다.',
+    action: '휴게 30분 분산',
+    impact: '보통'
+  }
+];
+
+const scheduleRecommendations = [
+  { time: '11:00-14:00', current: '3명', recommended: '3명', status: '적정', reason: '점심 방문량과 POS 주문량이 균형적입니다.' },
+  { time: '17:00-18:00', current: '2명', recommended: '3명', status: '보강', reason: '퇴근 전 유입이 빠르게 증가하는 전환 구간입니다.' },
+  { time: '18:00-20:00', current: '2-3명', recommended: '4명', status: '긴급', reason: '방문량, 매출, 날씨, 주변 행사 지표가 모두 상승 방향입니다.' },
+  { time: '20:00-21:00', current: '3명', recommended: '3명', status: '유지', reason: '피크 이후 정리 업무까지 현 배치로 대응 가능합니다.' }
+];
+
+const kpis = [
+  { title: '현재 매장 인원', value: '32명', delta: '보통 대비 +18%', icon: Users, tone: 'text-blue-600' },
+  { title: '오늘 누적 방문', value: '486명', delta: '전주 같은 요일 +12%', icon: Activity, tone: 'text-emerald-600' },
+  { title: '피크 예상', value: '18-20시', delta: '필요 인원 4명', icon: Clock, tone: 'text-orange-600' },
+  { title: '방문-매출 전환', value: '82%', delta: '목표 대비 -3%', icon: Wallet, tone: 'text-violet-600' }
+];
+
+export default function CustomerAnalytics() {
   const navigate = useNavigate();
-  const [selectedPeriod, setSelectedPeriod] = useState('30days');
-  const [selectedLocation, setSelectedLocation] = useState('all');
+  const { branchId } = useParams();
+  const [activeTab, setActiveTab] = useState<'live' | 'pattern' | 'insight' | 'schedule'>('live');
 
-  // Chart data - 방문객 추이
-  const visitorTrendData = [
-    { date: '3/1', visitors: 245, newVisitors: 45, returning: 200 },
-    { date: '3/5', visitors: 289, newVisitors: 52, returning: 237 },
-    { date: '3/10', visitors: 312, newVisitors: 48, returning: 264 },
-    { date: '3/15', visitors: 276, newVisitors: 38, returning: 238 },
-    { date: '3/20', visitors: 334, newVisitors: 61, returning: 273 },
-    { date: '3/25', visitors: 298, newVisitors: 44, returning: 254 },
-    { date: '3/30', visitors: 356, newVisitors: 67, returning: 289 }
-  ];
-
-  // Chart data - 시간대별 방문
-  const hourlyVisitData = [
-    { hour: '09시', count: 45 },
-    { hour: '10시', count: 62 },
-    { hour: '11시', count: 89 },
-    { hour: '12시', count: 156 },
-    { hour: '13시', count: 134 },
-    { hour: '14시', count: 78 },
-    { hour: '15시', count: 56 },
-    { hour: '16시', count: 67 },
-    { hour: '17시', count: 92 },
-    { hour: '18시', count: 145 },
-    { hour: '19시', count: 178 },
-    { hour: '20시', count: 156 },
-    { hour: '21시', count: 89 }
-  ];
-
-  // Chart data - 연령대별 분포
-  const ageDistributionData = [
-    { name: '10대', value: 8, percentage: 5 },
-    { name: '20대', value: 62, percentage: 38 },
-    { name: '30대', value: 48, percentage: 29 },
-    { name: '40대', value: 32, percentage: 20 },
-    { name: '50대+', value: 13, percentage: 8 }
-  ];
-
-  // Chart data - 고객 만족도
-  const satisfactionData = [
-    { category: '음식 품질', score: 4.5, maxScore: 5 },
-    { category: '서비스', score: 4.3, maxScore: 5 },
-    { category: '청결도', score: 4.7, maxScore: 5 },
-    { category: '가격', score: 3.8, maxScore: 5 },
-    { category: '분위기', score: 4.2, maxScore: 5 },
-    { category: '접근성', score: 4.6, maxScore: 5 }
-  ];
-
-  // Chart data - 매출 기여도
-  const revenueContributionData = [
-    { segment: 'VIP 고객', value: 4500000, percentage: 35 },
-    { segment: '단골 고객', value: 5200000, percentage: 40 },
-    { segment: '신규 고객', value: 2600000, percentage: 20 },
-    { segment: '일회성 고객', value: 650000, percentage: 5 }
-  ];
-
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-
-  // 고객 세그먼트
-  const customerSegments: CustomerSegment[] = [
-    {
-      id: 'SEG001',
-      name: 'VIP 고객',
-      count: 89,
-      percentage: 5,
-      avgSpending: 85000,
-      visitFrequency: 12.5,
-      characteristics: ['고액 결제', '주 2-3회 방문', '프리미엄 메뉴 선호', '추천 고객 높음']
-    },
-    {
-      id: 'SEG002',
-      name: '단골 고객',
-      count: 342,
-      percentage: 20,
-      avgSpending: 45000,
-      visitFrequency: 6.2,
-      characteristics: ['정기 방문', '특정 메뉴 선호', '높은 만족도', '리뷰 작성']
-    },
-    {
-      id: 'SEG003',
-      name: '신규 고객',
-      count: 156,
-      percentage: 9,
-      avgSpending: 32000,
-      visitFrequency: 1.2,
-      characteristics: ['첫 방문', '프로모션 반응', '탐색 단계', '다양한 메뉴 시도']
-    },
-    {
-      id: 'SEG004',
-      name: '주말 방문객',
-      count: 445,
-      percentage: 26,
-      avgSpending: 38000,
-      visitFrequency: 2.8,
-      characteristics: ['주말 집중', '그룹 방문', '가족 단위', '브런치 선호']
-    }
-  ];
-
-  // AI 인사이트
-  const aiInsights: AIInsight[] = [
-    {
-      id: 'AI001',
-      type: 'trend',
-      title: '주말 저녁 시간대 방문객 20% 증가',
-      description: '최근 3주간 주말 저녁(18-21시) 방문객이 지속적으로 증가하고 있습니다. 추가 인력 배치를 고려하세요.',
-      impact: 'high',
-      actionable: true
-    },
-    {
-      id: 'AI002',
-      type: 'recommendation',
-      title: '20대 고객 타겟 프로모션 추천',
-      description: '20대 고객의 재방문율이 38%로 높습니다. 소셜미디어 이벤트를 통해 신규 유입을 늘릴 수 있습니다.',
-      impact: 'high',
-      actionable: true
-    },
-    {
-      id: 'AI003',
-      type: 'alert',
-      title: '평일 오후 시간대 방문객 감소',
-      description: '평일 14-17시 방문객이 전월 대비 15% 감소했습니다. 오후 할인 이벤트를 고려하세요.',
-      impact: 'medium',
-      actionable: true
-    },
-    {
-      id: 'AI004',
-      type: 'opportunity',
-      title: '신메뉴 런칭 최적 타이밍',
-      description: '고객 만족도가 높고 신규 고객 유입이 증가하는 시점입니다. 신메뉴 출시에 적합한 타이밍입니다.',
-      impact: 'high',
-      actionable: true
-    },
-    {
-      id: 'AI005',
-      type: 'trend',
-      title: 'VIP 고객 증가 추세',
-      description: 'VIP 고객 수가 전월 대비 12% 증가했습니다. 멤버십 프로그램 강화를 권장합니다.',
-      impact: 'medium',
-      actionable: true
-    }
-  ];
-
-  const getImpactBadge = (impact: string) => {
-    switch (impact) {
-      case 'high':
-        return <Badge className="bg-red-500">높음</Badge>;
-      case 'medium':
-        return <Badge className="bg-yellow-500">보통</Badge>;
-      case 'low':
-        return <Badge className="bg-blue-500">낮음</Badge>;
-      default:
-        return null;
-    }
-  };
-
-  const getInsightIcon = (type: string) => {
-    switch (type) {
-      case 'trend':
-        return <TrendingUp className="w-5 h-5 text-blue-500" />;
-      case 'recommendation':
-        return <Target className="w-5 h-5 text-green-500" />;
-      case 'alert':
-        return <TrendingDown className="w-5 h-5 text-red-500" />;
-      case 'opportunity':
-        return <Award className="w-5 h-5 text-purple-500" />;
-      default:
-        return <Brain className="w-5 h-5 text-gray-500" />;
-    }
-  };
-
-  const stats = {
-    totalVisitors: 8943,
-    newVisitors: 1567,
-    returningRate: 82.5,
-    avgSatisfaction: 4.35,
-    totalRevenue: 12950000
-  };
+  const currentBranch = branchNames[branchId || 'migeum'] || '선택 매장';
+  const peakHour = useMemo(
+    () => trafficByHour.reduce((max, row) => (row.visitors > max.visitors ? row : max), trafficByHour[0]),
+    []
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/admin')}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            대시보드로 돌아가기
-          </Button>
-
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50">
+      <header className="border-b bg-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 md:flex-row md:items-center md:justify-between md:px-6">
+          <div className="flex items-start gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(`/admin/dashboard/${branchId || 'migeum'}`)}
+              aria-label="대시보드로 돌아가기"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                <Brain className="w-8 h-8 text-blue-500" />
-                AI 고객 분석
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                <span>{currentBranch}</span>
+                <ChevronRight className="h-4 w-4" />
+                <span>AI 고객 분석</span>
+              </div>
+              <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-950 md:text-3xl">
+                <Brain className="h-7 w-7 text-blue-600" />
+                실시간 고객 행동 분석 및 인사이트
               </h1>
-              <p className="text-gray-600 mt-1">실시간 고객 행동 분석 및 인사이트</p>
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                리포트 다운로드
-              </Button>
+              <p className="mt-1 text-sm text-slate-600">
+                CCTV 집계, POS, 날씨, 근무 데이터를 조합해 방문 흐름과 스케줄 추천을 제공합니다.
+              </p>
             </div>
           </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-gray-500" />
-              <select
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="border rounded-lg px-3 py-2"
-              >
-                <option value="7days">최근 7일</option>
-                <option value="30days">최근 30일</option>
-                <option value="90days">최근 90일</option>
-                <option value="1year">최근 1년</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-gray-500" />
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="border rounded-lg px-3 py-2"
-              >
-                <option value="all">전체 매장</option>
-                <option value="강남점">강남점</option>
-                <option value="홍대점">홍대점</option>
-                <option value="신촌점">신촌점</option>
-              </select>
-            </div>
-
-            <Button variant="outline">
-              <Filter className="w-4 h-4 mr-2" />
-              고급 필터
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              새로고침
+            </Button>
+            <Button className="gap-2">
+              <Download className="h-4 w-4" />
+              리포트
             </Button>
           </div>
         </div>
+      </header>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">총 방문객</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.totalVisitors.toLocaleString()}</p>
-                  <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                    <TrendingUp className="w-3 h-3" />
-                    +12.5%
-                  </p>
+      <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+        <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {kpis.map((item) => (
+            <Card key={item.title} className="rounded-lg">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-slate-500">{item.title}</p>
+                    <p className="mt-2 text-3xl font-bold text-slate-950">{item.value}</p>
+                    <p className="mt-2 text-sm text-slate-500">{item.delta}</p>
+                  </div>
+                  <item.icon className={`h-6 w-6 ${item.tone}`} />
                 </div>
-                <Users className="w-8 h-8 text-blue-400" />
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+
+        <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card className="rounded-lg lg:col-span-2">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <LineChartIcon className="h-5 w-5 text-blue-600" />
+                  시간대별 방문 흐름
+                </CardTitle>
+                <div className="grid grid-cols-4 gap-1 rounded-lg bg-slate-100 p-1 text-sm">
+                  {[
+                    ['live', '실시간'],
+                    ['pattern', '패턴'],
+                    ['insight', '인사이트'],
+                    ['schedule', '스케줄']
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setActiveTab(value as typeof activeTab)}
+                      className={`rounded-md px-3 py-2 font-medium transition ${
+                        activeTab === value ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[330px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={trafficByHour}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="time" tick={{ fill: '#64748b', fontSize: 12 }} />
+                    <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
+                    <Tooltip />
+                    <Bar dataKey="visitors" name="방문 인원" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                    <Line dataKey="staff" name="현재 배치" stroke="#16a34a" strokeWidth={3} dot={false} />
+                    <Line dataKey="recommended" name="추천 인원" stroke="#f97316" strokeWidth={3} strokeDasharray="5 5" />
+                  </ComposedChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">신규 고객</p>
-                  <p className="text-3xl font-bold text-green-600">{stats.newVisitors.toLocaleString()}</p>
-                  <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                    <TrendingUp className="w-3 h-3" />
-                    +8.3%
-                  </p>
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-orange-500" />
+                현재 판단
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+                <p className="text-sm font-medium text-orange-700">가장 혼잡한 시간</p>
+                <p className="mt-1 text-3xl font-bold text-orange-950">{peakHour.time}</p>
+                <p className="mt-2 text-sm text-orange-800">예상 방문 {peakHour.visitors}명, 추천 배치 {peakHour.recommended}명</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3">
+                  <CloudSun className="mb-2 h-5 w-5 text-sky-600" />
+                  <p className="text-sm text-slate-500">날씨 영향</p>
+                  <p className="font-semibold">방문 +7%</p>
                 </div>
-                <Target className="w-8 h-8 text-green-400" />
+                <div className="rounded-lg border p-3">
+                  <Calendar className="mb-2 h-5 w-5 text-violet-600" />
+                  <p className="text-sm text-slate-500">주변 일정</p>
+                  <p className="font-semibold">행사 있음</p>
+                </div>
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="text-sm font-medium text-slate-700">데이터 조합 비중</p>
+                <div className="mt-3 h-[160px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={flowSources} dataKey="value" innerRadius={42} outerRadius={68} paddingAngle={3}>
+                        {flowSources.map((source) => (
+                          <Cell key={source.name} fill={source.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </CardContent>
           </Card>
+        </section>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">재방문율</p>
-                  <p className="text-3xl font-bold text-purple-600">{stats.returningRate}%</p>
-                  <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                    <TrendingUp className="w-3 h-3" />
-                    +3.2%
-                  </p>
-                </div>
-                <ThumbsUp className="w-8 h-8 text-purple-400" />
+        {activeTab === 'pattern' && (
+          <Card className="mb-6 rounded-lg">
+            <CardHeader>
+              <CardTitle>요일별 방문 패턴</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={weeklyPattern}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="day" />
+                    <YAxis />
+                    <Tooltip />
+                    <Area dataKey="morning" stackId="1" name="오전" stroke="#60a5fa" fill="#93c5fd" />
+                    <Area dataKey="lunch" stackId="1" name="점심" stroke="#22c55e" fill="#86efac" />
+                    <Area dataKey="evening" stackId="1" name="저녁" stroke="#f97316" fill="#fdba74" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
+        )}
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">평균 만족도</p>
-                  <p className="text-3xl font-bold text-yellow-600">{stats.avgSatisfaction}</p>
-                  <p className="text-xs text-gray-500 mt-1">/ 5.0</p>
+        <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <Card className="rounded-lg lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-blue-600" />
+                Gemini AI 인사이트 초안
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {aiInsights.map((insight) => (
+                <div key={insight.title} className="rounded-lg border p-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">{insight.label}</Badge>
+                        <Badge className={insight.impact === '높음' ? 'bg-red-600' : 'bg-amber-500'}>{insight.impact}</Badge>
+                      </div>
+                      <h3 className="font-semibold text-slate-950">{insight.title}</h3>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">{insight.body}</p>
+                    </div>
+                    <Button variant="outline" className="shrink-0 gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      {insight.action}
+                    </Button>
+                  </div>
                 </div>
-                <Star className="w-8 h-8 text-yellow-400" />
-              </div>
+              ))}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">총 매출</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {(stats.totalRevenue / 10000).toFixed(0)}만원
-                  </p>
-                  <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                    <TrendingUp className="w-3 h-3" />
-                    +15.7%
-                  </p>
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-emerald-600" />
+                운영 지표
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[
+                ['혼잡도', '높음', 'w-[78%]', 'bg-orange-500'],
+                ['응대 여유', '주의', 'w-[42%]', 'bg-blue-500'],
+                ['매출 전환', '양호', 'w-[82%]', 'bg-emerald-500'],
+                ['스케줄 적합도', '보강 필요', 'w-[64%]', 'bg-violet-500']
+              ].map(([label, value, width, color]) => (
+                <div key={label}>
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="text-slate-600">{label}</span>
+                    <span className="font-medium text-slate-950">{value}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-100">
+                    <div className={`h-2 rounded-full ${width} ${color}`} />
+                  </div>
                 </div>
-                <DollarSign className="w-8 h-8 text-blue-400" />
-              </div>
+              ))}
             </CardContent>
           </Card>
-        </div>
+        </section>
 
-        {/* AI Insights */}
-        <Card className="mb-6">
+        <Card className="rounded-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Brain className="w-5 h-5" />
-              AI 인사이트 및 추천
+              <TrendingUp className="h-5 w-5 text-orange-600" />
+              AI 스케줄 추천
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {aiInsights.map(insight => (
-                <div
-                  key={insight.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1">
-                      {getInsightIcon(insight.type)}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold">{insight.title}</h4>
-                          {getImpactBadge(insight.impact)}
-                        </div>
-                        <p className="text-sm text-gray-600">{insight.description}</p>
-                      </div>
-                    </div>
-                    {insight.actionable && (
-                      <Button size="sm">조치하기</Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Visitor Trend */}
-          <Card>
-            <CardHeader>
-              <CardTitle>방문객 추이</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={visitorTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Area
-                    type="monotone"
-                    dataKey="newVisitors"
-                    stackId="1"
-                    stroke="#10B981"
-                    fill="#10B981"
-                    name="신규 고객"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="returning"
-                    stackId="1"
-                    stroke="#3B82F6"
-                    fill="#3B82F6"
-                    name="재방문 고객"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Hourly Visits */}
-          <Card>
-            <CardHeader>
-              <CardTitle>시간대별 방문</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={hourlyVisitData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hour" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3B82F6" name="방문객 수" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Age Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle>연령대별 분포</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={ageDistributionData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percentage }) => `${name} ${percentage}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {ageDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Satisfaction Radar */}
-          <Card>
-            <CardHeader>
-              <CardTitle>고객 만족도 분석</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <RadarChart data={satisfactionData}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="category" />
-                  <PolarRadiusAxis domain={[0, 5]} />
-                  <Radar
-                    name="만족도"
-                    dataKey="score"
-                    stroke="#3B82F6"
-                    fill="#3B82F6"
-                    fillOpacity={0.6}
-                  />
-                  <Tooltip />
-                </RadarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Customer Segments */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>고객 세그먼트 분석</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {customerSegments.map(segment => (
-                <div
-                  key={segment.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-lg">{segment.name}</h3>
-                    <Badge className="bg-blue-100 text-blue-700" variant="outline">
-                      {segment.percentage}%
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 mb-3">
-                    <div>
-                      <p className="text-sm text-gray-600">고객 수</p>
-                      <p className="font-bold text-xl">{segment.count}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">평균 지출</p>
-                      <p className="font-bold text-xl">
-                        {(segment.avgSpending / 1000).toFixed(0)}K
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">방문 빈도</p>
-                      <p className="font-bold text-xl">{segment.visitFrequency}</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">특징</p>
-                    <div className="flex flex-wrap gap-2">
-                      {segment.characteristics.map((char, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {char}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="border-b text-slate-500">
+                  <tr>
+                    <th className="py-3 font-medium">시간대</th>
+                    <th className="py-3 font-medium">현재 배치</th>
+                    <th className="py-3 font-medium">추천 배치</th>
+                    <th className="py-3 font-medium">상태</th>
+                    <th className="py-3 font-medium">추천 이유</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scheduleRecommendations.map((row) => (
+                    <tr key={row.time} className="border-b last:border-0">
+                      <td className="py-4 font-semibold text-slate-950">{row.time}</td>
+                      <td className="py-4 text-slate-600">{row.current}</td>
+                      <td className="py-4 text-slate-950">{row.recommended}</td>
+                      <td className="py-4">
+                        <Badge
+                          className={
+                            row.status === '긴급'
+                              ? 'bg-red-600'
+                              : row.status === '보강'
+                                ? 'bg-orange-500'
+                                : 'bg-slate-700'
+                          }
+                        >
+                          {row.status}
                         </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                      <td className="py-4 text-slate-600">{row.reason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
-
-        {/* Revenue Contribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>세그먼트별 매출 기여도</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={revenueContributionData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="segment" type="category" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="value" fill="#3B82F6" name="매출 (원)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      </main>
     </div>
   );
-};
-
-export default CustomerAnalytics;
+}
