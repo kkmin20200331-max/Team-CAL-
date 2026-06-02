@@ -1,129 +1,178 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import axios from 'axios';
 import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  User,
-  MapPin,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Edit,
-  Plus,
-  Phone,
-  Mail
+  ArrowLeft, Calendar, Clock, User,
+  AlertCircle, CheckCircle, XCircle,
+  Plus, Phone, Trash2, X
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
+import ProfilePanel from '../../components/admin/ProfilePanel';
 
-interface ShiftAssignment {
+const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+
+interface ShiftVO {
   id: string;
-  employeeId: string;
-  employeeName: string;
+  store_id: string;
+  user_id: string;
+  work_date: string;
+  start_at: string;
+  end_at: string;
+  status: string;
+}
+
+interface Employee {
+  id: string;
+  name: string;
   phone: string;
-  position: string;
-  startTime: string;
-  endTime: string;
-  location: string;
-  status: 'confirmed' | 'pending' | 'cancelled';
-  breakTime: number;
-  notes?: string;
+  username: string;
 }
 
 const DailySchedule: React.FC = () => {
   const navigate = useNavigate();
-  const { date } = useParams<{ date: string }>();
+  const { branchId, date } = useParams<{ branchId: string; date: string }>();
 
-  const [selectedDate, setSelectedDate] = useState(date || '2024-03-15');
-  const [selectedLocation, setSelectedLocation] = useState('all');
+  const [selectedDate, setSelectedDate] = useState(date || new Date().toISOString().split('T')[0]);
+  const [shifts, setShifts] = useState<ShiftVO[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - 일일 근무 스케줄
-  const [schedules, setSchedules] = useState<ShiftAssignment[]>([
-    {
-      id: '1',
-      employeeId: 'EMP001',
-      employeeName: '김민수',
-      phone: '010-1234-5678',
-      position: '주방장',
-      startTime: '09:00',
-      endTime: '18:00',
-      location: '강남점',
-      status: 'confirmed',
-      breakTime: 60,
-      notes: '오픈 담당'
-    },
-    {
-      id: '2',
-      employeeId: 'EMP002',
-      employeeName: '이지은',
-      phone: '010-2345-6789',
-      position: '서빙',
-      startTime: '10:00',
-      endTime: '19:00',
-      location: '강남점',
-      status: 'confirmed',
-      breakTime: 60
-    },
-    {
-      id: '3',
-      employeeId: 'EMP003',
-      employeeName: '박철수',
-      phone: '010-3456-7890',
-      position: '주방보조',
-      startTime: '11:00',
-      endTime: '20:00',
-      location: '강남점',
-      status: 'pending',
-      breakTime: 60
-    },
-    {
-      id: '4',
-      employeeId: 'EMP004',
-      employeeName: '최영희',
-      phone: '010-4567-8901',
-      position: '서빙',
-      startTime: '17:00',
-      endTime: '22:00',
-      location: '홍대점',
-      status: 'confirmed',
-      breakTime: 30
-    },
-    {
-      id: '5',
-      employeeId: 'EMP005',
-      employeeName: '정대호',
-      phone: '010-5678-9012',
-      position: '주방장',
-      startTime: '08:00',
-      endTime: '17:00',
-      location: '홍대점',
-      status: 'cancelled',
-      breakTime: 60,
-      notes: '개인 사정으로 결근'
+  // 모달 상태
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [editingShift, setEditingShift] = useState<ShiftVO | null>(null);
+  const [form, setForm] = useState({
+    user_id: '',
+    start_time: '09:00',
+    end_time: '18:00',
+    status: 'confirmed',
+  });
+
+  useEffect(() => {
+    if (branchId) {
+      fetchShifts();
+      fetchEmployees();
     }
-  ]);
+  }, [selectedDate, branchId]);
 
-  const locations = ['all', '강남점', '홍대점', '신촌점'];
+  const fetchShifts = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get('/shift', {
+        params: { store_id: branchId, start_date: selectedDate, end_date: selectedDate }
+      });
+      setShifts(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error('근무 조회 실패:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredSchedules = selectedLocation === 'all'
-    ? schedules
-    : schedules.filter(s => s.location === selectedLocation);
+  const fetchEmployees = async () => {
+    try {
+      const res = await API.get('/users', { params: { store_id: branchId } });
+      setEmployees(Array.isArray(res.data) ? res.data : []);
+    } catch {}
+  };
 
-  // 시간별로 그룹화
+  const getEmployeeName = (user_id: string) =>
+    employees.find(e => e.id === user_id)?.name ?? '알 수 없음';
+
+  const getEmployeePhone = (user_id: string) =>
+    employees.find(e => e.id === user_id)?.phone ?? '';
+
+  const formatTime = (isoStr: string) => {
+    if (!isoStr) return '';
+    if (isoStr.includes('T')) return isoStr.split('T')[1].substring(0, 5);
+    if (isoStr.includes(' ')) return isoStr.split(' ')[1].substring(0, 5);
+    return isoStr.substring(0, 5);
+  };
+
+  const openAddModal = () => {
+    setModalMode('add');
+    setEditingShift(null);
+    setForm({
+      user_id: employees[0]?.id ?? '',
+      start_time: '09:00',
+      end_time: '18:00',
+      status: 'confirmed',
+    });
+    setModalOpen(true);
+  };
+
+  const openEditModal = (shift: ShiftVO) => {
+    setModalMode('edit');
+    setEditingShift(shift);
+    setForm({
+      user_id: shift.user_id,
+      start_time: formatTime(shift.start_at),
+      end_time: formatTime(shift.end_at),
+      status: shift.status,
+    });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!form.user_id) { alert('직원을 선택해주세요.'); return; }
+    try {
+      if (modalMode === 'add') {
+        await API.post('/shift', {
+          id: 'SFT_' + Date.now(),
+          store_id: branchId,
+          user_id: form.user_id,
+          work_date: selectedDate,
+          start_at: `${selectedDate} ${form.start_time}:00`,
+          end_at: `${selectedDate} ${form.end_time}:00`,
+          status: form.status,
+        });
+        alert('근무가 추가되었습니다.');
+      } else if (editingShift) {
+        await API.put('/shift', {
+          ...editingShift,
+          user_id: form.user_id,
+          start_at: `${selectedDate} ${form.start_time}:00`,
+          end_at: `${selectedDate} ${form.end_time}:00`,
+          status: form.status,
+        });
+        alert('근무가 수정되었습니다.');
+      }
+      setModalOpen(false);
+      fetchShifts();
+    } catch {
+      alert('처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('이 근무를 삭제하시겠습니까?')) return;
+    try {
+      await API.delete('/shift', { params: { id } });
+      fetchShifts();
+    } catch {
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleContact = (user_id: string) => {
+    const phone = getEmployeePhone(user_id);
+    if (phone) window.location.href = `tel:${phone}`;
+    else alert('연락처 정보가 없습니다.');
+  };
+
+  // 시간별 그룹화
   const groupByHour = () => {
-    const hours: { [key: string]: ShiftAssignment[] } = {};
-
+    const hours: { [key: string]: ShiftVO[] } = {};
     for (let i = 0; i < 24; i++) {
       const hour = i.toString().padStart(2, '0') + ':00';
-      hours[hour] = filteredSchedules.filter(schedule => {
-        const startHour = parseInt(schedule.startTime.split(':')[0]);
-        const endHour = parseInt(schedule.endTime.split(':')[0]);
+      hours[hour] = shifts.filter(s => {
+        const startHour = parseInt(formatTime(s.start_at).split(':')[0]);
+        const endHour = parseInt(formatTime(s.end_at).split(':')[0]);
         return i >= startHour && i < endHour;
       });
     }
-
     return hours;
   };
 
@@ -131,271 +180,247 @@ const DailySchedule: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'confirmed':
-        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />확정</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-500"><AlertCircle className="w-3 h-3 mr-1" />대기</Badge>;
-      case 'cancelled':
-        return <Badge className="bg-red-500"><XCircle className="w-3 h-3 mr-1" />취소</Badge>;
-      default:
-        return null;
+      case 'confirmed': return <Badge className="bg-green-500 text-white"><CheckCircle className="w-3 h-3 mr-1" />확정</Badge>;
+      case 'pending':   return <Badge className="bg-yellow-500 text-white"><AlertCircle className="w-3 h-3 mr-1" />대기</Badge>;
+      case 'cancelled': return <Badge className="bg-red-500 text-white"><XCircle className="w-3 h-3 mr-1" />취소</Badge>;
+      default: return null;
     }
   };
 
-  const calculateStats = () => {
-    const total = filteredSchedules.length;
-    const confirmed = filteredSchedules.filter(s => s.status === 'confirmed').length;
-    const pending = filteredSchedules.filter(s => s.status === 'pending').length;
-    const cancelled = filteredSchedules.filter(s => s.status === 'cancelled').length;
-    const totalHours = filteredSchedules
-      .filter(s => s.status !== 'cancelled')
-      .reduce((sum, s) => {
-        const start = parseInt(s.startTime.split(':')[0]) * 60 + parseInt(s.startTime.split(':')[1]);
-        const end = parseInt(s.endTime.split(':')[0]) * 60 + parseInt(s.endTime.split(':')[1]);
-        return sum + (end - start - s.breakTime) / 60;
-      }, 0);
-
-    return { total, confirmed, pending, cancelled, totalHours };
+  const stats = {
+    total: shifts.length,
+    confirmed: shifts.filter(s => s.status === 'confirmed').length,
+    pending: shifts.filter(s => s.status === 'pending').length,
+    cancelled: shifts.filter(s => s.status === 'cancelled').length,
+    totalHours: shifts.filter(s => s.status !== 'cancelled').reduce((sum, s) => {
+      const [sh, sm] = formatTime(s.start_at).split(':').map(Number);
+      const [eh, em] = formatTime(s.end_at).split(':').map(Number);
+      return sum + (eh * 60 + em - sh * 60 - sm) / 60;
+    }, 0),
   };
 
-  const stats = calculateStats();
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/admin/schedule')}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            스케줄로 돌아가기
-          </Button>
-
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">일일 근무 스케줄</h1>
-              <p className="text-gray-600 mt-1">상세 시간별 근무 현황</p>
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">일일 근무 스케줄</h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">상세 시간별 근무 현황</p>
+              </div>
             </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline">
-                <Edit className="w-4 h-4 mr-2" />
-                일괄 수정
+            <div className="flex items-center gap-3">
+              <Button onClick={openAddModal}>
+                <Plus className="w-4 h-4 mr-2" />근무 추가
               </Button>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                근무 추가
-              </Button>
+              <ProfilePanel />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-gray-500" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="border rounded-lg px-3 py-2"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-gray-500" />
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                className="border rounded-lg px-3 py-2"
-              >
-                {locations.map(loc => (
-                  <option key={loc} value={loc}>
-                    {loc === 'all' ? '전체 매장' : loc}
-                  </option>
-                ))}
-              </select>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* 날짜 필터 */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-gray-500" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="border rounded-lg px-3 py-2"
+            />
           </div>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-gray-600">총 근무자</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-gray-600">확정</p>
-                <p className="text-3xl font-bold text-green-600">{stats.confirmed}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-gray-600">대기</p>
-                <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-gray-600">취소</p>
-                <p className="text-3xl font-bold text-red-600">{stats.cancelled}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <p className="text-sm text-gray-600">총 근무시간</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.totalHours.toFixed(1)}h</p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* 뷰 전환 버튼 */}
+        <div className="flex gap-3 mb-6">
+          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}>
+            <Calendar className="w-4 h-4 mr-2" />월간 근무표 보기
+          </Button>
+          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}>
+            <Calendar className="w-4 h-4 mr-2" />주간 근무표 보기
+          </Button>
         </div>
 
-        {/* Schedule Timeline */}
+        {/* 통계 */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">총 근무자</p><p className="text-3xl font-bold text-gray-900">{stats.total}</p></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">확정</p><p className="text-3xl font-bold text-green-600">{stats.confirmed}</p></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">대기</p><p className="text-3xl font-bold text-yellow-600">{stats.pending}</p></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">취소</p><p className="text-3xl font-bold text-red-600">{stats.cancelled}</p></CardContent></Card>
+          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">총 근무시간</p><p className="text-3xl font-bold text-blue-600">{stats.totalHours.toFixed(1)}h</p></CardContent></Card>
+        </div>
+
+        {/* 시간별 타임라인 */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              시간별 근무 현황
+              <Clock className="w-5 h-5" />시간별 근무 현황
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {Object.entries(hourlySchedule).map(([hour, assignments]) => {
-                if (assignments.length === 0) return null;
-
-                return (
-                  <div key={hour} className="border-l-4 border-blue-500 pl-4 py-2">
-                    <h3 className="font-semibold text-lg mb-3">{hour}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {assignments.map(assignment => (
-                        <div
-                          key={assignment.id}
-                          className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-gray-500" />
-                              <span className="font-semibold">{assignment.employeeName}</span>
-                            </div>
-                            {getStatusBadge(assignment.status)}
-                          </div>
-
-                          <div className="space-y-1 text-sm">
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <Clock className="w-3 h-3" />
-                              {assignment.startTime} - {assignment.endTime}
-                              <span className="text-xs text-gray-500">
-                                (휴게 {assignment.breakTime}분)
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <MapPin className="w-3 h-3" />
-                              {assignment.location} · {assignment.position}
-                            </div>
-
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <Phone className="w-3 h-3" />
-                              {assignment.phone}
-                            </div>
-
-                            {assignment.notes && (
-                              <div className="mt-2 p-2 bg-yellow-50 rounded text-xs text-gray-700">
-                                <AlertCircle className="w-3 h-3 inline mr-1" />
-                                {assignment.notes}
+            {loading ? (
+              <p className="text-center py-8 text-gray-500">불러오는 중...</p>
+            ) : shifts.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <Calendar className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                <p>이 날짜에 등록된 근무가 없습니다.</p>
+                <Button className="mt-4" onClick={openAddModal}>
+                  <Plus className="w-4 h-4 mr-2" />첫 근무 추가하기
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(hourlySchedule).map(([hour, assignments]) => {
+                  if (assignments.length === 0) return null;
+                  return (
+                    <div key={hour} className="border-l-4 border-blue-500 pl-4 py-2">
+                      <h3 className="font-semibold text-lg mb-3">{hour}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {assignments.map(shift => (
+                          <div key={shift.id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-gray-500" />
+                                <span className="font-semibold">{getEmployeeName(shift.user_id)}</span>
                               </div>
-                            )}
+                              {getStatusBadge(shift.status)}
+                            </div>
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-3 h-3" />
+                                {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Phone className="w-3 h-3" />
+                                {getEmployeePhone(shift.user_id) || '-'}
+                              </div>
+                            </div>
+                            <div className="mt-3 flex gap-2">
+                              <Button size="sm" variant="outline" className="flex-1" onClick={() => openEditModal(shift)}>수정</Button>
+                              <Button size="sm" variant="outline" className="flex-1" onClick={() => handleContact(shift.user_id)}>연락</Button>
+                              <Button size="sm" variant="outline" className="px-2 text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(shift.id)}>
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
-
-                          <div className="mt-3 flex gap-2">
-                            <Button size="sm" variant="outline" className="flex-1">
-                              수정
-                            </Button>
-                            <Button size="sm" variant="outline" className="flex-1">
-                              연락
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* All Assignments List */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>전체 근무 목록</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4">직원명</th>
-                    <th className="text-left py-3 px-4">매장</th>
-                    <th className="text-left py-3 px-4">직책</th>
-                    <th className="text-left py-3 px-4">근무시간</th>
-                    <th className="text-left py-3 px-4">휴게시간</th>
-                    <th className="text-left py-3 px-4">연락처</th>
-                    <th className="text-left py-3 px-4">상태</th>
-                    <th className="text-left py-3 px-4">작업</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSchedules.map(schedule => (
-                    <tr key={schedule.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium">{schedule.employeeName}</td>
-                      <td className="py-3 px-4">{schedule.location}</td>
-                      <td className="py-3 px-4">{schedule.position}</td>
-                      <td className="py-3 px-4">
-                        {schedule.startTime} - {schedule.endTime}
-                      </td>
-                      <td className="py-3 px-4">{schedule.breakTime}분</td>
-                      <td className="py-3 px-4">{schedule.phone}</td>
-                      <td className="py-3 px-4">{getStatusBadge(schedule.status)}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="ghost">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost">
-                            <Mail className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 하단 버튼 */}
+        <div className="mt-6">
+          <Button
+            className="w-full bg-gray-900 hover:bg-gray-700 text-white"
+            onClick={() => navigate(`/admin/substitute/${branchId}`)}
+          >
+            대타 근무자 관리
+          </Button>
+        </div>
       </div>
+
+      {/* 근무 추가 / 수정 모달 */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">{modalMode === 'add' ? '근무 추가' : '근무 수정'}</h2>
+              <button onClick={() => setModalOpen(false)} className="p-1 rounded-full hover:bg-gray-100">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">직원</label>
+                <select
+                  value={form.user_id}
+                  onChange={e => setForm({ ...form, user_id: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">직원 선택</option>
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">날짜</label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={e => setSelectedDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">시작 시간</label>
+                  <input
+                    type="time"
+                    value={form.start_time}
+                    onChange={e => setForm({ ...form, start_time: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">종료 시간</label>
+                  <input
+                    type="time"
+                    value={form.end_time}
+                    onChange={e => setForm({ ...form, end_time: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">상태</label>
+                <select
+                  value={form.status}
+                  onChange={e => setForm({ ...form, status: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="confirmed">확정</option>
+                  <option value="pending">대기</option>
+                  <option value="cancelled">취소</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              {modalMode === 'edit' && (
+                <Button
+                  variant="outline"
+                  className="text-red-500 border-red-300 hover:bg-red-50"
+                  onClick={() => { handleDelete(editingShift!.id); setModalOpen(false); }}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />삭제
+                </Button>
+              )}
+              <Button variant="outline" className="flex-1" onClick={() => setModalOpen(false)}>취소</Button>
+              <Button className="flex-1" onClick={handleSubmit}>
+                {modalMode === 'add' ? '추가' : '저장'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

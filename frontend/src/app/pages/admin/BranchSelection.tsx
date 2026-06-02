@@ -150,11 +150,6 @@ export default function BranchSelection() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button onClick={() => navigate('/admin/multibranch')} variant="outline" className="gap-2">
-                <LayoutGrid className="w-4 h-4" />
-                전체 지점 통합 보기
-              </Button>
-
               {/* 프로필 아이콘 - 알림 있으면 빨간 점 */}
               <button
                 onClick={() => setProfileOpen(true)}
@@ -176,6 +171,12 @@ export default function BranchSelection() {
 
       {/* Store Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 전체 지점 통합 보기 */}
+        <Button onClick={() => navigate('/admin/multibranch')} variant="outline" className="gap-2 mb-6 w-full">
+          <LayoutGrid className="w-4 h-4" />
+          전체 지점 통합 보기
+        </Button>
+
         {storesLoading ? (
           <div className="flex items-center justify-center py-20 text-gray-500">불러오는 중...</div>
         ) : stores.length === 0 ? (

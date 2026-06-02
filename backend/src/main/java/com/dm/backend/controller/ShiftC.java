@@ -13,8 +13,10 @@ public class ShiftC {
     @Autowired
     private ShiftService shiftService;
 
+    // 경민 수정 6/2 16:15
+    // @RequestBody 추가
     @PostMapping
-    public void registerShift(ShiftVO shiftVO){
+    public void registerShift(@RequestBody ShiftVO shiftVO){
         shiftService.registerShift(shiftVO);
     }
 
