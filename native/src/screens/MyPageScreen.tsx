@@ -9,7 +9,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
   
   // ✅ 화면 모드(라이트/다크) 상태 관리
   const [themeModalVisible, setThemeModalVisible] = useState(false);
-  const [themeMode, setThemeMode] = useState('시스템 설정'); // 기본값
+  const [themeMode, setThemeMode] = useState('themeSystem'); // ✅ 다국어 키값으로 변경
 
   // ✅ 전역 언어 설정 가져오기
   const { language, setLanguage, t } = useLanguage();
@@ -81,7 +81,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
           {/* ✅ 클릭 시 모달창을 띄우고, 선택된 모드를 버튼 이름에 보여줍니다. */}
-          {renderMenuItem('🌙', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
+          {renderMenuItem('🌙', `${t('themeMode')} (${t(themeMode)})`, () => setThemeModalVisible(true))}
           {/* ✅ 언어 설정도 모달창 연결 */}
           {renderMenuItem('🌐', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
           {/* ✅ 알림 설정은 스위치 UI로 연결 */}
@@ -106,8 +106,8 @@ const MyPageScreen = ({ route, navigation }: any) => {
       >
         <Pressable style={styles.modalOverlay} onPress={() => setThemeModalVisible(false)}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>화면 모드 설정</Text>
-            {['라이트 모드', '다크 모드', '시스템 설정'].map((mode) => (
+            <Text style={styles.modalTitle}>{t('themeSettings')}</Text>
+            {['themeLight', 'themeDark', 'themeSystem'].map((mode) => (
               <TouchableOpacity
                 key={mode}
                 style={[styles.modalOption, themeMode === mode && styles.modalOptionSelected]}
@@ -116,7 +116,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
                   setThemeModalVisible(false);
                 }}
               >
-                <Text style={[styles.modalOptionText, themeMode === mode && styles.modalOptionTextSelected]}>{mode}</Text>
+                <Text style={[styles.modalOptionText, themeMode === mode && styles.modalOptionTextSelected]}>{t(mode)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -132,7 +132,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
       >
         <Pressable style={styles.modalOverlay} onPress={() => setLanguageModalVisible(false)}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>언어 설정</Text>
+            <Text style={styles.modalTitle}>{t('langSettings')}</Text>
             {['한국어', 'English', '日本語'].map((lang) => (
               <TouchableOpacity
                 key={lang}

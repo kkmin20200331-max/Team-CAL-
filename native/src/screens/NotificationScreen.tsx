@@ -1,10 +1,14 @@
 import React, { useState, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { NotificationContext, NotificationItem } from '../contexts/NotificationContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const NotificationListScreen = () => {
   // ✅ 1. 알림 데이터를 나홀로 상태가 아닌 전역 상태(Context)에서 가져옵니다.
   const { notifications, setNotifications } = useContext(NotificationContext);
+  
+  // ✅ 전역 언어 설정 가져오기
+  const { t } = useLanguage();
   
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
@@ -47,14 +51,14 @@ const NotificationListScreen = () => {
       <View style={styles.contentContainer}>
         <View style={styles.titleRow}>
           <Text style={[styles.titleText, !item.isRead && styles.unreadTitleText]}>
-            {item.title}
+            {t(item.title)}
           </Text>
           {!item.isRead && <View style={styles.unreadDot} />}
         </View>
         <Text style={styles.messageText} numberOfLines={2}>
-          {item.message}
+          {t(item.message)}
         </Text>
-        <Text style={styles.timeText}>{item.createdAt}</Text>
+        <Text style={styles.timeText}>{t(item.createdAt)}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -62,9 +66,9 @@ const NotificationListScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>알림 목록</Text>
+        <Text style={styles.headerText}>{t('notifListTitle')}</Text>
         <TouchableOpacity onPress={handleMarkAllAsRead} activeOpacity={0.6}>
-          <Text style={styles.markAllText}>모두 읽음</Text>
+          <Text style={styles.markAllText}>{t('markAllRead')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -90,11 +94,11 @@ const NotificationListScreen = () => {
                   <Text style={styles.modalIcon}>
                     {selectedNotification.type === 'SCHEDULE' ? '📅' : selectedNotification.type === 'NOTICE' ? '📢' : '⚙️'}
                   </Text>
-                  <Text style={styles.modalTitle}>{selectedNotification.title}</Text>
-                  <Text style={styles.modalTime}>{selectedNotification.createdAt}</Text>
+                  <Text style={styles.modalTitle}>{t(selectedNotification.title)}</Text>
+                  <Text style={styles.modalTime}>{t(selectedNotification.createdAt)}</Text>
                 </View>
                 <View style={styles.modalBody}>
-                  <Text style={styles.modalMessage}>{selectedNotification.message}</Text>
+                  <Text style={styles.modalMessage}>{t(selectedNotification.message)}</Text>
                 </View>
                 
                 {/* 하단 버튼 그룹 (삭제 / 확인) */}
@@ -103,10 +107,10 @@ const NotificationListScreen = () => {
                     style={styles.deleteButton} 
                     onPress={() => handleDeleteNotification(selectedNotification.id)}
                   >
-                    <Text style={styles.deleteButtonText}>삭제</Text>
+                    <Text style={styles.deleteButtonText}>{t('delete')}</Text>
                   </Pressable>
                   <Pressable style={styles.closeButton} onPress={closeModal}>
-                    <Text style={styles.closeButtonText}>확인</Text>
+                    <Text style={styles.closeButtonText}>{t('confirm')}</Text>
                   </Pressable>
                 </View>
               </>

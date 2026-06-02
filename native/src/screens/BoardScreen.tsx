@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList, Modal, ScrollView } from 'react-native';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const BoardScreen = ({ navigation }: any) => {
   // 모달 상태 관리
   const [isPostModalVisible, setPostModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
+  
+  // ✅ 전역 언어 설정 가져오기
+  const { t } = useLanguage();
 
   // 전체 게시글 더미 데이터 (대시보드보다 개수가 많습니다)
   const allPosts = [
-    { id: '1', title: '가을 시즌 신메뉴 출시 안내', date: '2026.08.25', content: '가을 시즌 신메뉴가 곧 출시됩니다!\n\n레시피 및 상세 매뉴얼은 추후 관리자가 업로드 할 예정이니 꼭 확인해 주세요.', badge: 'NEW' },
-    { id: '2', title: '보건증 만료 재확인 요청', date: '2026.05.28', content: '안녕하세요, 점주입니다.\n\n최근 보건증 만료일이 도래하는 직원분들이 많습니다. 각자 마이페이지에서 보건증 유효기간을 확인하시고, 만료 전 반드시 보건소에 방문하시어 갱신해 주시기 바랍니다.', badge: null },
-    { id: '3', title: '김선민 CAL 입사 경축', date: '2026.09.20', content: '새로운 팀원 김선민님이 CAL에 합류하셨습니다!\n모두 반갑게 인사하며 따뜻한 환영 부탁드립니다. 🎉', badge: '중요!' },
-    { id: '4', title: '마감 청소 매뉴얼 변경 안내', date: '2026.05.10', content: '마감 청소 매뉴얼이 일부 변경되었습니다.\n자세한 내용은 포스기 옆에 부착된 새 매뉴얼을 확인해 주세요.', badge: null },
-    { id: '5', title: '5월 우수 직원 선정 안내', date: '2026.05.01', content: '5월 우수 직원으로 김민수 님이 선정되었습니다!\n김민수 님께는 소정의 상품이 지급될 예정입니다. 축하합니다.', badge: null },
-    { id: '6', title: '여름 시즌 하계 유니폼 신청', date: '2026.04.15', content: '여름 시즌을 맞아 반팔 유니폼을 추가 신청 받습니다.\n필요하신 분들은 이번 주 금요일까지 사이즈를 매니저에게 전달해 주세요.', badge: null },
+    { id: '1', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
+    { id: '2', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
+    { id: '3', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
+    { id: '4', title: 'boardDummy4Title', date: '2026.05.10', content: 'boardDummy4Content', badge: null },
+    { id: '5', title: 'boardDummy5Title', date: '2026.05.01', content: 'boardDummy5Content', badge: null },
+    { id: '6', title: 'boardDummy6Title', date: '2026.04.15', content: 'boardDummy6Content', badge: null },
   ];
 
   const handleOpenPost = (post: any) => {
@@ -24,9 +28,9 @@ const BoardScreen = ({ navigation }: any) => {
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.noticeItem} onPress={() => handleOpenPost(item)} activeOpacity={0.7}>
       <View style={styles.noticeTextContainer}>
-        <Text style={styles.noticeItemTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={styles.noticeItemTitle} numberOfLines={1}>{t(item.title)}</Text>
         {item.badge && (
-          <View style={styles.newBadge}><Text style={styles.newBadgeText}>{item.badge}</Text></View>
+          <View style={styles.newBadge}><Text style={styles.newBadgeText}>{t(item.badge)}</Text></View>
         )}
       </View>
       <Text style={styles.noticeDate}>{item.date}</Text>
@@ -40,7 +44,7 @@ const BoardScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>사내 게시판</Text>
+        <Text style={styles.headerTitle}>{t('notice')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -64,14 +68,14 @@ const BoardScreen = ({ navigation }: any) => {
           <View style={styles.postModalContent}>
             {selectedPost && (
               <>
-                <Text style={styles.postModalTitle}>{selectedPost.title}</Text>
+                <Text style={styles.postModalTitle}>{t(selectedPost.title)}</Text>
                 <Text style={styles.postModalDate}>{selectedPost.date}</Text>
                 <View style={styles.postModalDivider} />
                 <ScrollView style={styles.postModalBody} showsVerticalScrollIndicator={false}>
-                  <Text style={styles.postModalText}>{selectedPost.content}</Text>
+                  <Text style={styles.postModalText}>{t(selectedPost.content)}</Text>
                 </ScrollView>
                 <TouchableOpacity style={styles.closeModalButton} onPress={() => setPostModalVisible(false)}>
-                  <Text style={styles.closeModalButtonText}>닫기</Text>
+                  <Text style={styles.closeModalButtonText}>{t('close')}</Text>
                 </TouchableOpacity>
               </>
             )}

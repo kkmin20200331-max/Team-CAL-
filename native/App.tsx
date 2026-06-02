@@ -20,8 +20,8 @@ import BoardScreen from './src/screens/BoardScreen'; // ✅ [추가] 게시판 �
 
 // ✅ [추가] 알림 전역 상태 관리를 위한 Context 불러오기
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
-// ✅ [추가] 다국어 전역 상태 관리를 위한 Context 불러오기
-import { LanguageProvider } from './src/contexts/LanguageContext';
+// ✅ [추가] 다국어 전역 상태 관리 Context 불러오기 (useLanguage 추가)
+import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
 
 // ✅ [정리] 중복 선언된 Stack은 하나만 남기고, Tab 네비게이터를 생성합니다.
 const Stack = createStackNavigator();
@@ -38,6 +38,9 @@ function StaffTabNavigator({ route }: any) {
   // ✅ 안 읽은 알림 개수 가져오기
   const { unreadCount } = useContext(NotificationContext);
 
+  // ✅ 전역 언어 설정 가져오기
+  const { t } = useLanguage();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -49,7 +52,7 @@ function StaffTabNavigator({ route }: any) {
       {/* 1. 홈 탭 (기존 대시보드) */}
       <Tab.Screen 
         name="Home" 
-        options={{ title: '홈', tabBarIcon: () => <Text>🏠</Text> }}
+        options={{ title: t('tabHome'), tabBarIcon: () => <Text>🏠</Text> }}
       >
         {(props) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
       </Tab.Screen>
@@ -59,7 +62,7 @@ function StaffTabNavigator({ route }: any) {
         name="Schedule" 
         component={ScheduleScreen} 
         initialParams={{ userInfo }} // ✅ API 통신을 위해 유저 정보 전달
-        options={{ title: '내 스케줄', tabBarIcon: () => <Text>📅</Text> }} 
+        options={{ title: t('tabSchedule'), tabBarIcon: () => <Text>📅</Text> }} 
       />
 
       {/* 3. 알림 탭 (숫자 배지 추가 가능) */}
@@ -75,7 +78,7 @@ function StaffTabNavigator({ route }: any) {
         name="MyPage" 
         component={MyPageScreen} 
         initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} // 정보 업데이트 함수까지 전달
-        options={{ title: '마이페이지', tabBarIcon: () => <Text>👤</Text> }} 
+        options={{ title: t('tabMyPage'), tabBarIcon: () => <Text>👤</Text> }} 
       />
     </Tab.Navigator>
   );
@@ -86,6 +89,9 @@ function StaffTabNavigator({ route }: any) {
 // ---------------------------------------------------------
 function AdminTabNavigator({ route }: any) {
   const { setIsLoggedIn, userInfo, setUserInfo } = route.params;
+  
+  // ✅ 전역 언어 설정 가져오기
+  const { t } = useLanguage();
 
   return (
     <Tab.Navigator
@@ -99,7 +105,7 @@ function AdminTabNavigator({ route }: any) {
       {/* 관리자 1. 매장 관리 홈 (임시로 기존 대시보드 연결, 추후 AdminDashboardScreen으로 교체) */}
       <Tab.Screen 
         name="AdminHome" 
-        options={{ title: '매장 관리', tabBarIcon: () => <Text>🏪</Text> }}
+        options={{ title: t('tabAdminHome'), tabBarIcon: () => <Text>🏪</Text> }}
       >
         {(props) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
       </Tab.Screen>
@@ -109,7 +115,7 @@ function AdminTabNavigator({ route }: any) {
         name="AdminSchedule"
         component={ScheduleScreen}
         initialParams={{ userInfo }} // API 통신을 위해 유저 정보 전달
-        options={{ title: '스케줄 관리', tabBarIcon: () => <Text>📅</Text> }}
+        options={{ title: t('tabAdminSchedule'), tabBarIcon: () => <Text>📅</Text> }}
       />
 
       {/* 관리자 3. 설정 (마이페이지 공통 사용) */}
@@ -117,7 +123,7 @@ function AdminTabNavigator({ route }: any) {
         name="AdminSettings" 
         component={MyPageScreen} 
         initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} 
-        options={{ title: '설정', tabBarIcon: () => <Text>⚙️</Text> }} 
+        options={{ title: t('tabAdminSettings'), tabBarIcon: () => <Text>⚙️</Text> }} 
       />
     </Tab.Navigator>
   );

@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { updateProfileAPI } from '../../api/auth';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const ProfileEditScreen = ({ route, navigation }: any) => {
   // MyPageScreen에서 넘겨준 userInfo와 상태 변경 함수를 받습니다.
   const { userInfo, setUserInfo } = route.params || {};
+
+  // ✅ 전역 언어 설정 가져오기
+  const { t } = useLanguage();
 
   // 수정 가능한 정보의 상태 관리
   const [name, setName] = useState(userInfo?.name || '');
@@ -32,12 +36,12 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
         setUserInfo({ ...userInfo, name, phone });
       }
 
-      Alert.alert('저장 완료', '개인정보가 성공적으로 수정되었습니다.', [
-        { text: '확인', onPress: () => navigation.goBack() }
+      Alert.alert(t('saveCompleteTitle'), t('saveCompleteMsg'), [
+        { text: t('confirm'), onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
       console.error('개인정보 수정 에러:', error);
-      Alert.alert('수정 실패', '정보를 수정하는 도중 에러가 발생했습니다.');
+      Alert.alert(t('editFailTitle'), t('editFailMsg'));
     }
   };
 
@@ -48,7 +52,7 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>개인정보 수정</Text>
+        <Text style={styles.headerTitle}>{t('profileEdit')}</Text>
         {/* ✅ 에러 원인 해결: 주석을 안쪽이나 바깥으로 빼서 띄어쓰기를 없앱니다 */}
         <View style={{ width: 40 }} />
       </View>
@@ -57,83 +61,83 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
         
         {/* 1. 수정 불가 정보 (Read-Only) */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>계정 정보 (수정 불가)</Text>
+          <Text style={styles.sectionTitle}>{t('accountInfoReadonly')}</Text>
           
-          <Text style={styles.label}>아이디</Text>
+          <Text style={styles.label}>{t('idLabel')}</Text>
           <TextInput 
             style={[styles.input, styles.disabledInput]} 
-            value={userInfo?.username || '알 수 없음'} 
+            value={userInfo?.username || t('unknown')} 
             editable={false} 
           />
 
-          <Text style={styles.label}>소속 지점</Text>
+          <Text style={styles.label}>{t('branchLabel')}</Text>
           <TextInput 
             style={[styles.input, styles.disabledInput]} 
             value={userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점'} 
             editable={false} 
           />
 
-          <Text style={styles.label}>권한 (직급)</Text>
+          <Text style={styles.label}>{t('roleLabel')}</Text>
           <TextInput 
             style={[styles.input, styles.disabledInput]} 
-            value={userInfo?.role === 'ADMIN' ? '관리자 (점주)' : '일반 직원'} 
+            value={userInfo?.role === 'ADMIN' ? t('adminRole') : t('staffRole')} 
             editable={false} 
           />
         </View>
 
         {/* 2. 수정 가능 정보 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>내 정보</Text>
+          <Text style={styles.sectionTitle}>{t('myInfoSection')}</Text>
           
-          <Text style={styles.label}>이름</Text>
+          <Text style={styles.label}>{t('nameLabel')}</Text>
           <TextInput 
             style={styles.input} 
             value={name} 
             onChangeText={setName} 
-            placeholder="이름을 입력하세요"
+            placeholder={t('namePlaceholder')}
           />
 
-          <Text style={styles.label}>전화번호</Text>
+          <Text style={styles.label}>{t('phoneLabel')}</Text>
           <TextInput 
             style={styles.input} 
             value={phone} 
             onChangeText={setPhone} 
-            placeholder="예: 010-1234-5678"
+            placeholder={t('phonePlaceholder')}
             keyboardType="phone-pad"
           />
         </View>
 
         {/* 3. 비밀번호 변경 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>비밀번호 변경</Text>
+          <Text style={styles.sectionTitle}>{t('changePasswordSection')}</Text>
           
-          <Text style={styles.label}>현재 비밀번호</Text>
+          <Text style={styles.label}>{t('currentPasswordLabel')}</Text>
           <TextInput 
             style={styles.input} 
             value={currentPassword} 
             onChangeText={setCurrentPassword} 
-            placeholder="현재 비밀번호를 입력하세요"
+            placeholder={t('currentPasswordPlaceholder')}
             secureTextEntry={true}
           />
 
-          <Text style={styles.label}>새 비밀번호</Text>
+          <Text style={styles.label}>{t('newPasswordLabel')}</Text>
           <TextInput 
             style={styles.input} 
             value={newPassword} 
             onChangeText={setNewPassword} 
-            placeholder="변경할 비밀번호를 입력하세요"
+            placeholder={t('newPasswordPlaceholder')}
             secureTextEntry={true}
           />
         </View>
 
         {/* 저장 버튼 */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>수정 완료</Text>
+          <Text style={styles.saveButtonText}>{t('editCompleteBtn')}</Text>
         </TouchableOpacity>
 
         {/* 회원 탈퇴 */}
         <TouchableOpacity style={styles.withdrawButton}>
-          <Text style={styles.withdrawText}>회원 탈퇴</Text>
+          <Text style={styles.withdrawText}>{t('withdrawBtn')}</Text>
         </TouchableOpacity>
 
       </ScrollView>

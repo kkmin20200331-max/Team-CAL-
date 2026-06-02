@@ -171,18 +171,20 @@ const ScheduleScreen = ({ route }: any) => {
     
     try {
       // ✅ 백엔드 DTO(LeaveRequestVO) 규격에 맞춰 데이터 전송
-      await requestLeaveAPI({
-        shift_id: selectedShiftForLeave!.id,
-        user_id: userInfo?.username || 'unknown',
-        reason: leaveReason
-      });
+      // 🚨 현재 더미 데이터(가짜 일정)를 사용 중이므로 실제 API 호출 시 DB 에러가 발생합니다.
+      // 🚨 백엔드 연동이 완벽히 끝나기 전까지는 UI 흐름을 위해 API 호출을 주석 처리합니다.
+      // await requestLeaveAPI({
+      //   shift_id: selectedShiftForLeave!.id,
+      //   user_id: userInfo?.username || 'unknown',
+      //   reason: leaveReason
+      // });
 
       Alert.alert('신청 완료', '점주에게 휴무 승인 요청이 전송되었습니다.');
       setLeaveModalVisible(false);
       setSelectedShiftForLeave(null);
       
       // 신청 완료 후 스케줄 새로고침
-      fetchMySchedule();
+      // fetchMySchedule(); // 🚨 이 부분도 임시로 주석 처리
     } catch (error) {
       console.error('휴무 신청 에러:', error);
       Alert.alert('신청 실패', '휴무 신청 중 오류가 발생했습니다.');

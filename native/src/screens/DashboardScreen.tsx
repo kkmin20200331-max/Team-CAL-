@@ -16,7 +16,7 @@ type Props = {
 const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   
   // 백엔드에서 전달받은 정보 파싱 (없을 경우 기본값)
-  const userName = userInfo?.name || '사용자';
+  const userName = userInfo?.name || t('defaultUserName');
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
 
   // ✅ 전역 상태에서 안 읽은 알림 개수 가져오기
@@ -38,9 +38,9 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   const [selectedPost, setSelectedPost] = useState<any>(null);
 
   const dummyPosts = [
-    { id: '1', title: '가을 시즌 신메뉴 출시 안내', date: '2026.08.25', content: '가을 시즌 신메뉴가 곧 출시됩니다!\n\n레시피 및 상세 매뉴얼은 추후 관리자가 업로드 할 예정이니 꼭 확인해 주세요.', badge: 'NEW' },
-    { id: '2', title: '보건증 만료 재확인 요청', date: '2026.05.28', content: '안녕하세요, 점주입니다.\n\n최근 보건증 만료일이 도래하는 직원분들이 많습니다. 각자 마이페이지에서 보건증 유효기간을 확인하시고, 만료 전 반드시 보건소에 방문하시어 갱신해 주시기 바랍니다.', badge: null },
-    { id: '3', title: '김선민 CAL 입사 경축', date: '2026.09.20', content: '새로운 팀원 김선민님이 CAL에 합류하셨습니다!\n모두 반갑게 인사하며 따뜻한 환영 부탁드립니다. 🎉', badge: '중요!' },
+    { id: '1', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
+    { id: '2', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
+    { id: '3', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
   ];
 
   const handleOpenPost = (post: any) => {
@@ -52,15 +52,15 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   // 백엔드 API 연동이 완료되면 이 함수 내에서 실제로 대타 지원 요청을 보내는 로직(axios.post)으로 교체하면 됩니다.
   const handleAcceptSubstitute = () => {
     Alert.alert(
-      "대타 지원 확인",
-      "6월 03일 수요일 17:00 ~ 22:00 대타를 지원하시겠습니까?",
+      t('subReqConfirmTitle'),
+      t('subReqConfirmMsg'),
       [
-        { text: "취소", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         { 
-          text: "지원하기", 
+          text: t('applyBtn'), 
           onPress: () => {
             setIsAlertVisible(false); // 카드 숨기기
-            Alert.alert("지원 완료", "대타 지원이 완료되었습니다!\n점주님 승인 후 내 스케줄에 최종 반영됩니다.");
+            Alert.alert(t('subApplySuccessTitle'), t('subApplySuccessMsg'));
           } 
         }
       ]
@@ -85,7 +85,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
       { id: '0', fullDate: '2026-05-31', date: '31', day: '일', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
       { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
       { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
-      { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: '휴무', storeName: '-', status: 'OFF' },
+      { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: t('offDay'), storeName: '-', status: 'OFF' },
       { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '14:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
       { id: '5', fullDate: '2026-06-06', date: '06', day: '금', time: '14:00 - 22:00', storeName: storeName, status: 'SUBSTITUTE_REQ' },
     ];
@@ -149,11 +149,11 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
 
   const getStatusText = (status: string) => {
     switch(status) {
-      case 'SCHEDULED': return '근무 예정';
-      case 'IN_PROGRESS': return '근무 중';
-      case 'COMPLETED': return '근무 완료';
-      case 'SUBSTITUTE_REQ': return '대타 찾는 중';
-      case 'OFF': return '휴무';
+      case 'SCHEDULED': return t('scheduled');
+      case 'IN_PROGRESS': return t('inProgress');
+      case 'COMPLETED': return t('completed');
+      case 'SUBSTITUTE_REQ': return t('substituteReq');
+      case 'OFF': return t('offDay');
       default: return '';
     }
   };
@@ -180,7 +180,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
         <Text style={styles.logoText}>バイトメート</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.qrButton} onPress={handleQRCheckIn}>
-            <Text style={styles.qrButtonText}>QR출퇴근</Text>
+            <Text style={styles.qrButtonText}>{t('qrCheckIn')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}>
             <Text style={styles.notificationIcon}>🔔</Text>
@@ -195,7 +195,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
         
         {/* ▼ 환영 인사 영역 추가 ▼ */}
         <View style={styles.greetingSection}>
-          <Text style={styles.greetingText}>{t('greeting')}, {userName} 님! 👋</Text>
+          <Text style={styles.greetingText}>{t('greeting')}, {userName}{t('suffixNim')}! 👋</Text>
           <Text style={styles.greetingSubText}>{storeName} | {userInfo?.role === 'ADMIN' ? t('admin') : t('staff')}</Text>
         </View>
 
@@ -230,14 +230,14 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
               <View style={styles.divider} />
               {/* 급여 정보 */}
               <View style={styles.salaryRow}>
-                <Text style={styles.salaryLabel}>예상 일급</Text>
-                <Text style={styles.salaryValue}>72,000원</Text>
+                <Text style={styles.salaryLabel}>{t('expectedDailyWage')}</Text>
+                <Text style={styles.salaryValue}>72,000{t('currency')}</Text>
               </View>
             </>
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>🏖️</Text>
-              <Text style={styles.emptyText}>오늘은 근무 일정이 없습니다.</Text>
+              <Text style={styles.emptyText}>{t('noScheduleToday')}</Text>
             </View>
           )}
         </View>
@@ -270,17 +270,17 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
           <View style={styles.alertCard}>
             <View style={styles.alertHeader}>
               <Text style={styles.alertIcon}>🚨</Text>
-              <Text style={styles.alertTitle}>대타 요청이 있습니다</Text>
+              <Text style={styles.alertTitle}>{t('subReqAlertTitle')}</Text>
             </View>
             <Text style={styles.alertDescription}>
-              6월 03일 수요일 17:00 ~ 22:00 대타 가능하신가요?
+              {t('subReqAlertDesc')}
             </Text>
             <View style={styles.buttonGroup}>
               <TouchableOpacity style={styles.acceptButton} onPress={handleAcceptSubstitute}>
-                <Text style={styles.acceptButtonText}>지원하기</Text>
+                <Text style={styles.acceptButtonText}>{t('applyBtn')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.rejectButton} onPress={() => setIsAlertVisible(false)}>
-                <Text style={styles.rejectButtonText}>거절</Text>
+                <Text style={styles.rejectButtonText}>{t('rejectBtn')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -300,9 +300,9 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
             <React.Fragment key={post.id}>
               <TouchableOpacity style={styles.noticeItem} onPress={() => handleOpenPost(post)} activeOpacity={0.7}>
                 <View style={styles.noticeTextContainer}>
-                  <Text style={styles.noticeItemTitle} numberOfLines={1}>{post.title}</Text>
+                  <Text style={styles.noticeItemTitle} numberOfLines={1}>{t(post.title)}</Text>
                   {post.badge && (
-                    <View style={styles.newBadge}><Text style={styles.newBadgeText}>{post.badge}</Text></View>
+                    <View style={styles.newBadge}><Text style={styles.newBadgeText}>{t(post.badge)}</Text></View>
                   )}
                 </View>
                 <Text style={styles.noticeDate}>{post.date}</Text>
@@ -326,14 +326,14 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
           <View style={styles.postModalContent}>
             {selectedPost && (
               <>
-                <Text style={styles.postModalTitle}>{selectedPost.title}</Text>
+                <Text style={styles.postModalTitle}>{t(selectedPost.title)}</Text>
                 <Text style={styles.postModalDate}>{selectedPost.date}</Text>
                 <View style={styles.postModalDivider} />
                 <ScrollView style={styles.postModalBody} showsVerticalScrollIndicator={false}>
-                  <Text style={styles.postModalText}>{selectedPost.content}</Text>
+                  <Text style={styles.postModalText}>{t(selectedPost.content)}</Text>
                 </ScrollView>
                 <TouchableOpacity style={styles.closeModalButton} onPress={() => setPostModalVisible(false)}>
-                  <Text style={styles.closeModalButtonText}>닫기</Text>
+                  <Text style={styles.closeModalButtonText}>{t('close')}</Text>
                 </TouchableOpacity>
               </>
             )}
