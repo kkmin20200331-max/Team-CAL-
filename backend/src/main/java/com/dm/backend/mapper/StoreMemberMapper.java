@@ -84,4 +84,11 @@ public interface StoreMemberMapper {
             @Param("store_id") String store_id,
             @Param("user_id") String user_id
     );
+
+    //ai분석에 필요한 매장 직원 정보 조회
+    @Select("""
+            SELECT * FROM store_member
+            WHERE store_id = #{store_id}
+            """)
+    List<StoreMemberVo> getStoreMembers(String storeId);
 }
