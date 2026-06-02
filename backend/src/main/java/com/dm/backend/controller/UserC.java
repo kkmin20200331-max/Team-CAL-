@@ -17,10 +17,11 @@ public class UserC {
 
     // 회원가입 UserVo 객체 정보 값 다 필요
     @PostMapping
-    public void registerUser(@RequestBody UserVo userVo) {
+    public UserVo registerUser(@RequestBody UserVo userVo) {
         System.out.println("✅ 프론트에서 도착한 회원가입 데이터: " + userVo);
 
         userservice.registerUser(userVo);
+        return userVo;
     }
 
     // 로그인

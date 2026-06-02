@@ -29,4 +29,8 @@ public interface StoreMapper {
 
     @Delete("delete from store where id = #{id}")
     void delStore(String id);
+
+    // 경민 수정 5/29 18:00
+    @Select("SELECT * FROM store")
+    List<StoreVo> getAllStores();
 }

@@ -8,10 +8,12 @@ import java.util.List;
 @Mapper
 public interface StoreMemberMapper {
 
-
-    @Insert("insert into store_member values (#{id}, #{store_id}, #{user_id},'guest','NEWBIE', 'pending')")
+    // 경민 수정 5/29 17:36(and -> ,)
+    @Insert("INSERT INTO store_member (id, store_id, user_id, member_role, user_level, approval_status) " +
+            "VALUES (#{id}, #{store_id}, #{user_id}, 'STAFF', 'NEWBIE', 'PENDING')")
     void approveRegister(StoreMemberVo storeMemberVo);
 
-    @Update("update store_member set approval_status = #{approval_status} and member_role = #{member_role} and user_level = #{user_level} where id = #{id}")
+    // 경민 수정 5/29 17:36(and -> ,)
+    @Update("update store_member set approval_status = #{approval_status}, member_role = #{member_role}, user_level = #{user_level} where id = #{id}")
     void updateStoreMember(StoreMemberVo storeMemberVo);
 }

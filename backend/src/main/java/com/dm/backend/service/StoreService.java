@@ -34,5 +34,8 @@ public class StoreService {
         storeMapper.delStore(id);
     }
 
+    // 경민 수정 5/29 18:00
+    public List<StoreVo> getAllStores() {return storeMapper.getAllStores();}
+
 
 }

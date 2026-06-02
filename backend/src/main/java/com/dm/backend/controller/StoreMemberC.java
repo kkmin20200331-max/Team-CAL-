@@ -16,7 +16,11 @@ public class StoreMemberC {
 
     //승인요청 - id, store_id, user_id 필요 나머지는 고정된 값으로 설정해둠
     @PostMapping
-    public void approveRegister(StoreMemberVo storeMemberVo) {
+//    public void approveRegister(StoreMemberVo storeMemberVo) {
+//        storeMemberService.approveRegister(storeMemberVo);
+//    }
+    // 경민 수정 5/19 18:00
+    public void approveRegister(@RequestBody StoreMemberVo storeMemberVo) {
         storeMemberService.approveRegister(storeMemberVo);
     }
 

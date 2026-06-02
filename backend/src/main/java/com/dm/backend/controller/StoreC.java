@@ -39,6 +39,9 @@ public class StoreC {
     public void delStore(@RequestParam String id) {
         storeService.delStore(id);
     }
-
+    // 경민 수정 5/29 18:00
+    // 전체 가게 조회
+    @GetMapping("/all")
+    public List<StoreVo> getAllStores() {return storeService.getAllStores();}
 
 }
