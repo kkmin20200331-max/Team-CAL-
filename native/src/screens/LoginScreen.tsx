@@ -3,7 +3,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { loginAPI } from '../../api/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
@@ -44,16 +43,11 @@ const handleLogin = async () => {
     setUserStatus(fetchedUserStatus);
     setIsLoggedIn(true);
     
-    // ✅ [수정] 로컬 기기에 저장해둔 지점 정보가 있는지 확인 (백엔드 완벽 연동 전 임시 유지 브릿지)
-    const savedStore = await AsyncStorage.getItem(`store_${data.username}`);
+    // ✅ [수정] 백엔드에서 받아온 데이터(data)에 이미 지점 정보가 있는지 확인하여, 있으면 지점 선택을 건너뜁니다.
+    setHasSelectedBranch(Boolean(data.store_id || data.branchName || data.brandName));
 
-    if (data.store_id || data.branchName || data.brandName || savedStore) {
-      setHasSelectedBranch(true);
-      setUserInfo({ ...data, role: loginRole, store_id: data.store_id || savedStore });
-    } else {
-      setHasSelectedBranch(false);
-      setUserInfo({ ...data, role: loginRole });
-    }
+    // ✅ [수정] 로그인 시 토글에서 선택한 권한(role)을 강제로 덮어씌워 App.tsx로 전달합니다.
+    setUserInfo({ ...data, role: loginRole });
 
   } catch (error) {
     console.error("로그인 에러:", error);

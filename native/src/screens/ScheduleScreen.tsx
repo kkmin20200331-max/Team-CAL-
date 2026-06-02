@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, ScrollView, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { getMyScheduleAPI, requestLeaveAPI } from '../../api/auth';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -15,6 +13,16 @@ interface ScheduleItem {
   storeName: string;
   status: 'SCHEDULED' | 'COMPLETED' | 'OFF' | 'SUBSTITUTE_REQ' | 'IN_PROGRESS';
 }
+
+// 2. 이번 주 근무 더미 데이터
+const dummySchedule: ScheduleItem[] = [
+  { id: '1', fullDate: '2026-05-31', date: '31', day: '일', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'COMPLETED' },
+  { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'COMPLETED' },
+  { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SCHEDULED' },
+  { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: '휴무', storeName: '-', status: 'OFF' },
+  { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SCHEDULED' },
+  { id: '5', fullDate: '2026-06-06', date: '06', day: '금', time: '14:00 - 22:00', storeName: '컴포즈 미금점', status: 'SUBSTITUTE_REQ' },
+];
 
 // ✅ 현재 날짜를 기준으로 동적으로 년/월/일을 계산합니다.
 const today = new Date();
@@ -93,19 +101,6 @@ const ScheduleScreen = ({ route }: any) => {
   // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
 
-  // ✅ 유저 정보에서 선택한 지점명 가져오기
-  const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
-
-  // ✅ 스케줄 더미 데이터를 컴포넌트 내부로 옮겨 지점명이 동적으로 즉시 반영되게 합니다.
-  const dummySchedule: ScheduleItem[] = [
-    { id: '1', fullDate: '2026-05-31', date: '31', day: '일', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
-    { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
-    { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
-    { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: t('offDay'), storeName: '-', status: 'OFF' },
-    { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '14:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
-    { id: '5', fullDate: '2026-06-06', date: '06', day: '금', time: '14:00 - 22:00', storeName: storeName, status: 'SUBSTITUTE_REQ' },
-  ];
-
   // ✅ 선택된 날짜 상태 (기본값을 '오늘 날짜'로 자동 세팅)
   const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
   // ✅ 현재 렌더링 기준이 되는 날짜 상태 (주간 달력과 월간 달력의 기준이 됨)
@@ -121,15 +116,6 @@ const ScheduleScreen = ({ route }: any) => {
   const [isMonthModalVisible, setMonthModalVisible] = useState(false);
   const [leaveReason, setLeaveReason] = useState('');
   const [selectedShiftForLeave, setSelectedShiftForLeave] = useState<ScheduleItem | null>(null);
-
-  // ✅ 화면(탭)에 들어올 때마다 무조건 '오늘 날짜' 기준으로 캘린더 초기화
-  useFocusEffect(
-    useCallback(() => {
-      const now = new Date();
-      setBaseDate(now); // 이번 주로 이동
-      setSelectedDate(formatDate(now.getFullYear(), now.getMonth() + 1, now.getDate())); // 오늘 날짜 선택
-    }, [])
-  );
 
   // ✅ 화면이 렌더링될 때 백엔드에서 내 스케줄 가져오기
   useEffect(() => {

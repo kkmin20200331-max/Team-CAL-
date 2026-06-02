@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Modal, Pressable, Switch } from 'react-native';
 import { useLanguage, Language } from '../contexts/LanguageContext';
 
 // ✅ navigation 객체를 받아오도록 파라미터 추가
