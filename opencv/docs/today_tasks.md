@@ -6,6 +6,8 @@ Date: 2026-05-22
 
 FastAPI 기반 YOLO 인원 감지 서버를 발표와 시연이 가능한 상태로 정리한다. 오늘은 이미지 1장 추론, 영상 샘플링 추론, 실험 페이지, 테스트 자산, Spring 연동 준비 상태를 다시 확인하고 문서화한다.
 
+상세 아키텍처와 구현 요약은 `docs/ai_server_summary.md`, 성능 실험 기록은 `docs/performance_report.md`에 정리한다.
+
 ## Done
 
 - FastAPI 서버 기본 구조 구성
@@ -37,6 +39,16 @@ FastAPI 기반 YOLO 인원 감지 서버를 발표와 시연이 가능한 상태
   - 워커마다 별도 `PersonDetector`를 사용해서 YOLO 모델 인스턴스 공유 위험을 줄임
   - 루프 시작 시 모델을 미리 로드해서 최초 weight 다운로드/로드가 여러 워커에서 동시에 발생하지 않도록 처리
   - 관련 설정: `INFERENCE_WORKERS=2`, `MAX_PENDING_FRAMES=20`
+- 1분 단위 집계 및 서버 모니터링 추가
+  - 개별 추론 결과는 `/camera/status`에서 마지막 프레임 디버깅용으로 확인
+  - Spring Boot 전송은 `aggregationIntervalSec=60` 기준으로 평균/최대/최소/마지막 인원 수를 집계해서 전송
+  - `/api/v1/camera/metrics`에서 `workers`, `queueSize`, `processedFrames`, `droppedFrames`, `avgProcessingMs` 확인
+  - Python 서버 역할을 단순 count 모듈이 아니라 AI 추론 서버 + 실험/검증/집계 엔진으로 설명 가능
+- 입력 소스 전략 분리 및 Spring 전송 큐 추가
+  - `FileVideoSource`: 영상 파일은 `CAP_PROP_POS_MSEC` 기반으로 interval 위치로 점프해서 샘플링
+  - `StreamVideoSource`: 웹캠/RTSP는 최신 프레임 1개만 유지하고 오래된 프레임 큐 적재 방지
+  - Spring Boot POST는 추론 루프와 분리하고, sender thread가 전송 큐에서 비동기 처리
+  - 전송 실패 시 재시도 후 `logs/failed_payloads.log`에 JSON Lines 형식으로 보관
 - `/experiment` 실험 페이지 정리
   - Start / Status / Stop 버튼
   - 이미지 업로드 후 즉시 추론
@@ -83,6 +95,9 @@ Video Image Size: 960
 Video Confidence: 0.3
 Inference Workers: 2
 Max Pending Frames: 20
+Aggregation Interval Sec: 60
+Sender Queue Max Size: 100
+Spring Send Retry: 3
 ```
 
 비교 테스트 옵션:
@@ -173,7 +188,9 @@ Video Confidence: 0.3
 ```text
 카페 내부 혼잡도를 한산, 보통, 혼잡 3단계로 나누어 총 30장의 이미지로 YOLO 기반 사람 탐지 성능을 검증했습니다. 탐지 결과는 단순 인원 수뿐 아니라 박스 위치와 confidence를 함께 확인하여, 조명이나 가림 현상으로 일부 인물이 누락되는 한계까지 분석했습니다.
 
-영상 테스트는 전체 프레임을 모두 분석하지 않고 설정한 intervalSec 간격으로 프레임을 샘플링하는 방식으로 진행했습니다. 프레임 수집과 YOLO 추론을 분리하고 추론은 병렬 워커로 처리하여, 추론 시간이 길어도 샘플링 간격이 크게 밀리지 않도록 개선했습니다.
+영상 테스트는 전체 프레임을 모두 분석하지 않고 설정한 intervalSec 간격으로 프레임을 샘플링하는 방식으로 진행했습니다. 파일 영상은 시간 위치로 점프해서 필요한 프레임만 읽고, 실시간 스트림은 최신 프레임만 유지하도록 분리했습니다.
+
+프레임 수집, YOLO 추론, 1분 집계, Spring Boot 전송을 각각 분리하고 추론은 병렬 워커로 처리하여, 추론 시간이 길거나 Spring 응답이 지연되어도 AI 서버의 샘플링과 추론 흐름이 크게 밀리지 않도록 개선했습니다.
 ```
 
 ## Test Commands
