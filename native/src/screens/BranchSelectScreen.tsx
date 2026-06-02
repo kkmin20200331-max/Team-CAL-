@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type BranchScreenNavigationProp = StackNavigationProp<any, 'BranchSelect'>;
 
@@ -23,12 +25,15 @@ const BranchSelectScreen = ({ setHasSelectedBranch, userInfo, setUserInfo }: Pro
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // '선택 완료' 버튼을 눌렀을 때 실행
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedId) {
       // ✅ [수정] 선택한 지점 이름을 추출하여 userInfo에 업데이트합니다.
       const selectedBranch = BRANCH_DATA.find(b => b.id === selectedId);
       if (setUserInfo && userInfo && selectedBranch) {
         setUserInfo({ ...userInfo, store_id: selectedBranch.name });
+        
+        // ✅ 다음 로그인 시 지점 선택을 건너뛰기 위해 기기에 지점명을 저장합니다.
+        try { await AsyncStorage.setItem(`store_${userInfo.username}`, selectedBranch.name); } catch(e) {}
       }
 
       // 💡 여기서 상태가 true로 바뀌면 App.js의 조건문이 실행되어 Pending(또는 Dashboard) 화면으로 넘어갑니다.
