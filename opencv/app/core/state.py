@@ -2,7 +2,7 @@ from datetime import datetime
 from threading import Event, Lock, Thread
 from typing import Optional
 
-from app.schemas.response import CameraStatusResponse, DetectionBox
+from app.schemas.response import CameraStatusResponse, DetectionBox, MetricsResponse
 
 
 class InferenceState:
@@ -23,6 +23,12 @@ class InferenceState:
         self.image_size: Optional[int] = None
         self.confidence_threshold: Optional[float] = None
         self.processing_ms: Optional[int] = None
+        self.workers: Optional[int] = None
+        self.queue_size = 0
+        self.processed_frames = 0
+        self.dropped_frames = 0
+        self.total_processing_ms = 0
+        self.last_send_at: Optional[datetime] = None
         self.boxes: list[DetectionBox] = []
         self.annotated_image: Optional[str] = None
 
@@ -34,6 +40,7 @@ class InferenceState:
         model_name: str | None = None,
         image_size: int | None = None,
         confidence_threshold: float | None = None,
+        workers: int | None = None,
     ) -> None:
         with self._lock:
             self.stop_event.clear()
@@ -45,6 +52,12 @@ class InferenceState:
             self.image_size = image_size
             self.confidence_threshold = confidence_threshold
             self.processing_ms = None
+            self.workers = workers
+            self.queue_size = 0
+            self.processed_frames = 0
+            self.dropped_frames = 0
+            self.total_processing_ms = 0
+            self.last_send_at = None
             self.boxes = []
             self.annotated_image = None
             self.last_error = None
@@ -72,10 +85,26 @@ class InferenceState:
             self.image_size = image_size
             self.confidence_threshold = confidence_threshold
             self.processing_ms = processing_ms
+            self.processed_frames += 1
+            if processing_ms is not None:
+                self.total_processing_ms += processing_ms
             self.boxes = boxes or []
             self.annotated_image = annotated_image
             self.last_error = None
             self.status_message = "sample processed"
+
+    def mark_queue_size(self, queue_size: int) -> None:
+        with self._lock:
+            self.queue_size = queue_size
+
+    def mark_dropped_frame(self) -> None:
+        with self._lock:
+            self.dropped_frames += 1
+
+    def mark_send_result(self, send_success: bool, sent_at: datetime | None = None) -> None:
+        with self._lock:
+            self.last_send_success = send_success
+            self.last_send_at = sent_at or datetime.now()
 
     def mark_error(self, error: str) -> None:
         with self._lock:
@@ -91,6 +120,9 @@ class InferenceState:
 
     def snapshot(self) -> CameraStatusResponse:
         with self._lock:
+            avg_processing_ms = (
+                round(self.total_processing_ms / self.processed_frames, 2) if self.processed_frames else None
+            )
             return CameraStatusResponse(
                 running=self.running,
                 storeId=self.store_id,
@@ -105,8 +137,33 @@ class InferenceState:
                 imageSize=self.image_size,
                 confidenceThreshold=self.confidence_threshold,
                 processingMs=self.processing_ms,
+                workers=self.workers,
+                queueSize=self.queue_size,
+                processedFrames=self.processed_frames,
+                droppedFrames=self.dropped_frames,
+                avgProcessingMs=avg_processing_ms,
+                lastSendAt=self.last_send_at,
                 boxes=self.boxes,
                 annotatedImage=self.annotated_image,
+            )
+
+    def metrics(self) -> MetricsResponse:
+        with self._lock:
+            avg_processing_ms = (
+                round(self.total_processing_ms / self.processed_frames, 2) if self.processed_frames else None
+            )
+            return MetricsResponse(
+                running=self.running,
+                workers=self.workers or 0,
+                queueSize=self.queue_size,
+                processedFrames=self.processed_frames,
+                droppedFrames=self.dropped_frames,
+                avgProcessingMs=avg_processing_ms,
+                lastCustomerCount=self.last_customer_count,
+                lastConfidenceAvg=self.last_confidence_avg,
+                lastMeasuredAt=self.last_measured_at,
+                lastSendSuccess=self.last_send_success,
+                lastSendAt=self.last_send_at,
             )
 
 

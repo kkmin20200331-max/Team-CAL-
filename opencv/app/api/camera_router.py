@@ -27,6 +27,11 @@ def camera_status():
     return inference_service.status()
 
 
+@router.get("/metrics")
+def camera_metrics():
+    return inference_service.metrics()
+
+
 @router.post("/upload-video")
 async def upload_video(video: UploadFile = File(...)):
     extension = Path(video.filename or "").suffix.lower()
