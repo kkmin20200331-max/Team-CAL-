@@ -264,7 +264,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
         {/* ▲ 오늘의 근무 카드 끝 ▲ */}
 
         {/* ▼ 통계 반반 카드 시작 ▼ */}
-        <View style={styles.statsCard}>
+        <TouchableOpacity style={styles.statsCard} onPress={() => navigation.navigate('Payroll', { userInfo })} activeOpacity={0.8}>
           
           {/* 왼쪽: 이번 주 근무 시간 */}
           <View style={styles.statHalf}>
@@ -282,7 +282,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
             <Text style={styles.statLabel}>{t('weeklySalary')}</Text>
           </View>
 
-        </View>
+        </TouchableOpacity>
         {/* ▲ 통계 반반 카드 끝 ▲ */}
 
         {/* ▼ 대타 요청 알림 카드 ▼ */}

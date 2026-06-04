@@ -20,6 +20,7 @@ import BoardScreen from './src/screens/board/BoardScreen'; // ✅ [추가] 게�
 import SubstituteScreen from './src/screens/schedule/SubstituteScreen'; // ✅ [추가] 대타 전용 화면 불러오기
 import ContractScreen from './src/screens/mypage/ContractScreen'; // ✅ [추가] 근로계약서 화면
 import HealthCertScreen from './src/screens/mypage/HealthCertScreen'; // ✅ [추가] 보건증 화면
+import PayrollScreen from './src/screens/main/PayrollScreen'; // ✅ [추가] 급여 관리 화면
 
 // ✅ [추가] 알림 전역 상태 관리를 위한 Context 불러오기
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
@@ -237,6 +238,13 @@ return (
                   options={{ headerShown: false }} 
                 />
                 
+              {/* 👇 급여 및 주급 신청 화면 추가 */}
+                <Stack.Screen 
+                  name="Payroll" 
+                  component={PayrollScreen} 
+                  options={{ headerShown: false }} 
+                />
+
               {/* 👇 근로계약서 화면 추가 */}
                 <Stack.Screen 
                   name="Contract" 

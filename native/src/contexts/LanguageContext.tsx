@@ -159,6 +159,19 @@ const translations = {
     startDate: '계약 시작일',
     wage: '시급',
     workPlace: '근무지',
+
+    // 급여 및 주급 신청 화면
+    payrollTitle: '급여 및 주급 관리',
+    estMonthlySalary: '이번 달 예상 급여',
+    advancePayBtn: '주급(가불) 신청하기',
+    dailyWageDetail: '일별 급여 상세',
+    advancePayConfirmTitle: '주급 신청',
+    advancePayConfirmMsg: '이번 주 예상 급여에 대해 주급(가불)을 신청하시겠습니까?\n(점주 승인 후 지급됩니다.)',
+    advancePaySuccessTitle: '신청 완료',
+    advancePaySuccessMsg: '주급 신청이 접수되었습니다.',
+    basePay: '기본급',
+    holidayPay: '주휴수당 (예상)',
+    substituteBonus: '대타 보너스',
   },
   '日本語': {
     greeting: 'こんにちは',
@@ -309,6 +322,19 @@ const translations = {
     startDate: '契約開始日',
     wage: '時給',
     workPlace: '勤務地',
+
+    // 급여 및 주급 신청 화면
+    payrollTitle: '給与・週払い管理',
+    estMonthlySalary: '今月の予想給与',
+    advancePayBtn: '週払い(前借り)を申請する',
+    dailyWageDetail: '日別給与詳細',
+    advancePayConfirmTitle: '週払い申請',
+    advancePayConfirmMsg: '今週の予想給与について週払いを申請しますか？\n(店長の承認後に支給されます。)',
+    advancePaySuccessTitle: '申請完了',
+    advancePaySuccessMsg: '週払い申請を受け付けました。',
+    basePay: '基本給',
+    holidayPay: '週休手当 (予想)',
+    substituteBonus: '代打ボーナス',
   },
   'English': {
     greeting: 'Hello',
@@ -459,6 +485,19 @@ const translations = {
     startDate: 'Start Date',
     wage: 'Hourly Wage',
     workPlace: 'Workplace',
+
+    // 급여 및 주급 신청 화면
+    payrollTitle: 'Payroll & Advance',
+    estMonthlySalary: 'Est. Monthly Salary',
+    advancePayBtn: 'Request Weekly Advance',
+    dailyWageDetail: 'Daily Wage Details',
+    advancePayConfirmTitle: 'Advance Request',
+    advancePayConfirmMsg: 'Would you like to request an advance on your weekly salary?\n(Requires manager approval)',
+    advancePaySuccessTitle: 'Request Complete',
+    advancePaySuccessMsg: 'Your advance request has been submitted.',
+    basePay: 'Base Pay',
+    holidayPay: 'Holiday Pay (Est.)',
+    substituteBonus: 'Sub Bonus',
   }
 };
 
