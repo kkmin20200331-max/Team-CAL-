@@ -148,6 +148,16 @@ const translations = {
     subPointUnit: '점',
     subEmptyReq: '현재 올라온 대타 요청이 없습니다.',
     subEmptyHist: '아직 대타 이력이 없습니다.',
+
+    // 문서 관리 화면
+    uploadNew: '새 이미지 업로드',
+    valid: '정상 (유효)',
+    expired: '만료됨',
+    needsRenewal: '갱신 요망',
+    expiryDate: '만료일',
+    startDate: '계약 시작일',
+    wage: '시급',
+    workPlace: '근무지',
   },
   '日本語': {
     greeting: 'こんにちは',
@@ -287,6 +297,16 @@ const translations = {
     subPointUnit: 'pt',
     subEmptyReq: '現在、代打リクエストはありません。',
     subEmptyHist: 'まだ代打履歴がありません。',
+
+    // 문서 관리 화면
+    uploadNew: '新しい画像をアップロード',
+    valid: '正常 (有効)',
+    expired: '期限切れ',
+    needsRenewal: '更新が必要',
+    expiryDate: '有効期限',
+    startDate: '契約開始日',
+    wage: '時給',
+    workPlace: '勤務地',
   },
   'English': {
     greeting: 'Hello',
@@ -426,6 +446,16 @@ const translations = {
     subPointUnit: 'pt',
     subEmptyReq: 'There are no substitute requests currently.',
     subEmptyHist: 'No substitute history yet.',
+
+    // 문서 관리 화면
+    uploadNew: 'Upload New Image',
+    valid: 'Valid',
+    expired: 'Expired',
+    needsRenewal: 'Needs Renewal',
+    expiryDate: 'Expiry Date',
+    startDate: 'Start Date',
+    wage: 'Hourly Wage',
+    workPlace: 'Workplace',
   }
 };
 

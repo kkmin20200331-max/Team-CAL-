@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { signupAPI } from '../../api/auth';
+import { signupAPI } from '../../../api/auth';
 import axios from 'axios';
 
 // TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.

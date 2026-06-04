@@ -2,9 +2,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { getMyScheduleAPI } from '../../api/auth';
-import { NotificationContext } from '../contexts/NotificationContext';
-import { useLanguage } from '../contexts/LanguageContext';
+import { getMyScheduleAPI } from '../../../api/auth';
+import { NotificationContext } from '../../contexts/NotificationContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 

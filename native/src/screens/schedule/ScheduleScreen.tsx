@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMyScheduleAPI, requestLeaveAPI } from '../../api/auth';
-import { useLanguage } from '../contexts/LanguageContext';
+import { getMyScheduleAPI, requestLeaveAPI } from '../../../api/auth';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 // 1. 데이터의 형태(타입)를 먼저 정의해 줍니다.
 interface ScheduleItem {

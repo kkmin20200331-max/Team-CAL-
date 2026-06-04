@@ -2,7 +2,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { loginAPI } from '../../api/auth';
+import { loginAPI } from '../../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.

@@ -6,18 +6,20 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
 
 // 화면 불러오기
-import LoginScreen from './src/screens/LoginScreen';
-import SignupScreen from './src/screens/SignupScreen';
-import DashboardScreen from './src/screens/DashboardScreen';
-import PendingScreen from './src/screens/PendingScreen';
-import BranchSelectScreen from './src/screens/BranchSelectScreen';
-import QRCheckInScreen from './src/screens/QRCheckInScreen';
-import MyPageScreen from './src/screens/MyPageScreen';
-import NotificationScreen from './src/screens/NotificationScreen';
-import ScheduleScreen from './src/screens/ScheduleScreen';
-import ProfileEditScreen from './src/screens/ProfileEditScreen';
-import BoardScreen from './src/screens/BoardScreen'; // ✅ [추가] 게시판 화면 불러오기
-import SubstituteScreen from './src/screens/SubstituteScreen'; // ✅ [추가] 대타 전용 화면 불러오기
+import LoginScreen from './src/screens/auth/LoginScreen';
+import SignupScreen from './src/screens/auth/SignupScreen';
+import DashboardScreen from './src/screens/main/DashboardScreen';
+import PendingScreen from './src/screens/auth/PendingScreen';
+import BranchSelectScreen from './src/screens/main/BranchSelectScreen';
+import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
+import MyPageScreen from './src/screens/mypage/MyPageScreen';
+import NotificationScreen from './src/screens/board/NotificationScreen'; // ✅ [추가] 알림 화면 불러오기
+import ScheduleScreen from './src/screens/schedule/ScheduleScreen';
+import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
+import BoardScreen from './src/screens/board/BoardScreen'; // ✅ [추가] 게시판 화면 불러오기
+import SubstituteScreen from './src/screens/schedule/SubstituteScreen'; // ✅ [추가] 대타 전용 화면 불러오기
+import ContractScreen from './src/screens/mypage/ContractScreen'; // ✅ [추가] 근로계약서 화면
+import HealthCertScreen from './src/screens/mypage/HealthCertScreen'; // ✅ [추가] 보건증 화면
 
 // ✅ [추가] 알림 전역 상태 관리를 위한 Context 불러오기
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
@@ -229,6 +231,20 @@ return (
               <Stack.Screen 
                 name="Substitute" 
                 component={SubstituteScreen} 
+                options={{ headerShown: false }} 
+              />
+              
+            {/* 👇 근로계약서 화면 추가 */}
+              <Stack.Screen 
+                name="Contract" 
+                component={ContractScreen} 
+                options={{ headerShown: false }} 
+              />
+
+            {/* 👇 보건증 관리 화면 추가 */}
+              <Stack.Screen 
+                name="HealthCert" 
+                component={HealthCertScreen} 
                 options={{ headerShown: false }} 
               />
           </>

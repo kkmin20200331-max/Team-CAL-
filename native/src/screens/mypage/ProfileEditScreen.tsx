@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { updateProfileAPI } from '../../api/auth';
-import { useLanguage } from '../contexts/LanguageContext';
+import { updateProfileAPI } from '../../../api/auth';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ProfileEditScreen = ({ route, navigation }: any) => {
   // MyPageScreen에서 넘겨준 userInfo와 상태 변경 함수를 받습니다.

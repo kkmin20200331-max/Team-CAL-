@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLanguage, Language } from '../contexts/LanguageContext';
+import { useLanguage, Language } from '../../contexts/LanguageContext';
 
 // ✅ navigation 객체를 받아오도록 파라미터 추가
 const MyPageScreen = ({ route, navigation }: any) => {
@@ -74,8 +74,8 @@ const MyPageScreen = ({ route, navigation }: any) => {
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
           {/* ✅ 이동 시 userInfo와 함께 데이터를 덮어씌울 setUserInfo 함수도 전달합니다. */}
           {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo, setUserInfo }))}
-          {renderMenuItem('📄', t('contract'), () => {})}
-          {renderMenuItem('🏥', t('healthCert'), () => {})}
+          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
+          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
         </View>
 
         {/* 앱 설정 섹션 */}
