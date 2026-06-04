@@ -1,13 +1,14 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
+import * as ImagePicker from 'expo-image-picker';
 
 const HealthCertScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
   
   // 현재 날짜를 기준으로 만료 상태를 계산하는 함수
-  const calculateStatus = (expiryDate: string) => {
+  const calculateStatus = (expiryDate: string | null) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0); // 시간 제외 (자정 기준)
     const expiry = new Date(expiryDate);
@@ -20,15 +21,77 @@ const HealthCertScreen = ({ navigation }: any) => {
     return 'valid'; // 30일 초과 (정상)
   };
 
-  // 날짜별 테스트를 위한 더미 데이터 3가지 리스트
-  const certList = [
-    { id: '1', title: '보건증 (최신)', expiryDate: '2027-05-20' },
-    { id: '2', title: '보건증 (갱신 임박)', expiryDate: '2026-06-20' }, // 30일 이내
-    { id: '3', title: '보건증 (과거)', expiryDate: '2025-01-15' }, // 만료됨
-  ];
+  // ✅ 승인 상태(approvalStatus)가 추가된 데이터 구조
+  interface HealthCert {
+    id: string;
+    title: string;
+    expiryDate: string | null; // 승인 대기 중에는 만료일이 없음
+    approvalStatus: 'verified' | 'pending';
+  }
 
-  const handleUpload = () => {
-    Alert.alert('알림', '갤러리 또는 카메라를 실행하여 보건증을 업로드합니다.\n(현재 개발 준비 중)');
+  // ✅ 승인 상태가 포함된 더미 데이터 리스트
+  const [certList, setCertList] = useState<HealthCert[]>([
+    { id: '1', title: '보건증 (최신)', expiryDate: '2027-05-20', approvalStatus: 'verified' },
+    { id: '2', title: '보건증 (갱신 임박)', expiryDate: '2026-06-20', approvalStatus: 'verified' },
+    { id: '3', title: '보건증 (과거)', expiryDate: '2025-01-15', approvalStatus: 'verified' },
+  ]);
+
+  // 선택된 이미지와 업로드 로딩 상태 관리
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // 📸 갤러리 열기 함수
+  const handlePickImage = async () => {
+    // 1. 갤러리 접근 권한 요청
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert('권한 필요', '갤러리 접근 권한이 필요합니다.');
+      return;
+    }
+
+    // 2. 갤러리에서 이미지 선택
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true, // 크롭 등 편집 허용
+      quality: 0.8, // 0~1 사이의 압축률 (서버 전송 용량 최적화)
+    });
+
+    if (!result.canceled) {
+      setSelectedImage(result.assets[0].uri); // 선택한 이미지 URI 저장
+    }
+  };
+
+  // 🚀 백엔드 전송 시뮬레이션 함수
+  const handleUploadToBackend = async () => {
+    if (!selectedImage) return;
+    
+    setIsUploading(true);
+    try {
+      // ✅ [TODO: 실제 백엔드 연동 시 아래 코드를 사용하세요]
+      // const formData = new FormData();
+      // formData.append('file', { uri: selectedImage, name: 'health_cert.jpg', type: 'image/jpeg' } as any);
+      // await axios.post('YOUR_API_URL/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
+
+      // 임시로 1.5초 대기 (서버 통신 흉내)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // ✅ [수정] 업로드 시 '승인 대기' 상태의 새 보건증을 목록 맨 위에 추가
+      const newCert: HealthCert = { 
+        id: Date.now().toString(), 
+        title: '보건증 (신규 업로드)', 
+        expiryDate: null, // OCR 및 관리자 승인 전이므로 만료일 없음
+        approvalStatus: 'pending' 
+      };
+      
+      setCertList([newCert, ...certList]);
+      setSelectedImage(null); // 초기화
+      
+      Alert.alert('업로드 완료', '보건증이 업로드되었으며, 관리자 승인 대기 중입니다.');
+    } catch (error) {
+      Alert.alert('오류', '업로드 중 문제가 발생했습니다.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -44,55 +107,85 @@ const HealthCertScreen = ({ navigation }: any) => {
       <ScrollView style={styles.container}>
         {/* 보건증 상태 카드 (3개 리스트 반복 렌더링) */}
         {certList.map((cert) => {
-          const status = calculateStatus(cert.expiryDate);
+          // ✅ 배열 반복문(map) 내부에서는 Hook(useMemo)을 사용할 수 없으므로 일반 변수로 상태를 계산합니다.
+          const status = cert.approvalStatus === 'pending' ? 'pendingApproval' : calculateStatus(cert.expiryDate);
           
           return (
             <View key={cert.id} style={styles.card}>
               <View style={styles.statusRow}>
                 <Text style={styles.cardTitle}>{cert.title}</Text>
                 <View style={[
-                  styles.badge, 
+                  styles.badge,
                   status === 'expired' && styles.badgeExpired,
-                  status === 'needsRenewal' && styles.badgeWarning
+                  status === 'needsRenewal' && styles.badgeWarning,
+                  status === 'pendingApproval' && styles.badgePending, // 승인 대기 배지 스타일
                 ]}>
                   <Text style={[
-                    styles.badgeText, 
+                    styles.badgeText,
                     status === 'expired' && styles.badgeTextExpired,
-                    status === 'needsRenewal' && styles.badgeTextWarning
+                    status === 'needsRenewal' && styles.badgeTextWarning,
+                    status === 'pendingApproval' && styles.badgeTextPending, // 승인 대기 텍스트 스타일
                   ]}>
                     {t(status)}
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>{t('expiryDate')}</Text>
-                <Text style={[
-                  styles.infoValue, 
-                  status === 'expired' && { color: '#DC2626' },
-                  status === 'needsRenewal' && { color: '#D97706' }
-                ]}>
-                  {cert.expiryDate}
+              {/* ✅ 승인 대기 중일 때와 아닐 때 다른 내용을 표시 */}
+              {status === 'pendingApproval' ? (
+                <Text style={[styles.warningText, { color: '#D97706' }]}>
+                  ⏳ 관리자가 확인하고 있으며, 승인 후 만료일이 표시됩니다.
                 </Text>
-              </View>
+              ) : (
+                <>
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>{t('expiryDate')}</Text>
+                    <Text style={[
+                      styles.infoValue, 
+                      status === 'expired' && { color: '#DC2626' },
+                      status === 'needsRenewal' && { color: '#D97706' }
+                    ]}>
+                      {cert.expiryDate}
+                    </Text>
+                  </View>
 
-              {status === 'expired' && (
-                <Text style={styles.warningText}>⚠️ 보건증 유효기간이 만료되었습니다. 갱신 후 재업로드 해주세요.</Text>
-              )}
-              {status === 'needsRenewal' && (
-                <Text style={[styles.warningText, { color: '#D97706' }]}>⚠️ 보건증 갱신 기한이 30일 이내로 다가왔습니다.</Text>
+                  {status === 'expired' && (
+                    <Text style={styles.warningText}>⚠️ 보건증 유효기간이 만료되었습니다. 갱신 후 재업로드 해주세요.</Text>
+                  )}
+                  {status === 'needsRenewal' && (
+                    <Text style={[styles.warningText, { color: '#D97706' }]}>⚠️ 보건증 갱신 기한이 30일 이내로 다가왔습니다.</Text>
+                  )}
+                </>
               )}
             </View>
           );
         })}
 
-        {/* 이미지 업로드 영역 */}
-        <TouchableOpacity style={styles.uploadBox} onPress={handleUpload}>
-          <Text style={styles.uploadIcon}>📸</Text>
-          <Text style={styles.uploadTitle}>{t('uploadNew')}</Text>
-          <Text style={styles.uploadDesc}>터치하여 갤러리에서 선택하거나 새로 촬영하세요</Text>
-        </TouchableOpacity>
-        
+        {/* 이미지 업로드 / 미리보기 영역 */}
+        {selectedImage ? (
+          <View style={styles.previewContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+            <View style={styles.previewButtonGroup}>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setSelectedImage(null)} disabled={isUploading}>
+                <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.submitButton} onPress={handleUploadToBackend} disabled={isUploading}>
+                {isUploading ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>서버로 전송</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.uploadBox} onPress={handlePickImage}>
+            <Text style={styles.uploadIcon}>📸</Text>
+            <Text style={styles.uploadTitle}>{t('uploadNew')}</Text>
+            <Text style={styles.uploadDesc}>터치하여 갤러리에서 선택하거나 새로 촬영하세요</Text>
+          </TouchableOpacity>
+        )}
+
         <Text style={styles.helpText}>※ 업로드된 이미지는 AI(OCR)를 통해 갱신일이 자동 인식됩니다.</Text>
 
       </ScrollView>
@@ -119,6 +212,8 @@ const styles = StyleSheet.create({
   badgeTextExpired: { color: '#DC2626' },
   badgeWarning: { backgroundColor: '#FEF3C7' },
   badgeTextWarning: { color: '#D97706' },
+  badgePending: { backgroundColor: '#FEF3C7' }, // 승인 대기 배지
+  badgeTextPending: { color: '#D97706' }, // 승인 대기 텍스트
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   infoLabel: { fontSize: 14, color: '#6B7280' },
   infoValue: { fontSize: 16, fontWeight: '700', color: '#111827' },
@@ -131,6 +226,14 @@ const styles = StyleSheet.create({
   uploadTitle: { fontSize: 16, fontWeight: 'bold', color: '#2563EB', marginBottom: 8 },
   uploadDesc: { fontSize: 13, color: '#6B7280' },
   helpText: { fontSize: 12, color: '#9CA3AF', textAlign: 'center' },
+  
+  previewContainer: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 12, elevation: 2 },
+  previewImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain', backgroundColor: '#F3F4F6' },
+  previewButtonGroup: { flexDirection: 'row', gap: 12, width: '100%' },
+  cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: '#F3F4F6', borderRadius: 8, alignItems: 'center' },
+  cancelButtonText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
+  submitButton: { flex: 1, paddingVertical: 14, backgroundColor: '#2563EB', borderRadius: 8, alignItems: 'center' },
+  submitButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
 });
 
 export default HealthCertScreen;
