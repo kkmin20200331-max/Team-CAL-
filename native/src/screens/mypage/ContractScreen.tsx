@@ -3,10 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image, Act
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 
 const ContractScreen = ({ route, navigation }: any) => {
   const { t } = useLanguage();
   const userInfo = route.params?.userInfo || {};
+
+  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
   // 상태 관리: 실제로는 백엔드에서 내려주는 데이터를 기반으로 작동합니다.
   const [contractData, setContractData] = useState({
@@ -131,47 +136,48 @@ const ContractScreen = ({ route, navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F4F6F8' },
+// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB'
+    paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border
   },
   backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: '#333' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+  backButtonText: { fontSize: 24, color: colors.text },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   container: { padding: 20 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  card: { backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
-  badge: { backgroundColor: '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { color: '#16A34A', fontSize: 13, fontWeight: '700' },
-  badgePending: { backgroundColor: '#FEF3C7' },
-  badgeTextPending: { color: '#D97706' },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  badge: { backgroundColor: isDarkMode ? '#14532D' : '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  badgeText: { color: isDarkMode ? '#86EFAC' : '#16A34A', fontSize: 13, fontWeight: '700' },
+  badgePending: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7' },
+  badgeTextPending: { color: isDarkMode ? '#FDE68A' : '#D97706' },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  infoLabel: { fontSize: 14, color: '#6B7280' },
-  infoValue: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  infoLabel: { fontSize: 14, color: colors.subText },
+  infoValue: { fontSize: 15, fontWeight: '600', color: colors.text },
   uploadBox: {
-    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.card, borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: '#93C5FD', borderStyle: 'dashed', marginBottom: 12
   },
   uploadIcon: { fontSize: 40, marginBottom: 12 },
   uploadTitle: { fontSize: 16, fontWeight: 'bold', color: '#2563EB', marginBottom: 8 },
-  uploadDesc: { fontSize: 13, color: '#6B7280', textAlign: 'center' },
-  previewContainer: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 12, elevation: 2 },
-  previewImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain', backgroundColor: '#F3F4F6' },
+  uploadDesc: { fontSize: 13, color: colors.subText, textAlign: 'center' },
+  previewContainer: { backgroundColor: colors.card, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 12, elevation: 2 },
+  previewImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain', backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6' },
   previewButtonGroup: { flexDirection: 'row', gap: 12, width: '100%' },
-  cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: '#F3F4F6', borderRadius: 8, alignItems: 'center' },
-  cancelButtonText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
+  cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', borderRadius: 8, alignItems: 'center' },
+  cancelButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
   submitButton: { flex: 1, paddingVertical: 14, backgroundColor: '#2563EB', borderRadius: 8, alignItems: 'center' },
   submitButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
   pendingBox: {
-    backgroundColor: '#FFFBEB', borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: '#FCD34D', marginBottom: 12
+    backgroundColor: isDarkMode ? '#3F3119' : '#FFFBEB', borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: isDarkMode ? '#92400E' : '#FCD34D', marginBottom: 12
   },
   pendingIcon: { fontSize: 40, marginBottom: 12 },
-  pendingTitle: { fontSize: 16, fontWeight: 'bold', color: '#D97706', marginBottom: 8 },
-  pendingDesc: { fontSize: 13, color: '#92400E' },
+  pendingTitle: { fontSize: 16, fontWeight: 'bold', color: isDarkMode ? '#FCD34D' : '#D97706', marginBottom: 8 },
+  pendingDesc: { fontSize: 13, color: isDarkMode ? '#E5E7EB' : '#92400E' },
 });
 
 export default ContractScreen;

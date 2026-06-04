@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyScheduleAPI, requestLeaveAPI } from '../../../api/auth';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 
 // 1. 데이터의 형태(타입)를 먼저 정의해 줍니다.
 interface ScheduleItem {
@@ -92,6 +93,10 @@ const ScheduleScreen = ({ route }: any) => {
 
   // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
+
+  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
   // ✅ 유저 정보에서 선택한 지점명 가져오기
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
@@ -280,7 +285,7 @@ const ScheduleScreen = ({ route }: any) => {
 
           {generateWeekDates(baseDate).map((item) => {
             const isSelected = item.fullDate === selectedDate;
-            const isWeekend = item.dayIndex === 0 ? '#EF4444' : item.dayIndex === 6 ? '#3B82F6' : '#6B7280';
+            const isWeekend = item.dayIndex === 0 ? '#EF4444' : item.dayIndex === 6 ? '#3B82F6' : colors.subText;
             return (
               <TouchableOpacity key={item.fullDate} style={[styles.dateBox, isSelected && styles.dateBoxSelected]} onPress={() => { setSelectedDate(item.fullDate); setBaseDate(new Date(item.fullDate)); }}>
                 <Text style={[styles.dayText, { color: isSelected ? '#FFFFFF' : isWeekend }]}>{t(DAY_KEYS[item.dayIndex])}</Text>
@@ -334,7 +339,7 @@ const ScheduleScreen = ({ route }: any) => {
             <TextInput
               style={styles.reasonInput}
               placeholder={t('leaveReasonPlaceholder')}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.subText}
               value={leaveReason}
               onChangeText={setLeaveReason}
               multiline={true}
@@ -405,8 +410,9 @@ const ScheduleScreen = ({ route }: any) => {
 };
 
 // 3. UI 스타일링
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F4F6F8' },
+// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
@@ -414,33 +420,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, 
     paddingTop: 20, 
     paddingBottom: 10,
-    backgroundColor: '#FFFFFF'
+    backgroundColor: colors.card
   },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   monthChangeButton: { fontSize: 14, color: '#2563EB', fontWeight: '600' },
   
   // ✅ 주간 달력 영역
-  calendarContainer: { backgroundColor: '#FFFFFF', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  calendarContainer: { backgroundColor: colors.card, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   weekDaysContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 10 },
   arrowButton: { paddingHorizontal: 5, paddingVertical: 10 },
-  arrowText: { fontSize: 16, color: '#9CA3AF' },
+  arrowText: { fontSize: 16, color: colors.subText },
   dateBox: { 
     width: 42, 
     height: 65, 
     justifyContent: 'center', 
     alignItems: 'center', 
     borderRadius: 10, 
-    backgroundColor: '#F9FAFB' 
+    backgroundColor: isDarkMode ? '#2A2A2A' : '#F9FAFB' 
   },
   dateBoxSelected: { backgroundColor: '#2563EB' },
   dayText: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
-  dateText: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+  dateText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   dateTextSelected: { color: '#FFFFFF' },
   
   // 카드 리스트 영역
   listContainer: { padding: 16, gap: 16 },
   card: { 
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: colors.card, 
     borderRadius: 16, 
     padding: 20, 
     elevation: 2, 
@@ -453,71 +459,71 @@ const styles = StyleSheet.create({
   },
   cardHighlighted: { borderColor: '#93C5FD' }, // 선택된 날짜 강조 테두리
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  cardDate: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  cardDate: { fontSize: 16, fontWeight: '700', color: colors.text },
   
   // 배지 스타일
   badge: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6 },
-  badgeScheduled: { backgroundColor: '#E0F2FE' },
-  badgeTextScheduled: { color: '#0284C7', fontSize: 12, fontWeight: '600' },
-  badgeInProgress: { backgroundColor: '#DCFCE7' },
-  badgeTextInProgress: { color: '#16A34A', fontSize: 12, fontWeight: '600' },
-  badgeCompleted: { backgroundColor: '#F3F4F6' },
-  badgeTextCompleted: { color: '#4B5563', fontSize: 12, fontWeight: '600' },
-  badgeSubstitute: { backgroundColor: '#FEF3C7' },
-  badgeTextSubstitute: { color: '#D97706', fontSize: 12, fontWeight: '600' },
-  badgeOff: { backgroundColor: '#FEE2E2' },
-  badgeTextOff: { color: '#DC2626', fontSize: 12, fontWeight: '600' },
+  badgeScheduled: { backgroundColor: isDarkMode ? '#075985' : '#E0F2FE' },
+  badgeTextScheduled: { color: isDarkMode ? '#BAE6FD' : '#0284C7', fontSize: 12, fontWeight: '600' },
+  badgeInProgress: { backgroundColor: isDarkMode ? '#14532D' : '#DCFCE7' },
+  badgeTextInProgress: { color: isDarkMode ? '#86EFAC' : '#16A34A', fontSize: 12, fontWeight: '600' },
+  badgeCompleted: { backgroundColor: isDarkMode ? '#374151' : '#F3F4F6' },
+  badgeTextCompleted: { color: isDarkMode ? '#D1D5DB' : '#4B5563', fontSize: 12, fontWeight: '600' },
+  badgeSubstitute: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7' },
+  badgeTextSubstitute: { color: isDarkMode ? '#FDE68A' : '#D97706', fontSize: 12, fontWeight: '600' },
+  badgeOff: { backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2' },
+  badgeTextOff: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 12, fontWeight: '600' },
   
   cardBody: { marginBottom: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   infoIcon: { fontSize: 16, marginRight: 8 },
-  infoText: { fontSize: 15, color: '#4B5563', fontWeight: '500' },
+  infoText: { fontSize: 15, color: colors.text, fontWeight: '500' },
   
   // 휴무 신청 버튼
   leaveButton: { 
     marginTop: 8, 
-    backgroundColor: '#F3F4F6', 
+    backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', 
     paddingVertical: 12, 
     borderRadius: 8, 
     alignItems: 'center' 
   },
-  leaveButtonText: { color: '#374151', fontSize: 14, fontWeight: '600' },
+  leaveButtonText: { color: colors.text, fontSize: 14, fontWeight: '600' },
   
   // 빈 상태(휴무/일정 없음) 표시 스타일
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
   emptyIcon: { fontSize: 50, marginBottom: 16 },
-  emptyText: { fontSize: 16, color: '#6B7280', fontWeight: '500' },
+  emptyText: { fontSize: 16, color: colors.subText, fontWeight: '500' },
 
   // 모달 스타일
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '85%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 8, textAlign: 'center' },
-  modalSubtitle: { fontSize: 14, color: '#6B7280', marginBottom: 20, textAlign: 'center' },
-  reasonInput: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 12, height: 100, fontSize: 15, color: '#111827', backgroundColor: '#F9FAFB', marginBottom: 20 },
+  modalContent: { width: '85%', backgroundColor: colors.modalBg, borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 8, textAlign: 'center' },
+  modalSubtitle: { fontSize: 14, color: colors.subText, marginBottom: 20, textAlign: 'center' },
+  reasonInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12, height: 100, fontSize: 15, color: colors.text, backgroundColor: isDarkMode ? '#1E1E1E' : '#F9FAFB', marginBottom: 20 },
   modalButtonGroup: { flexDirection: 'row', gap: 12 },
-  modalCancelButton: { flex: 1, backgroundColor: '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  modalCancelText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
+  modalCancelButton: { flex: 1, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  modalCancelText: { color: colors.text, fontSize: 15, fontWeight: '600' },
   modalSubmitButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   modalSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
 
   // 월간 달력 모달 스타일
-  monthModalContent: { width: '90%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  monthModalContent: { width: '90%', backgroundColor: colors.modalBg, borderRadius: 16, padding: 20, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
   monthModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  monthModalTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+  monthModalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   monthDaysHeader: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 },
-  monthDayText: { fontSize: 13, fontWeight: '600', color: '#6B7280', width: '14%', textAlign: 'center' },
+  monthDayText: { fontSize: 13, fontWeight: '600', color: colors.subText, width: '14%', textAlign: 'center' },
   monthGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   monthDateCell: { width: '14%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 5, borderRadius: 20 },
   monthDateCellSelected: { backgroundColor: '#2563EB' },
-  monthDateText: { fontSize: 15, color: '#374151' },
+  monthDateText: { fontSize: 15, color: colors.text },
   monthDateTextSelected: { color: '#FFFFFF', fontWeight: 'bold' },
   
   // ✅ 월간 달력 점(Dot) 스타일 (숫자가 흔들리지 않게 absolute 사용)
   workDot: { position: 'absolute', bottom: 2, width: 6, height: 6, borderRadius: 3, backgroundColor: '#3B82F6' },
   offDot: { position: 'absolute', bottom: 2, width: 6, height: 6, borderRadius: 3, backgroundColor: '#EF4444' },
   
-  closeModalButton: { marginTop: 20, backgroundColor: '#F3F4F6', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  closeModalButtonText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
+  closeModalButton: { marginTop: 20, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  closeModalButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
 });
 
 export default ScheduleScreen;

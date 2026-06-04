@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Pressable } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NotificationContext, NotificationItem } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 
 const NotificationListScreen = () => {
   // ✅ 1. 알림 데이터를 나홀로 상태가 아닌 전역 상태(Context)에서 가져옵니다.
@@ -10,6 +11,10 @@ const NotificationListScreen = () => {
   
   // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
+
+  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
   
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
@@ -123,33 +128,34 @@ const NotificationListScreen = () => {
   );
 };
 
-// 스타일 시트는 이전과 동일합니다.
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#EEEEEE', backgroundColor: '#FFFFFF' },
-  headerText: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
-  markAllText: { fontSize: 14, color: '#2563EB', fontWeight: '600' },
+// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
+  headerText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  markAllText: { fontSize: 14, color: isDarkMode ? '#60A5FA' : '#2563EB', fontWeight: '600' },
   listContent: { paddingVertical: 10 },
-  notificationItem: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F5F5F5', backgroundColor: '#FFFFFF' },
-  unreadBackground: { backgroundColor: '#F0F8FF' },
+  notificationItem: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
+  unreadBackground: { backgroundColor: isDarkMode ? '#1E293B' : '#F0F8FF' }, // 다크 모드일 땐 어두운 남색
   contentContainer: { flex: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  titleText: { fontSize: 15, fontWeight: '600', color: '#555555', flex: 1, marginRight: 10 },
-  unreadTitleText: { color: '#000000', fontWeight: 'bold' },
-  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2563EB' },
-  messageText: { fontSize: 14, color: '#777777', lineHeight: 20, marginBottom: 8 },
-  timeText: { fontSize: 12, color: '#AAAAAA' },
+  titleText: { fontSize: 15, fontWeight: '600', color: colors.subText, flex: 1, marginRight: 10 },
+  unreadTitleText: { color: colors.text, fontWeight: 'bold' },
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: isDarkMode ? '#60A5FA' : '#2563EB' },
+  messageText: { fontSize: 14, color: colors.subText, lineHeight: 20, marginBottom: 8 },
+  timeText: { fontSize: 12, color: colors.subText },
+  
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '85%', backgroundColor: 'white', borderRadius: 12, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
-  modalHeader: { alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#EEEEEE', paddingBottom: 16, marginBottom: 16 },
+  modalContent: { width: '85%', backgroundColor: colors.modalBg, borderRadius: 12, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 },
+  modalHeader: { alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 16, marginBottom: 16 },
   modalIcon: { fontSize: 32, marginBottom: 8 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 8, textAlign: 'center' },
-  modalTime: { fontSize: 12, color: '#888' },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 8, textAlign: 'center' },
+  modalTime: { fontSize: 12, color: colors.subText },
   modalBody: { minHeight: 80, marginBottom: 24 },
-  modalMessage: { fontSize: 15, lineHeight: 24, color: '#444' },
+  modalMessage: { fontSize: 15, lineHeight: 24, color: colors.text },
   modalButtonGroup: { flexDirection: 'row', gap: 12 },
-  deleteButton: { flex: 1, backgroundColor: '#FEE2E2', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  deleteButtonText: { color: '#DC2626', fontSize: 15, fontWeight: 'bold' },
+  deleteButton: { flex: 1, backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  deleteButtonText: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 15, fontWeight: 'bold' },
   closeButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   closeButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 });

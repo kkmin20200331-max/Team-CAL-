@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 
 const BoardScreen = ({ navigation }: any) => {
   // 모달 상태 관리
@@ -13,6 +14,10 @@ const BoardScreen = ({ navigation }: any) => {
   
   // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
+
+  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
   // ✅ 카테고리 탭 목록 정의
   const CATEGORIES = [
@@ -130,8 +135,9 @@ const BoardScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -139,18 +145,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, 
     paddingVertical: 16, 
     borderBottomWidth: 1, 
-    borderBottomColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF'
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card
   },
   backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: '#333' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+  backButtonText: { fontSize: 24, color: colors.text },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   
   // --- 카테고리 탭 스타일 ---
   tabContainer: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
   tabScroll: {
     paddingHorizontal: 20,
@@ -161,10 +167,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6',
   },
   tabButtonActive: { backgroundColor: '#2563EB' },
-  tabText: { fontSize: 14, color: '#4B5563', fontWeight: '500' },
+  tabText: { fontSize: 14, color: colors.subText, fontWeight: '500' },
   tabTextActive: { color: '#FFFFFF', fontWeight: '700' },
 
   listContainer: {
@@ -184,20 +190,20 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   categoryBadge: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     marginRight: 8,
   },
   categoryBadgeText: {
-    color: '#4B5563',
+    color: isDarkMode ? '#D1D5DB' : '#4B5563',
     fontSize: 10,
     fontWeight: '700',
   },
   noticeItemTitle: {
     fontSize: 16,
-    color: '#374151',
+    color: colors.text,
     fontWeight: '500',
   },
   newBadge: {
@@ -214,23 +220,23 @@ const styles = StyleSheet.create({
   },
   noticeDate: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: colors.subText,
   },
   listDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.border,
   },
 
   // --- 게시글 상세 모달 스타일 (대시보드와 동일) ---
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  postModalContent: { width: '85%', maxHeight: '70%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
-  postModalTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827', marginBottom: 10 },
-  postModalDate: { fontSize: 13, color: '#6B7280', marginBottom: 16 },
-  postModalDivider: { height: 1, backgroundColor: '#E5E7EB', marginBottom: 16 },
+  postModalContent: { width: '85%', maxHeight: '70%', backgroundColor: colors.modalBg, borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  postModalTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 10 },
+  postModalDate: { fontSize: 13, color: colors.subText, marginBottom: 16 },
+  postModalDivider: { height: 1, backgroundColor: colors.border, marginBottom: 16 },
   postModalBody: { marginBottom: 20 },
-  postModalText: { fontSize: 17, color: '#374151', lineHeight: 26 },
-  closeModalButton: { backgroundColor: '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  closeModalButtonText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
+  postModalText: { fontSize: 17, color: colors.text, lineHeight: 26 },
+  closeModalButton: { backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  closeModalButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
 });
 
 export default BoardScreen;

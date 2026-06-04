@@ -3,9 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image, Act
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 
 const HealthCertScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
+  
+  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
   
   // 현재 날짜를 기준으로 만료 상태를 계산하는 함수
   const calculateStatus = (expiryDate: string | null) => {
@@ -133,7 +138,7 @@ const HealthCertScreen = ({ navigation }: any) => {
 
               {/* ✅ 승인 대기 중일 때와 아닐 때 다른 내용을 표시 */}
               {status === 'pendingApproval' ? (
-                <Text style={[styles.warningText, { color: '#D97706' }]}>
+                <Text style={[styles.warningText, { color: isDarkMode ? '#FDE68A' : '#D97706' }]}>
                   ⏳ 관리자가 확인하고 있으며, 승인 후 만료일이 표시됩니다.
                 </Text>
               ) : (
@@ -142,18 +147,18 @@ const HealthCertScreen = ({ navigation }: any) => {
                     <Text style={styles.infoLabel}>{t('expiryDate')}</Text>
                     <Text style={[
                       styles.infoValue, 
-                      status === 'expired' && { color: '#DC2626' },
-                      status === 'needsRenewal' && { color: '#D97706' }
+                      status === 'expired' && { color: isDarkMode ? '#FECACA' : '#DC2626' },
+                      status === 'needsRenewal' && { color: isDarkMode ? '#FDE68A' : '#D97706' }
                     ]}>
                       {cert.expiryDate}
                     </Text>
                   </View>
 
                   {status === 'expired' && (
-                    <Text style={styles.warningText}>⚠️ 보건증 유효기간이 만료되었습니다. 갱신 후 재업로드 해주세요.</Text>
+                    <Text style={[styles.warningText, { color: isDarkMode ? '#FECACA' : '#DC2626' }]}>⚠️ 보건증 유효기간이 만료되었습니다. 갱신 후 재업로드 해주세요.</Text>
                   )}
                   {status === 'needsRenewal' && (
-                    <Text style={[styles.warningText, { color: '#D97706' }]}>⚠️ 보건증 갱신 기한이 30일 이내로 다가왔습니다.</Text>
+                    <Text style={[styles.warningText, { color: isDarkMode ? '#FDE68A' : '#D97706' }]}>⚠️ 보건증 갱신 기한이 30일 이내로 다가왔습니다.</Text>
                   )}
                 </>
               )}
@@ -193,45 +198,46 @@ const HealthCertScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F4F6F8' },
+// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB'
+    paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border
   },
   backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: '#333' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+  backButtonText: { fontSize: 24, color: colors.text },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   container: { padding: 20 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  card: { backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
-  badge: { backgroundColor: '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { color: '#16A34A', fontSize: 13, fontWeight: '700' },
-  badgeExpired: { backgroundColor: '#FEE2E2' },
-  badgeTextExpired: { color: '#DC2626' },
-  badgeWarning: { backgroundColor: '#FEF3C7' },
-  badgeTextWarning: { color: '#D97706' },
-  badgePending: { backgroundColor: '#FEF3C7' }, // 승인 대기 배지
-  badgeTextPending: { color: '#D97706' }, // 승인 대기 텍스트
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  badge: { backgroundColor: isDarkMode ? '#14532D' : '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  badgeText: { color: isDarkMode ? '#86EFAC' : '#16A34A', fontSize: 13, fontWeight: '700' },
+  badgeExpired: { backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2' },
+  badgeTextExpired: { color: isDarkMode ? '#FECACA' : '#DC2626' },
+  badgeWarning: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7' },
+  badgeTextWarning: { color: isDarkMode ? '#FDE68A' : '#D97706' },
+  badgePending: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7' },
+  badgeTextPending: { color: isDarkMode ? '#FDE68A' : '#D97706' },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  infoLabel: { fontSize: 14, color: '#6B7280' },
-  infoValue: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  warningText: { marginTop: 12, fontSize: 13, color: '#DC2626', fontWeight: '500' },
+  infoLabel: { fontSize: 14, color: colors.subText },
+  infoValue: { fontSize: 16, fontWeight: '700', color: colors.text },
+  warningText: { marginTop: 12, fontSize: 13, fontWeight: '500' },
   uploadBox: {
-    backgroundColor: '#FFFFFF', borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.card, borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: '#93C5FD', borderStyle: 'dashed', marginBottom: 12
   },
   uploadIcon: { fontSize: 40, marginBottom: 12 },
   uploadTitle: { fontSize: 16, fontWeight: 'bold', color: '#2563EB', marginBottom: 8 },
-  uploadDesc: { fontSize: 13, color: '#6B7280' },
-  helpText: { fontSize: 12, color: '#9CA3AF', textAlign: 'center' },
+  uploadDesc: { fontSize: 13, color: colors.subText },
+  helpText: { fontSize: 12, color: colors.subText, textAlign: 'center' },
   
-  previewContainer: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 12, elevation: 2 },
-  previewImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain', backgroundColor: '#F3F4F6' },
+  previewContainer: { backgroundColor: colors.card, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 12, elevation: 2 },
+  previewImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain', backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6' },
   previewButtonGroup: { flexDirection: 'row', gap: 12, width: '100%' },
-  cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: '#F3F4F6', borderRadius: 8, alignItems: 'center' },
-  cancelButtonText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
+  cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', borderRadius: 8, alignItems: 'center' },
+  cancelButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
   submitButton: { flex: 1, paddingVertical: 14, backgroundColor: '#2563EB', borderRadius: 8, alignItems: 'center' },
   submitButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
 });

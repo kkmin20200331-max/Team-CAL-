@@ -25,6 +25,8 @@ import HealthCertScreen from './src/screens/mypage/HealthCertScreen'; // ✅ [�
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
 // ✅ [추가] 다국어 전역 상태 관리 Context 불러오기 (useLanguage 추가)
 import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
+// ✅ [추가] 테마(주/야간 모드) 전역 상태 관리 Context 불러오기
+import { ThemeProvider } from './src/contexts/ThemeContext';
 
 // ✅ [정리] 중복 선언된 Stack은 하나만 남기고, Tab 네비게이터를 생성합니다.
 const Stack = createStackNavigator();
@@ -142,129 +144,131 @@ export default function App() {
   const [userInfo, setUserInfo] = useState<any>(null);
 
 return (
-  <LanguageProvider>
-    <NotificationProvider>
-    <NavigationContainer>
-        {/* 조건부 렌더링 시 initialRouteName은 생략해도 됩니다. */}
-        <Stack.Navigator>
-          
-          {/* ▼ 여기에 조건부 로직이 들어갑니다 ▼ */}
-          {!isLoggedIn ? (
-            // [상태 1] 로그인이 안 된 경우
-            <>
-              <Stack.Screen name="Login" options={{ headerShown: false }}>
-                {(props) => (
-                  <LoginScreen 
-                    {...props} 
-                    // 👇 화살표 함수로 감싸서 값만 전달하도록 명확히 수정합니다.
-                    setIsLoggedIn={setIsLoggedIn}
-                    setUserStatus={setUserStatus}
-                    // 👇 로그아웃 후 다시 로그인할 때를 위해 함수를 넘겨줍니다.
-                    setHasSelectedBranch={setHasSelectedBranch}
-                    // 👇 로그인 성공 시 백엔드에서 받은 유저 정보를 저장할 함수
+<ThemeProvider>
+    <LanguageProvider>
+      <NotificationProvider>
+      <NavigationContainer>
+          {/* 조건부 렌더링 시 initialRouteName은 생략해도 됩니다. */}
+          <Stack.Navigator>
+            
+            {/* ▼ 여기에 조건부 로직이 들어갑니다 ▼ */}
+            {!isLoggedIn ? (
+              // [상태 1] 로그인이 안 된 경우
+              <>
+                <Stack.Screen name="Login" options={{ headerShown: false }}>
+                  {(props) => (
+                    <LoginScreen 
+                      {...props} 
+                      // 👇 화살표 함수로 감싸서 값만 전달하도록 명확히 수정합니다.
+                      setIsLoggedIn={setIsLoggedIn}
+                      setUserStatus={setUserStatus}
+                      // 👇 로그아웃 후 다시 로그인할 때를 위해 함수를 넘겨줍니다.
+                      setHasSelectedBranch={setHasSelectedBranch}
+                      // 👇 로그인 성공 시 백엔드에서 받은 유저 정보를 저장할 함수
+                      setUserInfo={setUserInfo}
+                    />
+                  )}
+                </Stack.Screen>
+                <Stack.Screen 
+                  name="Signup" 
+                  component={SignupScreen} 
+                  options={{ title: '회원가입' }} 
+                />
+              </>
+            ) : !hasSelectedBranch ? (
+              // 👇 [상태 1.5] 로그인은 했지만 지점 선택을 안 한 경우 (새로 추가됨!)
+              <Stack.Screen name="BranchSelect" options={{ headerShown: false }}>
+                {({ navigation }) => (
+                  <BranchSelectScreen 
+                    navigation={navigation} 
+                    setHasSelectedBranch={setHasSelectedBranch} 
+                    userInfo={userInfo}
                     setUserInfo={setUserInfo}
                   />
                 )}
               </Stack.Screen>
-              <Stack.Screen 
-                name="Signup" 
-                component={SignupScreen} 
-                options={{ title: '회원가입' }} 
-              />
+              ): userStatus === 'active' ? (
+                // <> </> 한 화면 안에 두 개가 있으면 빈 태그로 감싸줘야 합니다.
+                <> 
+                {/* [상태 2] 승인 완료 (메인 서비스 영역) */}
+                
+                {/* ✅ [권한별 분기] 로그인한 유저의 role을 확인하여 다른 화면을 보여줍니다. */}
+                {userInfo?.role === 'ADMIN' ? (
+                  <Stack.Screen 
+                    name="AdminTab" 
+                    component={AdminTabNavigator} 
+                    initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
+                    options={{ headerShown: false }} 
+                  />
+                ) : (
+                  <Stack.Screen 
+                    name="StaffTab" 
+                    component={StaffTabNavigator} 
+                    initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
+                    options={{ headerShown: false }} 
+                  />
+                )}
+    
+              {/* 👇 대시보드와 형제 위치에 QR 화면을 추가합니다. */}
+                <Stack.Screen 
+                  name="QRCheckIn" 
+                  component={QRCheckInScreen} 
+                  options={{ headerShown: false }} 
+                />
+    
+              {/* 👇 개인정보 수정 화면 추가 (탭 바를 덮도록 Stack에 추가) */}
+                <Stack.Screen 
+                  name="ProfileEdit" 
+                  component={ProfileEditScreen} 
+                  options={{ headerShown: false }} 
+                />
+    
+              {/* 👇 게시판 전체 보기 화면 추가 (탭 바를 덮도록 Stack에 추가) */}
+                <Stack.Screen 
+                  name="Board" 
+                  component={BoardScreen} 
+                  options={{ headerShown: false }} 
+                />
+    
+              {/* 👇 대타 구하기 / 지원하기 화면 추가 */}
+                <Stack.Screen 
+                  name="Substitute" 
+                  component={SubstituteScreen} 
+                  options={{ headerShown: false }} 
+                />
+                
+              {/* 👇 근로계약서 화면 추가 */}
+                <Stack.Screen 
+                  name="Contract" 
+                  component={ContractScreen} 
+                  options={{ headerShown: false }} 
+                />
+  
+              {/* 👇 보건증 관리 화면 추가 */}
+                <Stack.Screen 
+                  name="HealthCert" 
+                  component={HealthCertScreen} 
+                  options={{ headerShown: false }} 
+                />
             </>
-          ) : !hasSelectedBranch ? (
-            // 👇 [상태 1.5] 로그인은 했지만 지점 선택을 안 한 경우 (새로 추가됨!)
-            <Stack.Screen name="BranchSelect" options={{ headerShown: false }}>
-              {({ navigation }) => (
-                <BranchSelectScreen 
-                  navigation={navigation} 
-                  setHasSelectedBranch={setHasSelectedBranch} 
-                  userInfo={userInfo}
-                  setUserInfo={setUserInfo}
-                />
-              )}
-            </Stack.Screen>
-            ): userStatus === 'active' ? (
-              // <> </> 한 화면 안에 두 개가 있으면 빈 태그로 감싸줘야 합니다.
-              <> 
-              {/* [상태 2] 승인 완료 (메인 서비스 영역) */}
-              
-              {/* ✅ [권한별 분기] 로그인한 유저의 role을 확인하여 다른 화면을 보여줍니다. */}
-              {userInfo?.role === 'ADMIN' ? (
-                <Stack.Screen 
-                  name="AdminTab" 
-                  component={AdminTabNavigator} 
-                  initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
-                  options={{ headerShown: false }} 
-                />
-              ) : (
-                <Stack.Screen 
-                  name="StaffTab" 
-                  component={StaffTabNavigator} 
-                  initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
-                  options={{ headerShown: false }} 
-                />
-              )}
-  
-            {/* 👇 대시보드와 형제 위치에 QR 화면을 추가합니다. */}
-              <Stack.Screen 
-                name="QRCheckIn" 
-                component={QRCheckInScreen} 
-                options={{ headerShown: false }} 
-              />
-  
-            {/* 👇 개인정보 수정 화면 추가 (탭 바를 덮도록 Stack에 추가) */}
-              <Stack.Screen 
-                name="ProfileEdit" 
-                component={ProfileEditScreen} 
-                options={{ headerShown: false }} 
-              />
-  
-            {/* 👇 게시판 전체 보기 화면 추가 (탭 바를 덮도록 Stack에 추가) */}
-              <Stack.Screen 
-                name="Board" 
-                component={BoardScreen} 
-                options={{ headerShown: false }} 
-              />
-  
-            {/* 👇 대타 구하기 / 지원하기 화면 추가 */}
-              <Stack.Screen 
-                name="Substitute" 
-                component={SubstituteScreen} 
-                options={{ headerShown: false }} 
-              />
-              
-            {/* 👇 근로계약서 화면 추가 */}
-              <Stack.Screen 
-                name="Contract" 
-                component={ContractScreen} 
-                options={{ headerShown: false }} 
-              />
-
-            {/* 👇 보건증 관리 화면 추가 */}
-              <Stack.Screen 
-                name="HealthCert" 
-                component={HealthCertScreen} 
-                options={{ headerShown: false }} 
-              />
-          </>
-          ) : (
-            // [상태 3] 로그인 + 승인 대기
-            <Stack.Screen name="Pending" options={{ headerShown: false }}>
-              {/* 여기도 동일하게 수정합니다 */}
-              {({ navigation }) => (
-                <PendingScreen 
-                  navigation={navigation} 
-                  setIsLoggedIn={setIsLoggedIn}  
-                />
-              )}
-            </Stack.Screen>
-          )}
-          {/* ▲ 조건부 로직 끝 ▲ */}
-          
-        </Stack.Navigator>
-    </NavigationContainer>
-    </NotificationProvider>
-  </LanguageProvider>
+            ) : (
+              // [상태 3] 로그인 + 승인 대기
+              <Stack.Screen name="Pending" options={{ headerShown: false }}>
+                {/* 여기도 동일하게 수정합니다 */}
+                {({ navigation }) => (
+                  <PendingScreen 
+                    navigation={navigation} 
+                    setIsLoggedIn={setIsLoggedIn}  
+                  />
+                )}
+              </Stack.Screen>
+            )}
+            {/* ▲ 조건부 로직 끝 ▲ */}
+            
+          </Stack.Navigator>
+      </NavigationContainer>
+      </NotificationProvider>
+    </LanguageProvider>
+</ThemeProvider>
   );
 }

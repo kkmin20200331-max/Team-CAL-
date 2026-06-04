@@ -5,6 +5,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { getMyScheduleAPI } from '../../../api/auth';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ [추가] 테마 Context 불러오기
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
@@ -18,6 +19,10 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   
   // ✅ 전역 언어 설정 가져오기 (가장 먼저 선언해야 아래에서 에러가 발생하지 않습니다!)
   const { t } = useLanguage();
+
+  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
   // 백엔드에서 전달받은 정보 파싱 (없을 경우 기본값)
   const userName = userInfo?.name || t('defaultUserName');
@@ -172,14 +177,15 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
     }
   };
 
+  // ✅ 다크 모드일 경우 눈이 편안한 파스텔 톤으로 배지 색상을 변경합니다.
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'SCHEDULED': return { bg: '#E0F2FE', text: '#0284C7' };
-      case 'IN_PROGRESS': return { bg: '#DCFCE7', text: '#16A34A' }; // 초록색 (진행 중 강조)
-      case 'COMPLETED': return { bg: '#F3F4F6', text: '#4B5563' };
-      case 'SUBSTITUTE_REQ': return { bg: '#FEF3C7', text: '#D97706' };
-      case 'OFF': return { bg: '#FEE2E2', text: '#DC2626' };
-      default: return { bg: '#F3F4F6', text: '#4B5563' };
+      case 'SCHEDULED': return { bg: isDarkMode ? '#075985' : '#E0F2FE', text: isDarkMode ? '#BAE6FD' : '#0284C7' };
+      case 'IN_PROGRESS': return { bg: isDarkMode ? '#14532D' : '#DCFCE7', text: isDarkMode ? '#86EFAC' : '#16A34A' };
+      case 'COMPLETED': return { bg: isDarkMode ? '#374151' : '#F3F4F6', text: isDarkMode ? '#D1D5DB' : '#4B5563' };
+      case 'SUBSTITUTE_REQ': return { bg: isDarkMode ? '#78350F' : '#FEF3C7', text: isDarkMode ? '#FDE68A' : '#D97706' };
+      case 'OFF': return { bg: isDarkMode ? '#7F1D1D' : '#FEE2E2', text: isDarkMode ? '#FECACA' : '#DC2626' };
+      default: return { bg: isDarkMode ? '#374151' : '#F3F4F6', text: isDarkMode ? '#D1D5DB' : '#4B5563' };
     }
   };
 
@@ -366,59 +372,55 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
+// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F4F6F8', // 앱 전체 배경 (밝은 회색)
+    backgroundColor: colors.background,
   },
-  // ... (기존 헤더 스타일은 동일하게 유지) ...
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
   },
   logoText: { fontSize: 22, fontWeight: '900', color: '#FF5A5F', letterSpacing: -0.5 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  qrButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
+  qrButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
   qrIcon: { fontSize: 14, marginRight: 4 },
-  qrButtonText: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  qrButtonText: { fontSize: 13, fontWeight: '600', color: colors.text },
   notificationButton: { padding: 4, position: 'relative' },
   notificationIcon: { fontSize: 22 },
-  badge: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1, borderColor: '#FFFFFF' },
+  badge: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1, borderColor: colors.card },
   
   contentContainer: {
     flex: 1,
-    padding: 16, // 스크롤 뷰 전체의 안쪽 여백
+    padding: 16,
   },
   
-  // --- 환영 인사 스타일 ---
   greetingSection: {
     marginBottom: 20,
   },
   greetingText: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#111827',
+    color: colors.text,
     marginBottom: 4,
   },
   greetingSubText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.subText,
     fontWeight: '500',
   },
 
-  // --- 카드 컴포넌트 스타일 ---
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    // 안드로이드 그림자
     elevation: 2,
-    // iOS 그림자
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -433,16 +435,14 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   statusBadge: {
-    backgroundColor: '#E0F2FE', // 밝은 파란색 배경
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 8,
   },
   statusBadgeText: {
-    color: '#0284C7',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -457,13 +457,13 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 15,
-    color: '#4B5563',
+    color: colors.text,
     fontWeight: '500',
   },
   divider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 16, // 위아래 여백
+    backgroundColor: colors.border,
+    marginVertical: 16,
   },
   salaryRow: {
     flexDirection: 'row',
@@ -472,31 +472,25 @@ const styles = StyleSheet.create({
   },
   salaryLabel: {
     fontSize: 15,
-    color: '#6B7280',
+    color: colors.subText,
     fontWeight: '500',
   },
   salaryValue: {
     fontSize: 18,
-    color: '#111827',
+    color: colors.text,
     fontWeight: '700',
   },
 
-  // --- 빈 일정 안내 스타일 ---
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
   emptyIcon: { fontSize: 40, marginBottom: 10 },
-  emptyText: { fontSize: 15, color: '#6B7280', fontWeight: '500' },
+  emptyText: { fontSize: 15, color: colors.subText, fontWeight: '500' },
 
-  // --- 반반 통계 카드 스타일 ---
   statsCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
-    paddingVertical: 24, // 위아래 여백
+    paddingVertical: 24,
     marginBottom: 16,
-    
-    // [퀴즈 1] 자식 요소(왼쪽, 선, 오른쪽)들이 가로로 나란히 배치되도록 방향을 설정해주세요.
     flexDirection: 'row', 
-
-    // 그림자 효과 (기존 카드와 동일)
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -505,36 +499,31 @@ const styles = StyleSheet.create({
   },
   
   statHalf: {
-    // [퀴즈 2] 왼쪽과 오른쪽 영역이 남은 공간을 1:1로 공평하게 나눠 가지도록 속성을 넣어주세요.
     flex: 1, 
-    
-    // 텍스트들이 각 영역의 가운데(수평 중앙)에 오도록 정렬합니다.
     alignItems: 'center', 
   },
 
   verticalDivider: {
-    // [퀴즈 3] 세로 구분선의 두께를 1픽셀로 만들고 싶습니다. 어떤 속성을 써야 할까요?
     width: 1, 
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.border,
   },
 
   statValue: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#0cbb00',
+    color: isDarkMode ? '#34C759' : '#0cbb00',
     marginBottom: 4,
   },
   
   statLabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.subText,
     fontWeight: '500',
   },
-  // --- 대타 요청 알림 카드 스타일 ---
   alertCard: {
-    backgroundColor: '#FFFBEB', // 시선을 끄는 옅은 노란색 배경
+    backgroundColor: isDarkMode ? '#3F3119' : '#FFFBEB',
     borderWidth: 1,
-    borderColor: '#FDE68A',
+    borderColor: isDarkMode ? '#92400E' : '#FDE68A',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
@@ -551,17 +540,17 @@ const styles = StyleSheet.create({
   alertTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#D97706', // 짙은 오렌지/노란색 텍스트
+    color: isDarkMode ? '#FCD34D' : '#D97706',
   },
   alertDescription: {
     fontSize: 14,
-    color: '#4B5563',
+    color: isDarkMode ? '#E5E7EB' : '#4B5563',
     marginBottom: 16,
     lineHeight: 20,
   },
   buttonGroup: {
     flexDirection: 'row',
-    gap: 12, // 버튼 사이 간격
+    gap: 12,
   },
   acceptButton: {
     flex: 1,
@@ -577,28 +566,25 @@ const styles = StyleSheet.create({
   },
   rejectButton: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: colors.border,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   rejectButtonText: {
-    color: '#374151',
+    color: colors.text,
     fontWeight: '600',
     fontSize: 14,
   },
 
-  // --- 공지사항 리스트 스타일 ---
   noticeSection: {
-    backgroundColor: '#FFFFFF', // 하얀색 배경으로 독립적인 카드 느낌 부여
-    borderRadius: 16,           // 모서리 둥글게
-    padding: 20,                // 카드 안쪽 여백
-    marginBottom: 40,           // 아래쪽 여백 (스크롤 넉넉하게)
-    marginTop: 8,               // 윗부분(대타 요청 카드)과의 간격 살짝 추가
-    
-    // 그림자 효과 부여 (입체감으로 분리감 극대화)
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 40,
+    marginTop: 8,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -613,13 +599,13 @@ const styles = StyleSheet.create({
   },
   moreText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: colors.subText,
     fontWeight: '500',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: colors.text,
   },
   noticeItem: {
     flexDirection: 'row',
@@ -630,24 +616,24 @@ const styles = StyleSheet.create({
   noticeTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // 글자가 길어지면 줄임표(...) 처리되도록 공간 확보
+    flex: 1,
     paddingRight: 10,
   },
   categoryBadge: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     marginRight: 8,
   },
   categoryBadgeText: {
-    color: '#4B5563',
+    color: isDarkMode ? '#D1D5DB' : '#4B5563',
     fontSize: 10,
     fontWeight: '700',
   },
   noticeItemTitle: {
     fontSize: 15,
-    color: '#374151',
+    color: colors.text,
   },
   newBadge: {
     backgroundColor: '#EF4444',
@@ -663,23 +649,22 @@ const styles = StyleSheet.create({
   },
   noticeDate: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: colors.subText,
   },
   noticeDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.border,
   },
 
-  // --- 게시글 상세 모달 스타일 ---
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  postModalContent: { width: '85%', maxHeight: '70%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
-  postModalTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827', marginBottom: 10 },
-  postModalDate: { fontSize: 13, color: '#6B7280', marginBottom: 16 },
-  postModalDivider: { height: 1, backgroundColor: '#E5E7EB', marginBottom: 16 },
+  postModalContent: { width: '85%', maxHeight: '70%', backgroundColor: colors.modalBg, borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  postModalTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 10 },
+  postModalDate: { fontSize: 13, color: colors.subText, marginBottom: 16 },
+  postModalDivider: { height: 1, backgroundColor: colors.border, marginBottom: 16 },
   postModalBody: { marginBottom: 20 },
-  postModalText: { fontSize: 17, color: '#374151', lineHeight: 26 },
-  closeModalButton: { backgroundColor: '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  closeModalButtonText: { color: '#4B5563', fontSize: 15, fontWeight: '600' },
+  postModalText: { fontSize: 17, color: colors.text, lineHeight: 26 },
+  closeModalButton: { backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  closeModalButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
 });
 
 export default DashboardScreen;

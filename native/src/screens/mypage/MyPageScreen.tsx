@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ [추가] 테마 Context 불러오기
 
 // ✅ navigation 객체를 받아오도록 파라미터 추가
 const MyPageScreen = ({ route, navigation }: any) => {
   // ✅ setUserInfo까지 꺼내옵니다.
   const { setIsLoggedIn, userInfo, setUserInfo } = route.params || {};
   
-  // ✅ 화면 모드(라이트/다크) 상태 관리
+  // ✅ [수정] 테마 관련 상태를 전역 Context에서 가져옵니다.
+  const { themeMode, setThemeMode, colors } = useTheme();
   const [themeModalVisible, setThemeModalVisible] = useState(false);
-  const [themeMode, setThemeMode] = useState('themeSystem'); // ✅ 다국어 키값으로 변경
 
   // ✅ 전역 언어 설정 가져오기
   const { language, setLanguage, t } = useLanguage();
@@ -24,6 +25,9 @@ const MyPageScreen = ({ route, navigation }: any) => {
   const role = userInfo?.role || 'STAFF';
   // 현재 백엔드 UserVo에 매장 이름(store_id 등)이 명확히 담겨오지 않을 수 있어 임시로 지정합니다.
   const branch = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
+
+  // ✅ [추가] 테마 색상을 적용한 스타일 객체를 생성합니다.
+  const styles = getThemedStyles(colors);
 
   // 메뉴 항목을 간편하게 그리기 위한 함수
   const renderMenuItem = (icon: string, title: string, onPress: () => void) => (
@@ -45,7 +49,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
       </View>
       <Switch
         trackColor={{ false: '#D1D5DB', true: '#34C759' }} // 꺼졌을 때 회색, 켜졌을 때 초록색
-        thumbColor={'#FFFFFF'}
+        thumbColor={'#FFFFFF'} // isDarkMode ? colors.card : '#FFFFFF'
         ios_backgroundColor="#D1D5DB"
         onValueChange={onValueChange}
         value={value}
@@ -82,7 +86,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
           {/* ✅ 클릭 시 모달창을 띄우고, 선택된 모드를 버튼 이름에 보여줍니다. */}
-          {renderMenuItem('🌙', `${t('themeMode')} (${t(themeMode)})`, () => setThemeModalVisible(true))}
+          {renderMenuItem('🌙', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
           {/* ✅ 언어 설정도 모달창 연결 */}
           {renderMenuItem('🌐', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
           {/* ✅ 알림 설정은 스위치 UI로 연결 */}
@@ -108,7 +112,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
         <Pressable style={styles.modalOverlay} onPress={() => setThemeModalVisible(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t('themeSettings')}</Text>
-            {['themeLight', 'themeDark', 'themeSystem'].map((mode) => (
+            {['라이트 모드', '다크 모드', '시스템 설정'].map((mode) => (
               <TouchableOpacity
                 key={mode}
                 style={[styles.modalOption, themeMode === mode && styles.modalOptionSelected]}
@@ -117,7 +121,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
                   setThemeModalVisible(false);
                 }}
               >
-                <Text style={[styles.modalOptionText, themeMode === mode && styles.modalOptionTextSelected]}>{t(mode)}</Text>
+                <Text style={[styles.modalOptionText, themeMode === mode && styles.modalOptionTextSelected]}>{mode}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -153,10 +157,11 @@ const MyPageScreen = ({ route, navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+// ✅ [추가] 테마 색상을 인자로 받아 스타일 객체를 반환하는 함수
+const getThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8F9FA', // 앱 배경색 통일
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
@@ -164,16 +169,16 @@ const styles = StyleSheet.create({
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     padding: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: colors.border,
   },
   avatarPlaceholder: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#E8F0FE', // Primary color 연한 버전
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -181,7 +186,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007BFF', // Primary color
+    color: '#007BFF', // Primary color (테마에 구애받지 않는 강한 색상으로 유지)
   },
   profileInfo: {
     flex: 1,
@@ -189,25 +194,25 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
+    color: colors.text,
     marginBottom: 4,
   },
   userRole: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.subText,
   },
   menuSection: {
     marginTop: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingVertical: 8,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: colors.border,
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#888888',
+    color: colors.subText,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 8,
@@ -226,21 +231,22 @@ const styles = StyleSheet.create({
   menuIcon: {
     fontSize: 18,
     marginRight: 12,
+    color: colors.text,
   },
   menuTitle: {
     fontSize: 16,
-    color: '#333333',
+    color: colors.text,
   },
   menuArrow: {
     fontSize: 20,
-    color: '#CCCCCC',
+    color: colors.subText,
   },
   logoutButton: {
     marginTop: 30,
     marginBottom: 40,
     marginHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FF3B30',
@@ -259,7 +265,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '80%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.modalBg,
     borderRadius: 12,
     padding: 20,
   },
@@ -268,6 +274,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
+    color: colors.text,
   },
   modalOption: {
     paddingVertical: 14,
@@ -275,14 +282,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   modalOptionSelected: {
-    backgroundColor: '#E8F0FE', // 선택된 항목의 배경색
+    backgroundColor: colors.primaryLight,
   },
   modalOptionText: {
     fontSize: 16,
-    color: '#333333',
+    color: colors.text,
   },
   modalOptionTextSelected: {
-    color: '#007BFF', // 선택된 항목의 글자색
+    color: '#007BFF', // Primary color
     fontWeight: 'bold',
   },
 });

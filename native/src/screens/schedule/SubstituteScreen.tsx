@@ -2,12 +2,17 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 
 const SubstituteScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
   
   // ✅ 탭 상태 관리 ('REQUEST' = 대타 요청 목록, 'HISTORY' = 내 대타 이력)
   const [activeTab, setActiveTab] = useState<'REQUEST' | 'HISTORY'>('REQUEST');
+
+  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
   // 더미 데이터 1. 대타 요청 목록
   const requestData = [
@@ -129,25 +134,28 @@ const SubstituteScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F4F6F8' },
+// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'space-between',
     paddingHorizontal: 20, 
     paddingVertical: 16, 
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: '#333' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+  backButtonText: { fontSize: 24, color: colors.text },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: colors.border,
   },
   tabButton: {
     flex: 1,
@@ -157,14 +165,14 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTabButton: { borderBottomColor: '#2563EB' },
-  tabText: { fontSize: 15, fontWeight: '600', color: '#9CA3AF' },
+  tabText: { fontSize: 15, fontWeight: '600', color: colors.subText },
   activeTabText: { color: '#2563EB' },
 
   contentContainer: { flex: 1 },
   listContainer: { padding: 20, gap: 16 },
   
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     elevation: 2,
@@ -174,13 +182,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  storeText: { fontSize: 14, fontWeight: '600', color: '#4B5563' },
-  bonusBadge: { backgroundColor: '#FEF3C7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  bonusBadgeText: { color: '#D97706', fontSize: 12, fontWeight: '700' },
-  dateText: { fontSize: 18, fontWeight: 'bold', color: '#111827', marginBottom: 16 },
+  storeText: { fontSize: 14, fontWeight: '600', color: colors.text },
+  bonusBadge: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  bonusBadgeText: { color: isDarkMode ? '#FDE68A' : '#D97706', fontSize: 12, fontWeight: '700' },
+  dateText: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 16 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  infoLabel: { fontSize: 14, color: '#6B7280' },
-  infoValue: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  infoLabel: { fontSize: 14, color: colors.subText },
+  infoValue: { fontSize: 14, fontWeight: '600', color: colors.text },
   
   applyButton: {
     backgroundColor: '#2563EB',
@@ -194,22 +202,22 @@ const styles = StyleSheet.create({
   // 이력 리스트 스타일
   historyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16 },
   historyLeft: { flex: 1 },
-  historySubText: { fontSize: 14, color: '#6B7280', marginTop: -10 },
+  historySubText: { fontSize: 14, color: colors.subText, marginTop: -10 },
   historyRight: { justifyContent: 'center', alignItems: 'center' },
-  historyBonusText: { fontSize: 18, fontWeight: '800', color: '#D97706' },
+  historyBonusText: { fontSize: 18, fontWeight: '800', color: isDarkMode ? '#FDE68A' : '#D97706' },
 
   pointSummaryBox: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     margin: 20,
     marginBottom: 0,
     padding: 20,
     borderRadius: 16,
     alignItems: 'center',
   },
-  pointSummaryTitle: { fontSize: 14, color: '#6B7280', marginBottom: 8, fontWeight: '600' },
-  pointSummaryValue: { fontSize: 32, fontWeight: '900', color: '#D97706' },
+  pointSummaryTitle: { fontSize: 14, color: colors.subText, marginBottom: 8, fontWeight: '600' },
+  pointSummaryValue: { fontSize: 32, fontWeight: '900', color: isDarkMode ? '#FDE68A' : '#D97706' },
   
-  emptyText: { textAlign: 'center', marginTop: 40, color: '#9CA3AF', fontSize: 15 },
+  emptyText: { textAlign: 'center', marginTop: 40, color: colors.subText, fontSize: 15 },
 });
 
 export default SubstituteScreen;

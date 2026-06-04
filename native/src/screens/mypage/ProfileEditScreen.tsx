@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateProfileAPI } from '../../../api/auth';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ 1. 테마 Context 불러오기
 
 const ProfileEditScreen = ({ route, navigation }: any) => {
   // MyPageScreen에서 넘겨준 userInfo와 상태 변경 함수를 받습니다.
@@ -10,6 +11,10 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
 
   // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
+
+  // ✅ 2. 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
   // 수정 가능한 정보의 상태 관리
   const [name, setName] = useState(userInfo?.name || '');
@@ -146,8 +151,9 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+// ✅ 3. 테마 색상을 인자로 받아 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -155,40 +161,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, 
     paddingVertical: 16, 
     borderBottomWidth: 1, 
-    borderBottomColor: '#F3F4F6' 
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card
   },
   backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: '#333' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#111827' },
+  backButtonText: { fontSize: 24, color: colors.text },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   container: { flex: 1, padding: 20 },
   section: { marginBottom: 32 },
   sectionTitle: { 
     fontSize: 16, 
     fontWeight: '700', 
-    color: '#374151', 
+    color: colors.text, 
     marginBottom: 16 
   },
   label: { 
     fontSize: 13, 
     fontWeight: '600', 
-    color: '#6B7280', 
+    color: colors.subText, 
     marginBottom: 6,
     marginLeft: 2
   },
   input: { 
     borderWidth: 1, 
-    borderColor: '#D1D5DB', 
+    borderColor: colors.border, 
     borderRadius: 8, 
     paddingHorizontal: 14, 
     paddingVertical: 12, 
     fontSize: 15, 
-    color: '#111827',
+    color: colors.text,
     marginBottom: 16,
-    backgroundColor: '#FFFFFF'
+    backgroundColor: colors.card
   },
   disabledInput: { 
-    backgroundColor: '#F3F4F6', 
-    color: '#9CA3AF' 
+    backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6', 
+    color: colors.subText 
   },
   saveButton: { 
     backgroundColor: '#2563EB', 
