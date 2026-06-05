@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ [추가] 테마 Context 불러오기
@@ -8,6 +8,9 @@ import { useTheme } from '../../contexts/ThemeContext'; // ✅ [추가] 테마 C
 const MyPageScreen = ({ route, navigation }: any) => {
   // ✅ setUserInfo까지 꺼내옵니다.
   const { setIsLoggedIn, userInfo, setUserInfo } = route.params || {};
+
+  // ✅ [수정] 마이페이지에서 사진이나 이름 변경 시 즉각 반응하도록 로컬 상태로 한번 더 관리합니다.
+  const [localUserInfo, setLocalUserInfo] = useState(userInfo);
   
   // ✅ [수정] 테마 관련 상태를 전역 Context에서 가져옵니다.
   const { themeMode, setThemeMode, colors } = useTheme();
@@ -21,10 +24,10 @@ const MyPageScreen = ({ route, navigation }: any) => {
   const [isPushEnabled, setIsPushEnabled] = useState(true);
 
   // 백엔드에서 데이터가 아직 전달되지 않았을 경우를 대비한 안전장치(Fallback)
-  const name = userInfo?.name || '사용자';
-  const role = userInfo?.role || 'STAFF';
+  const name = localUserInfo?.name || '사용자';
+  const role = localUserInfo?.role || 'STAFF';
   // 현재 백엔드 UserVo에 매장 이름(store_id 등)이 명확히 담겨오지 않을 수 있어 임시로 지정합니다.
-  const branch = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
+  const branch = localUserInfo?.brandName || localUserInfo?.store_id || '컴포즈 미금점';
 
   // ✅ [추가] 테마 색상을 적용한 스타일 객체를 생성합니다.
   const styles = getThemedStyles(colors);
@@ -62,9 +65,14 @@ const MyPageScreen = ({ route, navigation }: any) => {
       <ScrollView style={styles.container}>
         {/* 프로필 섹션 */}
         <View style={styles.profileSection}>
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>{name.substring(0, 1)}</Text>
-          </View>
+          {/* ✅ 프로필 사진이 있으면 보여주고, 없으면 이름 첫 글자 표시 */}
+          {localUserInfo?.profileImage ? (
+            <Image source={{ uri: localUserInfo.profileImage }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>{name.substring(0, 1)}</Text>
+            </View>
+          )}
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{name} 님</Text>
             <Text style={styles.userRole}>
@@ -76,10 +84,10 @@ const MyPageScreen = ({ route, navigation }: any) => {
         {/* 문서 및 정보 관리 섹션 */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
-          {/* ✅ 이동 시 userInfo와 함께 데이터를 덮어씌울 setUserInfo 함수도 전달합니다. */}
-          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo, setUserInfo }))}
-          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
-          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
+          {/* ✅ 이동 시 localUserInfo와 함께 데이터를 덮어씌울 setLocalUserInfo 함수도 전달합니다. */}
+          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo: localUserInfo, setUserInfo: setLocalUserInfo }))}
+          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo: localUserInfo }))}
+          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo: localUserInfo }))}
         </View>
 
         {/* 앱 설정 섹션 */}
@@ -182,6 +190,13 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+  },
+  avatarImage: { // ✅ 이미지 태그를 위한 스타일 추가
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+    backgroundColor: colors.primaryLight,
   },
   avatarText: {
     fontSize: 24,
