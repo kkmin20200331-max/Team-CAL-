@@ -101,7 +101,7 @@ export default function MySchedule() {
   const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const storeName = localStorage.getItem('store_name') || '매장';
+  const storeName = localStorage.getItem('store_name') || '';
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState(

@@ -104,7 +104,15 @@ export default function EmployeeHome() {
 
     // 소속 매장 조회
     API.get('/store/my', { params: { user_id: user.id } })
-      .then(res => { if (res.data?.name) setStoreName(res.data.name); })
+      .then(res => {
+        if (res.data?.name) {
+          setStoreName(res.data.name);
+          localStorage.setItem('store_name', res.data.name);
+        }
+        if (res.data?.id) {
+          localStorage.setItem('store_id', res.data.id);
+        }
+      })
       .catch(() => {});
 
     // 이번 주 월요일 ~ 2주 뒤까지 조회 (이번 주 통계 포함하기 위해 월요일부터)

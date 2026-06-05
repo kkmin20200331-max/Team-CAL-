@@ -26,6 +26,9 @@ public class PayrollService {
     @Autowired
     private FixedscheduleMapper fixedscheduleMapper;
 
+    @Autowired
+    private SubstituteMapper substituteMapper;
+
     public PayrollResultVO calculatePayroll(
             String user_id,
             String store_id,
@@ -38,6 +41,11 @@ public class PayrollService {
                         user_id,
                         store_id
                 );
+
+        // 경민 수정 6/5 17:40
+        if (payInfo == null || payInfo.getPay_amount() == null) {
+            return new PayrollResultVO();
+        }
 
         List<ShiftVO> shifts =
                 shiftMapper.getMonthlyShift(
@@ -68,10 +76,32 @@ public class PayrollService {
                 new HashMap<>();
 
         // =========================
+        // 경민 수정 6/5 17:03
+        // 대타 shift ID 목록
+        // =========================
+
+        List<SubstituteHistoryVO> subHistory =
+                substituteMapper.getMySubstituteHistory(user_id);
+
+        Set<String> substituteShiftIds =
+                subHistory.stream()
+                        .map(SubstituteHistoryVO::getShift_id)
+                        .collect(Collectors.toSet());
+
+        // =========================
         // 주차별 그룹핑
         // =========================
 
         for (ShiftVO shift : shifts) {
+
+            // 대타 근무는 주휴 계산 제외
+            if (substituteShiftIds.contains(shift.getId())) {
+                continue;
+            }
+
+            LocalDate workDate =
+                    shift.getWork_date()
+                            .toInstant()
 
             LocalDate workDate =
                     shift.getWork_date()

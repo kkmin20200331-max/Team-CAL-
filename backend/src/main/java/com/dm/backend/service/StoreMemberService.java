@@ -79,4 +79,14 @@ public class StoreMemberService {
                 user_id
         );
     }
+
+    // 경민 수정 6/5 12:00
+    public StoreMemberVo getMemberInfo(String user_id, String store_id) {
+        return storeMemberMapper.getMemberInfo(user_id, store_id);
+    }
+
+    // 경민 수정 6/5 12:00
+    public void updatePayInfo(StoreMemberVo vo) {
+        storeMemberMapper.updatePayInfo(vo);
+    }
 }
