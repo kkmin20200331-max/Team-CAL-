@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
@@ -37,6 +37,15 @@ const SubstituteScreen = ({ navigation }: any) => {
       ]
     );
   };
+
+  // ✅ 당겨서 새로고침 상태 및 핸들러 추가
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // 💡 실제 백엔드 연동 시 여기에 API를 호출하여 최신 대타 데이터를 가져옵니다.
+    // 지금은 UI 테스트를 위해 1초 후 로딩이 끝나는 것처럼 시뮬레이션합니다.
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   // --- 리스트 렌더링 함수 ---
   const renderRequestItem = ({ item }: { item: any }) => (
@@ -112,6 +121,14 @@ const SubstituteScreen = ({ navigation }: any) => {
             renderItem={renderRequestItem}
             contentContainerStyle={styles.listContainer}
             ListEmptyComponent={<Text style={styles.emptyText}>{t('subEmptyReq')}</Text>}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh} 
+                colors={['#2563EB']} // 안드로이드 스피너 색상
+                tintColor={isDarkMode ? '#60A5FA' : '#2563EB'} // iOS 스피너 색상
+              />
+            }
           />
         ) : (
           <>
@@ -126,6 +143,14 @@ const SubstituteScreen = ({ navigation }: any) => {
               renderItem={renderHistoryItem}
               contentContainerStyle={styles.listContainer}
               ListEmptyComponent={<Text style={styles.emptyText}>{t('subEmptyHist')}</Text>}
+              refreshControl={
+                <RefreshControl 
+                  refreshing={refreshing} 
+                  onRefresh={onRefresh} 
+                  colors={['#2563EB']}
+                  tintColor={isDarkMode ? '#60A5FA' : '#2563EB'}
+                />
+              }
             />
           </>
         )}

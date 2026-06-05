@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Pressable } from 'react-native';
+import React, { useState, useContext, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NotificationContext, NotificationItem } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -48,6 +48,15 @@ const NotificationListScreen = () => {
     closeModal();
   };
 
+  // ✅ 당겨서 새로고침 상태 및 핸들러 추가
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // 💡 실제 백엔드 연동 시 여기에 API를 호출하여 최신 알림 데이터를 가져옵니다.
+    // 지금은 UI 테스트를 위해 1초 후 로딩이 끝나는 것처럼 시뮬레이션합니다.
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
+
   const renderItem = ({ item }: { item: NotificationItem }) => (
     <TouchableOpacity 
       style={[styles.notificationItem, !item.isRead && styles.unreadBackground]}
@@ -84,6 +93,15 @@ const NotificationListScreen = () => {
         renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
+        // ✅ FlatList에 RefreshControl 속성 추가
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={['#2563EB']} // 안드로이드 스피너 색상
+            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'} // iOS 스피너 색상
+          />
+        }
       />
 
       <Modal

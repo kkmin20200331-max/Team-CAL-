@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Alert } from 'react-native';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getMyScheduleAPI } from '../../../api/auth';
@@ -85,6 +85,15 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
       ]
     );
   };
+
+  // ✅ 당겨서 새로고침 상태 및 핸들러 추가
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // 💡 실제 백엔드 연동 시 여기에 fetchTodaySchedule() 같은 함수를 호출하여 데이터를 갱신합니다.
+    // 지금은 UI 테스트를 위해 1초 후 로딩이 끝나는 것처럼 시뮬레이션합니다.
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   useEffect(() => {
     fetchTodaySchedule();
@@ -211,7 +220,18 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
       </View>
 
       {/* 2. 메인 컨텐츠 영역 */}
-      <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.contentContainer} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={['#2563EB']} // 안드로이드 스피너 색상
+            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'} // iOS 스피너 색상
+          />
+        }
+      >
         
         {/* ▼ 환영 인사 영역 추가 ▼ */}
         <View style={styles.greetingSection}>

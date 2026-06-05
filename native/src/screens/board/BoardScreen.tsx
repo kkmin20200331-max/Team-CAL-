@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
@@ -57,6 +57,15 @@ const BoardScreen = ({ route, navigation }: any) => {
       prevPosts.map(p => (p.id === editedPost.id ? editedPost : p))
     );
   };
+
+  // ✅ 당겨서 새로고침 상태 및 핸들러 추가
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    // 💡 실제 백엔드 연동 시 여기에 getBoardPostsAPI() 등을 호출하여 최신 데이터를 가져옵니다.
+    // 지금은 UI 테스트를 위해 1초 후 로딩이 끝나는 것처럼 시뮬레이션합니다.
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
 
   // ✅ 최신 날짜 순(내림차순)으로 정렬
   // ✅ 선택된 카테고리에 맞게 필터링 추가
@@ -148,6 +157,15 @@ const BoardScreen = ({ route, navigation }: any) => {
         renderItem={renderItem}
         contentContainerStyle={styles.listContainer}
         ItemSeparatorComponent={() => <View style={styles.listDivider} />}
+        // ✅ FlatList에 RefreshControl 속성 추가
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={['#2563EB']} // 안드로이드 스피너 색상 (앱 포인트 색상)
+            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'} // iOS 스피너 색상
+          />
+        }
       />
 
       {/* 게시글 상세 보기 팝업(모달) */}
