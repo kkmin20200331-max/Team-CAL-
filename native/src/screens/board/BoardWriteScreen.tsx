@@ -100,6 +100,11 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
                 content: {
                   title: "📢 새로운 공지사항 등록",
                   body: `[공지] ${title}`,
+                  // ✅ [핵심 추가] 알림 클릭 시 Board 화면으로 가고, 이 글 데이터를 넘기도록 설정
+                  data: {
+                    screen: 'Board',
+                    postToOpen: newDummyPost
+                  }
                 },
                 trigger: null, // 5초 뒤에 이 함수가 실행되므로 즉시 발송(null)으로 설정
               });

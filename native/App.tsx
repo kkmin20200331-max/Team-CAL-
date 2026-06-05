@@ -1,5 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+// ✅ createNavigationContainerRef 추가
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 // ✅ [추가 1] 하단 탭 네비게이션을 위해 필요한 라이브러리 임포트
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -79,6 +80,9 @@ Notifications.setNotificationHandler({
 // ✅ [정리] 중복 선언된 Stack은 하나만 남기고, Tab 네비게이터를 생성합니다.
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
+// ✅ [추가] 외부(알림 리스너)에서 화면을 강제로 이동시키기 위한 네비게이션 참조 객체
+export const navigationRef = createNavigationContainerRef<any>();
 
 // ---------------------------------------------------------
 // ✅ [직원용] 하단 탭 네비게이터
@@ -215,6 +219,20 @@ export default function App() {
       }
     }
     requestPushPermissions();
+
+    // ✅ [핵심 추가] 푸시 알림을 클릭했을 때 발생하는 이벤트 리스너
+    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      
+      // 알림 데이터에 이동할 화면(screen) 정보가 있고, 네비게이션이 준비된 상태면 이동
+      if (data && data.screen && navigationRef.isReady()) {
+        navigationRef.navigate(data.screen, { postToOpen: data.postToOpen });
+      }
+    });
+
+    return () => {
+      Notifications.removeNotificationSubscription(responseListener);
+    };
   }, []);
 
 return (
@@ -222,7 +240,8 @@ return (
 <ThemeProvider>
     <LanguageProvider>
       <NotificationProvider>
-      <NavigationContainer>
+      {/* ✅ 생성한 navigationRef를 연결해 줍니다. */}
+      <NavigationContainer ref={navigationRef}>
           {/* 조건부 렌더링 시 initialRouteName은 생략해도 됩니다. */}
           <Stack.Navigator>
             

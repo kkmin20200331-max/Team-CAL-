@@ -6,8 +6,8 @@ import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context �
 import Toast from 'react-native-toast-message';
 
 const BoardScreen = ({ route, navigation }: any) => {
-  // ✅ 네비게이션을 통해 전달받은 userInfo 추출
-  const { userInfo } = route.params || {};
+  // ✅ 네비게이션을 통해 전달받은 userInfo와 알림을 통해 넘어온 postToOpen 추출
+  const { userInfo, postToOpen } = route.params || {};
   
   // ✅ userInfo가 제대로 안 넘어왔을 때를 대비한 안전 장치 (fallback)
   const currentUserId = userInfo?.username || 'my_test_id';
@@ -47,6 +47,16 @@ const BoardScreen = ({ route, navigation }: any) => {
     { id: '5', authorId: 'admin', category: 'EVENT', title: 'boardDummy5Title', date: '2026.05.01', content: 'boardDummy5Content', badge: null },
     { id: '6', authorId: 'admin', category: 'NOTICE', title: 'boardDummy6Title', date: '2026.04.15', content: 'boardDummy6Content', badge: null },
   ]);
+
+  // ✅ [핵심 추가] 푸시 알림을 클릭해서 postToOpen 데이터가 넘어왔다면, 즉시 팝업을 띄웁니다.
+  useEffect(() => {
+    if (postToOpen) {
+      // 방금 쓴 새 글이 리스트에 아직 없을 경우를 대비해 목록 최상단에 임시로 추가해줍니다.
+      setAllPosts(prev => prev.find(p => p.id === postToOpen.id) ? prev : [postToOpen, ...prev]);
+      setSelectedPost(postToOpen);
+      setPostModalVisible(true);
+    }
+  }, [postToOpen]);
 
   // ✅ [수정] 글쓰기/수정 화면에서 호출할 콜백 함수 정의
   const handleAddNewPost = (newPost: any) => {
