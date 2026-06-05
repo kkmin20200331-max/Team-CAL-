@@ -1,7 +1,7 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { loginAPI } from '../../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -63,7 +63,12 @@ const handleLogin = async () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>バイトメート</Text>
+      {/* ✅ 경로를 images에서 img로 수정합니다. */}
+      <Image 
+        source={require('../../../assets/img/logo_3.png')} 
+        style={styles.logoImage} 
+        resizeMode="contain" 
+      />
 
       {/* ✅ [추가] 관리자 / 직원 선택 토글 UI */}
       <View style={styles.roleToggleContainer}>
@@ -123,12 +128,12 @@ const styles = StyleSheet.create({
     padding: 20, 
     backgroundColor: '#fff' 
   },
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
+  // --- 로고 이미지 스타일 ---
+  logoImage: {
+    width: 400,    // 로고 너비 (필요에 따라 조절)
+    height: 150,    // 로고 높이 (필요에 따라 조절)
+    alignSelf: 'center',
     marginBottom: 40,
-    // 타이틀 텍스트가 화면 가로 중앙에 예쁘게 배치되도록 정렬 속성을 추가해보세요.
-    textAlign: 'center' // <-- 텍스트 중앙 정렬 속성
   },
   // --- 토글 버튼 스타일 ---
   roleToggleContainer: {

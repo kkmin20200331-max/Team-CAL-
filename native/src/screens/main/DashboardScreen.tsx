@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Alert, RefreshControl, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Alert, RefreshControl, Animated, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getMyScheduleAPI } from '../../../api/auth';
@@ -218,7 +218,11 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
       
       {/* 1. 헤더 영역 */}
       <View style={styles.header}>
-        <Text style={styles.logoText}>バイトメート</Text>
+        <Image 
+  source={require('../../../assets/img/logo_2.png')} 
+  style={styles.headerLogo} 
+  resizeMode="contain" 
+/>
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.qrButton} onPress={handleQRCheckIn}>
             <Text style={styles.qrButtonText}>{t('qrCheckIn')}</Text>
@@ -712,6 +716,11 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   postModalText: { fontSize: 17, color: colors.text, lineHeight: 26 },
   closeModalButton: { backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   closeModalButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
+
+  headerLogo: {
+  width: 120, // 원하는 너비로 수정하세요
+  height: 40, // 원하는 높이로 수정하세요
+},
 });
 
 export default DashboardScreen;

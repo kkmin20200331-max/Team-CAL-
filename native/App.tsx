@@ -68,10 +68,9 @@ const toastConfig = {
 
 // ✅ 앱이 실행 중(포그라운드)일 때도 상단에 헤드업 알림이 뜨도록 설정
 Notifications.setNotificationHandler({
-  // ✅ 매개변수(notification)를 받도록 수정하여 TypeScript 에러 방지
-  handleNotification: async (notification) => ({
-    shouldShowBanner: true, // 화면 상단에 알림 배너 표시 (최신 Expo 방식)
-    shouldShowList: true,   // 알림 센터에 표시
+  // ✅ 매개변수를 아예 제거하여 TypeScript 에러 방지 (사용하지 않음)
+  handleNotification: async () => ({
+    shouldShowAlert: true, // 화면 상단에 알림 배너 표시
     shouldPlaySound: true, // 알림 소리 재생
     shouldSetBadge: true,  // 앱 아이콘에 숫자 배지 표시
   }),
@@ -90,7 +89,7 @@ export const navigationRef = createNavigationContainerRef<any>();
 function StaffTabNavigator({ route }: any) {
   // App에서 넘겨받은 전역 상태 변경 함수를 가져옵니다.
   // ✅ setUserInfo를 추가로 받아옵니다.
-  const { setIsLoggedIn, userInfo, setUserInfo } = route.params;
+  const { setIsLoggedIn, userInfo, setUserInfo } = route.params || {};
 
   // ✅ 안 읽은 알림 개수 가져오기
   const { unreadCount } = useContext(NotificationContext);
@@ -109,9 +108,9 @@ function StaffTabNavigator({ route }: any) {
       {/* 1. 홈 탭 (기존 대시보드) */}
       <Tab.Screen 
         name="Home" 
-        options={{ title: t('tabHome'), tabBarIcon: () => <Text>🏠</Text> }}
+        options={{ title: t('tabHome') as string, tabBarIcon: () => <Text>🏠</Text> }}
       >
-        {(props) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
+        {(props: any) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
       </Tab.Screen>
 
       {/* 2. 내 스케줄 탭 */}
@@ -145,7 +144,7 @@ function StaffTabNavigator({ route }: any) {
 // ✅ [관리자용] 하단 탭 네비게이터
 // ---------------------------------------------------------
 function AdminTabNavigator({ route }: any) {
-  const { setIsLoggedIn, userInfo, setUserInfo } = route.params;
+  const { setIsLoggedIn, userInfo, setUserInfo } = route.params || {};
   
   // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
@@ -162,9 +161,9 @@ function AdminTabNavigator({ route }: any) {
       {/* 관리자 1. 매장 관리 홈 (임시로 기존 대시보드 연결, 추후 AdminDashboardScreen으로 교체) */}
       <Tab.Screen 
         name="AdminHome" 
-        options={{ title: t('tabAdminHome'), tabBarIcon: () => <Text>🏪</Text> }}
+        options={{ title: t('tabAdminHome') as string, tabBarIcon: () => <Text>🏪</Text> }}
       >
-        {(props) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
+        {(props: any) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
       </Tab.Screen>
 
       {/* ✅ [추가] 관리자 2. 스케줄 관리 탭 */}
@@ -221,17 +220,22 @@ export default function App() {
     requestPushPermissions();
 
     // ✅ [핵심 추가] 푸시 알림을 클릭했을 때 발생하는 이벤트 리스너
-    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      const data = response.notification.request.content.data;
+    const responseListener = Notifications.addNotificationResponseReceivedListener((response: Notifications.NotificationResponse) => {
+      // ✅ TypeScript 에러(빨간 줄) 방지를 위해 data의 타입을 명시적(as any)으로 지정해줍니다.
+      const data = response.notification.request.content.data as any;
       
       // 알림 데이터에 이동할 화면(screen) 정보가 있고, 네비게이션이 준비된 상태면 이동
       if (data && data.screen && navigationRef.isReady()) {
-        navigationRef.navigate(data.screen, { postToOpen: data.postToOpen });
+        // ✅ React Navigation의 엄격한 타입 검사를 우회하여 강제로 화면을 이동시킵니다.
+        (navigationRef as any).navigate(data.screen, { postToOpen: data.postToOpen });
       }
     });
 
     return () => {
-      Notifications.removeNotificationSubscription(responseListener);
+      // ✅ 최신 Expo 버전에 맞게 리스너 제거 방식 수정
+      if (responseListener) {
+        responseListener.remove();
+      }
     };
   }, []);
 
@@ -248,9 +252,9 @@ return (
             {/* ▼ 여기에 조건부 로직이 들어갑니다 ▼ */}
             {!isLoggedIn ? (
               // [상태 1] 로그인이 안 된 경우
-              <>
+              <Stack.Group>
                 <Stack.Screen name="Login" options={{ headerShown: false }}>
-                  {(props) => (
+                  {(props: any) => (
                     <LoginScreen 
                       {...props} 
                       // 👇 화살표 함수로 감싸서 값만 전달하도록 명확히 수정합니다.
@@ -268,11 +272,12 @@ return (
                   component={SignupScreen} 
                   options={{ title: '회원가입' }} 
                 />
-              </>
+              </Stack.Group>
             ) : !hasSelectedBranch ? (
               // 👇 [상태 1.5] 로그인은 했지만 지점 선택을 안 한 경우 (새로 추가됨!)
+              <Stack.Group>
               <Stack.Screen name="BranchSelect" options={{ headerShown: false }}>
-                {({ navigation }) => (
+                {({ navigation }: any) => (
                   <BranchSelectScreen 
                     navigation={navigation} 
                     setHasSelectedBranch={setHasSelectedBranch} 
@@ -281,9 +286,10 @@ return (
                   />
                 )}
               </Stack.Screen>
-              ): userStatus === 'active' ? (
-                // <> </> 한 화면 안에 두 개가 있으면 빈 태그로 감싸줘야 합니다.
-                <> 
+              </Stack.Group>
+            ) : userStatus === 'active' ? (
+                // ✅ 빈 태그(<></>) 대신 React Navigation에서 권장하는 <Stack.Group>으로 감싸줍니다.
+                <Stack.Group> 
                 {/* [상태 2] 승인 완료 (메인 서비스 영역) */}
                 
                 {/* ✅ [권한별 분기] 로그인한 유저의 role을 확인하여 다른 화면을 보여줍니다. */}
@@ -358,18 +364,20 @@ return (
                   component={HealthCertScreen} 
                   options={{ headerShown: false }} 
                 />
-            </>
+            </Stack.Group>
             ) : (
               // [상태 3] 로그인 + 승인 대기
+              <Stack.Group>
               <Stack.Screen name="Pending" options={{ headerShown: false }}>
                 {/* 여기도 동일하게 수정합니다 */}
-                {({ navigation }) => (
+                {({ navigation }: any) => (
                   <PendingScreen 
                     navigation={navigation} 
                     setIsLoggedIn={setIsLoggedIn}  
                   />
                 )}
               </Stack.Screen>
+              </Stack.Group>
             )}
             {/* ▲ 조건부 로직 끝 ▲ */}
             
