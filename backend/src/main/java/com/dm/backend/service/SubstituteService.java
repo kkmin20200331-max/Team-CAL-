@@ -1,13 +1,13 @@
 package com.dm.backend.service;
 
 import com.dm.backend.mapper.SubstituteMapper;
-import com.dm.backend.mapper.ShiftMapper;
-import com.dm.backend.vo.SubstituteRequestVO;
-import com.dm.backend.vo.SubstituteApplyVO;
-import com.dm.backend.vo.ShiftVO;
+import com.dm.backend.vo.SubstituteApplicationVO;
+import com.dm.backend.vo.SubstituteHistoryVO;
+import com.dm.backend.vo.SubstitutePostVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -16,41 +16,145 @@ public class SubstituteService {
     @Autowired
     private SubstituteMapper substituteMapper;
 
-    @Autowired
-    private ShiftMapper shiftMapper; // 💡 기존 쉬프트 매퍼 주입받아 재활용
 
-    public void createRequest(SubstituteRequestVO request) {
-        substituteMapper.insertRequest(request);
+    // =========================
+    // [공통]
+    // =========================
+
+    // 모집글 목록 조회
+    public List<SubstitutePostVO> getPostList(
+            String store_id
+    ) {
+        return substituteMapper.getPostList(store_id);
     }
 
-    public List<SubstituteRequestVO> getOpenRequests() {
-        return substituteMapper.selectOpenRequests();
+
+    // =========================
+    // [관리자]
+    // =========================
+
+    // 지원자 목록 조회
+    public List<SubstituteApplicationVO> getApplicationList(
+            String post_id
+    ) {
+        return substituteMapper.getApplicationList(post_id);
     }
 
-    public List<SubstituteApplyVO> getApplies(String substitute_request_id) {
-        return substituteMapper.selectAppliesByRequestId(substitute_request_id);
-    }
-
-    public void insertApply(SubstituteApplyVO apply) {
-        substituteMapper.insertApply(apply);
-    }
-
+    // 대타 승인
     @Transactional
-    public void approveMatching(String applyId, String requestId, String shiftId, String applicantUserId) {
-        // 1. 지원 내역 및 구인글 상태 변경
-        substituteMapper.updateApplyStatus(applyId, "APPROVED");
-        substituteMapper.updateRequestStatus(requestId, "CLOSED");
+    public void approveSubstitute(
+            String shift_id,
+            String selectedUserId,
+            SubstituteHistoryVO historyVO
+    ) {
 
-        // 2. 💡 [질문자님 지적 반영] 기존 updateShift 메서드 그대로 재활용하기
-        // 기존 스케줄 정보를 단건 조회로 안전하게 꺼내옵니다.
-        ShiftVO existingShift = shiftMapper.getShift(shiftId);
+        substituteMapper.updateShiftUser(
+                shift_id,
+                selectedUserId
+        );
 
-        if (existingShift != null) {
-            // 근무자 ID(user_id)만 대타 신청자 ID로 쏙 바꿔치기합니다.
-            existingShift.setUser_id(applicantUserId);
+        substituteMapper.updateShiftStatus(
+                shift_id,
+                "SUBSTITUTED"
+        );
 
-            // 이미 존재하던 updateShift 메서드에 그대로 집어넣어서 업데이트 실행!
-            shiftMapper.updateShift(existingShift);
+        substituteMapper.insertHistory(historyVO);
+    }
+
+    // 모집글 취소
+    @Transactional
+    public void cancelPost(String post_id) {
+
+        String shift_id =
+                substituteMapper.getShiftIdByPostId(post_id);
+
+        substituteMapper.cancelPost(post_id);
+
+        substituteMapper.updateShiftStatus(
+                shift_id,
+                "SCHEDULED"
+        );
+    }
+
+
+    // =========================
+    // [직원]
+    // =========================
+
+    // 모집글 생성
+    @Transactional
+    public void createPost(SubstitutePostVO postVO) {
+
+        substituteMapper.createPost(postVO);
+
+        substituteMapper.updateShiftStatus(
+                postVO.getShift_id(),
+                "SUBSTITUTE_OPEN"
+        );
+    }
+
+    // 대타 지원
+    public void apply(
+            SubstituteApplicationVO applicationVO
+    ) {
+        substituteMapper.apply(applicationVO);
+    }
+
+    // 지원 취소
+    @Transactional
+    public void cancelApplication(String id) {
+
+        SubstituteApplicationVO application =
+                substituteMapper.getApplication(id);
+
+        if (application == null) {
+            throw new IllegalArgumentException(
+                    "존재하지 않는 신청입니다."
+            );
         }
+
+        if (!"PENDING".equals(application.getStatus())) {
+            throw new IllegalStateException(
+                    "대기중인 신청만 취소 가능합니다."
+            );
+        }
+
+        substituteMapper.cancelApplication(id);
+    }
+
+    // 내 지원 내역 조회
+    public List<SubstituteApplicationVO> getMyApplications(
+            String user_id,
+            String status
+    ) {
+
+        if (status == null || status.isBlank()) {
+            return substituteMapper.getMyApplications(
+                    user_id
+            );
+        }
+
+        return substituteMapper.getMyApplicationsByStatus(
+                user_id,
+                status
+        );
+    }
+
+    // 내 모집글 조회
+    public List<SubstitutePostVO> getMyPosts(
+            String user_id,
+            String status
+    ) {
+
+        if (status == null || status.isBlank()) {
+            return substituteMapper.getMyPosts(
+                    user_id
+            );
+        }
+
+        return substituteMapper.getMyPostsByStatus(
+                user_id,
+                status
+        );
     }
 }

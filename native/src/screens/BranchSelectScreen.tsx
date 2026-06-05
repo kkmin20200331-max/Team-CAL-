@@ -7,6 +7,8 @@ type BranchScreenNavigationProp = StackNavigationProp<any, 'BranchSelect'>;
 type Props = {
   navigation: BranchScreenNavigationProp;
   setHasSelectedBranch: (value: boolean) => void;
+  userInfo?: any;
+  setUserInfo?: (value: any) => void;
 };
 
 // 테스트용 지점 데이터
@@ -16,13 +18,19 @@ const BRANCH_DATA = [
   { id: '3', name: '컴포즈 판교점' },
 ];
 
-const BranchSelectScreen = ({ setHasSelectedBranch }: Props) => {
+const BranchSelectScreen = ({ setHasSelectedBranch, userInfo, setUserInfo }: Props) => {
   // 사용자가 현재 터치한 지점의 ID를 저장하는 상태
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // '선택 완료' 버튼을 눌렀을 때 실행
   const handleConfirm = () => {
     if (selectedId) {
+      // ✅ [수정] 선택한 지점 이름을 추출하여 userInfo에 업데이트합니다.
+      const selectedBranch = BRANCH_DATA.find(b => b.id === selectedId);
+      if (setUserInfo && userInfo && selectedBranch) {
+        setUserInfo({ ...userInfo, store_id: selectedBranch.name });
+      }
+
       // 💡 여기서 상태가 true로 바뀌면 App.js의 조건문이 실행되어 Pending(또는 Dashboard) 화면으로 넘어갑니다.
       setHasSelectedBranch(true);
     }

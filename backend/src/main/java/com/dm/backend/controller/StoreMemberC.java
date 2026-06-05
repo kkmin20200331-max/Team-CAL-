@@ -14,22 +14,25 @@ public class StoreMemberC {
     @Autowired
     private StoreMemberService storeMemberService;
 
-    //승인요청 - id, store_id, user_id 필요 나머지는 고정된 값으로 설정해둠
+    // =========================
+    // [직원]
+    // =========================
+
+    // 매장 근무 신청
+    // store_id, user_id 필요
     @PostMapping
-//    public void approveRegister(StoreMemberVo storeMemberVo) {
-//        storeMemberService.approveRegister(storeMemberVo);
-//    }
-    // 경민 수정 5/19 18:00
-    public void approveRegister(@RequestBody StoreMemberVo storeMemberVo) {
+    public void approveRegister(
+            @RequestBody StoreMemberVo storeMemberVo
+    ) {
         storeMemberService.approveRegister(storeMemberVo);
     }
 
-    //승인거절, 승인수락, 유저 등급 설정 (수정 정보만 바꾸어서 객체로 받음, 나머지는 기존 정보 그대로 필요)
-//    @PutMapping
-//    public void updateStoreMember(StoreMemberVo storeMemberVo) {
-//        storeMemberService.updateStoreMember(storeMemberVo);
-//    }
 
+    // =========================
+    // [관리자]
+    // =========================
+
+    // 경민 수정 5/29 - user_id, store_id로 직원 승인 처리
     @PutMapping
     public void updateStoreMember(@RequestParam String user_id, @RequestParam String store_id) {
         StoreMemberVo vo = new StoreMemberVo();
@@ -38,9 +41,15 @@ public class StoreMemberC {
         storeMemberService.updateStoreMember(vo);
     }
 
-
-
-
-
-
+    // 직원 삭제 / 매장 직원 제거
+    @DeleteMapping
+    public void deleteStoreMember(
+            @RequestParam String store_id,
+            @RequestParam String user_id
+    ){
+        storeMemberService.deleteStoreMember(
+                store_id,
+                user_id
+        );
+    }
 }

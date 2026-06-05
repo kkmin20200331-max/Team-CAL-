@@ -8,17 +8,69 @@ import java.util.List;
 @Mapper
 public interface StoreMemberMapper {
 
-    // 경민 수정 5/29 17:36(and -> ,)
-    @Insert("INSERT INTO store_member (id, store_id, user_id, member_role, user_level, approval_status) " +
-            "VALUES (#{id}, #{store_id}, #{user_id}, 'STAFF', 'NEWBIE', 'PENDING')")
+    // =========================
+    // [공통]
+    // =========================
+
+    // 급여 기준 조회
+    @Select("""
+            SELECT pay_type, pay_amount
+            FROM store_member
+            WHERE user_id = #{user_id}
+            AND store_id = #{store_id}
+            """)
+    StoreMemberVo getPayInfo(
+            @Param("user_id") String user_id,
+            @Param("store_id") String store_id
+    );
+
+
+    // =========================
+    // [직원]
+    // =========================
+
+    // 매장 근무 신청
+    @Insert("""
+            insert into store_member
+            values (
+                #{id},
+                #{store_id},
+                #{user_id},
+                #{member_role},
+                #{user_level},
+                #{approval_status},
+                #{pay_type},
+                #{pay_amount}
+            )
+            """)
     void approveRegister(StoreMemberVo storeMemberVo);
 
-    // 경민 수정 5/29 17:36(and -> ,)
-    // 직원 등급 변경
-//    @Update("update store_member set approval_status = #{approval_status}, member_role = #{member_role}, user_level = #{user_level} where id = #{id}")
-//    void updateStoreMember(StoreMemberVo storeMemberVo);
+    // 신청 여부 확인
+    @Select("""
+            SELECT COUNT(*)
+            FROM store_member
+            WHERE store_id = #{store_id}
+            AND user_id = #{user_id}
+            AND approval_status IN ('PENDING','APPROVED')
+            """)
+    int existsMember(
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id
+    );
 
-    // 직원 승인 (user_id + store_id 기준)
+
+    // =========================
+    // [관리자]
+    // =========================
+
+    // 경민 수정 5/29 17:36 - 직원 승인 (user_id + store_id 기준으로 APPROVED 처리)
     @Update("UPDATE store_member SET approval_status = 'APPROVED', member_role = 'STAFF' WHERE user_id = #{user_id} AND store_id = #{store_id}")
     void updateStoreMember(StoreMemberVo storeMemberVo);
+
+    // 직원 삭제 / 매장 직원 제거
+    @Delete("delete from store_member where store_id = #{store_id} and user_id = #{user_id}")
+    void deleteStoreMember(
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id
+    );
 }

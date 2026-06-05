@@ -7,18 +7,140 @@ import java.util.List;
 
 @Mapper
 public interface FixedscheduleMapper {
-    @Insert("insert into fixed_schedule values (#{id}, #{store_id}, #{user_id}, #{weekday}, #{start_time}, #{end_time}, #{active})")
-    void registerFixedschedule(FixedscheduleVO fixedscheduleVO);
 
-    @Select("select * from fixed_schedule where store_id = #{store_id}")
-    List<FixedscheduleVO> getFixedScheduleList(String store_id);
+    // =========================
+    // [공통]
+    // =========================
 
-    @Select("select * from fixed_schedule where id = #{id}")
-    FixedscheduleVO getFixedSchedule(String id);
+    // 고정 스케줄 단건 조회
+    @Select("""
+            SELECT *
+            FROM fixed_schedule
+            WHERE id = #{id}
+            """)
+    FixedscheduleVO getFixedSchedule(
+            String id
+    );
 
-    @Update("update fixed_schedule set weekday = #{weekday}, start_time = #{start_time}, end_time = #{end_time}, active = #{active} where id = #{id}")
-    void updateFixedSchedule(FixedscheduleVO fixedscheduleVO);
+    //급여 관리에 필요한 개근 조회
+    @Select("""
+                SELECT *
+                FROM fixed_schedule
+                WHERE user_id = #{user_id}
+                AND store_id = #{store_id}
+                AND active = 'Y'
+            """)
+    List<FixedscheduleVO> getActiveSchedule(
+            @Param("user_id") String user_id,
+            @Param("store_id") String store_id
+    );
 
-    @Delete("delete from fixed_schedule where id = #{id}")
-    void delFixedSchedule(String id);
+    // =========================
+    // [관리자]
+    // =========================
+
+    // 고정 스케줄 등록
+    @Insert("""
+            INSERT INTO fixed_schedule
+            VALUES (
+                #{id},
+                #{store_id},
+                #{user_id},
+                #{weekday},
+                #{start_time},
+                #{end_time},
+                #{active}
+            )
+            """)
+    void registerFixedschedule(
+            FixedscheduleVO fixedscheduleVO
+    );
+
+    // 매장별 고정 스케줄 조회
+    @Select("""
+            SELECT *
+            FROM fixed_schedule
+            WHERE store_id = #{store_id}
+            """)
+    List<FixedscheduleVO> getFixedScheduleList(
+            String store_id
+    );
+
+    // 고정 스케줄 수정
+    @Update("""
+            UPDATE fixed_schedule
+            SET weekday = #{weekday},
+                start_time = #{start_time},
+                end_time = #{end_time},
+                active = #{active}
+            WHERE id = #{id}
+            """)
+    void updateFixedSchedule(
+            FixedscheduleVO fixedscheduleVO
+    );
+
+    // 고정 스케줄 삭제
+    @Delete("""
+            DELETE FROM fixed_schedule
+            WHERE id = #{id}
+            """)
+    void delFixedSchedule(
+            String id
+    );
+
+    // 동일 데이터 존재 여부
+    @Select("""
+            SELECT COUNT(*)
+            FROM fixed_schedule
+            WHERE store_id = #{store_id}
+            AND user_id = #{user_id}
+            AND weekday = #{weekday}
+            AND start_time = #{start_time}
+            AND end_time = #{end_time}
+            """)
+    int existsFixedSchedule(
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id,
+            @Param("weekday") String weekday,
+            @Param("start_time") String start_time,
+            @Param("end_time") String end_time
+    );
+
+    // 등록 시 시간 중복 체크
+    @Select("""
+            SELECT COUNT(*)
+            FROM fixed_schedule
+            WHERE store_id = #{store_id}
+            AND user_id = #{user_id}
+            AND weekday = #{weekday}
+            AND start_time < #{end_time}
+            AND end_time > #{start_time}
+            """)
+    int checkFixedScheduleConflict(
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id,
+            @Param("weekday") String weekday,
+            @Param("start_time") String start_time,
+            @Param("end_time") String end_time
+    );
+
+    // 수정 시 시간 중복 체크
+    @Select("""
+            SELECT COUNT(*)
+            FROM fixed_schedule
+            WHERE store_id = #{store_id}
+            AND user_id = #{user_id}
+            AND weekday = #{weekday}
+            AND id != #{id}
+            AND start_time < #{end_time}
+            AND end_time > #{start_time}
+            """)
+    int checkFixedScheduleConflictForUpdate(
+            @Param("id") String id,
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id,
+            @Param("weekday") String weekday,
+            @Param("start_time") String start_time,
+            @Param("end_time") String end_time
+    );
 }
