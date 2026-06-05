@@ -17,6 +17,7 @@ import NotificationScreen from './src/screens/board/NotificationScreen'; // ✅ 
 import ScheduleScreen from './src/screens/schedule/ScheduleScreen';
 import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
 import BoardScreen from './src/screens/board/BoardScreen'; // ✅ [추가] 게시판 화면 불러오기
+import BoardWriteScreen from './src/screens/board/BoardWriteScreen'; // ✅ [추가] 글쓰기 화면 불러오기
 import SubstituteScreen from './src/screens/schedule/SubstituteScreen'; // ✅ [추가] 대타 전용 화면 불러오기
 import ContractScreen from './src/screens/mypage/ContractScreen'; // ✅ [추가] 근로계약서 화면
 import HealthCertScreen from './src/screens/mypage/HealthCertScreen'; // ✅ [추가] 보건증 화면
@@ -228,6 +229,13 @@ return (
                 <Stack.Screen 
                   name="Board" 
                   component={BoardScreen} 
+                  options={{ headerShown: false }} 
+                />
+
+              {/* 👇 게시판 글쓰기 화면 추가 */}
+                <Stack.Screen 
+                  name="BoardWrite" 
+                  component={BoardWriteScreen} 
                   options={{ headerShown: false }} 
                 />
     

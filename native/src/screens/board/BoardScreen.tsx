@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 
-const BoardScreen = ({ navigation }: any) => {
+const BoardScreen = ({ route, navigation }: any) => {
+  // ✅ 네비게이션을 통해 전달받은 userInfo 추출
+  const { userInfo } = route.params || {};
   // 모달 상태 관리
   const [isPostModalVisible, setPostModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
@@ -30,14 +32,23 @@ const BoardScreen = ({ navigation }: any) => {
   ];
 
   // ✅ 전체 게시글 더미 데이터 (각 데이터에 category 속성 추가)
-  const allPosts = [
+  const [allPosts, setAllPosts] = useState([
     { id: '1', category: 'MENU', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
     { id: '2', category: 'NOTICE', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
     { id: '3', category: 'NOTICE', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
     { id: '4', category: 'MANUAL', title: 'boardDummy4Title', date: '2026.05.10', content: 'boardDummy4Content', badge: null },
     { id: '5', category: 'EVENT', title: 'boardDummy5Title', date: '2026.05.01', content: 'boardDummy5Content', badge: null },
     { id: '6', category: 'NOTICE', title: 'boardDummy6Title', date: '2026.04.15', content: 'boardDummy6Content', badge: null },
-  ];
+  ]);
+
+  // ✅ 글쓰기 화면에서 전달받은 새 글이 있으면 목록 맨 앞에 추가
+  useEffect(() => {
+    if (route.params?.newPost) {
+      setAllPosts(prevPosts => [route.params.newPost, ...prevPosts]);
+      // 추가 후 파라미터 초기화 (화면 재렌더링 시 중복 추가 방지)
+      navigation.setParams({ newPost: undefined });
+    }
+  }, [route.params?.newPost]);
 
   // ✅ 최신 날짜 순(내림차순)으로 정렬
   // ✅ 선택된 카테고리에 맞게 필터링 추가
@@ -77,6 +88,7 @@ const BoardScreen = ({ navigation }: any) => {
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
+          
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('notice')}</Text>
         <View style={{ width: 40 }} />
@@ -131,6 +143,15 @@ const BoardScreen = ({ navigation }: any) => {
           </View>
         </View>
       </Modal>
+
+      {/* ✅ 글쓰기 플로팅 버튼 (FAB) 추가 */}
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={() => navigation.navigate('BoardWrite', { userInfo })}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -237,6 +258,29 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   postModalText: { fontSize: 17, color: colors.text, lineHeight: 26 },
   closeModalButton: { backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   closeModalButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
+
+  // --- ✅ 플로팅 버튼 (FAB) 스타일 ---
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#2563EB', // 앱 기본 포인트 색상
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5, // 안드로이드 그림자
+    shadowColor: '#000', // iOS 그림자
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  fabIcon: {
+    fontSize: 30,
+    color: '#FFFFFF',
+    lineHeight: 32, // 안드로이드 수직 정렬 보정
+  },
 });
 
 export default BoardScreen;

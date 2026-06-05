@@ -82,3 +82,7 @@ export const checkInAPI = (userId: string, storeId: string) =>
 
 export const checkOutAPI = (userId: string, storeId: string) => 
   API.post(`/attendance/check-out`, { user_id: userId, store_id: storeId });
+
+// [게시판] 새 글 작성 API (직원/관리자 공통)
+export const createBoardPostAPI = (data: any) => 
+  API.post(`/board`, data);
