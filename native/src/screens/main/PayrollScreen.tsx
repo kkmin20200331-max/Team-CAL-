@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import Toast from 'react-native-toast-message';
 
 // ✅ 1. 백엔드에서 받아올 데이터의 형태(타입)를 미리 정의합니다.
 interface DailyWage {
@@ -64,7 +65,7 @@ const PayrollScreen = ({ route, navigation }: any) => {
         { id: '4', date: '6월 06일 (토)', hours: '4시간 (대타)', amount: 41280 },
       ]);
     } catch (error) {
-      Alert.alert('오류', '급여 내역을 불러오지 못했습니다.');
+      Toast.show({ type: 'error', text1: '오류', text2: '급여 내역을 불러오지 못했습니다.' });
     } finally {
       setIsLoading(false);
     }
@@ -85,9 +86,9 @@ const PayrollScreen = ({ route, navigation }: any) => {
               // [TODO: 실제 연동 시 주급 신청 API 호출]
               // await requestAdvancePayAPI({ userId: userInfo.username, amount: summary?.accumulatedWeekly });
               await new Promise(resolve => setTimeout(resolve, 1500)); // 통신 대기
-              Alert.alert(t('advancePaySuccessTitle'), t('advancePaySuccessMsg'));
+              Toast.show({ type: 'success', text1: t('advancePaySuccessTitle'), text2: t('advancePaySuccessMsg') });
             } catch (error) {
-              Alert.alert('오류', '주급 신청 중 문제가 발생했습니다.');
+              Toast.show({ type: 'error', text1: '오류', text2: '주급 신청 중 문제가 발생했습니다.' });
               setIsRequested(false); // 실패 시 상태 되돌림
             }
           } 

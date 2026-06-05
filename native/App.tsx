@@ -1,9 +1,9 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 // ✅ [추가 1] 하단 탭 네비게이션을 위해 필요한 라이브러리 임포트
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Text, Platform } from 'react-native'; // ✅ Platform 모듈 추가
 
 // 화면 불러오기
 import LoginScreen from './src/screens/auth/LoginScreen';
@@ -29,6 +29,50 @@ import { NotificationProvider, NotificationContext } from './src/contexts/Notifi
 import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
 // ✅ [추가] 테마(주/야간 모드) 전역 상태 관리 Context 불러오기
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message'; // ✅ [수정] 토스트 커스텀 컴포넌트 추가
+import { GestureHandlerRootView } from 'react-native-gesture-handler'; // ✅ [추가] 제스처 최상단 래퍼
+import * as Notifications from 'expo-notifications'; // ✅ [추가] 푸시 알림 라이브러리
+
+// ✅ [추가] 토스트 알림을 더 크고 잘 보이게 만드는 커스텀 설정
+const toastConfig = {
+  success: (props: any) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: '#34C759', height: 80, width: '90%', borderRadius: 12 }} // 높이와 너비 증가
+      contentContainerStyle={{ paddingHorizontal: 20 }} // 내부 여백 증가
+      text1Style={{
+        fontSize: 18, // 제목 폰트 크기 증가
+        fontWeight: 'bold'
+      }}
+      text2Style={{
+        fontSize: 15, // 내용 폰트 크기 증가
+      }}
+    />
+  ),
+  error: (props: any) => (
+    <ErrorToast
+      {...props}
+      style={{ borderLeftColor: '#EF4444', height: 80, width: '90%', borderRadius: 12 }} // 높이와 너비 증가
+      contentContainerStyle={{ paddingHorizontal: 20 }}
+      text1Style={{
+        fontSize: 18,
+        fontWeight: 'bold'
+      }}
+      text2Style={{
+        fontSize: 15,
+      }}
+    />
+  ),
+};
+
+// ✅ 앱이 실행 중(포그라운드)일 때도 상단에 헤드업 알림이 뜨도록 설정
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true, // 화면 상단에 알림 배너 표시
+    shouldPlaySound: true, // 알림 소리 재생
+    shouldSetBadge: true,  // 앱 아이콘에 숫자 배지 표시
+  }),
+});
 
 // ✅ [정리] 중복 선언된 Stack은 하나만 남기고, Tab 네비게이터를 생성합니다.
 const Stack = createStackNavigator();
@@ -145,7 +189,34 @@ export default function App() {
   // 👇 3. 로그인한 유저의 정보를 통째로 저장하는 상태 추가
   const [userInfo, setUserInfo] = useState<any>(null);
 
+  // ✅ 앱 시작 시 사용자에게 푸시 알림 권한(허용/거부) 요청
+  useEffect(() => {
+    async function requestPushPermissions() {
+      // ✅ [추가] 안드로이드 푸시 알림 작동을 위한 필수 채널 설정
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('default', {
+          name: 'default',
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#2563EB',
+        });
+      }
+
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        console.log('푸시 알림 권한이 거부되었습니다.');
+      }
+    }
+    requestPushPermissions();
+  }, []);
+
 return (
+<GestureHandlerRootView style={{ flex: 1 }}>
 <ThemeProvider>
     <LanguageProvider>
       <NotificationProvider>
@@ -285,6 +356,8 @@ return (
       </NavigationContainer>
       </NotificationProvider>
     </LanguageProvider>
+    <Toast config={toastConfig} />
 </ThemeProvider>
+</GestureHandlerRootView>
   );
 }

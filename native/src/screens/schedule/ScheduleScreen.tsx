@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getMyScheduleAPI, requestLeaveAPI } from '../../../api/auth';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import Toast from 'react-native-toast-message';
 
 // 1. 데이터의 형태(타입)를 먼저 정의해 줍니다.
 interface ScheduleItem {
@@ -184,7 +185,7 @@ const ScheduleScreen = ({ route }: any) => {
   // 모달에서 '신청하기' 눌렀을 때 처리
   const handleSubmitLeaveRequest = async () => {
     if (!leaveReason.trim()) {
-      Alert.alert('알림', '휴무 사유를 입력해주세요.');
+      Toast.show({ type: 'error', text1: '알림', text2: '휴무 사유를 입력해주세요.' });
       return;
     }
     
@@ -198,7 +199,7 @@ const ScheduleScreen = ({ route }: any) => {
       //   reason: leaveReason
       // });
 
-      Alert.alert('신청 완료', '점주에게 휴무 승인 요청이 전송되었습니다.');
+      Toast.show({ type: 'success', text1: '신청 완료', text2: '점주에게 휴무 승인 요청이 전송되었습니다.' });
       setLeaveModalVisible(false);
       setSelectedShiftForLeave(null);
       
@@ -206,7 +207,7 @@ const ScheduleScreen = ({ route }: any) => {
       // fetchMySchedule(); // 🚨 이 부분도 임시로 주석 처리
     } catch (error) {
       console.error('휴무 신청 에러:', error);
-      Alert.alert('신청 실패', '휴무 신청 중 오류가 발생했습니다.');
+      Toast.show({ type: 'error', text1: '신청 실패', text2: '휴무 신청 중 오류가 발생했습니다.' });
     }
   };
 

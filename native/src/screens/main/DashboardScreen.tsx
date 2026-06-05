@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Alert, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, Alert, RefreshControl, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getMyScheduleAPI } from '../../../api/auth';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ [추가] 테마 Context 불러오기
+import Toast from 'react-native-toast-message';
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
@@ -38,6 +39,17 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
   const [weeklyStats, setWeeklyStats] = useState({ totalHours: 0, expectedSalary: 0 });
   // ✅ 대타 요청 알림 카드 표시 여부 상태
   const [isAlertVisible, setIsAlertVisible] = useState(true);
+
+  // ✅ 스켈레톤 UI (뼈대) 깜빡임 애니메이션 상태
+  const fadeAnim = useRef(new Animated.Value(0.4)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [fadeAnim]);
 
   // ✅ 게시판 데이터 및 모달 상태 관리
   const [isPostModalVisible, setPostModalVisible] = useState(false);
@@ -79,7 +91,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
           text: t('applyBtn'), 
           onPress: () => {
             setIsAlertVisible(false); // 카드 숨기기
-            Alert.alert(t('subApplySuccessTitle'), t('subApplySuccessMsg'));
+            Toast.show({ type: 'success', text1: t('subApplySuccessTitle'), text2: t('subApplySuccessMsg') });
           } 
         }
       ]
@@ -252,7 +264,22 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
           </View>
 
           {loading ? (
-            <ActivityIndicator size="small" color="#2563EB" style={{ marginVertical: 20 }} />
+            // ✅ 스피너 대신 부드럽게 깜빡이는 스켈레톤 UI 적용
+            <Animated.View style={{ opacity: fadeAnim, paddingVertical: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ width: 20, height: 20, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 10, marginRight: 8 }} />
+                <View style={{ width: '50%', height: 18, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <View style={{ width: 20, height: 20, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 10, marginRight: 8 }} />
+                <View style={{ width: '70%', height: 18, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+              </View>
+              <View style={styles.divider} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ width: '30%', height: 18, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+                <View style={{ width: '40%', height: 24, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+              </View>
+            </Animated.View>
           ) : todayShift ? (
             <>
               {/* 근무 상세 정보 */}

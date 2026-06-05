@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import Toast from 'react-native-toast-message';
 
 const BoardScreen = ({ route, navigation }: any) => {
   // ✅ 네비게이션을 통해 전달받은 userInfo 추출
@@ -85,6 +86,7 @@ const BoardScreen = ({ route, navigation }: any) => {
       { text: "삭제", style: "destructive", onPress: () => {
           setAllPosts(prev => prev.filter(post => post.id !== id));
           setPostModalVisible(false);
+          Toast.show({ type: 'success', text1: '삭제 완료', text2: '게시글이 삭제되었습니다.' });
         } 
       }
     ]);

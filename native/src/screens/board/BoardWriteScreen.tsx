@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createBoardPostAPI } from '../../../api/auth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext'; // ✅ 다국어 변환용 추가
+import Toast from 'react-native-toast-message'; // ✅ 토스트 추가
+import * as Notifications from 'expo-notifications'; // ✅ 푸시 알림 라이브러리 추가
 
 const BoardWriteScreen = ({ route, navigation }: any) => {
   // ✅ 이전 화면에서 넘겨받은 파라미터 (수정 모드 플래그 및 기존 글 데이터 포함)
@@ -33,7 +35,7 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
-      Alert.alert('알림', '제목과 내용을 모두 입력해주세요.');
+      Toast.show({ type: 'error', text1: '알림', text2: '제목과 내용을 모두 입력해주세요.' });
       return;
     }
 
@@ -66,11 +68,10 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
           title: title,
           content: content,
         };
-        // ✅ [수정] 파라미터로 받은 콜백 함수를 호출하고, 뒤로 가기
-        onUpdatePost(updatedDummyPost);
-        Alert.alert('성공', '게시글이 성공적으로 수정되었습니다.', [
-          { text: '확인', onPress: () => navigation.goBack() }
-        ]);
+        // ✅ [수정] 콜백 함수가 유실되었을 경우를 대비한 안전 장치 (옵셔널 체이닝)
+        onUpdatePost?.(updatedDummyPost);
+        Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 수정되었습니다.' });
+        navigation.goBack();
       } else {
         // ✅ [임시] 새 글 모드
         const today = new Date();
@@ -83,15 +84,30 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
           content: content,
           badge: 'badgeNew'
         };
-        // ✅ [수정] 파라미터로 받은 콜백 함수를 호출하고, 뒤로 가기
-        onAddPost(newDummyPost);
-        Alert.alert('성공', '게시글이 성공적으로 등록되었습니다.', [
-          { text: '확인', onPress: () => navigation.goBack() }
-        ]);
+        // ✅ [수정] 콜백 함수가 유실되었을 경우를 대비한 안전 장치
+        onAddPost?.(newDummyPost);
+        Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 등록되었습니다.' });
+
+        // ✅ [추가] 공지사항을 작성했을 때 1초 뒤 기기 상단에 푸시 알림 띄우기
+        if (category === '공지사항') {
+          try {
+            Notifications.scheduleLocalNotificationAsync({
+              content: {
+                title: "📢 새로운 공지사항 등록",
+                body: `[공지] ${title}`,
+              },
+              trigger: { seconds: 1 },
+            });
+          } catch (notifError) {
+            console.log("알림 예약 실패 (권한 또는 채널 문제):", notifError);
+          }
+        }
+        
+        navigation.goBack();
       }
     } catch (error) {
       console.error('글쓰기 에러:', error);
-      Alert.alert('오류', '게시글 등록 중 문제가 발생했습니다.');
+      Toast.show({ type: 'error', text1: '오류', text2: '게시글 등록 중 문제가 발생했습니다.' });
     }
   };
 

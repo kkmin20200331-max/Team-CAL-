@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NotificationContext, NotificationItem } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import Swipeable from 'react-native-gesture-handler/Swipeable'; // ✅ 스와이프 기능 추가
 
 const NotificationListScreen = () => {
   // ✅ 1. 알림 데이터를 나홀로 상태가 아닌 전역 상태(Context)에서 가져옵니다.
@@ -57,25 +58,39 @@ const NotificationListScreen = () => {
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
+  // ✅ 스와이프했을 때 나타날 오른쪽 [삭제] 버튼 UI
+  const renderRightActions = (id: string) => {
+    return (
+      <TouchableOpacity 
+        style={styles.deleteAction} 
+        onPress={() => handleDeleteNotification(id)}
+      >
+        <Text style={styles.deleteActionText}>{t('delete')}</Text>
+      </TouchableOpacity>
+    );
+  };
+
   const renderItem = ({ item }: { item: NotificationItem }) => (
-    <TouchableOpacity 
-      style={[styles.notificationItem, !item.isRead && styles.unreadBackground]}
-      onPress={() => handlePressNotification(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.contentContainer}>
-        <View style={styles.titleRow}>
-          <Text style={[styles.titleText, !item.isRead && styles.unreadTitleText]}>
-            {t(item.title)}
+    <Swipeable renderRightActions={() => renderRightActions(item.id)} overshootRight={false}>
+      <TouchableOpacity 
+        style={[styles.notificationItem, !item.isRead && styles.unreadBackground]}
+        onPress={() => handlePressNotification(item)}
+        activeOpacity={1}
+      >
+        <View style={styles.contentContainer}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.titleText, !item.isRead && styles.unreadTitleText]}>
+              {t(item.title)}
+            </Text>
+            {!item.isRead && <View style={styles.unreadDot} />}
+          </View>
+          <Text style={styles.messageText} numberOfLines={2}>
+            {t(item.message)}
           </Text>
-          {!item.isRead && <View style={styles.unreadDot} />}
+          <Text style={styles.timeText}>{t(item.createdAt)}</Text>
         </View>
-        <Text style={styles.messageText} numberOfLines={2}>
-          {t(item.message)}
-        </Text>
-        <Text style={styles.timeText}>{t(item.createdAt)}</Text>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Swipeable>
   );
 
   return (
@@ -176,6 +191,10 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   deleteButtonText: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 15, fontWeight: 'bold' },
   closeButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   closeButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+
+  // --- 스와이프 삭제 액션 스타일 ---
+  deleteAction: { backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', width: 80 },
+  deleteActionText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 15 },
 });
 
 export default NotificationListScreen;

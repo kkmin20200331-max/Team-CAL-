@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, RefreshContr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import Toast from 'react-native-toast-message';
 
 const SubstituteScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
@@ -33,7 +34,7 @@ const SubstituteScreen = ({ navigation }: any) => {
       `${item.date} ${item.time}\n${t('subReqConfirmMsg')}`,
       [
         { text: t('cancel'), style: 'cancel' },
-        { text: t('applyBtn'), onPress: () => Alert.alert(t('subApplySuccessTitle'), t('subApplySuccessMsg')) }
+        { text: t('applyBtn'), onPress: () => Toast.show({ type: 'success', text1: t('subApplySuccessTitle'), text2: t('subApplySuccessMsg') }) }
       ]
     );
   };
