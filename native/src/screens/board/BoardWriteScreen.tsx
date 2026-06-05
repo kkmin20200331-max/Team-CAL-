@@ -3,19 +3,32 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createBoardPostAPI } from '../../../api/auth';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext'; // ✅ 다국어 변환용 추가
 
 const BoardWriteScreen = ({ route, navigation }: any) => {
-  // 이전 화면(BoardScreen 등)에서 넘겨받은 내 정보
-  const { userInfo } = route.params || {};
+  // ✅ 이전 화면에서 넘겨받은 파라미터 (수정 모드 플래그 및 기존 글 데이터 포함)
+  const { userInfo, isEdit, postToEdit, onAddPost, onUpdatePost } = route.params || {};
+
+  // ✅ userInfo가 없을 경우를 대비한 안전 장치
+  const currentUserId = userInfo?.username || 'my_test_id';
   
+  const { t } = useLanguage(); // ✅ 기존 더미 타이틀 변환을 위해 사용
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  // ✅ 기존 작성된 글이 있으면 초기값으로 세팅 (수정 모드)
+  const [title, setTitle] = useState(isEdit && postToEdit ? t(postToEdit.title) : '');
+  const [content, setContent] = useState(isEdit && postToEdit ? t(postToEdit.content) : '');
   
-  // 직원이 선택할 수 있는 기본 카테고리 (관리자의 경우 추후 DB에서 커스텀 카테고리를 받아오도록 구성 가능)
-  const [category, setCategory] = useState('공지사항'); 
+  // ✅ 영문 카테고리를 한글로 역변환 (기존 더미 글 카테고리 매핑)
+  const getInitialCategory = (catCode: string) => {
+    if (catCode === 'MENU') return '건의사항';
+    if (catCode === 'EVENT') return '자유게시판';
+    if (catCode === 'LOST') return '분실물';
+    return '공지사항'; // NOTICE 등 기본
+  };
+  
+  const [category, setCategory] = useState(isEdit && postToEdit ? getInitialCategory(postToEdit.category) : '공지사항'); 
   const predefinedCategories = ['공지사항', '건의사항', '분실물', '자유게시판'];
 
   const handleSubmit = async () => {
@@ -28,7 +41,7 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       // 백엔드로 보낼 데이터 조립
       const postData = {
         store_id: userInfo?.store_id,
-        user_id: userInfo?.username, // 작성자 ID
+        user_id: currentUserId, // 작성자 ID
         author_name: userInfo?.name, // 작성자 이름
         title: title,
         content: content,
@@ -45,19 +58,37 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       if (category === '자유게시판') dummyCategory = 'EVENT';
       if (category === '분실물') dummyCategory = 'LOST';
       
-      const today = new Date();
-      const newDummyPost = {
-        id: Date.now().toString(),
-        category: dummyCategory,
-        title: title, // 다국어(t) 키가 없으면 원본 문자열이 그대로 출력됩니다.
-        date: `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`,
-        content: content,
-        badge: 'badgeNew'
-      };
-
-      Alert.alert('성공', '게시글이 성공적으로 등록되었습니다.', [
-        { text: '확인', onPress: () => navigation.navigate('Board', { newPost: newDummyPost }) }
-      ]);
+      if (isEdit) {
+        // ✅ [임시] 수정 모드일 때는 기존 id를 유지하고 데이터만 덮어씀
+        const updatedDummyPost = {
+          ...postToEdit,
+          category: dummyCategory,
+          title: title,
+          content: content,
+        };
+        // ✅ [수정] 파라미터로 받은 콜백 함수를 호출하고, 뒤로 가기
+        onUpdatePost(updatedDummyPost);
+        Alert.alert('성공', '게시글이 성공적으로 수정되었습니다.', [
+          { text: '확인', onPress: () => navigation.goBack() }
+        ]);
+      } else {
+        // ✅ [임시] 새 글 모드
+        const today = new Date();
+        const newDummyPost = {
+          id: Date.now().toString(),
+          authorId: currentUserId,
+          category: dummyCategory,
+          title: title,
+          date: `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`,
+          content: content,
+          badge: 'badgeNew'
+        };
+        // ✅ [수정] 파라미터로 받은 콜백 함수를 호출하고, 뒤로 가기
+        onAddPost(newDummyPost);
+        Alert.alert('성공', '게시글이 성공적으로 등록되었습니다.', [
+          { text: '확인', onPress: () => navigation.goBack() }
+        ]);
+      }
     } catch (error) {
       console.error('글쓰기 에러:', error);
       Alert.alert('오류', '게시글 등록 중 문제가 발생했습니다.');
@@ -71,7 +102,7 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>새 글 쓰기</Text>
+        <Text style={styles.headerTitle}>{isEdit ? '글 수정하기' : '새 글 쓰기'}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -121,7 +152,7 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
 
         {/* 등록 버튼 */}
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>등록하기</Text>
+          <Text style={styles.submitButtonText}>{isEdit ? '수정하기' : '등록하기'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
