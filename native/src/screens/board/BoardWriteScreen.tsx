@@ -68,8 +68,10 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
           title: title,
           content: content,
         };
-        // ✅ [수정] 콜백 함수가 유실되었을 경우를 대비한 안전 장치 (옵셔널 체이닝)
-        onUpdatePost?.(updatedDummyPost);
+        
+        // ✅ [수정] 구버전 JS 엔진 오류 방지를 위해 옵셔널 체이닝(?:) 대신 명시적 if문 사용
+        if (onUpdatePost) { onUpdatePost(updatedDummyPost); }
+        
         Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 수정되었습니다.' });
         navigation.goBack();
       } else {
@@ -84,14 +86,17 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
           content: content,
           badge: 'badgeNew'
         };
-        // ✅ [수정] 콜백 함수가 유실되었을 경우를 대비한 안전 장치
-        onAddPost?.(newDummyPost);
+        
+        // ✅ [수정] 명시적 if문 사용
+        if (onAddPost) { onAddPost(newDummyPost); }
+        
         Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 등록되었습니다.' });
 
         // ✅ [추가] 공지사항을 작성했을 때 1초 뒤 기기 상단에 푸시 알림 띄우기
         if (category === '공지사항') {
           try {
-            Notifications.scheduleLocalNotificationAsync({
+            // ✅ [핵심] await를 반드시 붙여야 권한 거부 시 앱이 튕기지 않습니다 (Unhandled Promise Rejection 방지)
+            await Notifications.scheduleLocalNotificationAsync({
               content: {
                 title: "📢 새로운 공지사항 등록",
                 body: `[공지] ${title}`,

@@ -196,7 +196,7 @@ export default function App() {
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('default', {
           name: 'default',
-          importance: Notifications.AndroidImportance.MAX,
+          importance: 5, // ✅ AndroidImportance.MAX 와 동일한 값. (버전 충돌 및 오류 방지를 위해 숫자 5로 변경)
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#2563EB',
         });
