@@ -92,20 +92,21 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
         
         Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 등록되었습니다.' });
 
-        // ✅ [추가] 공지사항을 작성했을 때 1초 뒤 기기 상단에 푸시 알림 띄우기
+        // ✅ [수정] 안드로이드 권한(Exact Alarm) 문제를 우회하여 5초 뒤에 발송되도록 변경
         if (category === '공지사항') {
-          try {
-            // ✅ [핵심] await를 반드시 붙여야 권한 거부 시 앱이 튕기지 않습니다 (Unhandled Promise Rejection 방지)
-            await Notifications.scheduleLocalNotificationAsync({
-              content: {
-                title: "📢 새로운 공지사항 등록",
-                body: `[공지] ${title}`,
-              },
-              trigger: { seconds: 1 },
-            });
-          } catch (notifError) {
-            console.log("알림 예약 실패 (권한 또는 채널 문제):", notifError);
-          }
+          setTimeout(async () => {
+            try {
+              await Notifications.scheduleNotificationAsync({
+                content: {
+                  title: "📢 새로운 공지사항 등록",
+                  body: `[공지] ${title}`,
+                },
+                trigger: null, // 5초 뒤에 이 함수가 실행되므로 즉시 발송(null)으로 설정
+              });
+            } catch (notifError) {
+              console.log("알림 발송 실패:", notifError);
+            }
+          }, 5000); // 5000ms = 5초 대기
         }
         
         navigation.goBack();
