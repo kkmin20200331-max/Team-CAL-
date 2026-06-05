@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import EmployeeHeader from '../../components/employee/EmployeeHeader';
 import { useNavigate } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -125,15 +126,17 @@ export default function QRCheckIn() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-6">
-        <h1 className="text-2xl font-bold mb-2">QR 체크인</h1>
-        <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5" />
-          <span className="text-lg font-mono">
-            {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </span>
+      <EmployeeHeader>
+        <div>
+          <h1 className="text-2xl font-bold">QR 체크인</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <Clock className="w-4 h-4 text-blue-100" />
+            <span className="text-lg font-mono text-blue-100">
+              {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          </div>
         </div>
-      </div>
+      </EmployeeHeader>
 
       <div className="px-4 py-4">
         {/* Today's Shift Info */}

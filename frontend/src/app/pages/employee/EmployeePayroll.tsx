@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import EmployeeHeader from '../../components/employee/EmployeeHeader';
 import { useNavigate } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -133,10 +134,12 @@ export default function EmployeePayroll() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-pink-600 to-purple-600 text-white p-6">
-        <h1 className="text-2xl font-bold mb-2">급여 조회</h1>
-        <p className="text-pink-100 text-sm">급여 내역과 주급을 확인하세요</p>
-      </div>
+      <EmployeeHeader>
+        <div>
+          <h1 className="text-2xl font-bold">급여 조회</h1>
+          <p className="text-blue-100 text-sm mt-1">급여 내역과 주급을 확인하세요</p>
+        </div>
+      </EmployeeHeader>
 
       <div className="px-4 py-4">
         {/* Current Period Summary */}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import EmployeeHeader from '../../components/employee/EmployeeHeader';
 import { useNavigate } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -206,10 +207,12 @@ export default function EmployeeBoard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6">
-        <h1 className="text-2xl font-bold mb-2">게시판</h1>
-        <p className="text-indigo-100 text-sm">공지사항과 소식을 확인하세요</p>
-      </div>
+      <EmployeeHeader>
+        <div>
+          <h1 className="text-2xl font-bold">게시판</h1>
+          <p className="text-blue-100 text-sm mt-1">공지사항과 소식을 확인하세요</p>
+        </div>
+      </EmployeeHeader>
 
       <div className="px-4 py-4">
         {/* Search */}
