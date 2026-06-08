@@ -116,52 +116,63 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!branchId) return;
-    const today = toDateStr(new Date());
 
-    Promise.allSettled([
-      API.get('/shift', { params: { store_id: branchId, start_date: today, end_date: today } }),
-      API.get('/users', { params: { store_id: branchId } }),
-      API.get('/substitute', { params: { store_id: branchId } }),
-    ]).then(async ([shiftRes, userRes, subRes]) => {
-      // 오늘 근무표
-      const shifts: ShiftVO[] =
-        shiftRes.status === 'fulfilled' && Array.isArray(shiftRes.value.data)
-          ? shiftRes.value.data : [];
-      setTodayShifts(shifts);
+    const load = async () => {
+      try {
+        const today = toDateStr(new Date());
 
-      // 직원 맵
-      const users: UserVO[] =
-        userRes.status === 'fulfilled' && Array.isArray(userRes.value.data)
-          ? userRes.value.data : [];
-      setTotalEmployees(users.length);
-      const empMap: Record<string, UserVO> = {};
-      users.forEach(u => { empMap[u.id] = u; });
-      setEmployeeMap(empMap);
+        const [shiftRes, userRes, subRes] = await Promise.allSettled([
+          API.get('/shift', { params: { store_id: branchId, start_date: today, end_date: today } }),
+          API.get('/users', { params: { store_id: branchId } }),
+          API.get('/substitute', { params: { store_id: branchId } }),
+        ]);
 
-      // 대타 오픈 건수
-      const subs =
-        subRes.status === 'fulfilled' && Array.isArray(subRes.value.data)
-          ? subRes.value.data : [];
-      setSubstituteCount(subs.filter((s: any) => (s.status || '').toLowerCase() === 'open').length);
+        // 오늘 근무표
+        const shifts: ShiftVO[] =
+          shiftRes.status === 'fulfilled' && Array.isArray(shiftRes.value.data)
+            ? shiftRes.value.data : [];
+        setTodayShifts(shifts);
 
-      // 시급/급여 조회 (오늘 근무자 한정)
-      const uniqueIds = [...new Set(shifts.map(s => s.user_id))];
-      if (uniqueIds.length > 0) {
-        const payResults = await Promise.allSettled(
-          uniqueIds.map(uid =>
-            API.get('/store_member/pay', { params: { user_id: uid, store_id: branchId } })
-              .then(r => ({ uid, data: r.data as PayInfo }))
-          )
+        // 직원 맵
+        const users: UserVO[] =
+          userRes.status === 'fulfilled' && Array.isArray(userRes.value.data)
+            ? userRes.value.data : [];
+        setTotalEmployees(users.length);
+        const empMap: Record<string, UserVO> = {};
+        users.forEach(u => { empMap[u.id] = u; });
+        setEmployeeMap(empMap);
+
+        // 대타 오픈 건수
+        const subs =
+          subRes.status === 'fulfilled' && Array.isArray(subRes.value.data)
+            ? subRes.value.data : [];
+        setSubstituteCount(
+          subs.filter((s: any) => (s.status || '').toLowerCase() === 'open').length
         );
-        const pm: Record<string, PayInfo> = {};
-        payResults.forEach(r => {
-          if (r.status === 'fulfilled' && r.value.data) pm[r.value.uid] = r.value.data;
-        });
-        setPayMap(pm);
-      }
 
-      setLoading(false);
-    });
+        // 시급/급여 조회 (오늘 근무자 한정)
+        const uniqueIds = [...new Set(shifts.map(s => s.user_id))];
+        if (uniqueIds.length > 0) {
+          const payResults = await Promise.allSettled(
+            uniqueIds.map(uid =>
+              API.get('/store_member/pay', { params: { user_id: uid, store_id: branchId } })
+                .then(r => ({ uid, data: r.data as PayInfo }))
+            )
+          );
+          const pm: Record<string, PayInfo> = {};
+          payResults.forEach(r => {
+            if (r.status === 'fulfilled' && r.value.data) pm[r.value.uid] = r.value.data;
+          });
+          setPayMap(pm);
+        }
+      } catch (err) {
+        console.error('[AdminDashboard] 데이터 로드 실패:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
   }, [branchId]);
 
   // ── 파생 값 ──
