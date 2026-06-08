@@ -5,7 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
-  X, Bell, CheckCircle, XCircle, Store, User, LogOut, Camera, Clock, FileText
+  X, Bell, CheckCircle, XCircle, Store, User, LogOut, Camera, Clock, FileText, UserCheck
 } from 'lucide-react';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
@@ -43,6 +43,17 @@ interface ShiftVO {
 interface StoreVO {
   id: string;
   name: string;
+}
+
+interface SubstitutePendingApp {
+  app_id: string;
+  post_id: string;
+  store_id: string;
+  store_name: string;
+  applicant_user_id: string;
+  message: string;
+  applied_at: any;
+  reason: string;
 }
 
 const getDatePart = (s: string) => {
@@ -99,6 +110,9 @@ export default function ProfilePanel() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequestVO[]>([]);
   const [shiftMap, setShiftMap] = useState<Record<string, ShiftVO>>({});
   const [userNameMap, setUserNameMap] = useState<Record<string, string>>({});
+
+  // ── 대타 지원 알림 ──
+  const [substituteApps, setSubstituteApps] = useState<SubstitutePendingApp[]>([]);
 
   // 패널 열릴 때 → 모든 관리 매장의 알림 fetch
   useEffect(() => {
@@ -159,6 +173,50 @@ export default function ProfilePanel() {
           });
           setShiftMap(newShiftMap);
         }
+
+        // ── 대타 지원 알림 조회 ──
+        const subPostResults = await Promise.allSettled(
+          stores.map(store =>
+            API.get('/substitute', { params: { store_id: store.id } })
+              .then(r => ({ store, posts: Array.isArray(r.data) ? r.data : [] }))
+          )
+        );
+
+        const allPendingApps: SubstitutePendingApp[] = [];
+        const appFetches: Promise<void>[] = [];
+
+        subPostResults.forEach(r => {
+          if (r.status !== 'fulfilled') return;
+          const { store, posts } = r.value;
+          posts
+            .filter((p: any) => (p.status || '').toLowerCase() === 'open')
+            .forEach((post: any) => {
+              appFetches.push(
+                API.get('/substitute/manager', { params: { post_id: post.id } })
+                  .then(r2 => {
+                    const apps = Array.isArray(r2.data) ? r2.data : [];
+                    apps
+                      .filter((a: any) => (a.status || '').toLowerCase() === 'pending')
+                      .forEach((app: any) => {
+                        allPendingApps.push({
+                          app_id: app.id,
+                          post_id: post.id,
+                          store_id: store.id,
+                          store_name: store.name,
+                          applicant_user_id: app.applicant_user_id,
+                          message: app.message || '',
+                          applied_at: app.applied_at,
+                          reason: post.reason || '',
+                        });
+                      });
+                  })
+                  .catch(() => {})
+              );
+            });
+        });
+
+        await Promise.allSettled(appFetches);
+        setSubstituteApps(allPendingApps);
       })
       .catch(err => console.error('[ProfilePanel] 알림 조회 실패:', err));
   }, [open]);
@@ -178,6 +236,27 @@ export default function ProfilePanel() {
     try {
       await API.put(`/leave_request/${leave.id}`, null, { params: { status: 'REJECTED' } });
       setLeaveRequests(prev => prev.filter(l => l.id !== leave.id));
+    } catch {
+      alert('처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  // ── 대타 지원 승인/거절 ──
+  const handleApproveSubstitute = async (app: SubstitutePendingApp) => {
+    try {
+      await API.put('/substitute/manager', null, { params: { application_id: app.app_id, status: 'APPROVED' } });
+      setSubstituteApps(prev => prev.filter(a => a.app_id !== app.app_id));
+    } catch {
+      alert('처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleRejectSubstitute = async (app: SubstitutePendingApp) => {
+    const name = userNameMap[app.applicant_user_id] || '직원';
+    if (!confirm(`${name}님의 대타 지원을 거절하시겠습니까?`)) return;
+    try {
+      await API.delete('/substitute/staff', { params: { id: app.app_id } });
+      setSubstituteApps(prev => prev.filter(a => a.app_id !== app.app_id));
     } catch {
       alert('처리 중 오류가 발생했습니다.');
     }
@@ -231,7 +310,7 @@ export default function ProfilePanel() {
     }
   };
 
-  const totalBadge = pendingList.length + leaveRequests.length;
+  const totalBadge = pendingList.length + leaveRequests.length + substituteApps.length;
 
   return (
     <>
@@ -358,6 +437,53 @@ export default function ProfilePanel() {
                   </div>
                 ))}
 
+                {/* ── 대타 지원 알림 ── */}
+                {substituteApps.map(app => {
+                  const applicantName = userNameMap[app.applicant_user_id] || '직원';
+                  return (
+                    <div
+                      key={app.app_id}
+                      className="border border-orange-200 dark:border-orange-800 rounded-xl p-3 space-y-2 bg-orange-50 dark:bg-orange-900/20"
+                    >
+                      <div className="flex items-center gap-1 text-xs text-orange-700 font-semibold">
+                        <Store className="w-3 h-3" />{app.store_name}
+                        <span className="ml-1 text-orange-500 font-normal">· 대타 지원</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center shrink-0">
+                          <UserCheck className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-xs text-gray-900 dark:text-white">{applicantName}</p>
+                          <p className="text-xs text-gray-500">대타 지원 신청이 있습니다.</p>
+                        </div>
+                      </div>
+                      {app.message && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded p-2 border border-orange-100 dark:border-orange-800">
+                          "{app.message}"
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1 text-xs h-7"
+                          onClick={() => handleApproveSubstitute(app)}
+                        >
+                          <CheckCircle className="w-3 h-3" />승인
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-red-500 border-red-300 hover:bg-red-50 gap-1 text-xs h-7"
+                          onClick={() => handleRejectSubstitute(app)}
+                        >
+                          <XCircle className="w-3 h-3" />거절
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+
                 {/* ── 휴무 신청 ── */}
                 {leaveRequests.map(leave => {
                   const shift = shiftMap[leave.shift_id];
@@ -366,16 +492,16 @@ export default function ProfilePanel() {
                   return (
                     <div
                       key={leave.id}
-                      className="border border-orange-200 dark:border-orange-800 rounded-xl p-3 space-y-2 bg-orange-50 dark:bg-orange-900/20"
+                      className="border border-green-200 dark:border-green-800 rounded-xl p-3 space-y-2 bg-green-50 dark:bg-green-900/20"
                     >
                       {/* 지점명 */}
-                      <div className="flex items-center gap-1 text-xs text-orange-600 font-semibold">
+                      <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
                         <Store className="w-3 h-3" />{leave.store_name}
-                        <span className="ml-1 text-orange-400 font-normal">· 휴무 신청</span>
+                        <span className="ml-1 text-green-400 font-normal">· 휴무 신청</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center shrink-0">
-                          <User className="w-4 h-4 text-orange-600" />
+                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center shrink-0">
+                          <User className="w-4 h-4 text-green-600" />
                         </div>
                         <div>
                           <p className="font-semibold text-xs text-gray-900 dark:text-white">{empName}</p>
@@ -389,7 +515,7 @@ export default function ProfilePanel() {
                           )}
                         </div>
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded p-2 border border-orange-100 dark:border-orange-800">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded p-2 border border-green-100 dark:border-green-800">
                         "{leave.reason}"
                       </p>
                       <div className="flex gap-2">
