@@ -1,9 +1,36 @@
 CREATE TABLE ATTENDANCE (
-                            id VARCHAR2(21 char) PRIMARY KEY,
-                            shift_id VARCHAR2(21 char) REFERENCES SHIFT(id) ON DELETE CASCADE,
-                            check_in_at TIMESTAMP,
-                            check_out_at TIMESTAMP,
-                            attendance_status VARCHAR2(20 char)
+
+    ID VARCHAR2(21 CHAR) PRIMARY KEY,
+
+    STORE_ID VARCHAR2(21 CHAR) NOT NULL,
+
+    USER_ID VARCHAR2(21 CHAR) NOT NULL,
+
+    SHIFT_ID VARCHAR2(21 CHAR),
+
+    WORK_DATE DATE NOT NULL,
+
+    CHECK_IN_AT TIMESTAMP,
+
+    CHECK_OUT_AT TIMESTAMP,
+
+    WORK_MINUTES NUMBER DEFAULT 0,
+
+    OVERTIME_MINUTES NUMBER DEFAULT 0,
+
+    STATUS VARCHAR2(20 CHAR)
+
 );
-INSERT INTO attendance VALUES ('ATT_Lee_20260518', 'SHF_Lee_20260518_01', TO_TIMESTAMP('2026-05-18 17:55:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2026-05-18 22:05:00', 'YYYY-MM-DD HH24:MI:SS'), 'ON_TIME');
-select * from attendance;
+CREATE TABLE ATTENDANCE_QR (
+
+                               QR_TOKEN VARCHAR2(100 CHAR) PRIMARY KEY,
+
+                               STORE_ID VARCHAR2(21 CHAR) NOT NULL,
+
+                               CREATED_AT TIMESTAMP NOT NULL,
+
+                               EXPIRED_AT TIMESTAMP NOT NULL,
+
+                               IS_ACTIVE CHAR(1) DEFAULT 'Y'
+
+);
