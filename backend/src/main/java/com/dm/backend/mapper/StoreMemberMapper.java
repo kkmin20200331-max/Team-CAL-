@@ -84,4 +84,10 @@ public interface StoreMemberMapper {
     @Update("UPDATE store_member SET pay_type = #{pay_type}, pay_amount = #{pay_amount} WHERE user_id = #{user_id} AND store_id = #{store_id}")
     void updatePayInfo(StoreMemberVo storeMemberVo);
 
+    //ai분석에 필요한 매장 직원 정보 조회
+    @Select("""
+            SELECT * FROM store_member
+            WHERE store_id = #{store_id}
+            """)
+    List<StoreMemberVo> getStoreMembers(String storeId);
 }

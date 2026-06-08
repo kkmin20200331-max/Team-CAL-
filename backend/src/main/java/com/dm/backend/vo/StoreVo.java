@@ -12,8 +12,9 @@ import java.time.LocalDateTime;
 public class StoreVo {
     private String id;
     private String name;
+    private String type;
     private String address;
-    private String capacity;
+    private Integer capacity;
     private String open_time;
     private String close_time;
 }
