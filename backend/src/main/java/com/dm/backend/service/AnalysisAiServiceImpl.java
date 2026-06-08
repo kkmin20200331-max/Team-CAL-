@@ -27,11 +27,30 @@ public class AnalysisAiServiceImpl
             AiAnalysisVO analysisVO
     ) {
 
-        return restClient.post()
-                .uri("/analysis")
-                .body(analysisVO)
-                .retrieve()
-                .body(AiAnalysisResultVO.class);
+        System.out.println("========== AI 서버 호출 ==========");
+
+        System.out.println("Store : "
+                + analysisVO.getStore().getName());
+
+        System.out.println("PeopleLog 개수 : "
+                + analysisVO.getPeopleLogs().size());
+
+        System.out.println("Shift 개수 : "
+                + analysisVO.getShifts().size());
+
+        System.out.println("StoreMember 개수 : "
+                + analysisVO.getStoreMembers().size());
+
+        AiAnalysisResultVO result =
+                restClient.post()
+                        .uri("/analysis")
+                        .body(analysisVO)
+                        .retrieve()
+                        .body(AiAnalysisResultVO.class);
+
+        System.out.println("AI 응답 : " + result);
+
+        return result;
     }
 
 

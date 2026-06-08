@@ -9,16 +9,14 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PeopleLogVO {
+public class OpenCvAggregateVO {
 
-    private Long id;
+    private String cameraId;
 
-    private String store_id;
+    private LocalDateTime measuredAt;
 
-    private String camera_id;
+    private Integer lastCustomerCount;
 
-    private LocalDateTime record_time;
-
-    private Integer people_count;
+    private String status;
 
 }
