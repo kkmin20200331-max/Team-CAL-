@@ -2,7 +2,7 @@ from datetime import datetime
 from threading import Event, Lock, Thread
 from typing import Optional
 
-from app.schemas.response import CameraStatusResponse, DetectionBox, MetricsResponse
+from app.schemas.response import AggregatedCongestionResponse, CameraStatusResponse, DetectionBox, MetricsResponse
 
 
 class InferenceState:
@@ -31,6 +31,7 @@ class InferenceState:
         self.last_send_at: Optional[datetime] = None
         self.boxes: list[DetectionBox] = []
         self.annotated_image: Optional[str] = None
+        self.latest_aggregate: Optional[AggregatedCongestionResponse] = None
 
     def mark_started(
         self,
@@ -60,6 +61,7 @@ class InferenceState:
             self.last_send_at = None
             self.boxes = []
             self.annotated_image = None
+            self.latest_aggregate = None
             self.last_error = None
             self.status_message = "running"
 
@@ -105,6 +107,10 @@ class InferenceState:
         with self._lock:
             self.last_send_success = send_success
             self.last_send_at = sent_at or datetime.now()
+
+    def mark_aggregate(self, aggregate: AggregatedCongestionResponse) -> None:
+        with self._lock:
+            self.latest_aggregate = aggregate
 
     def mark_error(self, error: str) -> None:
         with self._lock:
@@ -165,6 +171,10 @@ class InferenceState:
                 lastSendSuccess=self.last_send_success,
                 lastSendAt=self.last_send_at,
             )
+
+    def aggregate_latest(self) -> Optional[AggregatedCongestionResponse]:
+        with self._lock:
+            return self.latest_aggregate
 
 
 inference_state = InferenceState()

@@ -1,0 +1,126 @@
+{
+  "storeId": 1,
+  "storeName": "ShiftOps Cafe",
+  "storeType": "CAFE",
+  "storeTypeLabel": "커피전문점",
+  "date": "2026-06-05",
+  "current": {
+    "currentCustomerCount": 32,
+    "todayTotalVisitors": 486,
+    "peakExpectedHour": "18:00-20:00",
+    "conversionRate": 82
+  },
+  "cameraAggregates": [
+    {
+      "time": "08:00",
+      "avgCustomerCount": 11,
+      "maxCustomerCount": 14,
+      "minCustomerCount": 6,
+      "lastCustomerCount": 10,
+      "workingStaffCount": 1
+    },
+    {
+      "time": "12:00",
+      "avgCustomerCount": 72,
+      "maxCustomerCount": 81,
+      "minCustomerCount": 55,
+      "lastCustomerCount": 70,
+      "workingStaffCount": 3
+    },
+    {
+      "time": "16:00",
+      "avgCustomerCount": 47,
+      "maxCustomerCount": 52,
+      "minCustomerCount": 31,
+      "lastCustomerCount": 42,
+      "workingStaffCount": 2
+    },
+    {
+      "time": "18:00",
+      "avgCustomerCount": 86,
+      "maxCustomerCount": 94,
+      "minCustomerCount": 70,
+      "lastCustomerCount": 91,
+      "workingStaffCount": 3
+    },
+    {
+      "time": "19:00",
+      "avgCustomerCount": 94,
+      "maxCustomerCount": 101,
+      "minCustomerCount": 82,
+      "lastCustomerCount": 98,
+      "workingStaffCount": 3
+    },
+    {
+      "time": "20:00",
+      "avgCustomerCount": 76,
+      "maxCustomerCount": 82,
+      "minCustomerCount": 61,
+      "lastCustomerCount": 68,
+      "workingStaffCount": 3
+    }
+  ],
+  "historicalBaseline": {
+    "sameDayAverageVisitors": 430,
+    "sameHourAverage": {
+      "18:00": 69,
+      "19:00": 70,
+      "20:00": 61
+    }
+  },
+  "pos": {
+    "totalSales": 12950000,
+    "conversionRate": 82,
+    "avgOrderAmount": 8500,
+    "hourlyOrders": [
+      {
+        "time": "15:00",
+        "orders": 34,
+        "conversionRate": 68
+      },
+      {
+        "time": "16:00",
+        "orders": 36,
+        "conversionRate": 66
+      },
+      {
+        "time": "18:00",
+        "orders": 74,
+        "conversionRate": 82
+      },
+      {
+        "time": "19:00",
+        "orders": 78,
+        "conversionRate": 83
+      }
+    ]
+  },
+  "staffSchedule": [
+    {
+      "timeRange": "08:00-10:00",
+      "currentStaff": 1
+    },
+    {
+      "timeRange": "11:00-14:00",
+      "currentStaff": 3
+    },
+    {
+      "timeRange": "14:00-16:00",
+      "currentStaff": 2
+    },
+    {
+      "timeRange": "18:00-20:00",
+      "currentStaff": 3
+    },
+    {
+      "timeRange": "20:00-21:00",
+      "currentStaff": 3
+    }
+  ],
+  "externalFactors": {
+    "weather": "rain",
+    "temperature": 23,
+    "nearbyEvent": true,
+    "nearbyEventDescription": "Nearby university event may increase evening foot traffic."
+  }
+}

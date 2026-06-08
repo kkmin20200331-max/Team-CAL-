@@ -61,10 +61,19 @@ class DetectionResponse(BaseModel):
     annotatedImage: Optional[str] = None
 
 
+class AggregatedSample(BaseModel):
+    measuredAt: datetime
+    customerCount: int
+    confidenceAvg: float
+    processingMs: int
+
+
 class AggregatedCongestionResponse(BaseModel):
     storeId: int
     cameraId: str
     measuredAt: datetime
+    windowStartAt: datetime
+    windowEndAt: datetime
     intervalSec: int
     avgCustomerCount: float
     maxCustomerCount: int
@@ -80,12 +89,15 @@ class AggregatedCongestionResponse(BaseModel):
     confidenceThreshold: Optional[float] = None
     sourceType: str
     status: str
+    samples: list[AggregatedSample] = Field(default_factory=list)
 
 
 class MetricsResponse(BaseModel):
     running: bool
     workers: int
     queueSize: int
+    senderQueuePending: int = 0
+    senderQueueFailed: int = 0
     processedFrames: int
     droppedFrames: int
     avgProcessingMs: Optional[float] = None
