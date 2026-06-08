@@ -47,12 +47,19 @@ const handleLogin = async () => {
     // ✅ [수정] 로컬 기기에 저장해둔 지점 정보가 있는지 확인 (백엔드 완벽 연동 전 임시 유지 브릿지)
     const savedStore = await AsyncStorage.getItem(`store_${data.username}`);
 
+    // 💡 디버깅용: 백엔드에서 넘겨주는 유저 정보 확인 (VS Code 터미널에서 확인하세요)
+    console.log("서버 로그인 응답 데이터:", data);
+
+    // 💡 방어 로직: 백엔드에서 role 데이터가 정상적으로 오는지 확인하고 무조건 대문자로 처리
+    const finalRole = data.role ? data.role.toUpperCase() : loginRole;
+    console.log("최종 부여된 권한(Role):", finalRole);
+
     if (data.store_id || data.branchName || data.brandName || savedStore) {
       setHasSelectedBranch(true);
-      setUserInfo({ ...data, role: loginRole, store_id: data.store_id || savedStore });
+      setUserInfo({ ...data, role: finalRole, store_id: data.store_id || savedStore });
     } else {
       setHasSelectedBranch(false);
-      setUserInfo({ ...data, role: loginRole });
+      setUserInfo({ ...data, role: finalRole });
     }
 
   } catch (error) {

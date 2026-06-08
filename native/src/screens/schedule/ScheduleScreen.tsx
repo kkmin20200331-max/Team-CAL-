@@ -104,7 +104,7 @@ const ScheduleScreen = ({ route }: any) => {
 
   // ✅ 스케줄 더미 데이터를 컴포넌트 내부로 옮겨 지점명이 동적으로 즉시 반영되게 합니다.
   const dummySchedule: ScheduleItem[] = [
-    { id: '1', fullDate: '2026-05-31', date: '31', day: '일', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
+    { id: '0', fullDate: '2026-05-31', date: '31', day: '일', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
     { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED' },
     { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: storeName, status: 'SCHEDULED' },
     { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: t('offDay'), storeName: '-', status: 'OFF' },
@@ -230,7 +230,7 @@ const ScheduleScreen = ({ route }: any) => {
     // 메모: FlatList에서 이미 선택된 날짜로 필터링해서 넘어옵니다.
      // ✅ 실시간 상태 적용 (누락되었던 코드 추가!)
     const currentItem = getRealTimeItem(item);
-    const translatedDay = t(DAY_KEYS[new Date(currentItem.fullDate).getDay()]);
+    const translatedDay = t(DAY_KEYS[new Date(currentItem.fullDate.replace(/-/g, '/')).getDay()]);
     return (
       <View style={styles.card}>
         {/* 카드 헤더 (날짜 및 배지) */}

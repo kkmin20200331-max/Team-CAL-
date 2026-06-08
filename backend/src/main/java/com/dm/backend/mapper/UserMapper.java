@@ -43,9 +43,4 @@ public interface UserMapper {
     // 직원 승인 (GUEST → STAFF)
     @Update("UPDATE users SET role = 'STAFF' WHERE id = #{id}")
     void approveUser(String id);
-
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> cbbb7a8e1b0afbe3e74d251c0e6ddcbbde1df51d

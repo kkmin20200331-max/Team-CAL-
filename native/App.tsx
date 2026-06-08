@@ -68,9 +68,10 @@ const toastConfig = {
 
 // ✅ 앱이 실행 중(포그라운드)일 때도 상단에 헤드업 알림이 뜨도록 설정
 Notifications.setNotificationHandler({
-  // ✅ 매개변수를 아예 제거하여 TypeScript 에러 방지 (사용하지 않음)
-  handleNotification: async () => ({
-    shouldShowAlert: true, // 화면 상단에 알림 배너 표시
+  // ✅ TypeScript 에러를 방지하기 위해 사용하지 않더라도 인자(notification)를 명시해줍니다.
+  handleNotification: async (notification) => ({
+    shouldShowBanner: true, // ✅ 최신 Expo 규격: 화면 상단에 알림 배너 표시
+    shouldShowList: true,   // ✅ 최신 Expo 규격: 알림 센터 목록에 표시
     shouldPlaySound: true, // 알림 소리 재생
     shouldSetBadge: true,  // 앱 아이콘에 숫자 배지 표시
   }),

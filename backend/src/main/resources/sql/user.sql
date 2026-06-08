@@ -79,4 +79,7 @@ insert into users (
 select * from users;
 
 DELETE FROM users WHERE id = 'USR_c54710b4566e4749';
+
 COMMIT;
+
+UPDATE users SET role = 'STAFF' WHERE username = '123';

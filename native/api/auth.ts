@@ -3,7 +3,7 @@ import axios from 'axios';
 // ✅ [수정] 안드로이드 에뮬레이터용 주소(10.0.2.2)로 직접 연결합니다.
 // (만약 본인 스마트폰 기계로 직접 연결해서 테스트 중이시라면 PC의 IP주소 예: 192.168.x.x 를 넣으셔야 합니다)
 const API = axios.create({
-  baseURL: 'http://10.100.0.162:8080/api',   
+  baseURL: 'http://10.100.0.120:8080/api',   
   // baseURL: process.env.EXPO_PUBLIC_API_BASE_URL, // 기존 환경변수 코드 주석 처리
   timeout: 10000, // ✅ [추가] 10초 이상 서버 응답이 없으면 에러로 처리 (무한 로딩 방지)
   headers: {
