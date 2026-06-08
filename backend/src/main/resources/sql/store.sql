@@ -23,3 +23,9 @@ INSERT INTO store (id, name, address, capacity, open_time, close_time)
 VALUES ('X7yZ8aB9_c0DeF1gH2iJ3', '신주쿠 우동 강남본점', '서울시 서초구 강남대로 456', 80, '11:00', '21:30');
 
 select * from store;
+
+ALTER TABLE STORE
+    ADD TYPE VARCHAR2(20 CHAR);
+UPDATE STORE
+SET TYPE = 'CAFE'
+WHERE ID = 'V1StGXR8_Z5jdHi6B-myT';
