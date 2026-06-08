@@ -19,8 +19,10 @@ import {
   MessageSquare,
   BarChart3,
   Settings,
-  ChevronRight
+  ChevronRight,
+  Store
 } from 'lucide-react';
+import ProfilePanel from '../../components/admin/ProfilePanel';
 import {
   LineChart,
   Line,
@@ -68,17 +70,11 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { branchId } = useParams();
 
-  const branchNames: { [key: string]: string } = {
-    migeum: '컴포즈 미금점',
-    sunae: '컴포즈 수내점',
-    dongcheon: '컴포즈 동천점'
-  };
-
-  const currentBranch = branchNames[branchId || 'migeum'];
+  const currentBranch = localStorage.getItem('store_name') || '지점 선택';
 
   const menuItems = [
     { icon: Home, label: '대시보드', path: `/admin/dashboard/${branchId}`, active: true },
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/weekly/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
     { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
     { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
     { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
@@ -147,6 +143,7 @@ export default function AdminDashboard() {
               </p>
             </div>
           </div>
+          <ProfilePanel />
         </header>
 
         {/* Dashboard Content */}
@@ -354,7 +351,7 @@ export default function AdminDashboard() {
             <Button
               variant="outline"
               className="h-24 flex-col gap-2"
-              onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}
+              onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}
             >
               <CalendarDays className="w-6 h-6" />
               <span>근무표 보기</span>

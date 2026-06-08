@@ -9,11 +9,11 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class StoreVo {
-    private String id;
-    private String name;
-    private String address;
-    private Integer capacity;
-    private String open_time;
-    private String close_time;
+public class PeopleLogVO {
+
+    private String store_id;
+
+    private LocalDateTime record_time;
+
+    private Integer people_count;
 }

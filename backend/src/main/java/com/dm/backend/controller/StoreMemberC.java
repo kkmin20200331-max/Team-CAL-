@@ -32,19 +32,16 @@ public class StoreMemberC {
     // [관리자]
     // =========================
 
-    // 직원 승인
-    // 직원 거절
-    // 직원 역할 변경
-    // 직원 레벨 변경
+    // 경민 수정 5/29 - user_id, store_id로 직원 승인 처리
     @PutMapping
-    public void updateStoreMember(
-            @RequestBody StoreMemberVo storeMemberVo
-    ) {
-        storeMemberService.updateStoreMember(storeMemberVo);
+    public void updateStoreMember(@RequestParam String user_id, @RequestParam String store_id) {
+        StoreMemberVo vo = new StoreMemberVo();
+        vo.setUser_id(user_id);
+        vo.setStore_id(store_id);
+        storeMemberService.updateStoreMember(vo);
     }
 
-    // 직원 삭제
-    // 매장 직원 제거
+    // 직원 삭제 / 매장 직원 제거
     @DeleteMapping
     public void deleteStoreMember(
             @RequestParam String store_id,
