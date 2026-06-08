@@ -96,6 +96,11 @@ class AiInsightService:
 
     def _normalize_llm_result(self, llm_result: dict[str, Any], baseline: AiInsightResponse) -> dict[str, Any]:
         normalized = dict(llm_result)
+        baseline_data = baseline.model_dump()
+        for key in ("summary", "insights", "operationMetrics"):
+            if key not in normalized or normalized[key] is None:
+                normalized[key] = baseline_data[key]
+
         baseline_schedules = [item.model_dump() for item in baseline.scheduleRecommendations]
         llm_schedules = normalized.get("scheduleRecommendations") or []
         merged_schedules = []

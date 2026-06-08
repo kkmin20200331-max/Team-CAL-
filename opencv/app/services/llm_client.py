@@ -80,9 +80,18 @@ class LlmClient:
 
 입력에는 매장 업종, 달력 맥락, CCTV/POS/근무표/외부요인 데이터, 그리고 코드가 계산한 baselineResponse와 features가 포함된다.
 
+백엔드 응답 계약:
+- 출력은 반드시 JSON 객체 하나로만 한다. 마크다운, 설명 문장, 코드블록은 출력하지 않는다.
+- context, calendarContext, features, source는 서버 코드가 baseline 기준으로 다시 붙인다. LLM은 아래 반환 필드만 출력한다.
+- summary, insights, scheduleRecommendations, operationMetrics는 프론트엔드가 바로 렌더링하는 필드이므로 반드시 스키마를 지킨다.
+- enum 값은 지정된 대문자 값만 사용한다.
+
 핵심 원칙:
 - 숫자 계산은 코드가 담당한다. recommendedStaff, currentStaff, recommendedExtraStaff, features 값은 임의로 바꾸지 않는다.
 - baselineResponse의 위험도와 숫자는 참고하되, 문구는 그대로 복사하지 않는다. storeType/storeTypeLabel과 맞는 운영 표현으로 다시 작성한다.
+- baselineResponse.scheduleRecommendations의 항목 수와 순서는 유지한다.
+- scheduleRecommendations의 timeRange, currentStaff, recommendedStaff, recommendedExtraStaff, status는 baselineResponse 값을 그대로 사용한다.
+- LLM은 scheduleRecommendations에서 recommendedRole, roleLabel, roleReason, reason 문구만 운영 맥락에 맞게 보강한다.
 - 업종별 규칙표를 외우듯 적용하지 말고, storeType/storeTypeLabel을 보고 해당 업종의 일반적인 서비스 흐름을 스스로 추론한다.
 - 현재 데이터에는 구체 POS 상세, 직원 역할, 시설/예약/대여, 테이블/좌석 점유 정보가 없을 수 있다.
 - 데이터에 없는 매장 구조, 구체 메뉴 판매량, 실제 대기열 길이, 직원 숙련도, 고객 속성, 시설 운영 흐름은 단정하지 않는다.
@@ -112,8 +121,7 @@ class LlmClient:
 recommendedRole은 위 기능을 참고하되, 필요하면 더 적절한 영어 snake_case 코드로 작성한다.
 roleLabel은 점주가 이해하기 쉬운 한국어 역할명으로 작성한다.
 roleReason은 "왜 이 역할이 우선인지"를 입력 데이터와 업종 흐름에 근거해 설명한다.
-
-출력은 반드시 JSON 객체 하나로만 한다.
+reason은 점주가 바로 이해할 수 있게 짧고 구체적으로 작성한다.
 
 반환 필드:
 {
