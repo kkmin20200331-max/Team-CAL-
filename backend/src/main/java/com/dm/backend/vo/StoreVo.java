@@ -13,7 +13,7 @@ public class StoreVo {
     private String id;
     private String name;
     private String address;
-    private String capacity;
+    private Integer capacity;
     private String open_time;
     private String close_time;
 }

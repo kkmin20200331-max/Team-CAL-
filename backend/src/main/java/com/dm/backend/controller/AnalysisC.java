@@ -1,6 +1,7 @@
 package com.dm.backend.controller;
 
 import com.dm.backend.service.AnalysisService;
+import com.dm.backend.vo.AiAnalysisResultVO;
 import com.dm.backend.vo.AiAnalysisVO;
 import com.dm.backend.vo.AnalysisRequestVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,14 +15,12 @@ public class AnalysisC {
     private AnalysisService analysisService;
 
     @PostMapping
-    public AiAnalysisVO test(
+    public AiAnalysisResultVO analysis(
             @RequestBody AnalysisRequestVO request
     ) {
-
-        return analysisService.buildAnalysisData(
-                request.getStore_id(),
-                request.getStart_date(),
-                request.getEnd_date()
-        );
+        return analysisService.runAnalysis(request);
     }
+
+
+
 }

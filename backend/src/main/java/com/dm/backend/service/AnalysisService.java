@@ -1,6 +1,8 @@
 package com.dm.backend.service;
 
+import com.dm.backend.vo.AiAnalysisResultVO;
 import com.dm.backend.vo.AiAnalysisVO;
+import com.dm.backend.vo.AnalysisRequestVO;
 
 public interface AnalysisService {
 
@@ -9,4 +11,6 @@ public interface AnalysisService {
             String start_date,
             String end_date
     );
+
+    AiAnalysisResultVO runAnalysis(AnalysisRequestVO request);
 }
