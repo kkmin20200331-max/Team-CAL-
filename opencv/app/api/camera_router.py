@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
+from app.core.state import inference_state
 from app.schemas.request import CameraStartRequest
 from app.services.inference_service import inference_service
 
@@ -30,6 +31,20 @@ def camera_status():
 @router.get("/metrics")
 def camera_metrics():
     return inference_service.metrics()
+
+
+@router.get("/aggregate/latest")
+def latest_aggregate():
+    aggregate = inference_state.aggregate_latest()
+    if aggregate is None:
+        return {
+            "available": False,
+            "message": "aggregate summary is not available yet",
+        }
+    return {
+        "available": True,
+        "aggregate": aggregate,
+    }
 
 
 @router.post("/upload-video")

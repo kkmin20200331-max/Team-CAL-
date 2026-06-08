@@ -1,0 +1,110 @@
+{
+  "storeId": 2,
+  "storeName": "ShiftOps Table",
+  "storeType": "RESTAURANT",
+  "storeTypeLabel": "음식점",
+  "date": "2026-06-05",
+  "current": {
+    "currentCustomerCount": 46,
+    "todayTotalVisitors": 318,
+    "peakExpectedHour": "12:00-14:00",
+    "conversionRate": 88
+  },
+  "cameraAggregates": [
+    {
+      "time": "11:00",
+      "avgCustomerCount": 28,
+      "maxCustomerCount": 36,
+      "minCustomerCount": 16,
+      "lastCustomerCount": 31,
+      "workingStaffCount": 2
+    },
+    {
+      "time": "12:00",
+      "avgCustomerCount": 71,
+      "maxCustomerCount": 84,
+      "minCustomerCount": 49,
+      "lastCustomerCount": 79,
+      "workingStaffCount": 3
+    },
+    {
+      "time": "13:00",
+      "avgCustomerCount": 78,
+      "maxCustomerCount": 92,
+      "minCustomerCount": 62,
+      "lastCustomerCount": 85,
+      "workingStaffCount": 3
+    },
+    {
+      "time": "18:00",
+      "avgCustomerCount": 54,
+      "maxCustomerCount": 66,
+      "minCustomerCount": 35,
+      "lastCustomerCount": 58,
+      "workingStaffCount": 3
+    },
+    {
+      "time": "19:00",
+      "avgCustomerCount": 61,
+      "maxCustomerCount": 74,
+      "minCustomerCount": 44,
+      "lastCustomerCount": 69,
+      "workingStaffCount": 3
+    }
+  ],
+  "historicalBaseline": {
+    "sameDayAverageVisitors": 270,
+    "sameHourAverage": {
+      "12:00": 62,
+      "13:00": 68,
+      "19:00": 55
+    }
+  },
+  "pos": {
+    "totalSales": 8450000,
+    "conversionRate": 88,
+    "avgOrderAmount": 18500,
+    "hourlyOrders": [
+      {
+        "time": "12:00",
+        "orders": 61,
+        "conversionRate": 86
+      },
+      {
+        "time": "13:00",
+        "orders": 68,
+        "conversionRate": 88
+      },
+      {
+        "time": "18:00",
+        "orders": 38,
+        "conversionRate": 77
+      },
+      {
+        "time": "19:00",
+        "orders": 46,
+        "conversionRate": 79
+      }
+    ]
+  },
+  "staffSchedule": [
+    {
+      "timeRange": "11:00-12:00",
+      "currentStaff": 2
+    },
+    {
+      "timeRange": "12:00-14:00",
+      "currentStaff": 3
+    },
+    {
+      "timeRange": "18:00-20:00",
+      "currentStaff": 3
+    }
+  ],
+  "externalFactors": {
+    "weather": "clear",
+    "temperature": 26,
+    "nearbyEvent": false,
+    "nearbyEventDescription": null
+  }
+}
