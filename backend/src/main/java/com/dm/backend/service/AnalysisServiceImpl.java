@@ -33,15 +33,15 @@ public class AnalysisServiceImpl implements AnalysisService {
     private AiAnalysisMapper aiAnalysisMapper;
 
 
-
     @Override
     public AiAnalysisVO buildAnalysisData(
             String store_id,
             String start_date,
             String end_date
+
     ) {
 
-        StoreVo store =
+       StoreVo store =
                 storeMapper.getStore(store_id);
 
         List<PeopleLogVO> peopleLogs =
@@ -67,9 +67,11 @@ public class AnalysisServiceImpl implements AnalysisService {
                 store,
                 peopleLogs,
                 shifts,
-                members
+                members,
+                start_date
         );
     }
+
     @Override
     public AiAnalysisResultVO runAnalysis(
             AnalysisRequestVO request

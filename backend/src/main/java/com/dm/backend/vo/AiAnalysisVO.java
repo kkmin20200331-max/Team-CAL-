@@ -12,7 +12,13 @@ import java.util.List;
 public class AiAnalysisVO {
 
     private StoreVo store;
+
     private List<PeopleLogVO> peopleLogs;
+
     private List<ShiftVO> shifts;
+
     private List<StoreMemberVo> storeMembers;
+
+    private String analysisDate;
+
 }
