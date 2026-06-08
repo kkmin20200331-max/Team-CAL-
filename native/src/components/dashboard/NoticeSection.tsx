@@ -1,24 +1,28 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { User } from '../../types/User';
+import { Post } from '../../types/Post';
 
 type Props = {
-  sortedDummyPosts: any[];
-  handleOpenPost: (post: any) => void;
+  sortedDummyPosts: Post[];
+  handleOpenPost: (post: Post) => void;
   navigation: any;
   colors: any;
   isDarkMode: boolean;
   t: (key: string) => string;
   CATEGORIES: any[];
+  userInfo?: User | null;
+  updateDashboardPostPinStatus: (postId: string, isPinned: boolean) => void;
 };
 
-const NoticeSection = ({ sortedDummyPosts, handleOpenPost, navigation, colors, isDarkMode, t, CATEGORIES }: Props) => {
+const NoticeSection = ({ sortedDummyPosts, handleOpenPost, navigation, colors, isDarkMode, t, CATEGORIES, userInfo, updateDashboardPostPinStatus }: Props) => {
   const styles = getThemedStyles(colors, isDarkMode);
 
   return (
     <View style={styles.noticeSection}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{t('notice')}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Board')}>
+        <TouchableOpacity onPress={() => navigation.navigate('BoardNavigator', { screen: 'Board', params: { userInfo, updateDashboardPostPinStatus } })}>
           <Text style={styles.moreText}>{t('more')}</Text>
         </TouchableOpacity>
       </View>

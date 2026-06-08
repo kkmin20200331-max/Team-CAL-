@@ -7,6 +7,7 @@ import { User } from '../../types/User';
 
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
 
+// ✅ [개선 7] 부모(App.tsx)로부터 받는 함수들의 타입을 명확하게 정의합니다.
 type Props = {
   navigation: LoginScreenNavigationProp;
   setIsLoggedIn: (value: boolean) => void;
@@ -29,7 +30,8 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
       const response = await loginAPI(username, password);
       const data = response.data;
       
-      // ✅ [수정] .toLowerCase()를 제거하여 백엔드 상태값을 그대로 사용합니다.
+      // ✅ [개선 8] .toLowerCase()를 제거하여 백엔드에서 받은 상태값('ACTIVE')을 그대로 사용합니다.
+      // 이 부분이 'active'로 바뀌면 App.tsx의 조건문(userStatus === 'ACTIVE')과 맞지 않아 버그가 발생합니다.
       const fetchedUserStatus = data.status;
 
       setUserStatus(fetchedUserStatus);

@@ -1,38 +1,39 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native'; // ✅ Alert 임포트 추가
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
-import { useTheme } from '../../contexts/ThemeContext'; // ✅ [추가] 테마 Context 불러오기
+import { useTheme } from '../../contexts/ThemeContext';
+import { User } from '../../types/User';
+import Toast from 'react-native-toast-message'; // ✅ Toast 임포트 추가
 
-// ✅ navigation 객체를 받아오도록 파라미터 추가
-const MyPageScreen = ({ route, navigation }: any) => {
-  // ✅ handleLogout까지 꺼내옵니다.
+type Props = {
+  route: {
+    params: {
+      handleLogout: () => void;
+      userInfo: User;
+      setUserInfo: (user: User) => void;
+    };
+  };
+  navigation: any;
+};
+
+const MyPageScreen = ({ route, navigation }: Props) => {
+  // ✅ [개선 19] handleLogout 함수를 받아와 로그아웃 버튼에 연결합니다.
   const { handleLogout, userInfo, setUserInfo } = route.params || {};
 
-  // ✅ [수정] 마이페이지에서 사진이나 이름 변경 시 즉각 반응하도록 로컬 상태로 한번 더 관리합니다.
   const [localUserInfo, setLocalUserInfo] = useState(userInfo);
-  
-  // ✅ [수정] 테마 관련 상태를 전역 Context에서 가져옵니다.
   const { themeMode, setThemeMode, colors } = useTheme();
   const [themeModalVisible, setThemeModalVisible] = useState(false);
-
-  // ✅ 전역 언어 설정 가져오기
   const { language, setLanguage, t } = useLanguage();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
-
-  // ✅ 알림 설정 상태 관리 (기본값: 켜짐)
   const [isPushEnabled, setIsPushEnabled] = useState(true);
 
-  // 백엔드에서 데이터가 아직 전달되지 않았을 경우를 대비한 안전장치(Fallback)
   const name = localUserInfo?.name || '사용자';
   const role = localUserInfo?.role || 'STAFF';
-  // 현재 백엔드 UserVo에 매장 이름(store_id 등)이 명확히 담겨오지 않을 수 있어 임시로 지정합니다.
   const branch = localUserInfo?.brandName || localUserInfo?.store_id || '컴포즈 미금점';
 
-  // ✅ [추가] 테마 색상을 적용한 스타일 객체를 생성합니다.
   const styles = getThemedStyles(colors);
 
-  // 메뉴 항목을 간편하게 그리기 위한 함수
   const renderMenuItem = (icon: string, title: string, onPress: () => void) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.menuLeft}>
@@ -43,7 +44,6 @@ const MyPageScreen = ({ route, navigation }: any) => {
     </TouchableOpacity>
   );
 
-  // 스위치(토글)가 있는 메뉴 항목을 그리기 위한 함수
   const renderSwitchItem = (icon: string, title: string, value: boolean, onValueChange: (val: boolean) => void) => (
     <View style={styles.menuItem}>
       <View style={styles.menuLeft}>
@@ -51,8 +51,8 @@ const MyPageScreen = ({ route, navigation }: any) => {
         <Text style={styles.menuTitle}>{title}</Text>
       </View>
       <Switch
-        trackColor={{ false: '#D1D5DB', true: '#34C759' }} // 꺼졌을 때 회색, 켜졌을 때 초록색
-        thumbColor={'#FFFFFF'} // isDarkMode ? colors.card : '#FFFFFF'
+        trackColor={{ false: '#D1D5DB', true: '#34C759' }}
+        thumbColor={'#FFFFFF'}
         ios_backgroundColor="#D1D5DB"
         onValueChange={onValueChange}
         value={value}
@@ -60,12 +60,42 @@ const MyPageScreen = ({ route, navigation }: any) => {
     </View>
   );
 
+  // ✅ [추가] 회원 탈퇴 처리 함수
+  const handleWithdraw = () => {
+    Alert.alert(
+      t('withdrawConfirmTitle'), // 예: "회원 탈퇴"
+      t('withdrawConfirmMsg'),   // 예: "정말 회원 탈퇴를 하시겠습니까? 모든 정보가 삭제됩니다."
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('confirm'),
+          onPress: () => {
+            // 🚨 백엔드 API 연동 시 여기에 탈퇴 API 호출 로직을 추가합니다.
+            // 예: await deleteUserAPI(userInfo.id);
+
+            // 현재는 API 호출 대신 로그아웃 처리 및 성공 토스트 메시지를 띄웁니다.
+            if (handleLogout) {
+              handleLogout(); // App.tsx에서 전달받은 로그아웃 함수 호출
+            }
+            Toast.show({
+              type: 'success',
+              text1: t('withdrawSuccessTitle'), // 예: "탈퇴 완료"
+              text2: t('withdrawSuccessMsg'),   // 예: "회원 탈퇴가 성공적으로 처리되었습니다."
+            });
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
-        {/* 프로필 섹션 */}
         <View style={styles.profileSection}>
-          {/* ✅ 프로필 사진이 있으면 보여주고, 없으면 이름 첫 글자 표시 */}
           {localUserInfo?.profileImage ? (
             <Image source={{ uri: localUserInfo.profileImage }} style={styles.avatarImage} />
           ) : (
@@ -75,42 +105,41 @@ const MyPageScreen = ({ route, navigation }: any) => {
           )}
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{name} 님</Text>
+            {/* ✅ [개선 20] 'STAFF' 또는 'GUEST'일 경우 모두 '직원'으로 표시되도록 수정합니다. */}
             <Text style={styles.userRole}>
               {branch} | {role === 'ADMIN' ? t('admin') : t('staff')}
             </Text>
           </View>
         </View>
 
-        {/* 문서 및 정보 관리 섹션 */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
-          {/* ✅ 이동 시 localUserInfo와 함께 데이터를 덮어씌울 setLocalUserInfo 함수도 전달합니다. */}
           {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo: localUserInfo, setUserInfo: setLocalUserInfo }))}
           {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo: localUserInfo }))}
           {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo: localUserInfo }))}
         </View>
 
-        {/* 앱 설정 섹션 */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
-          {/* ✅ 클릭 시 모달창을 띄우고, 선택된 모드를 버튼 이름에 보여줍니다. */}
           {renderMenuItem('🌙', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
-          {/* ✅ 언어 설정도 모달창 연결 */}
           {renderMenuItem('🌐', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
-          {/* ✅ 알림 설정은 스위치 UI로 연결 */}
           {renderSwitchItem('🔔', t('pushAlert'), isPushEnabled, setIsPushEnabled)}
         </View>
 
-        {/* 로그아웃 버튼 */}
         <TouchableOpacity 
           style={styles.logoutButton}
           onPress={() => handleLogout && handleLogout()}
         >
           <Text style={styles.logoutButtonText}>{t('logout')}</Text>
         </TouchableOpacity>
+
+        {/* ✅ [추가] 회원 탈퇴 버튼 */}
+        <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}>
+          <Text style={styles.withdrawText}>{t('withdrawBtn')}</Text>
+        </TouchableOpacity>
+
       </ScrollView>
 
-      {/* ✅ 화면 모드 선택용 팝업(Modal) */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -136,7 +165,6 @@ const MyPageScreen = ({ route, navigation }: any) => {
         </Pressable>
       </Modal>
 
-      {/* ✅ 언어 설정용 팝업(Modal) */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -165,7 +193,6 @@ const MyPageScreen = ({ route, navigation }: any) => {
   );
 };
 
-// ✅ [추가] 테마 색상을 인자로 받아 스타일 객체를 반환하는 함수
 const getThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -191,7 +218,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
-  avatarImage: { // ✅ 이미지 태그를 위한 스타일 추가
+  avatarImage: {
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -201,7 +228,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   avatarText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007BFF', // Primary color (테마에 구애받지 않는 강한 색상으로 유지)
+    color: '#007BFF',
   },
   profileInfo: {
     flex: 1,
@@ -258,7 +285,6 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   logoutButton: {
     marginTop: 30,
-    marginBottom: 40,
     marginHorizontal: 20,
     paddingVertical: 14,
     backgroundColor: colors.card,
@@ -271,6 +297,17 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: '#FF3B30',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // ✅ [오류 수정] 빠진 회원 탈퇴 버튼 스타일을 추가합니다.
+  withdrawButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 40,
+  },
+  withdrawText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    textDecorationLine: 'underline',
   },
   modalOverlay: {
     flex: 1,
@@ -304,7 +341,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   modalOptionTextSelected: {
-    color: '#007BFF', // Primary color
+    color: '#007BFF',
     fontWeight: 'bold',
   },
 });

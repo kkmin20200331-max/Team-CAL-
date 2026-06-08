@@ -8,12 +8,10 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
 
-// ✅ [추가] 타입(설계도) 임포트
 import { User } from '../../types/User';
 import { Shift } from '../../types/Schedule';
 import { Post } from '../../types/Post';
 
-// ✅ [추가] 분리된 컴포넌트 임포트
 import TodayShiftCard from '../../components/dashboard/TodayShiftCard';
 import WeeklyStatsCard from '../../components/dashboard/WeeklyStatsCard';
 import SubstituteAlertCard from '../../components/dashboard/SubstituteAlertCard';
@@ -23,11 +21,16 @@ type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
 type Props = {
   navigation: DashboardScreenNavigationProp;
-  setIsLoggedIn?: (value: boolean) => void; 
-  userInfo?: User | null; // ✅ [수정] any 대신 User 타입 적용
+  route: {
+    params?: {
+      handleLogout?: () => void;
+      userInfo?: User | null;
+    }
+  }
 };
 
-const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
+const DashboardScreen = ({ navigation, route }: Props) => {
+  const { userInfo, handleLogout } = route.params || {};
   
   const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
@@ -38,7 +41,6 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
 
   const { unreadCount } = useContext(NotificationContext);
 
-  // ✅ [수정] any 대신 Shift 타입 적용
   const [todayShift, setTodayShift] = useState<Shift | null>(null);
   const [loading, setLoading] = useState(false);
   const [weeklyStats, setWeeklyStats] = useState({ totalHours: 0, expectedSalary: 0 });
@@ -54,7 +56,6 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
     ).start();
   }, [fadeAnim]);
 
-  // ✅ [수정] any 대신 Post 타입 적용
   const [isPostModalVisible, setPostModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
@@ -67,17 +68,25 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
     { id: 'LOST', label: 'boardTabLost' },
   ];
 
-  const dummyPosts: Post[] = [
-    { id: '1', category: 'MENU', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
-    { id: '2', category: 'NOTICE', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
-    { id: '3', category: 'NOTICE', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
-  ];
+  // ✅ [오류 수정] dummyPosts를 dashboardPosts 상태로 변경합니다.
+  const [dashboardPosts, setDashboardPosts] = useState<Post[]>([
+    { id: '1', authorId: 'user123', category: 'MENU', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
+    { id: '2', authorId: 'user123', category: 'NOTICE', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
+    { id: '3', authorId: 'user123', category: 'NOTICE', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
+  ]);
 
-  const sortedDummyPosts = [...dummyPosts].sort((a, b) => b.date.localeCompare(a.date));
+  // ✅ [오류 수정] dashboardPosts를 정렬하여 sortedDashboardPosts를 생성합니다.
+  const sortedDashboardPosts = [...dashboardPosts].sort((a, b) => b.date.localeCompare(a.date));
+
+  // ✅ [오류 수정] 대시보드 게시글의 고정 상태를 업데이트하는 함수를 정의합니다.
+  const updateDashboardPostPinStatus = (postId: string, isPinned: boolean) => {
+    setDashboardPosts(prevPosts =>
+      prevPosts.map(p => (p.id === postId ? { ...p, isPinned } : p))
+    );
+  };
 
   const handleOpenPost = (post: Post) => {
-    setSelectedPost(post);
-    setPostModalVisible(true);
+    navigation.navigate('BoardNavigator', { screen: 'BoardDetail', params: { post, userInfo, updateDashboardPostPinStatus } });
   };
 
   const handleAcceptSubstitute = () => {
@@ -244,13 +253,15 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
         />
 
         <NoticeSection
-          sortedDummyPosts={sortedDummyPosts}
+          sortedDummyPosts={sortedDashboardPosts} // ✅ [오류 수정] sortedDummyPosts -> sortedDashboardPosts
           handleOpenPost={handleOpenPost}
           navigation={navigation}
           colors={colors}
           isDarkMode={isDarkMode}
           t={t}
           CATEGORIES={CATEGORIES}
+          userInfo={userInfo}
+          updateDashboardPostPinStatus={updateDashboardPostPinStatus}
         />
 
       </ScrollView>

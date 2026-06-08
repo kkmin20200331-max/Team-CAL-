@@ -7,10 +7,8 @@ import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
 
-// ✅ [추가] 타입(설계도) 임포트
 import { User } from './src/types/User';
 
-// 화면 불러오기
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SignupScreen from './src/screens/auth/SignupScreen';
 import DashboardScreen from './src/screens/main/DashboardScreen';
@@ -27,8 +25,8 @@ import SubstituteScreen from './src/screens/schedule/SubstituteScreen';
 import ContractScreen from './src/screens/mypage/ContractScreen';
 import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
 import PayrollScreen from './src/screens/main/PayrollScreen';
+import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
 
-// Context (전역 상태) 불러오기
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
 import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
@@ -65,10 +63,23 @@ Notifications.setNotificationHandler({
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+const BoardStack = createStackNavigator(); // ✅ [오류 수정] 게시판 전용 스택 네비게이터 생성
 
 export const navigationRef = createNavigationContainerRef<any>();
 
+// ✅ [오류 수정] 게시판 관련 화면들을 별도의 스택으로 묶어 관리합니다.
+function BoardNavigator() {
+  return (
+    <BoardStack.Navigator screenOptions={{ headerShown: false }}>
+      <BoardStack.Screen name="Board" component={BoardScreen} />
+      <BoardStack.Screen name="BoardDetail" component={BoardDetailScreen} />
+      <BoardStack.Screen name="BoardWrite" component={BoardWriteScreen} />
+    </BoardStack.Navigator>
+  );
+}
+
 function StaffTabNavigator({ route }: any) {
+  // ✅ [개선 2] 로그아웃 함수(handleLogout)를 하위 화면(MyPage, Dashboard)으로 전달합니다.
   const { handleLogout, userInfo, setUserInfo } = route.params || {};
   const { unreadCount } = useContext(NotificationContext);
   const { t } = useLanguage();
@@ -81,12 +92,13 @@ function StaffTabNavigator({ route }: any) {
         headerShown: false,
       }}
     >
-      <Tab.Screen 
+      {/* ✅ [오류 수정] component prop을 사용하고, 필요한 데이터는 initialParams로 전달합니다. */}
+      <Tab.Screen
         name="Home" 
+        component={DashboardScreen}
+        initialParams={{ handleLogout, userInfo }}
         options={{ title: t('tabHome') as string, tabBarIcon: () => <Text>🏠</Text> }}
-      >
-        {(props: any) => <DashboardScreen {...props} handleLogout={handleLogout} userInfo={userInfo} />}
-      </Tab.Screen>
+      />
       <Tab.Screen 
         name="Schedule" 
         component={ScheduleScreen} 
@@ -120,12 +132,13 @@ function AdminTabNavigator({ route }: any) {
         headerShown: false,
       }}
     >
-      <Tab.Screen 
+      {/* ✅ [오류 수정] component prop을 사용하고, 필요한 데이터는 initialParams로 전달합니다. */}
+      <Tab.Screen
         name="AdminHome" 
+        component={DashboardScreen}
+        initialParams={{ handleLogout, userInfo }}
         options={{ title: t('tabAdminHome') as string, tabBarIcon: () => <Text>🏪</Text> }}
-      >
-        {(props: any) => <DashboardScreen {...props} handleLogout={handleLogout} userInfo={userInfo} />}
-      </Tab.Screen>
+      />
       <Tab.Screen
         name="AdminSchedule"
         component={ScheduleScreen}
@@ -144,11 +157,14 @@ function AdminTabNavigator({ route }: any) {
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userStatus, setUserStatus] = useState<User['status']>('PENDING'); // ✅ [수정] User 타입의 status 사용
+  // ✅ [개선 3] 'any' 대신 User 타입의 status('ACTIVE' | 'PENDING')를 사용하도록 수정합니다.
+  const [userStatus, setUserStatus] = useState<User['status']>('PENDING');
   const [hasSelectedBranch, setHasSelectedBranch] = useState(false);
-  // ✅ [수정] any 대신 User 타입 적용 (User 또는 null)
+  // ✅ [개선 4] 'any' 대신 User 또는 null 타입을 사용하도록 하여 안정성을 높입니다.
   const [userInfo, setUserInfo] = useState<User | null>(null);
 
+  // ✅ [개선 5] 로그아웃 시 모든 사용자 관련 상태를 초기화하는 함수입니다.
+  // 이 함수를 사용해야 다른 계정으로 로그인 시 이전 정보가 남는 버그를 막을 수 있습니다.
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserStatus('PENDING');
@@ -232,6 +248,7 @@ export default function App() {
                       )}
                     </Stack.Screen>
                   </Stack.Group>
+                // ✅ [개선 6] 'active' 대신 'ACTIVE' (대문자)로 확인하여 로그인 로직과 일치시킵니다.
                 ) : userStatus === 'ACTIVE' ? (
                   <Stack.Group> 
                     {userInfo?.role === 'ADMIN' ? (
@@ -251,8 +268,8 @@ export default function App() {
                     )}
                     <Stack.Screen name="QRCheckIn" component={QRCheckInScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="Board" component={BoardScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="BoardWrite" component={BoardWriteScreen} options={{ headerShown: false }} />
+                    {/* ✅ [오류 수정] 개별 등록 대신 BoardNavigator 그룹을 등록합니다. */}
+                    <Stack.Screen name="BoardNavigator" component={BoardNavigator} options={{ headerShown: false }} />
                     <Stack.Screen name="Substitute" component={SubstituteScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Payroll" component={PayrollScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Contract" component={ContractScreen} options={{ headerShown: false }} />

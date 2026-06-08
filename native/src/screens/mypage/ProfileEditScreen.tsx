@@ -3,30 +3,33 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateProfileAPI } from '../../../api/auth';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useTheme } from '../../contexts/ThemeContext'; // ✅ 1. 테마 Context 불러오기
-import * as ImagePicker from 'expo-image-picker'; // ✅ 이미지 피커 추가
+import { useTheme } from '../../contexts/ThemeContext';
+import * as ImagePicker from 'expo-image-picker';
+import { User } from '../../types/User';
 
-const ProfileEditScreen = ({ route, navigation }: any) => {
-  // MyPageScreen에서 넘겨준 userInfo와 상태 변경 함수를 받습니다.
+// ✅ [개선 23] 부모(MyPageScreen)로부터 받는 props의 타입을 명확하게 정의합니다.
+type Props = {
+  route: {
+    params: {
+      userInfo: User;
+      setUserInfo: (user: User) => void;
+    };
+  };
+  navigation: any;
+};
+
+const ProfileEditScreen = ({ route, navigation }: Props) => {
   const { userInfo, setUserInfo } = route.params || {};
-
-  // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
-
-  // ✅ 2. 테마 색상 상태 가져오기 및 스타일 객체 생성
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
-  // 수정 가능한 정보의 상태 관리
   const [name, setName] = useState(userInfo?.name || '');
   const [phone, setPhone] = useState(userInfo?.phone || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-
-  // ✅ 프로필 사진 상태 관리 (기존 사진이 있으면 불러옴)
   const [profileImage, setProfileImage] = useState<string | null>(userInfo?.profileImage || null);
 
-  // 📸 갤러리 열기 함수
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
@@ -36,8 +39,8 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, // 크롭 편집 허용
-      aspect: [1, 1], // 프로필 사진용 1:1 비율
+      allowsEditing: true,
+      aspect: [1, 1],
       quality: 0.8,
     });
 
@@ -48,26 +51,20 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
 
   const handleSave = async () => {
     try {
-      // ✅ 에러 원인 해결: 백엔드(Spring Boot)의 UserVo에는 아직 profileImage 필드가 없기 때문에,
-      // 프론트에서 사진 경로를 묶어서 보내면 백엔드가 알 수 없는 데이터라며 400 에러를 뱉습니다.
-      // 따라서 전송할 데이터(updateData)에서는 사진을 분리하고 텍스트만 보냅니다.
-      const { profileImage: _, ...restUserInfo } = userInfo;
-
+      // ✅ [오류 수정] userInfo가 null일 경우를 대비하여 기본값 {}를 제공합니다.
+      const { profileImage: _, ...restUserInfo } = userInfo || {};
       const updateData = { 
         ...restUserInfo, 
         name: name, 
         phone: phone,
-        // 비밀번호를 새로 입력했다면 새 비밀번호로, 안 했다면 기존 비밀번호를 유지합니다.
-        // (참고: 로그인 시 보안상 백엔드에서 비밀번호를 비워서 주므로 오류 방지용 예외처리를 추가했습니다)
-        password: newPassword !== '' ? newPassword : (userInfo.password || '1234')
+        password: newPassword !== '' ? newPassword : (userInfo?.password || '1234') // userInfo?.password로 안전하게 접근
       };
       
-      // 2. 백엔드 API 호출! (PUT /api/users)
       await updateProfileAPI(updateData);
 
-      // 3. 앱(프론트엔드)의 로컬 상태도 업데이트해서 화면에 즉각 반영
-      if (setUserInfo) {
-        setUserInfo({ ...userInfo, name, phone, profileImage });
+      if (setUserInfo && userInfo) { // userInfo가 있을 때만 setUserInfo 호출
+        // ✅ [개선 24] 부모에게 전달하는 데이터가 User 타입의 구조를 따르도록 profileImage 속성을 포함합니다.
+        setUserInfo({ ...userInfo, name, phone, profileImage: profileImage || undefined });
       }
 
       Alert.alert(t('saveCompleteTitle'), t('saveCompleteMsg'), [
@@ -81,19 +78,16 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 상단 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('profileEdit')}</Text>
-        {/* ✅ 에러 원인 해결: 주석을 안쪽이나 바깥으로 빼서 띄어쓰기를 없앱니다 */}
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         
-        {/* ✅ 상단 프로필 사진 수정 영역 */}
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={handlePickImage} activeOpacity={0.8}>
             {profileImage ? (
@@ -103,14 +97,12 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
                 <Text style={styles.avatarPlaceholderText}>{name.substring(0, 1)}</Text>
               </View>
             )}
-            {/* 사진 수정 뱃지(카메라 아이콘) */}
             <View style={styles.avatarEditBadge}>
               <Text style={styles.avatarEditBadgeText}>📷</Text>
             </View>
           </TouchableOpacity>
         </View>
         
-        {/* 1. 수정 불가 정보 (Read-Only) */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('accountInfoReadonly')}</Text>
           
@@ -136,7 +128,6 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
           />
         </View>
 
-        {/* 2. 수정 가능 정보 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('myInfoSection')}</Text>
           
@@ -158,7 +149,6 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
           />
         </View>
 
-        {/* 3. 비밀번호 변경 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('changePasswordSection')}</Text>
           
@@ -181,12 +171,10 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
           />
         </View>
 
-        {/* 저장 버튼 */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveButtonText}>{t('editCompleteBtn')}</Text>
         </TouchableOpacity>
 
-        {/* 회원 탈퇴 */}
         <TouchableOpacity style={styles.withdrawButton}>
           <Text style={styles.withdrawText}>{t('withdrawBtn')}</Text>
         </TouchableOpacity>
@@ -196,7 +184,6 @@ const ProfileEditScreen = ({ route, navigation }: any) => {
   );
 };
 
-// ✅ 3. 테마 색상을 인자로 받아 스타일을 생성하도록 변경
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
@@ -214,7 +201,6 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   container: { flex: 1, padding: 20 },
   
-  // ✅ 아바타 스타일 추가
   avatarSection: { alignItems: 'center', marginVertical: 20 },
   avatarImage: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.primaryLight },
   avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center' },

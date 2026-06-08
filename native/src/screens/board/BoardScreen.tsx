@@ -1,32 +1,36 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, ScrollView, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, RefreshControl, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
+import { Post } from '../../types/Post';
+import { User } from '../../types/User'; // User 타입 임포트
 
-const BoardScreen = ({ route, navigation }: any) => {
-  // ✅ 네비게이션을 통해 전달받은 userInfo와 알림을 통해 넘어온 postToOpen 추출
-  const { userInfo, postToOpen } = route.params || {};
-  
-  // ✅ userInfo가 제대로 안 넘어왔을 때를 대비한 안전 장치 (fallback)
+type BoardScreenNavigationProp = any; // StackNavigationProp<any, 'Board'>;
+
+type Props = {
+  navigation: BoardScreenNavigationProp;
+  route: {
+    params?: {
+      userInfo?: User | null;
+      postToOpen?: Post;
+      // ✅ [추가] DashboardScreen으로부터 전달받을 고정 상태 업데이트 함수 타입 정의
+      updateDashboardPostPinStatus?: (postId: string, isPinned: boolean) => void;
+    };
+  };
+};
+
+const BoardScreen = ({ route, navigation }: Props) => {
+  // ✅ [수정] route.params에서 updateDashboardPostPinStatus를 가져옵니다.
+  const { userInfo, postToOpen, updateDashboardPostPinStatus } = route.params || {};
   const currentUserId = userInfo?.username || 'my_test_id';
   
-  // 모달 상태 관리
-  const [isPostModalVisible, setPostModalVisible] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<any>(null);
-  
-  // ✅ 현재 선택된 카테고리 탭 상태 (기본값: 'ALL')
   const [activeCategory, setActiveCategory] = useState('ALL');
-  
-  // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
-
-  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
-  // ✅ 카테고리 탭 목록 정의
   const CATEGORIES = [
     { id: 'ALL', label: 'boardTabAll' },
     { id: 'NOTICE', label: 'boardTabNotice' },
@@ -36,95 +40,64 @@ const BoardScreen = ({ route, navigation }: any) => {
     { id: 'LOST', label: 'boardTabLost' },
   ];
 
-  // ✅ 전체 게시글 더미 데이터 (각 데이터에 category 속성 추가)
-  const [allPosts, setAllPosts] = useState([
-    // 👇 상위 3개는 현재 로그인한 계정(나)이 작성한 글로 취급합니다. (수정/삭제 버튼 보임)
-    { id: '1', authorId: currentUserId, category: 'MENU', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
-    { id: '2', authorId: currentUserId, category: 'NOTICE', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
-    { id: '3', authorId: currentUserId, category: 'NOTICE', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
-    // 👇 하위 3개는 타인(admin)이 작성한 글로 취급합니다. (수정/삭제 버튼 안 보임)
-    { id: '4', authorId: 'admin', category: 'MANUAL', title: 'boardDummy4Title', date: '2026.05.10', content: 'boardDummy4Content', badge: null },
-    { id: '5', authorId: 'admin', category: 'EVENT', title: 'boardDummy5Title', date: '2026.05.01', content: 'boardDummy5Content', badge: null },
-    { id: '6', authorId: 'admin', category: 'NOTICE', title: 'boardDummy6Title', date: '2026.04.15', content: 'boardDummy6Content', badge: null },
+  const [allPosts, setAllPosts] = useState<Post[]>([
+    { id: '3', authorId: currentUserId, category: 'NOTICE', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant', isPinned: true },
+    { id: '1', authorId: currentUserId, category: 'MENU', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew', isPinned: false },
+    { id: '2', authorId: currentUserId, category: 'NOTICE', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null, isPinned: false },
+    { id: '4', authorId: 'admin', category: 'MANUAL', title: 'boardDummy4Title', date: '2026.05.10', content: 'boardDummy4Content', badge: null, isPinned: false },
+    { id: '5', authorId: 'admin', category: 'EVENT', title: 'boardDummy5Title', date: '2026.05.01', content: 'boardDummy5Content', badge: null, isPinned: false },
+    { id: '6', authorId: 'admin', category: 'NOTICE', title: 'boardDummy6Title', date: '2026.04.15', content: 'boardDummy6Content', badge: null, isPinned: false },
   ]);
 
-  // ✅ [핵심 추가] 푸시 알림을 클릭해서 postToOpen 데이터가 넘어왔다면, 즉시 팝업을 띄웁니다.
   useEffect(() => {
     if (postToOpen) {
-      // 방금 쓴 새 글이 리스트에 아직 없을 경우를 대비해 목록 최상단에 임시로 추가해줍니다.
       setAllPosts(prev => prev.find(p => p.id === postToOpen.id) ? prev : [postToOpen, ...prev]);
-      setSelectedPost(postToOpen);
-      setPostModalVisible(true);
+      // ✅ [수정] BoardDetailScreen으로 이동할 때 updateDashboardPostPinStatus도 함께 전달합니다.
+      navigation.navigate('BoardDetail', { post: postToOpen, userInfo, updatePostPinStatus, updateDashboardPostPinStatus });
     }
   }, [postToOpen]);
 
-  // ✅ [수정] 글쓰기/수정 화면에서 호출할 콜백 함수 정의
-  const handleAddNewPost = (newPost: any) => {
+  const handleAddNewPost = (newPost: Post) => {
     setAllPosts(prevPosts => [newPost, ...prevPosts]);
   };
 
-  const handleUpdatePost = (editedPost: any) => {
+  const handleUpdatePost = (editedPost: Post) => {
     setAllPosts(prevPosts => 
       prevPosts.map(p => (p.id === editedPost.id ? editedPost : p))
     );
   };
 
-  // ✅ 당겨서 새로고침 상태 및 핸들러 추가
+  const updatePostPinStatus = (postId: string, isPinned: boolean) => {
+    setAllPosts(prevPosts =>
+      prevPosts.map(p => (p.id === postId ? { ...p, isPinned } : p))
+    );
+  };
+
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // 💡 실제 백엔드 연동 시 여기에 getBoardPostsAPI() 등을 호출하여 최신 데이터를 가져옵니다.
-    // 지금은 UI 테스트를 위해 1초 후 로딩이 끝나는 것처럼 시뮬레이션합니다.
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
-  // ✅ 최신 날짜 순(내림차순)으로 정렬
-  // ✅ 선택된 카테고리에 맞게 필터링 추가
   const filteredPosts = allPosts
     .filter(post => activeCategory === 'ALL' || post.category === activeCategory)
-    .sort((a, b) => b.date.localeCompare(a.date));
-
-  const handleOpenPost = (post: any) => {
-    setSelectedPost(post);
-    setPostModalVisible(true);
-  };
-
-  // ✅ 삭제 기능 (본인이 쓴 임시 더미데이터 한정)
-  const handleDelete = (id: string) => {
-    Alert.alert("삭제 확인", "정말 이 게시글을 삭제하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      { text: "삭제", style: "destructive", onPress: () => {
-          setAllPosts(prev => prev.filter(post => post.id !== id));
-          setPostModalVisible(false);
-          Toast.show({ type: 'success', text1: '삭제 완료', text2: '게시글이 삭제되었습니다.' });
-        } 
-      }
-    ]);
-  };
-
-  // ✅ 수정 기능 (추후 수정 화면 구현 시 연결)
-  const handleEdit = (post: any) => {
-    setPostModalVisible(false);
-    // ✅ 수정 화면으로 이동할 때 기존 글 데이터(postToEdit)와 상태(isEdit) 전달
-    navigation.navigate('BoardWrite', { 
-      userInfo, 
-      isEdit: true, 
-      postToEdit: post,
-      onUpdatePost: handleUpdatePost, // ✅ 수정 콜백 함수 전달
+    .sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return b.date.localeCompare(a.date);
     });
-  };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.noticeItem} onPress={() => handleOpenPost(item)} activeOpacity={0.7}>
+  const renderItem = ({ item }: { item: Post }) => (
+    // ✅ [수정] BoardDetailScreen으로 이동할 때 updateDashboardPostPinStatus도 함께 전달합니다.
+    <TouchableOpacity style={styles.noticeItem} onPress={() => navigation.navigate('BoardDetail', { post: item, userInfo, updatePostPinStatus, updateDashboardPostPinStatus })} activeOpacity={0.7}>
       <View style={styles.noticeTextContainer}>
-        {/* 카테고리 태그 추가 (전체 보기일 때만 표시) */}
+        {item.isPinned && <Text style={styles.pinIcon}>📌 </Text>}
         {activeCategory === 'ALL' && (
           <View style={styles.categoryBadge}>
             <Text style={styles.categoryBadgeText}>{t(CATEGORIES.find(c => c.id === item.category)?.label || 'boardTabNotice')}</Text>
           </View>
         )}
         <Text style={styles.noticeItemTitle} numberOfLines={1}>
-          {/* 카테고리가 텍스트 자리를 차지하므로 줄임 길이 조정 */}
           {t(item.title).length > (activeCategory === 'ALL' ? 14 : 18) ? t(item.title).substring(0, (activeCategory === 'ALL' ? 14 : 18)) + '..' : t(item.title)}
         </Text>
         {item.badge && (
@@ -137,17 +110,14 @@ const BoardScreen = ({ route, navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 상단 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('StaffTab')} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
-          
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('notice')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      {/* ✅ 카테고리 탭 영역 (가로 스크롤) */}
       <View style={styles.tabContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabScroll}>
           {CATEGORIES.map(category => (
@@ -162,70 +132,28 @@ const BoardScreen = ({ route, navigation }: any) => {
         </ScrollView>
       </View>
 
-      {/* 게시글 목록 */}
       <FlatList
         data={filteredPosts}
         keyExtractor={item => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContainer}
         ItemSeparatorComponent={() => <View style={styles.listDivider} />}
-        // ✅ FlatList에 RefreshControl 속성 추가
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            colors={['#2563EB']} // 안드로이드 스피너 색상 (앱 포인트 색상)
-            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'} // iOS 스피너 색상
+            colors={['#2563EB']}
+            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'}
           />
         }
       />
 
-      {/* 게시글 상세 보기 팝업(모달) */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isPostModalVisible}
-        onRequestClose={() => setPostModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.postModalContent}>
-            {selectedPost && (
-              <>
-                <Text style={styles.postModalTitle}>{t(selectedPost.title)}</Text>
-                <Text style={styles.postModalDate}>{selectedPost.date}</Text>
-                <View style={styles.postModalDivider} />
-                <ScrollView style={styles.postModalBody} showsVerticalScrollIndicator={false}>
-                  <Text style={styles.postModalText}>{t(selectedPost.content)}</Text>
-                </ScrollView>
-                
-                {/* ✅ 작성자 본인일 때만 보이는 수정/삭제 버튼 */}
-                {selectedPost.authorId === currentUserId && (
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.editButton} onPress={() => handleEdit(selectedPost)}>
-                      <Text style={styles.editButtonText}>수정</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(selectedPost.id)}>
-                      <Text style={styles.deleteButtonText}>{t('delete')}</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                <TouchableOpacity style={styles.closeModalButton} onPress={() => setPostModalVisible(false)}>
-                  <Text style={styles.closeModalButtonText}>{t('close')}</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      {/* ✅ 글쓰기 플로팅 버튼 (FAB) 추가 */}
       <TouchableOpacity 
         style={styles.fab} 
         onPress={() => navigation.navigate('BoardWrite', { 
           userInfo,
-          isEdit: false, // ✅ 새 글 모드 명시
-          onAddPost: handleAddNewPost, // ✅ 새 글 추가 콜백 함수 전달
+          isEdit: false,
+          onAddPost: handleAddNewPost,
         })}
         activeOpacity={0.8}
       >
@@ -235,7 +163,6 @@ const BoardScreen = ({ route, navigation }: any) => {
   );
 };
 
-// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
@@ -252,7 +179,6 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   backButtonText: { fontSize: 24, color: colors.text },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   
-  // --- 카테고리 탭 스타일 ---
   tabContainer: {
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -281,13 +207,17 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 18, // 대시보드보다 조금 더 넓은 여백
+    paddingVertical: 18,
   },
   noticeTextContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     paddingRight: 10,
+  },
+  pinIcon: {
+    fontSize: 16,
+    marginRight: 4,
   },
   categoryBadge: {
     backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',
@@ -327,25 +257,6 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     backgroundColor: colors.border,
   },
 
-  // --- 게시글 상세 모달 스타일 (대시보드와 동일) ---
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  postModalContent: { width: '85%', maxHeight: '70%', backgroundColor: colors.modalBg, borderRadius: 16, padding: 24, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
-  postModalTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 10 },
-  postModalDate: { fontSize: 13, color: colors.subText, marginBottom: 16 },
-  postModalDivider: { height: 1, backgroundColor: colors.border, marginBottom: 16 },
-  postModalBody: { marginBottom: 20 },
-  postModalText: { fontSize: 17, color: colors.text, lineHeight: 26 },
-  closeModalButton: { backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  closeModalButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-
-  // --- 수정/삭제 버튼 스타일 ---
-  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  editButton: { flex: 1, backgroundColor: isDarkMode ? '#4B5563' : '#E5E7EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  editButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  deleteButton: { flex: 1, backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  deleteButtonText: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 15, fontWeight: 'bold' },
-
-  // --- ✅ 플로팅 버튼 (FAB) 스타일 ---
   fab: {
     position: 'absolute',
     right: 20,
@@ -353,11 +264,11 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2563EB', // 앱 기본 포인트 색상
+    backgroundColor: '#2563EB',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5, // 안드로이드 그림자
-    shadowColor: '#000', // iOS 그림자
+    elevation: 5,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -365,7 +276,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   fabIcon: {
     fontSize: 30,
     color: '#FFFFFF',
-    lineHeight: 32, // 안드로이드 수직 정렬 보정
+    lineHeight: 32,
   },
 });
 
