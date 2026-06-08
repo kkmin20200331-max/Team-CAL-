@@ -315,7 +315,7 @@ const MultibranchDashboard: React.FC = () => {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/admin/branch-selection')}
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

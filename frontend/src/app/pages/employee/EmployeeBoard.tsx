@@ -1,512 +1,299 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import EmployeeHeader from '../../components/employee/EmployeeHeader';
 import { useNavigate } from 'react-router';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
-import { Input } from '../../components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { Avatar, AvatarFallback } from '../../components/ui/avatar';
+import axios from 'axios';
 import {
-  Home,
-  Calendar,
-  QrCode,
-  Wallet,
-  MessageSquare,
-  Search,
-  Pin,
-  FileText,
-  Image,
-  Clock,
-  Eye,
-  ThumbsUp,
-  MessageCircle,
-  ChevronRight,
-  Bell,
-  Award,
-  AlertCircle,
-  Calendar as CalendarIcon,
-  Users
+  Home, Calendar, QrCode, Wallet, MessageSquare, ChevronLeft, ChevronRight, Clock
 } from 'lucide-react';
+
+const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+
+interface BoardVO {
+  id: string;
+  store_id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+}
+
+interface BoardPostVO {
+  id: string;
+  board_id: string;
+  store_id: string;
+  writer_id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 포스트 + 카테고리명 + NEW 여부
+interface PostItem extends BoardPostVO {
+  categoryName: string;
+  isNew: boolean;
+}
+
+// board 이름별 색상 (순서대로 순환)
+const CHIP_COLORS = [
+  'bg-gray-100 text-gray-600',
+  'bg-blue-100 text-blue-700',
+  'bg-green-100 text-green-700',
+  'bg-purple-100 text-purple-700',
+  'bg-orange-100 text-orange-700',
+  'bg-pink-100 text-pink-700',
+];
+
+const formatDate = (s: string) => {
+  if (!s) return '';
+  const d = new Date(s);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+};
+
+const checkIsNew = (s: string) => {
+  if (!s) return false;
+  return (new Date().getTime() - new Date(s).getTime()) / 86400000 <= 7;
+};
 
 export default function EmployeeBoard() {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPost, setSelectedPost] = useState<any>(null);
-  const [postDialogOpen, setPostDialogOpen] = useState(false);
+  const storeId = localStorage.getItem('store_id') || '';
 
-  const announcements = [
-    {
-      id: 1,
-      type: 'important',
-      title: '6월 행사 일정 안내',
-      content: '6월 중순 매장 리뉴얼 관련 일정을 공유드립니다.\n\n- 6/15: 임시 휴무\n- 6/16: 재오픈 이벤트\n\n해당 기간 근무 조정이 필요한 직원은 매니저에게 연락 바랍니다.',
-      author: '홍길동 매니저',
-      authorRole: '매니저',
-      date: '2024-05-19',
-      time: '10:30',
-      isPinned: true,
-      views: 45,
-      likes: 12,
-      comments: 3,
-      hasAttachment: true
-    },
-    {
-      id: 2,
-      type: 'notice',
-      title: '여름 휴가 신청 안내',
-      content: '7-8월 여름 휴가 신청을 받습니다.\n\n신청 기간: 5/20 ~ 5/31\n휴가 가능 기간: 7/1 ~ 8/31\n\n연차가 남아있는 직원은 휴가 신청 메뉴에서 신청해주세요.',
-      author: '김영희 매니저',
-      authorRole: '매니저',
-      date: '2024-05-18',
-      time: '14:20',
-      isPinned: true,
-      views: 38,
-      likes: 8,
-      comments: 5
-    },
-    {
-      id: 3,
-      type: 'info',
-      title: '신규 메뉴 출시 안내',
-      content: '5월 23일부터 신규 여름 메뉴가 출시됩니다.\n\n- 망고 빙수\n- 딸기 라떼\n- 복숭아 스무디\n\n제조 방법은 별도 교육 예정입니다.',
-      author: '박서준',
-      authorRole: '직원',
-      date: '2024-05-17',
-      time: '16:45',
-      isPinned: false,
-      views: 52,
-      likes: 15,
-      comments: 8,
-      hasImage: true
-    }
-  ];
+  const [boards, setBoards] = useState<BoardVO[]>([]);
+  const [posts, setPosts] = useState<PostItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('전체');
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
-  const generalPosts = [
-    {
-      id: 4,
-      title: '5월 우수 직원 선정',
-      content: '이번 달 우수 직원으로 이지영님이 선정되었습니다! 축하드립니다.\n\n- 근태: 무결점\n- 고객 만족도: 4.8/5.0\n- 동료 평가: 우수',
-      author: '홍길동 매니저',
-      authorRole: '매니저',
-      date: '2024-05-16',
-      time: '11:00',
-      views: 67,
-      likes: 23,
-      comments: 12,
-      category: 'award'
-    },
-    {
-      id: 5,
-      title: '주말 근무 교대 부탁드립니다',
-      content: '5월 25일(토) 17:00-22:00 근무를 급한 일정으로 교대해주실 분 찾습니다.\n\n연락 주시면 감사하겠습니다!',
-      author: '최유나',
-      authorRole: '직원',
-      date: '2024-05-15',
-      time: '19:30',
-      views: 28,
-      likes: 2,
-      comments: 4,
-      category: 'request'
-    },
-    {
-      id: 6,
-      title: '신입 직원 환영합니다',
-      content: '5월부터 미금점에 합류하신 정태현님을 환영합니다!\n\n많은 관심과 도움 부탁드립니다.',
-      author: '홍길동 매니저',
-      authorRole: '매니저',
-      date: '2024-05-14',
-      time: '09:00',
-      views: 41,
-      likes: 18,
-      comments: 7,
-      category: 'general'
-    },
-    {
-      id: 7,
-      title: '매장 청결 관리 협조 요청',
-      content: '최근 고객 피드백에서 청결 관련 의견이 있었습니다.\n\n근무 시간 중 틈틈이 매장 정리 부탁드립니다.\n특히 테이블과 바닥 청소에 신경 써주세요.',
-      author: '김영희 매니저',
-      authorRole: '매니저',
-      date: '2024-05-13',
-      time: '15:20',
-      views: 55,
-      likes: 8,
-      comments: 3,
-      category: 'notice'
-    }
-  ];
+  // ── 게시판 목록 + 전체 포스트 불러오기 ──
+  useEffect(() => {
+    if (!storeId) return;
+    setLoading(true);
 
-  const quickLinks = [
-    {
-      icon: FileText,
-      label: '근무 규정',
-      count: null,
-      color: 'bg-blue-500'
-    },
-    {
-      icon: CalendarIcon,
-      label: '행사 일정',
-      count: 3,
-      color: 'bg-purple-500'
-    },
-    {
-      icon: Users,
-      label: '직원 명단',
-      count: null,
-      color: 'bg-green-500'
-    },
-    {
-      icon: Award,
-      label: '우수 직원',
-      count: null,
-      color: 'bg-orange-500'
-    }
-  ];
+    API.get('/board', { params: { store_id: storeId } })
+      .then(res => {
+        const boardList: BoardVO[] = Array.isArray(res.data) ? res.data : [];
+        setBoards(boardList);
 
-  const handlePostClick = (post: any) => {
-    setSelectedPost(post);
-    setPostDialogOpen(true);
-  };
+        // 모든 게시판 포스트 병렬 조회
+        return Promise.all(
+          boardList.map(board =>
+            API.get('/board_post', { params: { board_id: board.id } })
+              .then(r => {
+                const list: BoardPostVO[] = Array.isArray(r.data) ? r.data : [];
+                return list.map(p => ({
+                  ...p,
+                  categoryName: board.name,
+                  isNew: checkIsNew(p.created_at),
+                }));
+              })
+              .catch(() => [] as PostItem[])
+          )
+        );
+      })
+      .then(results => {
+        // 전체 합치고 최신순 정렬
+        const all = results.flat().sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setPosts(all);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [storeId]);
 
-  const getPostIcon = (type: string) => {
-    switch (type) {
-      case 'important':
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
-      case 'notice':
-        return <Bell className="w-5 h-5 text-blue-500" />;
-      case 'info':
-        return <FileText className="w-5 h-5 text-green-500" />;
-      default:
-        return <MessageSquare className="w-5 h-5 text-gray-500" />;
-    }
-  };
+  // ── 카테고리 필터 ──
+  const filtered = useMemo(() =>
+    selectedCategory === '전체'
+      ? posts
+      : posts.filter(p => p.categoryName === selectedCategory),
+    [posts, selectedCategory]
+  );
 
-  const getCategoryBadge = (category: string) => {
-    switch (category) {
-      case 'award':
-        return <Badge className="bg-yellow-500">우수직원</Badge>;
-      case 'request':
-        return <Badge className="bg-orange-500">요청</Badge>;
-      case 'notice':
-        return <Badge className="bg-blue-500">공지</Badge>;
-      default:
-        return <Badge variant="secondary">일반</Badge>;
-    }
+  // ── 상세용 ──
+  const selectedPost = posts.find(p => p.id === selectedPostId) ?? null;
+  const isDetail = selectedPostId !== null;
+
+  // prev / next (전체 포스트 기준 최신순)
+  const currentIdx = posts.findIndex(p => p.id === selectedPostId);
+  const prevPost = currentIdx > 0 ? posts[currentIdx - 1] : null;
+  const nextPost = currentIdx < posts.length - 1 ? posts[currentIdx + 1] : null;
+
+  // board 이름 → 색상
+  const colorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    boards.forEach((b, i) => { map[b.name] = CHIP_COLORS[i % CHIP_COLORS.length]; });
+    return map;
+  }, [boards]);
+
+  const handleCategoryClick = (cat: string) => {
+    setSelectedCategory(cat);
+    setSelectedPostId(null);
   };
 
   const bottomNavItems = [
-    { icon: Home, label: '홈', path: '/employee/home', active: false },
-    { icon: Calendar, label: '근무표', path: '/employee/schedule', active: false },
-    { icon: QrCode, label: '체크인', path: '/employee/checkin', active: false },
-    { icon: Wallet, label: '급여', path: '/employee/payroll', active: false },
-    { icon: MessageSquare, label: '게시판', path: '/employee/board', active: true }
+    { icon: Home,          label: '홈',    path: '/employee/home' },
+    { icon: Calendar,      label: '근무표', path: '/employee/schedule' },
+    { icon: QrCode,        label: '체크인', path: '/employee/checkin' },
+    { icon: Wallet,        label: '급여',   path: '/employee/payroll' },
+    { icon: MessageSquare, label: '게시판', path: '/employee/board', active: true },
   ];
 
+  // 카테고리 칩 목록 (전체 + DB board 이름들)
+  const categoryChips = ['전체', ...boards.map(b => b.name)];
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6">
-        <h1 className="text-2xl font-bold mb-2">게시판</h1>
-        <p className="text-indigo-100 text-sm">공지사항과 소식을 확인하세요</p>
-      </div>
+    <div className="min-h-screen bg-white dark:bg-gray-900 pb-20">
 
-      <div className="px-4 py-4">
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="게시물 검색..."
-            className="pl-10"
-          />
+      {/* ── 헤더 ── */}
+      <EmployeeHeader>
+        <div>
+          <h1 className="text-2xl font-bold">게시판</h1>
+          <p className="text-blue-100 text-sm mt-1">공지사항과 소식을 확인하세요</p>
         </div>
+      </EmployeeHeader>
 
-        {/* Quick Links */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {quickLinks.map((link, index) => (
+      {/* ── 카테고리 칩 (sticky) ── */}
+      <div className="bg-white dark:bg-gray-900 sticky top-0 z-10 border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+        <div
+          className="grid gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${categoryChips.length}, minmax(0, 1fr))` }}
+        >
+          {categoryChips.map(cat => (
             <button
-              key={index}
-              className="flex flex-col items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow"
+              key={cat}
+              onClick={() => handleCategoryClick(cat)}
+              className={`py-2 rounded-full text-xs font-medium transition-colors ${
+                selectedCategory === cat
+                  ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-900'
+                  : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+              }`}
             >
-              <div className={`${link.color} w-10 h-10 rounded-full flex items-center justify-center relative`}>
-                <link.icon className="w-5 h-5 text-white" />
-                {link.count && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                    {link.count}
-                  </span>
-                )}
-              </div>
-              <span className="text-xs font-medium text-center">{link.label}</span>
+              {cat}
             </button>
           ))}
         </div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="announcements" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="announcements">
-              공지사항 ({announcements.length})
-            </TabsTrigger>
-            <TabsTrigger value="general">
-              일반 게시판 ({generalPosts.length})
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Announcements */}
-          <TabsContent value="announcements" className="space-y-3">
-            {announcements.map((post) => (
-              <Card
-                key={post.id}
-                className={`hover:shadow-md transition-shadow cursor-pointer ${
-                  post.isPinned ? 'border-2 border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10' : ''
-                }`}
-                onClick={() => handlePostClick(post)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1">{getPostIcon(post.type)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            {post.isPinned && (
-                              <Pin className="w-4 h-4 text-yellow-600 fill-yellow-600" />
-                            )}
-                            <h3 className="font-bold text-base line-clamp-1">{post.title}</h3>
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                            {post.content.split('\n')[0]}
-                          </p>
-                        </div>
-                        {post.hasImage && (
-                          <div className="ml-3 w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Image className="w-8 h-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="w-6 h-6">
-                            <AvatarFallback className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
-                              {post.author[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-xs font-medium">{post.author}</p>
-                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                              <Clock className="w-3 h-3" />
-                              <span>{post.date} {post.time}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
-                      </div>
-
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-600 dark:text-gray-400">
-                        <span className="flex items-center gap-1">
-                          <Eye className="w-3 h-3" />
-                          {post.views}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <ThumbsUp className="w-3 h-3" />
-                          {post.likes}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="w-3 h-3" />
-                          {post.comments}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-
-          {/* General Board */}
-          <TabsContent value="general" className="space-y-3">
-            {generalPosts.map((post) => (
-              <Card
-                key={post.id}
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => handlePostClick(post)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {getCategoryBadge(post.category)}
-                      </div>
-                      <h3 className="font-bold mb-1">{post.title}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {post.content}
-                      </p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 ml-3 flex-shrink-0" />
-                  </div>
-
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="w-6 h-6">
-                        <AvatarFallback className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                          {post.author[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-xs font-medium">{post.author}</p>
-                        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                          <Clock className="w-3 h-3" />
-                          <span>{post.date} {post.time}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        {post.views}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <ThumbsUp className="w-3 h-3" />
-                        {post.likes}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageCircle className="w-3 h-3" />
-                        {post.comments}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-        </Tabs>
       </div>
 
-      {/* Post Detail Dialog */}
-      <Dialog open={postDialogOpen} onOpenChange={setPostDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          {selectedPost && (
-            <>
-              <DialogHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      {selectedPost.isPinned && (
-                        <Pin className="w-4 h-4 text-yellow-600 fill-yellow-600" />
-                      )}
-                      {selectedPost.type && (
-                        <Badge variant={selectedPost.type === 'important' ? 'destructive' : 'default'}>
-                          {selectedPost.type === 'important' ? '중요' : selectedPost.type === 'notice' ? '공지' : '안내'}
-                        </Badge>
-                      )}
-                      {selectedPost.category && getCategoryBadge(selectedPost.category)}
-                    </div>
-                    <DialogTitle className="text-xl">{selectedPost.title}</DialogTitle>
-                  </div>
-                </div>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                {/* Author Info */}
-                <div className="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
-                  <Avatar className="w-10 h-10">
-                    <AvatarFallback className="bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">
-                      {selectedPost.author[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-medium">{selectedPost.author}</p>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <Badge variant="secondary" className="text-xs">
-                        {selectedPost.authorRole}
-                      </Badge>
-                      <Clock className="w-3 h-3" />
-                      <span>{selectedPost.date} {selectedPost.time}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="prose dark:prose-invert max-w-none">
-                  <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                    {selectedPost.content}
-                  </p>
-                </div>
-
-                {/* Attachment */}
-                {selectedPost.hasAttachment && (
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <span className="font-medium">첨부파일_행사일정.pdf</span>
-                      <Button variant="ghost" size="sm" className="ml-auto">
-                        다운로드
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Stats */}
-                <div className="flex items-center justify-between py-4 border-y border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-4 h-4" />
-                      조회 {selectedPost.views}
+      {/* ── 목록 뷰 ── */}
+      {!isDetail && (
+        <>
+          {loading ? (
+            <p className="text-center py-12 text-sm text-gray-400">불러오는 중...</p>
+          ) : filtered.length === 0 ? (
+            <p className="text-center py-12 text-sm text-gray-400">게시물이 없습니다</p>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {filtered.map(post => (
+                <button
+                  key={post.id}
+                  onClick={() => setSelectedPostId(post.id)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+                >
+                  {/* 카테고리 뱃지 */}
+                  <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded ${colorMap[post.categoryName] ?? 'bg-gray-100 text-gray-600'}`}>
+                    {post.categoryName}
+                  </span>
+                  {/* 제목 */}
+                  <span className="flex-1 text-sm text-gray-800 dark:text-gray-100 truncate">
+                    {post.title}
+                  </span>
+                  {/* NEW 뱃지 */}
+                  {post.isNew && (
+                    <span className="flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded bg-red-500 text-white">
+                      NEW
                     </span>
-                    <span className="flex items-center gap-1">
-                      <ThumbsUp className="w-4 h-4" />
-                      좋아요 {selectedPost.likes}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-4 h-4" />
-                      댓글 {selectedPost.comments}
-                    </span>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <ThumbsUp className="w-4 h-4 mr-2" />
-                    좋아요
-                  </Button>
-                </div>
-
-                {/* Comments Section */}
-                <div className="space-y-3">
-                  <h4 className="font-bold">댓글 {selectedPost.comments}</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="text-xs">이</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">이지영</span>
-                          <span className="text-xs text-gray-600 dark:text-gray-400">1시간 전</span>
-                        </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          확인했습니다! 감사합니다.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
+                  )}
+                  {/* 날짜 */}
+                  <span className="flex-shrink-0 text-xs text-gray-400">{formatDate(post.created_at)}</span>
+                </button>
+              ))}
+            </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </>
+      )}
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-bottom">
+      {/* ── 상세 뷰 ── */}
+      {isDetail && selectedPost && (
+        <div>
+          {/* 뒤로가기 */}
+          <button
+            onClick={() => setSelectedPostId(null)}
+            className="flex items-center gap-1 px-4 py-3 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            목록으로
+          </button>
+
+          <div className="px-4 pb-6">
+            {/* 카테고리 뱃지 + NEW */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`text-xs font-medium px-2 py-0.5 rounded ${colorMap[selectedPost.categoryName] ?? 'bg-gray-100 text-gray-600'}`}>
+                {selectedPost.categoryName}
+              </span>
+              {selectedPost.isNew && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded bg-red-500 text-white">NEW</span>
+              )}
+            </div>
+
+            {/* 제목 */}
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3 leading-snug">
+              {selectedPost.title}
+            </h2>
+
+            {/* 작성자 / 날짜 */}
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 pb-4 border-b border-gray-100 dark:border-gray-800">
+              <Clock className="w-3 h-3" />
+              <span>{selectedPost.writer_id}</span>
+              <span>·</span>
+              <span>{formatDate(selectedPost.created_at)}</span>
+            </div>
+
+            {/* 본문 */}
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed pt-4">
+              {selectedPost.content}
+            </p>
+          </div>
+
+          {/* ── 이전글 / 다음글 ── */}
+          <div className="border-t border-gray-100 dark:border-gray-800 mx-4">
+            {prevPost && (
+              <button
+                onClick={() => setSelectedPostId(prevPost.id)}
+                className="w-full flex items-center gap-3 py-3.5 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+              >
+                <ChevronLeft className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-400 mb-0.5">다음 글 (최신)</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-200 truncate">{prevPost.title}</p>
+                </div>
+              </button>
+            )}
+            {nextPost && (
+              <button
+                onClick={() => setSelectedPostId(nextPost.id)}
+                className="w-full flex items-center gap-3 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+              >
+                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-400 mb-0.5">이전 글 (오래된)</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-200 truncate">{nextPost.title}</p>
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── 하단 네비 ── */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-around px-2 py-2">
-          {bottomNavItems.map((item, index) => (
+          {bottomNavItems.map((item, i) => (
             <button
-              key={index}
+              key={i}
               onClick={() => navigate(item.path)}
               className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                item.active
-                  ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20'
+                (item as any).active
+                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
