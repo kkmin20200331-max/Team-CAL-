@@ -89,8 +89,8 @@ export const navigationRef = createNavigationContainerRef<any>();
 // ---------------------------------------------------------
 function StaffTabNavigator({ route }: any) {
   // App에서 넘겨받은 전역 상태 변경 함수를 가져옵니다.
-  // ✅ setUserInfo를 추가로 받아옵니다.
-  const { setIsLoggedIn, userInfo, setUserInfo } = route.params || {};
+  // ✅ handleLogout을 추가로 받아옵니다.
+  const { handleLogout, userInfo, setUserInfo } = route.params || {};
 
   // ✅ 안 읽은 알림 개수 가져오기
   const { unreadCount } = useContext(NotificationContext);
@@ -111,7 +111,7 @@ function StaffTabNavigator({ route }: any) {
         name="Home" 
         options={{ title: t('tabHome') as string, tabBarIcon: () => <Text>🏠</Text> }}
       >
-        {(props: any) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
+        {(props: any) => <DashboardScreen {...props} handleLogout={handleLogout} userInfo={userInfo} />}
       </Tab.Screen>
 
       {/* 2. 내 스케줄 탭 */}
@@ -134,7 +134,7 @@ function StaffTabNavigator({ route }: any) {
       <Tab.Screen 
         name="MyPage" 
         component={MyPageScreen} 
-        initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} // 정보 업데이트 함수까지 전달
+        initialParams={{ handleLogout, userInfo, setUserInfo }} // 정보 업데이트 함수까지 전달
         options={{ title: t('tabMyPage'), tabBarIcon: () => <Text>👤</Text> }} 
       />
     </Tab.Navigator>
@@ -145,7 +145,7 @@ function StaffTabNavigator({ route }: any) {
 // ✅ [관리자용] 하단 탭 네비게이터
 // ---------------------------------------------------------
 function AdminTabNavigator({ route }: any) {
-  const { setIsLoggedIn, userInfo, setUserInfo } = route.params || {};
+  const { handleLogout, userInfo, setUserInfo } = route.params || {};
   
   // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
@@ -164,7 +164,7 @@ function AdminTabNavigator({ route }: any) {
         name="AdminHome" 
         options={{ title: t('tabAdminHome') as string, tabBarIcon: () => <Text>🏪</Text> }}
       >
-        {(props: any) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
+        {(props: any) => <DashboardScreen {...props} handleLogout={handleLogout} userInfo={userInfo} />}
       </Tab.Screen>
 
       {/* ✅ [추가] 관리자 2. 스케줄 관리 탭 */}
@@ -179,7 +179,7 @@ function AdminTabNavigator({ route }: any) {
       <Tab.Screen 
         name="AdminSettings" 
         component={MyPageScreen} 
-        initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} 
+        initialParams={{ handleLogout, userInfo, setUserInfo }} 
         options={{ title: t('tabAdminSettings'), tabBarIcon: () => <Text>⚙️</Text> }} 
       />
     </Tab.Navigator>
@@ -194,6 +194,14 @@ export default function App() {
   const [hasSelectedBranch, setHasSelectedBranch] = useState(false); // 지점 선택 관리
   // 👇 3. 로그인한 유저의 정보를 통째로 저장하는 상태 추가
   const [userInfo, setUserInfo] = useState<any>(null);
+
+  // ✅ [추가] 로그아웃 시 모든 상태를 초기화하는 함수
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserStatus('pending');
+    setHasSelectedBranch(false);
+    setUserInfo(null);
+  };
 
   // ✅ 앱 시작 시 사용자에게 푸시 알림 권한(허용/거부) 요청
   useEffect(() => {
@@ -298,14 +306,14 @@ return (
                   <Stack.Screen 
                     name="AdminTab" 
                     component={AdminTabNavigator} 
-                    initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
+                    initialParams={{ handleLogout, userInfo, setUserInfo }}
                     options={{ headerShown: false }} 
                   />
                 ) : (
                   <Stack.Screen 
                     name="StaffTab" 
                     component={StaffTabNavigator} 
-                    initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
+                    initialParams={{ handleLogout, userInfo, setUserInfo }}
                     options={{ headerShown: false }} 
                   />
                 )}
@@ -374,7 +382,7 @@ return (
                 {({ navigation }: any) => (
                   <PendingScreen 
                     navigation={navigation} 
-                    setIsLoggedIn={setIsLoggedIn}  
+                    handleLogout={handleLogout}
                   />
                 )}
               </Stack.Screen>

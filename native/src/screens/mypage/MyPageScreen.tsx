@@ -6,8 +6,8 @@ import { useTheme } from '../../contexts/ThemeContext'; // ✅ [추가] 테마 C
 
 // ✅ navigation 객체를 받아오도록 파라미터 추가
 const MyPageScreen = ({ route, navigation }: any) => {
-  // ✅ setUserInfo까지 꺼내옵니다.
-  const { setIsLoggedIn, userInfo, setUserInfo } = route.params || {};
+  // ✅ handleLogout까지 꺼내옵니다.
+  const { handleLogout, userInfo, setUserInfo } = route.params || {};
 
   // ✅ [수정] 마이페이지에서 사진이나 이름 변경 시 즉각 반응하도록 로컬 상태로 한번 더 관리합니다.
   const [localUserInfo, setLocalUserInfo] = useState(userInfo);
@@ -76,7 +76,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{name} 님</Text>
             <Text style={styles.userRole}>
-              {branch} | {role === 'STAFF' ? t('staff') : t('admin')}
+              {branch} | {role === 'ADMIN' ? t('admin') : t('staff')}
             </Text>
           </View>
         </View>
@@ -104,7 +104,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
         {/* 로그아웃 버튼 */}
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={() => setIsLoggedIn && setIsLoggedIn(false)}
+          onPress={() => handleLogout && handleLogout()}
         >
           <Text style={styles.logoutButtonText}>{t('logout')}</Text>
         </TouchableOpacity>
