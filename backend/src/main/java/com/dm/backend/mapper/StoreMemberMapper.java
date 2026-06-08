@@ -12,7 +12,7 @@ public interface StoreMemberMapper {
     // [공통]
     // =========================
 
-    //급여기준조회
+    // 급여 기준 조회
     @Select("""
             SELECT pay_type, pay_amount
             FROM store_member
@@ -23,6 +23,7 @@ public interface StoreMemberMapper {
             @Param("user_id") String user_id,
             @Param("store_id") String store_id
     );
+
 
     // =========================
     // [직원]
@@ -62,23 +63,11 @@ public interface StoreMemberMapper {
     // [관리자]
     // =========================
 
-    // 직원 승인
-    // 직원 거절
-    // 직원 역할 변경
-    // 직원 레벨 변경
-    @Update("""
-            update store_member
-            set approval_status = #{approval_status},
-                member_role = #{member_role},
-                user_level = #{user_level},
-                pay_type = #{pay_type},
-                pay_amount = #{pay_amount}
-            where id = #{id}
-            """)
+    // 경민 수정 5/29 17:36 - 직원 승인 (user_id + store_id 기준으로 APPROVED 처리)
+    @Update("UPDATE store_member SET approval_status = 'APPROVED', member_role = 'STAFF' WHERE user_id = #{user_id} AND store_id = #{store_id}")
     void updateStoreMember(StoreMemberVo storeMemberVo);
 
-    // 직원 삭제
-    // 매장 직원 제거
+    // 직원 삭제 / 매장 직원 제거
     @Delete("delete from store_member where store_id = #{store_id} and user_id = #{user_id}")
     void deleteStoreMember(
             @Param("store_id") String store_id,
