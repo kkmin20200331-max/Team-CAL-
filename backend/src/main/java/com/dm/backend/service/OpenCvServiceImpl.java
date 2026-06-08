@@ -21,9 +21,18 @@ public class OpenCvServiceImpl
     @Override
     public OpenCvResponseVO analyze() {
 
-        return restClient.post()
-                .uri("/analyze/opencv")
-                .retrieve()
-                .body(OpenCvResponseVO.class);
+        System.out.println("========== OpenCV 호출 시작 ==========");
+
+        OpenCvResponseVO response =
+                restClient.post()
+                        .uri("/analyze/opencv")
+                        .retrieve()
+                        .body(OpenCvResponseVO.class);
+
+        System.out.println("OpenCV 응답 : " + response);
+
+        System.out.println("========== OpenCV 호출 종료 ==========");
+
+        return response;
     }
 }

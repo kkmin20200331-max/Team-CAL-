@@ -33,6 +33,7 @@ public class AnalysisServiceImpl implements AnalysisService {
     private AiAnalysisMapper aiAnalysisMapper;
 
 
+
     @Override
     public AiAnalysisVO buildAnalysisData(
             String store_id,
@@ -40,6 +41,8 @@ public class AnalysisServiceImpl implements AnalysisService {
             String end_date
 
     ) {
+
+
 
        StoreVo store =
                 storeMapper.getStore(store_id);
@@ -62,7 +65,17 @@ public class AnalysisServiceImpl implements AnalysisService {
                 storeMemberMapper.getStoreMembers(
                         store_id
                 );
+        System.out.println("store : "
+                + store.getName());
 
+        System.out.println("peopleLogs size : "
+                + peopleLogs.size());
+
+        System.out.println("shifts size : "
+                + shifts.size());
+
+        System.out.println("storeMembers size : "
+                + members.size());
         return new AiAnalysisVO(
                 store,
                 peopleLogs,
@@ -77,6 +90,16 @@ public class AnalysisServiceImpl implements AnalysisService {
             AnalysisRequestVO request
     ) {
 
+        System.out.println("========== AI 분석 시작 ==========");
+        System.out.println("store_id : "
+                + request.getStore_id());
+
+        System.out.println("start_date : "
+                + request.getStart_date());
+
+        System.out.println("end_date : "
+                + request.getEnd_date());
+
         AiAnalysisVO analysisData =
                 buildAnalysisData(
                         request.getStore_id(),
@@ -88,6 +111,22 @@ public class AnalysisServiceImpl implements AnalysisService {
                 analysisAiService.requestAnalysis(
                         analysisData
                 );
+        System.out.println("========== AI 응답 확인 ==========");
+
+        System.out.println("summary : "
+                + result.getSummary());
+
+        System.out.println("insights : "
+                + result.getInsights());
+
+        System.out.println("scheduleRecommendations : "
+                + result.getScheduleRecommendations());
+
+        System.out.println("operationMetrics : "
+                + result.getOperationMetrics());
+
+        System.out.println("features : "
+                + result.getFeatures());
 
         try {
 
@@ -95,6 +134,9 @@ public class AnalysisServiceImpl implements AnalysisService {
                     objectMapper.writeValueAsString(
                             result
                     );
+            System.out.println("저장될 JSON");
+
+            System.out.println(resultJson);
 
             AiAnalysisDbVO saveVO =
                     new AiAnalysisDbVO(
@@ -114,6 +156,8 @@ public class AnalysisServiceImpl implements AnalysisService {
             aiAnalysisMapper.saveAnalysis(
                     saveVO
             );
+            System.out.println("AI_ANALYSIS 저장 완료");
+            System.out.println("========== AI 분석 종료 ==========");
 
         } catch (Exception e) {
 
