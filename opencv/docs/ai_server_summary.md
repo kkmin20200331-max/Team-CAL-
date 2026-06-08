@@ -1,33 +1,43 @@
 # AI Server Summary - ShiftOps AI
 
-## Role
+## 역할
 
-Python AI 서버는 단순히 사람 수를 계산하는 모듈이 아니라, 영상 입력 처리, YOLO 기반 사람 탐지, 프레임 샘플링, 병렬 추론, 1분 단위 집계, 디버깅 이미지 생성, Spring Boot 전송, 서버 상태 모니터링을 담당하는 AI 분석 엔진이다.
+Python AI 서버는 CCTV 또는 영상 파일에서 사람 수를 추정하고, 시간대별 방문 흐름 데이터를 만드는 분석 서버입니다.
 
-## Implemented Features
+주요 역할은 다음과 같습니다.
 
-| Category | Feature | Status |
+- 이미지/영상 입력 처리
+- YOLO 기반 사람 감지
+- 프레임 샘플링
+- 1분 단위 방문자 집계
+- 디버그용 annotated image 생성
+- Spring Boot 서버로 집계 JSON 전송
+- 카메라 상태와 처리 성능 모니터링
+
+## 구현된 기능
+
+| 구분 | 기능 | 상태 |
 | --- | --- | --- |
-| Input | 이미지 업로드 추론 | Done |
-| Input | 영상 파일 업로드 및 샘플 영상 추론 | Done |
-| Input | 웹캠/RTSP 입력 구조 | Done |
-| AI | Ultralytics YOLO person detection | Done |
-| AI | `classes=[0]` person 전용 추론 | Done |
-| Result | `customerCount`, `confidenceAvg`, `processingMs` 계산 | Done |
-| Debug | 탐지 박스 좌표와 confidence 반환 | Done |
-| Debug | 박스가 그려진 `annotatedImage` 반환 | Done |
-| Performance | `ThreadPoolExecutor` 병렬 추론 | Done |
-| Performance | 워커별 `PersonDetector` 분리 | Done |
-| Performance | 파일 영상 시간 점프 샘플링 | Done |
-| Realtime | 스트림 최신 프레임 유지 | Done |
-| Aggregation | 1분 단위 avg/max/min/last 집계 | Done |
-| Monitoring | `/api/v1/camera/status` | Done |
-| Monitoring | `/api/v1/camera/metrics` | Done |
-| Integration | Spring Boot 집계 JSON 전송 | Done |
-| Reliability | Sender queue, retry, failed payload log | Done |
-| Experiment | 성능 실험표 템플릿 | Done |
+| 입력 | 이미지 업로드 분석 | 완료 |
+| 입력 | 영상 파일 업로드 및 샘플링 분석 | 완료 |
+| 입력 | 스트림/RTSP 입력 구조 | 완료 |
+| AI | Ultralytics YOLO person detection | 완료 |
+| AI | COCO `person` class만 추론 | 완료 |
+| 결과 | `customerCount`, `confidenceAvg`, `processingMs` 계산 | 완료 |
+| 디버그 | detection box 좌표와 confidence 반환 | 완료 |
+| 디버그 | box가 그려진 `annotatedImage` 반환 | 완료 |
+| 성능 | `ThreadPoolExecutor` 기반 병렬 추론 | 완료 |
+| 성능 | worker별 `PersonDetector` 분리 | 완료 |
+| 성능 | 영상 시간 기준 프레임 샘플링 | 완료 |
+| 실시간 | 스트림 최신 프레임 유지 | 완료 |
+| 집계 | 1분 단위 avg/max/min/last 집계 | 완료 |
+| 모니터링 | `/api/v1/camera/status` | 완료 |
+| 모니터링 | `/api/v1/camera/metrics` | 완료 |
+| 연동 | Spring Boot 집계 JSON 전송 | 완료 |
+| 안정성 | sender queue, retry, failed payload log | 완료 |
+| 실험 | `/experiment` 테스트 페이지 | 완료 |
 
-## Pipeline
+## 처리 파이프라인
 
 ```text
 Input Source
@@ -41,15 +51,23 @@ Input Source
   -> Spring Boot POST
 ```
 
-## Source Strategy
+## 입력 소스 전략
 
-`FileVideoSource`는 오프라인 영상 파일에 사용한다. `CAP_PROP_POS_MSEC`로 `0초, intervalSec초, intervalSec*2초...` 위치에 점프해서 필요한 프레임만 읽는다.
+`FileVideoSource`는 업로드된 영상 파일을 분석할 때 사용합니다.
 
-`StreamVideoSource`는 웹캠과 RTSP에 사용한다. 백그라운드 캡처 스레드가 최신 프레임 1개만 계속 덮어쓰고, 추론 루프는 샘플링 시점의 최신 프레임을 복사해서 사용한다.
+- `CAP_PROP_POS_MSEC`를 사용해 `0초`, `intervalSec`, `intervalSec * 2` 위치로 점프합니다.
+- 전체 프레임을 순차 분석하지 않고 필요한 시점의 프레임만 읽습니다.
+- 발표/시연용 샘플 영상 분석에 적합합니다.
 
-## Aggregated Spring Payload
+`StreamVideoSource`는 웹캠 또는 RTSP 스트림 분석에 사용합니다.
 
-Spring Boot에는 개별 프레임 결과가 아니라 1분 단위 집계 JSON을 보낸다.
+- 백그라운드 캡처 스레드가 최신 프레임 1개만 유지합니다.
+- 추론 루프는 샘플링 시점에 최신 프레임을 복사해서 사용합니다.
+- 오래된 프레임이 큐에 쌓이는 문제를 줄입니다.
+
+## Spring Boot 전송 Payload
+
+Spring Boot에는 개별 프레임 결과가 아니라 1분 단위 집계 데이터를 전송합니다.
 
 ```json
 {
@@ -74,11 +92,20 @@ Spring Boot에는 개별 프레임 결과가 아니라 1분 단위 집계 JSON�
 }
 ```
 
-## Metrics
+## 주요 API
 
-```text
-GET /api/v1/camera/metrics
-```
+| Method | Endpoint | 설명 |
+| --- | --- | --- |
+| GET | `/api/v1/health` | 서버 상태 확인 |
+| POST | `/api/v1/inference/image` | 이미지 1장 분석 |
+| POST | `/api/v1/camera/start` | 영상/스트림 분석 시작 |
+| POST | `/api/v1/camera/stop` | 분석 중지 |
+| GET | `/api/v1/camera/status` | 최신 분석 결과 확인 |
+| GET | `/api/v1/camera/metrics` | 처리량/큐/성능 지표 확인 |
+| POST | `/api/v1/camera/upload-video` | 영상 업로드 |
+| GET | `/experiment` | 브라우저 기반 실험 페이지 |
+
+## Metrics 예시
 
 ```json
 {
@@ -96,7 +123,7 @@ GET /api/v1/camera/metrics
 }
 ```
 
-## Current Recommended Settings
+## 권장 설정
 
 ```env
 YOLO_MODEL=yolo11s.pt
@@ -108,7 +135,7 @@ SPRING_SEND_TIMEOUT_SEC=3
 FAILED_PAYLOAD_LOG=logs/failed_payloads.log
 ```
 
-영상 테스트 요청 기준:
+영상 테스트 요청 예시:
 
 ```json
 {
@@ -124,15 +151,15 @@ FAILED_PAYLOAD_LOG=logs/failed_payloads.log
 }
 ```
 
-## Presentation Point
+## 발표 포인트
 
-초기 구조에서는 영상 프레임을 순차적으로 읽고 YOLO 추론 후 바로 전송하는 방식이었기 때문에, 추론 시간이 길어지면 샘플링 간격이 밀리고 Spring Boot 응답 지연이 AI 서버 전체에 영향을 줄 수 있었다.
+초기 구조는 영상을 순차적으로 읽고 YOLO 추론 후 바로 전송하는 방식이었습니다. 이 구조에서는 추론 시간이 길어지면 프레임 샘플링 간격이 흔들리고, Spring Boot 응답 지연이 AI 서버 전체 흐름에 영향을 줄 수 있었습니다.
 
-이를 개선하기 위해 영상 입력을 `FileVideoSource`와 `StreamVideoSource`로 추상화하고, 프레임 샘플링, YOLO 추론, 1분 집계, Spring Boot 전송을 각각 분리했다.
+현재 구조는 입력, 샘플링, 추론, 집계, 전송을 분리했습니다. 영상 파일은 필요한 시간 위치로 점프해서 샘플링하고, 실시간 스트림은 최신 프레임만 유지합니다. 추론은 worker 기반으로 병렬 처리하며, Spring Boot 전송은 sender queue가 비동기로 처리합니다.
 
-또한 30fps 원본 영상을 모든 프레임 단위로 처리하지 않고 10초 단위 샘플링 구조로 전환하여 처리 대상 프레임 수를 약 99.7% 줄였고, 1분 단위 avg/max/min/last 집계값을 생성해 매장 인원 추이와 피크타임 분석에 활용할 수 있도록 설계했다.
+이 구조 덕분에 30fps 원본 영상을 모든 프레임 단위로 처리하지 않아도 되고, 10초 단위 샘플링 기준으로 처리 대상 프레임을 약 99% 이상 줄일 수 있습니다. 최종적으로는 매장 방문 흐름, 피크 시간, 혼잡도, 근무 스케줄 추천에 사용할 수 있는 집계 데이터를 생성합니다.
 
-## Next Experiments
+## 다음 실험
 
 1. `imageSize` 960, 800, 640 비교
 2. `yolo11s`와 `yolo11n` 비교

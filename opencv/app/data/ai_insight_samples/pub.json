@@ -1,0 +1,110 @@
+{
+  "storeId": 4,
+  "storeName": "ShiftOps Pub",
+  "storeType": "PUB",
+  "storeTypeLabel": "주점",
+  "date": "2026-06-05",
+  "current": {
+    "currentCustomerCount": 63,
+    "todayTotalVisitors": 356,
+    "peakExpectedHour": "21:00-23:00",
+    "conversionRate": 84
+  },
+  "cameraAggregates": [
+    {
+      "time": "18:00",
+      "avgCustomerCount": 32,
+      "maxCustomerCount": 39,
+      "minCustomerCount": 18,
+      "lastCustomerCount": 34,
+      "workingStaffCount": 2
+    },
+    {
+      "time": "20:00",
+      "avgCustomerCount": 61,
+      "maxCustomerCount": 72,
+      "minCustomerCount": 45,
+      "lastCustomerCount": 67,
+      "workingStaffCount": 3
+    },
+    {
+      "time": "21:00",
+      "avgCustomerCount": 83,
+      "maxCustomerCount": 96,
+      "minCustomerCount": 69,
+      "lastCustomerCount": 91,
+      "workingStaffCount": 3
+    },
+    {
+      "time": "22:00",
+      "avgCustomerCount": 91,
+      "maxCustomerCount": 107,
+      "minCustomerCount": 74,
+      "lastCustomerCount": 99,
+      "workingStaffCount": 3
+    },
+    {
+      "time": "23:00",
+      "avgCustomerCount": 68,
+      "maxCustomerCount": 79,
+      "minCustomerCount": 52,
+      "lastCustomerCount": 60,
+      "workingStaffCount": 3
+    }
+  ],
+  "historicalBaseline": {
+    "sameDayAverageVisitors": 302,
+    "sameHourAverage": {
+      "21:00": 73,
+      "22:00": 78,
+      "23:00": 58
+    }
+  },
+  "pos": {
+    "totalSales": 10980000,
+    "conversionRate": 84,
+    "avgOrderAmount": 22000,
+    "hourlyOrders": [
+      {
+        "time": "20:00",
+        "orders": 49,
+        "conversionRate": 80
+      },
+      {
+        "time": "21:00",
+        "orders": 77,
+        "conversionRate": 84
+      },
+      {
+        "time": "22:00",
+        "orders": 86,
+        "conversionRate": 85
+      },
+      {
+        "time": "23:00",
+        "orders": 41,
+        "conversionRate": 67
+      }
+    ]
+  },
+  "staffSchedule": [
+    {
+      "timeRange": "18:00-20:00",
+      "currentStaff": 2
+    },
+    {
+      "timeRange": "20:00-23:00",
+      "currentStaff": 3
+    },
+    {
+      "timeRange": "23:00-24:00",
+      "currentStaff": 3
+    }
+  ],
+  "externalFactors": {
+    "weather": "clear",
+    "temperature": 22,
+    "nearbyEvent": true,
+    "nearbyEventDescription": "Friday night gathering demand is expected around the station area."
+  }
+}
