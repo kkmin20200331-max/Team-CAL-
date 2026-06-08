@@ -52,4 +52,20 @@ public class StoreMemberC {
                 user_id
         );
     }
+
+    // 경민 수정 6/5 12:00
+    // 직원 급여 정보 조회
+    @GetMapping("/pay")
+    public StoreMemberVo getMemberInfo(
+            @RequestParam String user_id,
+            @RequestParam String store_id) {
+        return storeMemberService.getMemberInfo(user_id, store_id);
+    }
+
+    // 경민 수정 6/5 12:00
+    // 직원 급여 수정
+    @PutMapping("/pay")
+    public void updatePayInfo(@RequestBody StoreMemberVo vo) {
+        storeMemberService.updatePayInfo(vo);
+    }
 }

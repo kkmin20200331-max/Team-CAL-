@@ -4,21 +4,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PeopleLogVO {
+public class AttendanceQrVO {
 
-    private Long id;
+    private String qr_token;
 
     private String store_id;
 
-    private String camera_id;
+    private Date created_at;
 
-    private LocalDateTime record_time;
+    private Date expired_at;
 
-    private Integer people_count;
-
+    private String is_active;
 }

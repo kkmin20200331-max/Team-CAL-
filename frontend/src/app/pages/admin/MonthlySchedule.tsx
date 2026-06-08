@@ -133,6 +133,10 @@ export default function MonthlySchedule() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
+                <span className="text-gray-600 dark:text-gray-400">확정</span>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full" />
                 <span className="text-gray-600 dark:text-gray-400">대기</span>
               </div>
@@ -194,6 +198,7 @@ export default function MonthlySchedule() {
                 {calendarDates.map((date, index) => {
                   const dateStr = format(date, 'yyyy-MM-dd');
                   const dayShifts = getShiftsForDate(date);
+                  const confirmedCount = dayShifts.filter(s => s.status === 'confirmed').length;
                   const pendingCount = dayShifts.filter(s => s.status === 'pending').length;
                   const cancelledCount = dayShifts.filter(s => s.status === 'cancelled').length;
                   const isCurrentMonth = isSameMonth(date, currentMonth);
@@ -238,8 +243,15 @@ export default function MonthlySchedule() {
                       )}
 
                       {/* 이벤트 동그라미 */}
-                      {isCurrentMonth && (pendingCount > 0 || cancelledCount > 0) && (
+                      {isCurrentMonth && (confirmedCount > 0 || pendingCount > 0 || cancelledCount > 0) && (
                         <div className="flex flex-wrap gap-1 mt-auto justify-center pb-1">
+                          {/* 확정 - 초록 점 (최대 3개) */}
+                          {Array.from({ length: Math.min(confirmedCount, 3) }).map((_, i) => (
+                            <div key={`cf-${i}`} className="w-2 h-2 rounded-full bg-green-500" />
+                          ))}
+                          {confirmedCount > 3 && (
+                            <span className="text-[9px] text-green-600 font-medium">+{confirmedCount - 3}</span>
+                          )}
                           {/* 대기 - 노란 점 (최대 3개) */}
                           {Array.from({ length: Math.min(pendingCount, 3) }).map((_, i) => (
                             <div key={`p-${i}`} className="w-2 h-2 rounded-full bg-yellow-400" />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import {
   ArrowLeft,
   Plus,
@@ -22,6 +22,7 @@ import {
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
+import ProfilePanel from '../../components/admin/ProfilePanel';
 
 interface BoardPost {
   id: string;
@@ -52,6 +53,7 @@ interface Comment {
 
 const BoardManagement: React.FC = () => {
   const navigate = useNavigate();
+  const { branchId } = useParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('published');
@@ -227,14 +229,16 @@ const BoardManagement: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/admin')}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            대시보드로 돌아가기
-          </Button>
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`/admin/dashboard/${branchId}`)}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              대시보드로 돌아가기
+            </Button>
+            <ProfilePanel />
+          </div>
 
           <div className="flex items-center justify-between">
             <div>
@@ -336,7 +340,7 @@ const BoardManagement: React.FC = () => {
             variant={filterStatus === 'archived' ? 'default' : 'outline'}
             onClick={() => setFilterStatus('archived')}
           >
-            보관됨
+            보관함
           </Button>
         </div>
 

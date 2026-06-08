@@ -93,6 +93,11 @@ public interface SubstituteMapper {
             """)
     String getShiftIdByPostId(String post_id);
 
+    // 경민 수정 6/5 17:02
+    // 내가 대타로 들어간 shift 목록 가져오기
+    @Select("SELECT * FROM substitute_history WHERE substitute_user_id = #{user_id}")
+    List<SubstituteHistoryVO> getMySubstituteHistory(@Param("user_id") String user_id);
+
 
     // =========================
     // [직원]

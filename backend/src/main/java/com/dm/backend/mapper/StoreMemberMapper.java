@@ -74,6 +74,16 @@ public interface StoreMemberMapper {
             @Param("user_id") String user_id
     );
 
+    // 경민 수정 6/5 11:57
+    // 시급/급여 조회
+    @Select("SELECT * FROM store_member WHERE user_id = #{user_id} AND store_id = #{store_id}")
+    StoreMemberVo getMemberInfo(@Param("user_id") String user_id, @Param("store_id") String store_id);
+
+    // 경민 수정 6/5 11:57
+    // 시급/급여 수정
+    @Update("UPDATE store_member SET pay_type = #{pay_type}, pay_amount = #{pay_amount} WHERE user_id = #{user_id} AND store_id = #{store_id}")
+    void updatePayInfo(StoreMemberVo storeMemberVo);
+
     //ai분석에 필요한 매장 직원 정보 조회
     @Select("""
             SELECT * FROM store_member

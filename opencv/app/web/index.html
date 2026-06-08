@@ -250,6 +250,38 @@
       border-radius: 6px;
     }
 
+    .preview-frame {
+      position: relative;
+      width: fit-content;
+      max-width: 100%;
+    }
+
+    .preview-frame img {
+      width: auto;
+      height: auto;
+    }
+
+    .detection-box {
+      position: absolute;
+      border: 2px solid var(--primary);
+      border-radius: 4px;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
+      pointer-events: none;
+    }
+
+    .detection-box span {
+      position: absolute;
+      left: -2px;
+      top: -24px;
+      min-width: max-content;
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: #fff;
+      background: var(--primary-dark);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
     .empty-preview {
       color: var(--muted);
       font-size: 13px;
@@ -530,6 +562,8 @@
     const previewBox = document.querySelector("#previewBox");
     const boxCount = document.querySelector("#boxCount");
     const boxItems = document.querySelector("#boxItems");
+    let selectedImageUrl = "";
+    let selectedImageSize = null;
 
     function cameraPayload() {
       return {
@@ -562,6 +596,15 @@
       output.textContent = `${title}\n\n${error}`;
     }
 
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
     function updateMetrics(data) {
       if (!data || typeof data !== "object") return;
       const running = data.running ?? "-";
@@ -581,8 +624,16 @@
 
     function updateImageResult(data) {
       if (!data || typeof data !== "object") return;
+      const isImageInference = data.sourceType === "IMAGE";
+
       if (data.annotatedImage) {
-        previewBox.innerHTML = `<img src="${data.annotatedImage}" alt="탐지 박스가 표시된 이미지" />`;
+        previewBox.innerHTML = `<img src="${escapeHtml(data.annotatedImage)}" alt="탐지 박스가 표시된 이미지" />`;
+      } else if (isImageInference && selectedImageUrl) {
+        renderBoxOverlay(data.boxes || []);
+      } else if (isImageInference) {
+        previewBox.innerHTML = `<span class="empty-preview">annotatedImage가 없어서 표시할 이미지가 없습니다.</span>`;
+      } else if (Array.isArray(data.boxes) && data.boxes.length > 0) {
+        previewBox.innerHTML = `<span class="empty-preview">영상/웹캠 분석은 성능 최적화를 위해 이미지 preview를 생략하고 box 좌표만 표시합니다.</span>`;
       }
 
       if (!Array.isArray(data.boxes)) return;
@@ -602,6 +653,41 @@
           </div>
         `)
         .join("");
+    }
+
+    function renderBoxOverlay(boxes) {
+      const imageSize = selectedImageSize;
+      const imageHtml = `<img id="previewImage" src="${escapeHtml(selectedImageUrl)}" alt="업로드한 원본 이미지" />`;
+      previewBox.innerHTML = `<div class="preview-frame" id="previewFrame">${imageHtml}</div>`;
+      const image = document.querySelector("#previewImage");
+      image.addEventListener("load", () => drawOverlayBoxes(boxes, imageSize), { once: true });
+      if (image.complete) {
+        drawOverlayBoxes(boxes, imageSize);
+      }
+    }
+
+    function drawOverlayBoxes(boxes, imageSize) {
+      const frame = document.querySelector("#previewFrame");
+      const image = document.querySelector("#previewImage");
+      if (!frame || !image) return;
+
+      frame.querySelectorAll(".detection-box").forEach((node) => node.remove());
+      const sourceWidth = imageSize?.width || image.naturalWidth;
+      const sourceHeight = imageSize?.height || image.naturalHeight;
+      if (!sourceWidth || !sourceHeight) return;
+
+      const scaleX = image.clientWidth / sourceWidth;
+      const scaleY = image.clientHeight / sourceHeight;
+      boxes.forEach((box, index) => {
+        const marker = document.createElement("div");
+        marker.className = "detection-box";
+        marker.style.left = `${box.x1 * scaleX}px`;
+        marker.style.top = `${box.y1 * scaleY}px`;
+        marker.style.width = `${Math.max(1, (box.x2 - box.x1) * scaleX)}px`;
+        marker.style.height = `${Math.max(1, (box.y2 - box.y1) * scaleY)}px`;
+        marker.innerHTML = `<span>#${index + 1} ${Number(box.confidence).toFixed(2)}</span>`;
+        frame.appendChild(marker);
+      });
     }
 
     function startPolling() {
@@ -674,6 +760,22 @@
       event.preventDefault();
       const file = fields.imageFile.files[0];
       if (!file) return;
+      stopPolling();
+
+      if (selectedImageUrl) {
+        URL.revokeObjectURL(selectedImageUrl);
+      }
+      selectedImageUrl = URL.createObjectURL(file);
+      selectedImageSize = null;
+      const probeImage = new Image();
+      probeImage.onload = () => {
+        selectedImageSize = {
+          width: probeImage.naturalWidth,
+          height: probeImage.naturalHeight,
+        };
+      };
+      probeImage.src = selectedImageUrl;
+      previewBox.innerHTML = `<span class="empty-preview">이미지 추론 중입니다...</span>`;
 
       const params = new URLSearchParams({
         storeId: fields.storeId.value,

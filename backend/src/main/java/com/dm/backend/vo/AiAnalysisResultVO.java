@@ -4,18 +4,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.Map;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiAnalysisResultVO {
 
-    private String peakTime;
+    private Map<String,Object> summary;
 
-    private Integer recommendedStaff;
+    private List<Map<String,Object>> insights;
 
-    private Integer averagePeople;
+    private List<Map<String,Object>> scheduleRecommendations;
 
-    private String congestionLevel;
+    private Map<String,Object> operationMetrics;
 
-    private String summary;
+    private Map<String,Object> features;
 }

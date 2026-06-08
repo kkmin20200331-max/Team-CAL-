@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import {
   ArrowLeft,
   Upload,
@@ -22,6 +22,7 @@ import {
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
+import ProfilePanel from '../../components/admin/ProfilePanel';
 
 interface Document {
   id: string;
@@ -48,6 +49,7 @@ interface Document {
 
 const DocumentManagement: React.FC = () => {
   const navigate = useNavigate();
+  const { branchId } = useParams();
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -242,14 +244,16 @@ const DocumentManagement: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">
-            <Button
+            <div className="flex items-center justify-between mb-4">
+              <Button
                 variant="ghost"
-                onClick={() => navigate('/admin')}
-                className="mb-4"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              대시보드로 돌아가기
-            </Button>
+                onClick={() => navigate(`/admin/dashboard/${branchId}`)}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                대시보드로 돌아가기
+              </Button>
+              <ProfilePanel />
+            </div>
 
             <div className="flex items-center justify-between">
               <div>
