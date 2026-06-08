@@ -31,6 +31,7 @@ public class ShiftC {
     // [관리자]
     // =========================
 
+    // 경민 수정 6/2 16:15
     // 근무표 등록
     @PostMapping
     public void registerShift(

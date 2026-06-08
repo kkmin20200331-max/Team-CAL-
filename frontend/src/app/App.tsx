@@ -20,6 +20,7 @@ import DocumentManagement from './pages/admin/DocumentManagement';
 import BoardManagement from './pages/admin/BoardManagement';
 import CustomerAnalytics from './pages/admin/CustomerAnalytics';
 import MultibranchDashboard from './pages/admin/MultibranchDashboard';
+import MonthlySchedule from './pages/admin/MonthlySchedule';
 
 // Employee pages
 import EmployeeHome from './pages/employee/EmployeeHome';
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/admin/branch-selection" element={<BranchSelection />} />
           <Route path="/admin/dashboard/:branchId" element={<AdminDashboard />} />
           <Route path="/admin/multibranch" element={<MultibranchDashboard />} />
+          <Route path="/admin/schedule/monthly/:branchId" element={<MonthlySchedule />} />
           <Route path="/admin/schedule/weekly/:branchId" element={<WeeklySchedule />} />
           <Route path="/admin/schedule/daily/:branchId/:date" element={<DailySchedule />} />
           <Route path="/admin/substitute/:branchId" element={<SubstituteManagement />} />

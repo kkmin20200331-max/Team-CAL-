@@ -33,18 +33,16 @@ public interface UserMapper {
     // [관리자]
     // =========================
 
-    // 승인된 직원 목록 조회
-    @Select("SELECT * FROM users WHERE role = 'staff' and id IN (select user_id from store_member where approval_status = 'APPROVED' and store_id = #{store_id})")
+    // 경민 수정 5/29 15:05 - 승인된 직원 목록 조회 (대문자 STAFF)
+    @Select("SELECT * FROM users WHERE role = 'STAFF' and id IN (select user_id from store_member where approval_status = 'APPROVED' and store_id = #{store_id})")
     List<UserVo> getStaff(String store_id);
 
-    // 승인 대기 직원 목록 조회
-    @Select("select * from users where role = 'guest' and id IN (select user_id from store_member where approval_status = 'PENDING' and store_id = #{storeId})")
+    // 승인 대기 직원 목록 조회 (대문자 GUEST)
+    @Select("select * from users where role = 'GUEST' and id IN (select user_id from store_member where approval_status = 'PENDING' and store_id = #{storeId})")
     List<UserVo> getGuest(String storeId);
 
     // 직원 승인 (GUEST → STAFF)
     @Update("UPDATE users SET role = 'STAFF' WHERE id = #{id}")
     void approveUser(String id);
-
-
 
 }

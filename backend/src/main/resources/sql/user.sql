@@ -77,3 +77,6 @@ insert into users (
            'PENDING' );
 
 select * from users;
+
+DELETE FROM users WHERE id = 'USR_c54710b4566e4749';
+COMMIT;
