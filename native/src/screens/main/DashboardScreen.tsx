@@ -7,6 +7,13 @@ import { NotificationContext } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
+
+// ✅ [추가] 타입(설계도) 임포트
+import { User } from '../../types/User';
+import { Shift } from '../../types/Schedule';
+import { Post } from '../../types/Post';
+
+// ✅ [추가] 분리된 컴포넌트 임포트
 import TodayShiftCard from '../../components/dashboard/TodayShiftCard';
 import WeeklyStatsCard from '../../components/dashboard/WeeklyStatsCard';
 import SubstituteAlertCard from '../../components/dashboard/SubstituteAlertCard';
@@ -17,7 +24,7 @@ type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 type Props = {
   navigation: DashboardScreenNavigationProp;
   setIsLoggedIn?: (value: boolean) => void; 
-  userInfo?: any;
+  userInfo?: User | null; // ✅ [수정] any 대신 User 타입 적용
 };
 
 const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
@@ -31,7 +38,8 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
 
   const { unreadCount } = useContext(NotificationContext);
 
-  const [todayShift, setTodayShift] = useState<any>(null);
+  // ✅ [수정] any 대신 Shift 타입 적용
+  const [todayShift, setTodayShift] = useState<Shift | null>(null);
   const [loading, setLoading] = useState(false);
   const [weeklyStats, setWeeklyStats] = useState({ totalHours: 0, expectedSalary: 0 });
   const [isAlertVisible, setIsAlertVisible] = useState(true);
@@ -46,8 +54,9 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
     ).start();
   }, [fadeAnim]);
 
+  // ✅ [수정] any 대신 Post 타입 적용
   const [isPostModalVisible, setPostModalVisible] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
   const CATEGORIES = [
     { id: 'ALL', label: 'boardTabAll' },
@@ -58,7 +67,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
     { id: 'LOST', label: 'boardTabLost' },
   ];
 
-  const dummyPosts = [
+  const dummyPosts: Post[] = [
     { id: '1', category: 'MENU', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
     { id: '2', category: 'NOTICE', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
     { id: '3', category: 'NOTICE', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
@@ -66,7 +75,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
 
   const sortedDummyPosts = [...dummyPosts].sort((a, b) => b.date.localeCompare(a.date));
 
-  const handleOpenPost = (post: any) => {
+  const handleOpenPost = (post: Post) => {
     setSelectedPost(post);
     setPostModalVisible(true);
   };
@@ -103,7 +112,7 @@ const DashboardScreen = ({ navigation, setIsLoggedIn, userInfo }: Props) => {
     
     setLoading(true);
 
-    const dummySchedule = [
+    const dummySchedule: Shift[] = [
       { id: '0', fullDate: '2026-05-31', date: '31', day: '일', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED', checkInTime: '13:58', checkOutTime: '22:03' },
       { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED', checkInTime: '14:05 (지각)', checkOutTime: '22:01' },
       { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: storeName, status: 'IN_PROGRESS', checkInTime: '13:59', checkOutTime: null },

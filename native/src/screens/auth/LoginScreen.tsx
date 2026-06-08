@@ -1,83 +1,69 @@
 import { StackNavigationProp } from '@react-navigation/stack';
-
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { loginAPI } from '../../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { User } from '../../types/User';
 
-// TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
 
-// 👇 [수정 1] Props 타입에 상태 변경 함수 2개를 추가합니다.
 type Props = {
   navigation: LoginScreenNavigationProp;
   setIsLoggedIn: (value: boolean) => void;
-  setUserStatus: (status: string) => void;
+  setUserStatus: (status: User['status']) => void;
   setHasSelectedBranch: (value: boolean) => void;
-  setUserInfo: (value: any) => void;
+  setUserInfo: (value: User) => void;
 };
 
 export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, setHasSelectedBranch, setUserInfo }: Props) {
-  // [퀴즈 1] 이메일(email)과 비밀번호(password)를 초기값 빈 문자열("")로 가지는 객체 상태(inputs)를 만들어보세요.
-  
-  // 비구조화 할당으로 inputs에서 값을 뽑아둡니다.
   const [inputs, setInputs] = useState({username : "", password : ""});
   const { username, password } = inputs;
-
-  // ✅ [추가] 관리자/직원 로그인 선택 상태 (기본값: 직원)
   const [loginRole, setLoginRole] = useState<'STAFF' | 'ADMIN'>('STAFF');
 
-  // [퀴즈 2] 텍스트가 입력될 때마다 상태를 업데이트해주는 함수를 완성해보세요.
-  // 힌트: 기존 객체를 복사하고, name 키를 가진 값을 text로 덮어씌워야 합니다.
   const handleInputChange = (name: string, text: string) => {
-    // 빈칸
     setInputs({ ...inputs, [name]: text });
   };
 
-const handleLogin = async () => {
-  try {
-    const response = await loginAPI(username, password);
-    const data = response.data;
-    // 메모: App.tsx의 분기값이 소문자(active/pending)이므로 백엔드 상태값을 맞춰줍니다.
-    const fetchedUserStatus = (data.status ?? '').toLowerCase();
+  const handleLogin = async () => {
+    try {
+      const response = await loginAPI(username, password);
+      const data = response.data;
+      
+      // ✅ [수정] .toLowerCase()를 제거하여 백엔드 상태값을 그대로 사용합니다.
+      const fetchedUserStatus = data.status;
 
-    setUserStatus(fetchedUserStatus);
-    setIsLoggedIn(true);
-    
-    // ✅ [수정] 로컬 기기에 저장해둔 지점 정보가 있는지 확인 (백엔드 완벽 연동 전 임시 유지 브릿지)
-    const savedStore = await AsyncStorage.getItem(`store_${data.username}`);
+      setUserStatus(fetchedUserStatus);
+      setIsLoggedIn(true);
+      
+      const savedStore = await AsyncStorage.getItem(`store_${data.username}`);
 
-    // 💡 디버깅용: 백엔드에서 넘겨주는 유저 정보 확인 (VS Code 터미널에서 확인하세요)
-    console.log("서버 로그인 응답 데이터:", data);
+      console.log("서버 로그인 응답 데이터:", data);
 
-    // 💡 방어 로직: 백엔드에서 role 데이터가 정상적으로 오는지 확인하고 무조건 대문자로 처리
-    const finalRole = data.role ? data.role.toUpperCase() : loginRole;
-    console.log("최종 부여된 권한(Role):", finalRole);
+      const finalRole = data.role ? data.role.toUpperCase() : loginRole;
+      console.log("최종 부여된 권한(Role):", finalRole);
 
-    if (data.store_id || data.branchName || data.brandName || savedStore) {
-      setHasSelectedBranch(true);
-      setUserInfo({ ...data, role: finalRole, store_id: data.store_id || savedStore });
-    } else {
-      setHasSelectedBranch(false);
-      setUserInfo({ ...data, role: finalRole });
+      if (data.store_id || data.branchName || data.brandName || savedStore) {
+        setHasSelectedBranch(true);
+        setUserInfo({ ...data, role: finalRole, store_id: data.store_id || savedStore });
+      } else {
+        setHasSelectedBranch(false);
+        setUserInfo({ ...data, role: finalRole });
+      }
+
+    } catch (error) {
+      console.error("로그인 에러:", error);
+      Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인해주세요.");
     }
-
-  } catch (error) {
-    console.error("로그인 에러:", error);
-    Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인해주세요.");
-  }
-};
+  };
 
   return (
     <View style={styles.container}>
-      {/* ✅ 경로를 images에서 img로 수정합니다. */}
       <Image 
         source={require('../../../assets/img/logo_3.png')} 
         style={styles.logoImage} 
         resizeMode="contain" 
       />
 
-      {/* ✅ [추가] 관리자 / 직원 선택 토글 UI */}
       <View style={styles.roleToggleContainer}>
         <TouchableOpacity 
           style={[styles.roleButton, loginRole === 'STAFF' && styles.roleButtonActive]} 
@@ -95,7 +81,6 @@ const handleLogin = async () => {
         </TouchableOpacity>
       </View>
 
-      {/* [퀴즈 3] 이메일 입력창: value와 onChangeText 속성을 알맞게 연결해보세요. */}
       <TextInput
         style={styles.input}
         placeholder="아이디를 입력하세요"
@@ -103,14 +88,12 @@ const handleLogin = async () => {
         onChangeText={(text) => handleInputChange('username', text)}
       />
 
-      {/* [퀴즈 4] 비밀번호 입력창: 연결은 이메일과 동일합니다. 
-          추가로, 입력한 비밀번호 글자가 보이지 않게(***) 가려주는 옵션 속성을 찾아서 넣어보세요! */}
       <TextInput
         style={styles.input}
         placeholder="비밀번호를 입력하세요"
         value={password}
         onChangeText={(text) => handleInputChange('password', text)}
-        secureTextEntry={true} // <-- 비밀번호 가리기 속성
+        secureTextEntry={true}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
@@ -119,7 +102,7 @@ const handleLogin = async () => {
 
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate('Signup')} // 회원가입 화면으로 이동
+        onPress={() => navigation.navigate('Signup')}
       >
         <Text style={styles.buttonText}>회원가입</Text>
       </TouchableOpacity>
@@ -135,14 +118,12 @@ const styles = StyleSheet.create({
     padding: 20, 
     backgroundColor: '#fff' 
   },
-  // --- 로고 이미지 스타일 ---
   logoImage: {
-    width: 400,    // 로고 너비 (필요에 따라 조절)
-    height: 150,    // 로고 높이 (필요에 따라 조절)
+    width: 400,
+    height: 150,
     alignSelf: 'center',
     marginBottom: 40,
   },
-  // --- 토글 버튼 스타일 ---
   roleToggleContainer: {
     flexDirection: 'row',
     marginBottom: 20,
@@ -158,8 +139,8 @@ const styles = StyleSheet.create({
   },
   roleButtonActive: {
     backgroundColor: '#FFFFFF',
-    elevation: 2, // 안드로이드 그림자
-    shadowColor: '#000', // iOS 그림자
+    elevation: 2,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
