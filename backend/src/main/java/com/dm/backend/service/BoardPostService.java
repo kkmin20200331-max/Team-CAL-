@@ -13,7 +13,7 @@ public interface BoardPostService {
     BoardPostVO getPost(String id);
 
     List<BoardPostVO> getPostList(
-            String store_id
+            String board_id
     );
 
     List<BoardPostVO> searchPost(

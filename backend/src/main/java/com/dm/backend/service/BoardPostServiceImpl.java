@@ -20,10 +20,10 @@ public class BoardPostServiceImpl
 
     @Override
     public List<BoardPostVO> getPostList(
-            String store_id
+            String board_id
     ) {
         return boardPostMapper.getPostList(
-                store_id
+                board_id
         );
     }
 
