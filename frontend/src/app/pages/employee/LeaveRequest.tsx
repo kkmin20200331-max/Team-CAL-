@@ -1,141 +1,198 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
+import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
-import { Calendar } from '../../components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Label } from '../../components/ui/label';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import {
-  Home,
-  Calendar as CalendarIcon,
-  QrCode,
-  Wallet,
-  MessageSquare,
-  FileText,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Send,
-  Trash2
+  Home, Calendar, QrCode, Wallet, MessageSquare,
+  FileText, Clock, CheckCircle2, XCircle, AlertCircle,
+  Send, Trash2, ChevronLeft, ChevronRight, MapPin
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addMonths, subMonths } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import EmployeeHeader from '../../components/employee/EmployeeHeader';
+
+const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+
+const toDateStr = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+};
+
+const getDatePart = (s: string) => {
+  if (!s) return '';
+  if (s.includes('T')) return s.split('T')[0];
+  if (s.includes(' ')) return s.split(' ')[0];
+  return s;
+};
+
+const formatTimePart = (s: string) => {
+  if (!s) return '';
+  if (s.includes('T')) return s.split('T')[1].substring(0, 5);
+  if (s.includes(' ')) return s.split(' ')[1].substring(0, 5);
+  return s.substring(0, 5);
+};
+
+const getDayLabel = (dateStr: string) => {
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const parts = getDatePart(dateStr).split('-');
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  return days[d.getDay()];
+};
+
+const formatTimestamp = (val: any) => {
+  if (!val) return '';
+  return new Date(val).toLocaleDateString('ko-KR');
+};
+
+interface ShiftVO {
+  id: string;
+  store_id: string;
+  user_id: string;
+  work_date: string;
+  start_at: string;
+  end_at: string;
+  status: string;
+}
+
+interface LeaveRequestVO {
+  id: string;
+  shift_id: string;
+  user_id: string;
+  reason: string;
+  status: string;
+  requested_at: any;
+  processed_at: any;
+}
 
 export default function LeaveRequest() {
   const navigate = useNavigate();
-  const [leaveType, setLeaveType] = useState('');
-  const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date>();
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const storeName = localStorage.getItem('store_name') || '';
+
+  const [myShifts, setMyShifts] = useState<ShiftVO[]>([]);
+  const [leaveHistory, setLeaveHistory] = useState<LeaveRequestVO[]>([]);
+  const [historyMonth, setHistoryMonth] = useState(new Date());
+
+  const [selectedShiftId, setSelectedShiftId] = useState('');
   const [reason, setReason] = useState('');
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [loadingShifts, setLoadingShifts] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
-  const leaveHistory = [
-    {
-      id: 1,
-      type: '연차',
-      startDate: '2024-05-25',
-      endDate: '2024-05-25',
-      days: 1,
-      reason: '개인 사유',
-      status: 'pending',
-      submittedDate: '2024-05-18',
-      approver: '홍길동 매니저'
-    },
-    {
-      id: 2,
-      type: '반차',
-      startDate: '2024-05-10',
-      endDate: '2024-05-10',
-      days: 0.5,
-      reason: '병원 진료',
-      status: 'approved',
-      submittedDate: '2024-05-08',
-      approvedDate: '2024-05-09',
-      approver: '홍길동 매니저'
-    },
-    {
-      id: 3,
-      type: '병가',
-      startDate: '2024-04-28',
-      endDate: '2024-04-29',
-      days: 2,
-      reason: '몸살 감기',
-      status: 'approved',
-      submittedDate: '2024-04-27',
-      approvedDate: '2024-04-27',
-      approver: '홍길동 매니저'
-    },
-    {
-      id: 4,
-      type: '연차',
-      startDate: '2024-04-15',
-      endDate: '2024-04-15',
-      days: 1,
-      reason: '가족 행사',
-      status: 'rejected',
-      submittedDate: '2024-04-10',
-      rejectedDate: '2024-04-11',
-      approver: '홍길동 매니저',
-      rejectReason: '해당 날짜에 최소 인원 확보 필요'
+  // 신청 가능 근무: 오늘 ~ 2개월 뒤
+  useEffect(() => {
+    if (!user.id) return;
+    const today = new Date();
+    const later = new Date(today);
+    later.setMonth(today.getMonth() + 2);
+    API.get('/shift/staff', {
+      params: { user_id: user.id, start_date: toDateStr(today), end_date: toDateStr(later) }
+    })
+      .then(res => setMyShifts(Array.isArray(res.data) ? res.data : []))
+      .catch(err => console.error('근무 조회 실패:', err))
+      .finally(() => setLoadingShifts(false));
+  }, []);
+
+  // 휴무 신청 내역: 선택된 월 기준
+  useEffect(() => {
+    if (!user.id) return;
+    fetchHistory();
+  }, [historyMonth]);
+
+  const fetchHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const res = await API.get('/leave_request/staff', {
+        params: {
+          user_id: user.id,
+          year: historyMonth.getFullYear(),
+          month: historyMonth.getMonth() + 1,
+        }
+      });
+      setLeaveHistory(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error('내역 조회 실패:', err);
+    } finally {
+      setLoadingHistory(false);
     }
-  ];
-
-  const leaveBalance = {
-    annual: { total: 15, used: 3, remaining: 12 },
-    sick: { total: 10, used: 2, remaining: 8 },
-    personal: { total: 5, used: 0, remaining: 5 }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!leaveType || !startDate || !reason) {
-      setSubmitStatus('error');
-      return;
-    }
+  // 이미 신청한 shift_id 목록 (중복 신청 방지)
+  const pendingShiftIds = useMemo(
+    () => leaveHistory.filter(lr => lr.status === 'PENDING').map(lr => lr.shift_id),
+    [leaveHistory]
+  );
 
-    // Simulate submission
-    setTimeout(() => {
+  // 신청 가능 근무: VACANT/cancelled 제외, 이미 PENDING 제외
+  const availableShifts = useMemo(
+    () => myShifts.filter(s =>
+      s.status !== 'VACANT' &&
+      s.status !== 'cancelled' &&
+      !pendingShiftIds.includes(s.id)
+    ),
+    [myShifts, pendingShiftIds]
+  );
+
+  // 근무 맵 (내역에서 날짜 표시용)
+  const shiftMap = useMemo(() => {
+    const m: Record<string, ShiftVO> = {};
+    myShifts.forEach(s => { m[s.id] = s; });
+    return m;
+  }, [myShifts]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedShiftId) { setErrorMsg('휴무를 신청할 근무를 선택해주세요.'); setSubmitStatus('error'); return; }
+    if (!reason.trim()) { setErrorMsg('사유를 입력해주세요.'); setSubmitStatus('error'); return; }
+
+    setSubmitStatus('loading');
+    try {
+      await API.post('/leave_request', {
+        id: crypto.randomUUID(),
+        shift_id: selectedShiftId,
+        user_id: user.id,
+        reason: reason.trim(),
+      });
       setSubmitStatus('success');
-      // Reset form after 2 seconds
-      setTimeout(() => {
-        setSubmitStatus('idle');
-        setLeaveType('');
-        setStartDate(undefined);
-        setEndDate(undefined);
-        setReason('');
-      }, 2000);
-    }, 1000);
+      setSelectedShiftId('');
+      setReason('');
+      // 내역 갱신
+      fetchHistory();
+      setTimeout(() => setSubmitStatus('idle'), 3000);
+    } catch {
+      setErrorMsg('신청 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setSubmitStatus('error');
+    }
+  };
+
+  const handleCancel = async (leaveId: string) => {
+    if (!confirm('휴무 신청을 취소하시겠습니까?')) return;
+    try {
+      await API.delete('/leave_request', { params: { id: leaveId } });
+      fetchHistory();
+    } catch {
+      alert('취소 처리 중 오류가 발생했습니다.');
+    }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'approved':
-        return (
-          <Badge className="gap-1 bg-green-500">
-            <CheckCircle2 className="w-3 h-3" />
-            승인
-          </Badge>
-        );
-      case 'pending':
-        return (
-          <Badge className="gap-1 bg-yellow-500">
-            <Clock className="w-3 h-3" />
-            대기중
-          </Badge>
-        );
-      case 'rejected':
-        return (
-          <Badge variant="destructive" className="gap-1">
-            <XCircle className="w-3 h-3" />
-            거부
-          </Badge>
-        );
+      case 'APPROVED':
+        return <Badge className="gap-1 bg-green-500"><CheckCircle2 className="w-3 h-3" />승인</Badge>;
+      case 'PENDING':
+        return <Badge className="gap-1 bg-yellow-500"><Clock className="w-3 h-3" />대기중</Badge>;
+      case 'REJECTED':
+        return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" />거절</Badge>;
+      case 'CANCELLED':
+        return <Badge variant="outline" className="gap-1 text-gray-500"><XCircle className="w-3 h-3" />취소됨</Badge>;
       default:
         return null;
     }
@@ -143,280 +200,241 @@ export default function LeaveRequest() {
 
   const bottomNavItems = [
     { icon: Home, label: '홈', path: '/employee/home', active: false },
-    { icon: CalendarIcon, label: '근무표', path: '/employee/schedule', active: false },
+    { icon: Calendar, label: '근무표', path: '/employee/schedule', active: false },
     { icon: QrCode, label: '체크인', path: '/employee/checkin', active: false },
     { icon: Wallet, label: '급여', path: '/employee/payroll', active: false },
-    { icon: MessageSquare, label: '게시판', path: '/employee/board', active: false }
+    { icon: MessageSquare, label: '게시판', path: '/employee/board', active: false },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white p-6">
-        <h1 className="text-2xl font-bold mb-2">휴가 신청</h1>
-        <p className="text-green-100 text-sm">연차 및 휴가를 신청하고 관리하세요</p>
-      </div>
-
-      <div className="px-4 py-4">
-        {/* Leave Balance */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">연차</p>
-              <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                {leaveBalance.annual.remaining}
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                / {leaveBalance.annual.total}일
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">병가</p>
-              <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                {leaveBalance.sick.remaining}
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                / {leaveBalance.sick.total}일
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20 border-pink-200 dark:border-pink-800">
-            <CardContent className="p-4 text-center">
-              <p className="text-xs text-pink-600 dark:text-pink-400 mb-1">개인</p>
-              <p className="text-2xl font-bold text-pink-700 dark:text-pink-300">
-                {leaveBalance.personal.remaining}
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                / {leaveBalance.personal.total}일
-              </p>
-            </CardContent>
-          </Card>
+      {/* 공통 헤더 */}
+      <EmployeeHeader>
+        <div>
+          <h1 className="text-2xl font-bold">휴무 신청</h1>
+          <p className="text-blue-100 text-sm mt-1">근무 중 빠질 날을 신청하세요</p>
         </div>
+      </EmployeeHeader>
 
-        {/* Request Form */}
-        <Card className="mb-4">
-          <CardHeader>
+      <div className="px-4 py-4 space-y-4">
+
+        {/* ── 휴무 신청 폼 ───────────────────────────── */}
+        <Card>
+          <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <FileText className="w-5 h-5" />
-              휴가 신청서
+              휴무 신청서
             </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Leave Type */}
+
+              {/* 근무 선택 */}
               <div className="space-y-2">
-                <Label>휴가 종류</Label>
-                <Select value={leaveType} onValueChange={setLeaveType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="휴가 종류를 선택하세요" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="annual">연차 (Annual Leave)</SelectItem>
-                    <SelectItem value="half">반차 (Half Day)</SelectItem>
-                    <SelectItem value="sick">병가 (Sick Leave)</SelectItem>
-                    <SelectItem value="personal">개인 사유 (Personal Leave)</SelectItem>
-                    <SelectItem value="family">경조사 (Family Event)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>빠질 근무 선택</Label>
+                {loadingShifts ? (
+                  <p className="text-sm text-gray-400 py-2">근무 목록 불러오는 중...</p>
+                ) : availableShifts.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-300 p-4 text-center text-sm text-gray-400">
+                    신청 가능한 근무가 없습니다
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {availableShifts.map(shift => {
+                      const datePart = getDatePart(shift.work_date);
+                      const isSelected = selectedShiftId === shift.id;
+                      return (
+                        <button
+                          key={shift.id}
+                          type="button"
+                          onClick={() => setSelectedShiftId(isSelected ? '' : shift.id)}
+                          className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="text-center min-w-[36px]">
+                                <p className="text-xs text-gray-500">{getDayLabel(shift.work_date)}</p>
+                                <p className="text-lg font-bold">{Number(datePart.split('-')[2])}</p>
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {format(new Date(datePart), 'M월 d일', { locale: ko })}
+                                </p>
+                                <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                                  <Clock className="w-3 h-3" />
+                                  {formatTimePart(shift.start_at)} - {formatTimePart(shift.end_at)}
+                                </div>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* Date Selection */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>시작 날짜</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, 'PPP', { locale: ko }) : '날짜 선택'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>종료 날짜</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, 'PPP', { locale: ko }) : '날짜 선택'}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        initialFocus
-                        disabled={(date) => startDate ? date < startDate : false}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              {/* Reason */}
+              {/* 사유 입력 */}
               <div className="space-y-2">
                 <Label>사유</Label>
                 <Textarea
                   value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="휴가 사유를 입력하세요"
-                  rows={4}
+                  onChange={e => setReason(e.target.value)}
+                  placeholder="휴무 사유를 입력하세요 (예: 병원 진료, 가족 행사 등)"
+                  rows={3}
                 />
               </div>
 
-              {/* Submit Status */}
+              {/* 상태 알림 */}
               {submitStatus === 'success' && (
-                <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
                   <AlertDescription className="text-green-700 dark:text-green-400">
-                    휴가 신청이 제출되었습니다. 승인을 기다려주세요.
+                    휴무 신청이 완료되었습니다. 관리자 승인을 기다려주세요.
                   </AlertDescription>
                 </Alert>
               )}
-
               {submitStatus === 'error' && (
-                <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200">
                   <XCircle className="w-4 h-4 text-red-600" />
                   <AlertDescription className="text-red-700 dark:text-red-400">
-                    모든 필수 항목을 입력해주세요.
+                    {errorMsg}
                   </AlertDescription>
                 </Alert>
               )}
 
-              {/* Submit Button */}
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700"
+                disabled={submitStatus === 'loading' || !selectedShiftId || !reason.trim()}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 size="lg"
               >
                 <Send className="w-5 h-5 mr-2" />
-                신청서 제출
+                {submitStatus === 'loading' ? '신청 중...' : '신청서 제출'}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* Request History */}
+        {/* ── 신청 내역 ──────────────────────────────── */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">신청 내역</CardTitle>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">신청 내역</CardTitle>
+              {/* 월 이동 */}
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7"
+                  onClick={() => setHistoryMonth(prev => subMonths(prev, 1))}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm font-medium w-16 text-center">
+                  {format(historyMonth, 'yyyy.MM')}
+                </span>
+                <Button variant="ghost" size="icon" className="h-7 w-7"
+                  onClick={() => setHistoryMonth(prev => addMonths(prev, 1))}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {leaveHistory.map((leave) => (
-              <div
-                key={leave.id}
-                className={`p-4 rounded-lg border-2 ${
-                  leave.status === 'pending'
-                    ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-                    : leave.status === 'approved'
-                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                    : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="secondary">{leave.type}</Badge>
-                      {getStatusBadge(leave.status)}
+            {loadingHistory ? (
+              <p className="text-center py-6 text-sm text-gray-400">불러오는 중...</p>
+            ) : leaveHistory.length === 0 ? (
+              <p className="text-center py-6 text-sm text-gray-400">이 달의 신청 내역이 없습니다</p>
+            ) : (
+              leaveHistory.map(leave => {
+                const shift = shiftMap[leave.shift_id];
+                const datePart = shift ? getDatePart(shift.work_date) : '';
+                return (
+                  <div
+                    key={leave.id}
+                    className={`p-4 rounded-lg border-2 ${
+                      leave.status === 'PENDING'
+                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+                        : leave.status === 'APPROVED'
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                        : leave.status === 'REJECTED'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="secondary">휴무</Badge>
+                          {getStatusBadge(leave.status)}
+                        </div>
+                        {shift ? (
+                          <div className="space-y-0.5">
+                            <p className="font-medium text-sm">
+                              {format(new Date(datePart), 'M월 d일 (eee)', { locale: ko })}
+                            </p>
+                            <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                              <Clock className="w-3 h-3" />
+                              {formatTimePart(shift.start_at)} - {formatTimePart(shift.end_at)}
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                              <MapPin className="w-3 h-3" />
+                              {storeName}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400">근무 정보 없음</p>
+                        )}
+                      </div>
+                      {leave.status === 'PENDING' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0"
+                          onClick={() => handleCancel(leave.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
-                    <p className="font-medium">
-                      {leave.startDate === leave.endDate
-                        ? leave.startDate
-                        : `${leave.startDate} ~ ${leave.endDate}`}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {leave.days}일
-                    </p>
-                  </div>
-                  {leave.status === 'pending' && (
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
 
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">사유</p>
-                    <p className="font-medium">{leave.reason}</p>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">승인자</p>
-                      <p className="font-medium text-xs">{leave.approver}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-600 dark:text-gray-400">신청일</p>
-                      <p className="font-medium text-xs">{leave.submittedDate}</p>
-                    </div>
-                  </div>
-
-                  {leave.status === 'approved' && leave.approvedDate && (
-                    <div className="bg-green-100 dark:bg-green-900/40 rounded p-2">
-                      <p className="text-xs text-green-700 dark:text-green-400">
-                        승인일: {leave.approvedDate}
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-2 space-y-1">
+                      <p className="text-xs text-gray-500">사유</p>
+                      <p className="text-sm">{leave.reason}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        신청일: {formatTimestamp(leave.requested_at)}
                       </p>
                     </div>
-                  )}
-
-                  {leave.status === 'rejected' && leave.rejectReason && (
-                    <div className="bg-red-100 dark:bg-red-900/40 rounded p-2">
-                      <p className="text-xs text-red-700 dark:text-red-400 font-medium">
-                        거부 사유
-                      </p>
-                      <p className="text-xs text-red-600 dark:text-red-500 mt-1">
-                        {leave.rejectReason}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+                  </div>
+                );
+              })
+            )}
           </CardContent>
         </Card>
 
-        {/* Information */}
-        <Card className="mt-4">
-          <CardHeader>
+        {/* 안내 */}
+        <Card>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4" />
-              휴가 신청 안내
+              안내
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
-            <p>• 휴가는 최소 3일 전에 신청해주세요</p>
-            <p>• 반차는 전일 18시까지 신청 가능합니다</p>
-            <p>• 병가는 진단서 제출이 필요할 수 있습니다</p>
-            <p>• 승인 여부는 알림으로 안내됩니다</p>
-            <p>• 거부된 신청은 수정 후 재신청 가능합니다</p>
+          <CardContent className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+            <p>• 신청 후 관리자 승인 시 해당 근무는 공석 처리됩니다</p>
+            <p>• 대기중(PENDING) 상태일 때만 취소 가능합니다</p>
+            <p>• 급한 사정은 관리자에게 직접 문의해주세요</p>
           </CardContent>
         </Card>
+
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 safe-bottom">
+      {/* 하단 네비게이션 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-around px-2 py-2">
           {bottomNavItems.map((item, index) => (
             <button
@@ -424,7 +442,7 @@ export default function LeaveRequest() {
               onClick={() => navigate(item.path)}
               className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
                 item.active
-                  ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
+                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
