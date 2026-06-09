@@ -6,6 +6,7 @@ import axios from 'axios';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import TimePickerModal from '../../components/common/TimePickerModal';
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -28,13 +29,32 @@ export default function SignupScreen({ navigation, route }: Props) {
     isFranchise: true,
     brandName: "",
     branchName: "",
-    openTime: "09:00",
-    closeTime: "22:00",
+    openTime: new Date(),
+    closeTime: new Date(),
     maxCapacity: "",
   });
 
-  const handleInputChange = (name: string, value: string | boolean) => {
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<'openTime' | 'closeTime'>('openTime');
+
+  const handleInputChange = (name: string, value: any) => {
     setInputs(prev => ({ ...prev, [name]: value }));
+  };
+
+  const formatTime = (date: Date) => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const showTimepicker = (target: 'openTime' | 'closeTime') => {
+    setPickerTarget(target);
+    setTimePickerVisible(true);
+  };
+
+  const handleTimeConfirm = (selectedDate: Date) => {
+    handleInputChange(pickerTarget, selectedDate);
+    setTimePickerVisible(false);
   };
 
   const handleSignup = async () => {
@@ -45,7 +65,7 @@ export default function SignupScreen({ navigation, route }: Props) {
       return;
     }
     if (role === 'ADMIN') {
-      if (!brandName || !branchName || !openTime || !closeTime || !maxCapacity) {
+      if (!brandName || !branchName || !maxCapacity) {
         Alert.alert("입력 오류", "관리자 정보를 모두 입력해주세요.");
         return;
       }
@@ -70,8 +90,8 @@ export default function SignupScreen({ navigation, route }: Props) {
         signupData.isFranchise = isFranchise;
         signupData.brandName = brandName;
         signupData.branchName = branchName;
-        signupData.openTime = openTime;
-        signupData.closeTime = closeTime;
+        signupData.openTime = formatTime(openTime);
+        signupData.closeTime = formatTime(closeTime);
         signupData.maxCapacity = parseInt(maxCapacity, 10);
       }
       
@@ -140,14 +160,14 @@ export default function SignupScreen({ navigation, route }: Props) {
               <View style={styles.timeContainer}>
                 <View style={styles.timeInputWrapper}>
                   <Text style={styles.inputLabel}>오픈 시간</Text>
-                  <TouchableOpacity style={styles.timeButton}>
-                    <Text style={styles.timeText}>{inputs.openTime}</Text>
+                  <TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('openTime')}>
+                    <Text style={styles.timeText}>{formatTime(inputs.openTime)}</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.timeInputWrapper}>
                   <Text style={styles.inputLabel}>마감 시간</Text>
-                  <TouchableOpacity style={styles.timeButton}>
-                    <Text style={styles.timeText}>{inputs.closeTime}</Text>
+                  <TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('closeTime')}>
+                    <Text style={styles.timeText}>{formatTime(inputs.closeTime)}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -162,6 +182,15 @@ export default function SignupScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {isTimePickerVisible && (
+        <TimePickerModal
+          isVisible={isTimePickerVisible}
+          initialDate={pickerTarget === 'openTime' ? inputs.openTime : inputs.closeTime}
+          onClose={() => setTimePickerVisible(false)}
+          onConfirm={handleTimeConfirm}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -189,14 +218,14 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   input: { borderWidth: 1, borderColor: colors.border, padding: 15, borderRadius: 8, marginBottom: 15, backgroundColor: colors.card, color: colors.text, fontSize: 16 },
   inputLabel: { fontSize: 16, color: colors.subText, marginBottom: 8 },
   button: { 
-    backgroundColor: '#6EE7B7', // ★★★ 수정된 부분 ★★★
+    backgroundColor: '#6EE7B7',
     padding: 15, 
     borderRadius: 8, 
     alignItems: 'center', 
     marginTop: 20 
   },
   buttonText: { 
-    color: '#064E3B', // 어두운 녹색 계열로 가독성 확보
+    color: '#064E3B',
     fontSize: 16, 
     fontWeight: 'bold' 
   },

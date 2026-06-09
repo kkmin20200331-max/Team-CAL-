@@ -12,7 +12,7 @@ import { User } from './src/types/User';
 // Screens
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SignupScreen from './src/screens/auth/SignupScreen';
-import SignupChoiceScreen from './src/screens/auth/SignupChoiceScreen'; // 선택 화면 임포트
+import SignupChoiceScreen from './src/screens/auth/SignupChoiceScreen';
 import PendingScreen from './src/screens/auth/PendingScreen';
 import DashboardScreen from './src/screens/main/DashboardScreen';
 import BranchSelectScreen from './src/screens/main/BranchSelectScreen';
@@ -32,6 +32,7 @@ import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
 import AdminScheduleScreen from './src/screens/admin/AdminScheduleScreen';
 import AdminDailyScheduleScreen from './src/screens/admin/AdminDailyScheduleScreen';
 import EmployeeManagementScreen from './src/screens/admin/EmployeeManagementScreen';
+import ShiftEditorScreen from './src/screens/admin/ShiftEditorScreen'; // 근무 편집 화면 임포트
 
 // Contexts
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
@@ -132,6 +133,7 @@ function AdminHomeNavigator() {
       <AdminScreensStack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
       <AdminScreensStack.Screen name="AdminDailySchedule" component={AdminDailyScheduleScreen} />
       <AdminScreensStack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />
+      <AdminScreensStack.Screen name="ShiftEditor" component={ShiftEditorScreen} />
     </AdminScreensStack.Navigator>
   );
 }
