@@ -29,7 +29,8 @@ import PayrollScreen from './src/screens/main/PayrollScreen';
 import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
 import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
 import AdminScheduleScreen from './src/screens/admin/AdminScheduleScreen';
-import AdminDailyScheduleScreen from './src/screens/admin/AdminDailyScheduleScreen'; // 상세 페이지 임포트
+import AdminDailyScheduleScreen from './src/screens/admin/AdminDailyScheduleScreen';
+import EmployeeManagementScreen from './src/screens/admin/EmployeeManagementScreen'; // 직원 관리 화면 임포트
 
 // Contexts
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
@@ -130,6 +131,7 @@ function AdminHomeNavigator() {
       <AdminScreensStack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
       <AdminScreensStack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
       <AdminScreensStack.Screen name="AdminDailySchedule" component={AdminDailyScheduleScreen} />
+      <AdminScreensStack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />
     </AdminScreensStack.Navigator>
   );
 }

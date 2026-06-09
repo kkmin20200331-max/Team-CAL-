@@ -7,7 +7,6 @@ import { User } from '../../types/User';
 
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
 
-// ✅ [개선 7] 부모(App.tsx)로부터 받는 함수들의 타입을 명확하게 정의합니다.
 type Props = {
   navigation: LoginScreenNavigationProp;
   setIsLoggedIn: (value: boolean) => void;
@@ -30,19 +29,27 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
       const response = await loginAPI(username, password);
       const data = response.data;
 
-      console.log("서버 로그인 응답 데이터:", data);
-      
-      // ✅ [개선 8] .toLowerCase()를 제거하여 백엔드에서 받은 상태값('ACTIVE')을 그대로 사용합니다.
-      // 이 부분이 'active'로 바뀌면 App.tsx의 조건문(userStatus === 'ACTIVE')과 맞지 않아 버그가 발생합니다.
-      const fetchedUserStatus = data.status;
+      // --- ★★★ 권한 검증 로직 추가 ★★★ ---
+      const serverRole = data.role ? data.role.toUpperCase() : null;
 
+      // 서버에서 받은 권한과 UI에서 선택한 권한이 다르면 로그인 차단
+      if (serverRole && serverRole !== loginRole) {
+        Alert.alert(
+            "로그인 실패",
+            "선택하신 로그인 유형과 계정의 실제 권한이 일치하지 않습니다."
+        );
+        return; // 로그인 절차 중단
+      }
+      // --- ★★★ 검증 로직 끝 ★★★ ---
+
+      const fetchedUserStatus = data.status;
       setUserStatus(fetchedUserStatus);
       setIsLoggedIn(true);
-      
+
       const savedStore = await AsyncStorage.getItem(`store_${data.username}`);
 
-      const finalRole = data.role ? data.role.toUpperCase() : loginRole;
-      console.log("최종 부여된 권한(Role):", finalRole);
+      // 검증이 끝났으므로, 최종 권한을 확정합니다.
+      const finalRole = serverRole || loginRole;
 
       if (data.store_id || data.branchName || data.brandName || savedStore) {
         setHasSelectedBranch(true);
@@ -59,66 +66,66 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
   };
 
   return (
-    <View style={styles.container}>
-      <Image 
-        source={require('../../../assets/img/logo_3.png')} 
-        style={styles.logoImage} 
-        resizeMode="contain" 
-      />
+      <View style={styles.container}>
+        <Image
+            source={require('../../../assets/img/logo_3.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+        />
 
-      <View style={styles.roleToggleContainer}>
-        <TouchableOpacity 
-          style={[styles.roleButton, loginRole === 'STAFF' && styles.roleButtonActive]} 
-          onPress={() => setLoginRole('STAFF')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.roleButtonText, loginRole === 'STAFF' && styles.roleButtonTextActive]}>직원</Text>
+        <View style={styles.roleToggleContainer}>
+          <TouchableOpacity
+              style={[styles.roleButton, loginRole === 'STAFF' && styles.roleButtonActive]}
+              onPress={() => setLoginRole('STAFF')}
+              activeOpacity={0.8}
+          >
+            <Text style={[styles.roleButtonText, loginRole === 'STAFF' && styles.roleButtonTextActive]}>직원</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+              style={[styles.roleButton, loginRole === 'ADMIN' && styles.roleButtonActive]}
+              onPress={() => setLoginRole('ADMIN')}
+              activeOpacity={0.8}
+          >
+            <Text style={[styles.roleButtonText, loginRole === 'ADMIN' && styles.roleButtonTextActive]}>관리자 (점주)</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TextInput
+            style={styles.input}
+            placeholder="아이디를 입력하세요"
+            value={username}
+            onChangeText={(text) => handleInputChange('username', text)}
+        />
+
+        <TextInput
+            style={styles.input}
+            placeholder="비밀번호를 입력하세요"
+            value={password}
+            onChangeText={(text) => handleInputChange('password', text)}
+            secureTextEntry={true}
+        />
+
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>로그인</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.roleButton, loginRole === 'ADMIN' && styles.roleButtonActive]} 
-          onPress={() => setLoginRole('ADMIN')}
-          activeOpacity={0.8}
+
+        <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('Signup')}
         >
-          <Text style={[styles.roleButtonText, loginRole === 'ADMIN' && styles.roleButtonTextActive]}>관리자 (점주)</Text>
+          <Text style={styles.buttonText}>회원가입</Text>
         </TouchableOpacity>
+
       </View>
-
-      <TextInput
-        style={styles.input}
-        placeholder="아이디를 입력하세요"
-        value={username}
-        onChangeText={(text) => handleInputChange('username', text)}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="비밀번호를 입력하세요"
-        value={password}
-        onChangeText={(text) => handleInputChange('password', text)}
-        secureTextEntry={true}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>로그인</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Signup')}
-      >
-        <Text style={styles.buttonText}>회원가입</Text>
-      </TouchableOpacity>
-
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    padding: 20, 
-    backgroundColor: '#fff' 
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#fff'
   },
   logoImage: {
     width: 400,
@@ -155,23 +162,23 @@ const styles = StyleSheet.create({
   roleButtonTextActive: {
     color: '#8B5CF6',
   },
-  input: { 
-    borderWidth: 1, 
-    borderColor: '#ddd', 
-    padding: 15, 
-    borderRadius: 8, 
-    marginBottom: 15 
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15
   },
-  button: { 
-    backgroundColor: '#8B5CF6', 
-    padding: 15, 
-    borderRadius: 8, 
+  button: {
+    backgroundColor: '#8B5CF6',
+    padding: 15,
+    borderRadius: 8,
     alignItems: 'center',
     marginTop: 10
   },
-  buttonText: { 
-    color: '#fff', 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold'
   }
 });
