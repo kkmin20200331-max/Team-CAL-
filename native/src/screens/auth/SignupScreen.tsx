@@ -1,135 +1,235 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ScrollView, Switch, KeyboardAvoidingView, Platform } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { signupAPI } from '../../../api/auth';
 import axios from 'axios';
+import { useTheme } from '../../contexts/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 
-// TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
 type Props = {
   navigation: SignupScreenNavigationProp;
+  route: { params: { role: 'STAFF' | 'ADMIN' } };
 };
 
-export default function SignupScreen({ navigation }: Props) {
-  // [퀴즈 1] 상태 초기화
-  const [inputs, setInputs] = useState({id : "", password : "", passwordCheck : "", name : "", phone: ""});
-  
-  // 비구조화 할당
-  const { id, password, passwordCheck, name, phone } = inputs;
+export default function SignupScreen({ navigation, route }: Props) {
+  const { role } = route.params;
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
 
-  // [퀴즈 2] 입력 핸들러
-  const handleInputChange = (name: string, text: string) => {
-    setInputs({ ...inputs, [name]: text });
+  const [inputs, setInputs] = useState({
+    id: "",
+    password: "",
+    passwordCheck: "",
+    name: "",
+    phone: "",
+    isFranchise: true,
+    brandName: "",
+    branchName: "",
+    openTime: "09:00",
+    closeTime: "22:00",
+    maxCapacity: "",
+  });
+
+  const handleInputChange = (name: string, value: string | boolean) => {
+    setInputs(prev => ({ ...prev, [name]: value }));
   };
 
-  // 회원가입 버튼 로직
   const handleSignup = async () => {
-    if (!id || !password || !passwordCheck || !name || !phone) {
-      Alert.alert("입력 오류", "모든 항목을 입력해주세요.");
-      return; 
-    }
+    const { id, password, passwordCheck, name, phone, isFranchise, brandName, branchName, openTime, closeTime, maxCapacity } = inputs;
 
+    if (!id || !password || !passwordCheck || !name || !phone) {
+      Alert.alert("입력 오류", "모든 필수 항목을 입력해주세요.");
+      return;
+    }
+    if (role === 'ADMIN') {
+      if (!brandName || !branchName || !openTime || !closeTime || !maxCapacity) {
+        Alert.alert("입력 오류", "관리자 정보를 모두 입력해주세요.");
+        return;
+      }
+    }
     if (password !== passwordCheck) {
       Alert.alert("비밀번호 오류", "비밀번호가 일치하지 않습니다.");
       return;
     }
 
     try {
-    // 2. 백엔드로 보낼 데이터 조립
-    // 백엔드의 UserVo(username)와 프론트의 변수(id) 이름을 맞춰줍니다.
-    // 메모: 백엔드는 id/status를 자동 생성하지 않으므로 RN에서 함께 전달합니다.
-    const signupData = {
-      id: `U_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`.slice(0, 21),
-      username: id,
-      password,
-      name,
-      phone,
-      role: "ADMIN" as const,
-      status: "ACTIVE" as const,
-    };
-    
-    // 3. 백엔드 API 호출!
-    await signupAPI(signupData);
+      const signupData: any = {
+        id: `U_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`.slice(0, 21),
+        username: id,
+        password,
+        name,
+        phone,
+        role,
+        status: "ACTIVE",
+      };
 
-    // 4. 통신 성공 시 화면 이동 및 알림
-    Alert.alert("가입 성공", `${name}님 환영합니다!`, [
-      { text: "확인", onPress: () => navigation.goBack() }
-    ]);
+      if (role === 'ADMIN') {
+        signupData.isFranchise = isFranchise;
+        signupData.brandName = brandName;
+        signupData.branchName = branchName;
+        signupData.openTime = openTime;
+        signupData.closeTime = closeTime;
+        signupData.maxCapacity = parseInt(maxCapacity, 10);
+      }
+      
+      await signupAPI(signupData);
 
-  } catch (error) {
-  if (axios.isAxiosError(error) && error.response) {
-    Alert.alert("가입 실패", `서버 오류: ${error.response.status}`);
-  } else if (axios.isAxiosError(error) && error.request) {
-    Alert.alert("가입 실패", "백엔드 서버에 연결할 수 없습니다.");
-  } else {
-    Alert.alert("가입 실패", "알 수 없는 오류가 발생했습니다.");
-  }
-}
-  }; // handleSignup 끝
+      Toast.show({
+        type: 'success',
+        text1: '가입 성공',
+        text2: `${name}님 환영합니다!`,
+      });
+      navigation.navigate('Login');
+
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        Alert.alert("가입 실패", `서버 오류: ${error.response.status}`);
+      } else if (axios.isAxiosError(error) && error.request) {
+        Alert.alert("가입 실패", "백엔드 서버에 연결할 수 없습니다.");
+      } else {
+        Alert.alert("가입 실패", "알 수 없는 오류가 발생했습니다.");
+      }
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>회원가입 화면</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="아이디"
-        value={id}
-        onChangeText={(text) => handleInputChange('id', text)}
-      />
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backButton}>◀</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>
+          {role === 'ADMIN' ? '관리자 회원가입' : '직원 회원가입'}
+        </Text>
+        <View style={{ width: 40 }} />
+      </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="비밀번호"
-        value={password}
-        onChangeText={(text) => handleInputChange('password', text)}
-        secureTextEntry={true}
-      />
-
-      {/* [퀴즈 3] */}
-      <TextInput
-        style={styles.input}
-        placeholder="비밀번호 확인"
-        value={passwordCheck}
-        onChangeText={(text)=> handleInputChange('passwordCheck', text)}
-        secureTextEntry={true} 
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="이름 (예: 김선민)"
-        value={name}
-        onChangeText={(text)=> handleInputChange('name', text)}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="전화번호 (예: 010-1234-5678)"
-        value={phone}
-        onChangeText={(text)=> handleInputChange('phone', text)}
-        keyboardType="phone-pad"
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <Text style={styles.buttonText}>가입 완료</Text>
-      </TouchableOpacity>
-      
-      {/* [퀴즈 4] */}
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={() => navigation.goBack()}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoidingContainer}
       >
-        <Text style={styles.buttonText}>로그인으로 돌아가기</Text>
-      </TouchableOpacity>
-    </View>
-  );
-} // SignupScreen 컴포넌트 끝 (여기도 ; 빼는 것이 더 깔끔합니다)
+        <ScrollView
+          contentContainerStyle={styles.formContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.sectionTitle}>기본 정보</Text>
+          <TextInput style={styles.input} placeholder="아이디" value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} />
+          <TextInput style={styles.input} placeholder="비밀번호" value={inputs.password} onChangeText={(text) => handleInputChange('password', text)} secureTextEntry={true} />
+          <TextInput style={styles.input} placeholder="비밀번호 확인" value={inputs.passwordCheck} onChangeText={(text) => handleInputChange('passwordCheck', text)} secureTextEntry={true} />
+          <TextInput style={styles.input} placeholder="이름 (예: 김선민)" value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
+          <TextInput style={styles.input} placeholder="전화번호 (예: 010-1234-5678)" value={inputs.phone} onChangeText={(text) => handleInputChange('phone', text)} keyboardType="phone-pad" />
 
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 30, textAlign: 'center' },
-  input: { borderWidth: 1, borderColor: '#ddd', padding: 15, borderRadius: 8, marginBottom: 15 },
-  button: { backgroundColor: '#8B5CF6', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+          {role === 'ADMIN' && (
+            <>
+              <Text style={styles.sectionTitle}>매장 정보</Text>
+              <View style={styles.toggleContainer}>
+                <Text style={styles.inputLabel}>프랜차이즈 매장인가요?</Text>
+                <Switch
+                  trackColor={{ false: "#767577", true: colors.primary }}
+                  thumbColor={inputs.isFranchise ? "#f4f3f4" : "#f4f3f4"}
+                  onValueChange={(value) => handleInputChange('isFranchise', value)}
+                  value={inputs.isFranchise}
+                />
+              </View>
+              <TextInput style={styles.input} placeholder="브랜드명 (예: 컴포즈커피)" value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
+              <TextInput style={styles.input} placeholder="지점명 (예: 미금점)" value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
+              
+              <View style={styles.timeContainer}>
+                <View style={styles.timeInputWrapper}>
+                  <Text style={styles.inputLabel}>오픈 시간</Text>
+                  <TouchableOpacity style={styles.timeButton}>
+                    <Text style={styles.timeText}>{inputs.openTime}</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.timeInputWrapper}>
+                  <Text style={styles.inputLabel}>마감 시간</Text>
+                  <TouchableOpacity style={styles.timeButton}>
+                    <Text style={styles.timeText}>{inputs.closeTime}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <Text style={styles.inputLabel}>최대 수용 인원</Text>
+              <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('maxCapacity', text)} keyboardType="number-pad" />
+            </>
+          )}
+
+          <TouchableOpacity style={styles.button} onPress={handleSignup}>
+            <Text style={styles.buttonText}>가입 완료</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const getThemedStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  keyboardAvoidingContainer: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  backButton: { fontSize: 24, color: colors.primary, width: 40 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
+  formContainer: { 
+    padding: 20,
+    paddingBottom: 40,
+  },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginTop: 16, marginBottom: 12 },
+  input: { borderWidth: 1, borderColor: colors.border, padding: 15, borderRadius: 8, marginBottom: 15, backgroundColor: colors.card, color: colors.text, fontSize: 16 },
+  inputLabel: { fontSize: 16, color: colors.subText, marginBottom: 8 },
+  button: { 
+    backgroundColor: '#6EE7B7', // ★★★ 수정된 부분 ★★★
+    padding: 15, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    marginTop: 20 
+  },
+  buttonText: { 
+    color: '#064E3B', // 어두운 녹색 계열로 가독성 확보
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  timeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+  timeInputWrapper: {
+    width: '48%',
+  },
+  timeButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 15,
+    borderRadius: 8,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+  },
+  timeText: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+  }
 });

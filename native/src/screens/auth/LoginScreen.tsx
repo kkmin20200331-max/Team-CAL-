@@ -1,6 +1,6 @@
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { loginAPI } from '../../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../../types/User';
@@ -29,18 +29,15 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
       const response = await loginAPI(username, password);
       const data = response.data;
 
-      // --- ★★★ 권한 검증 로직 추가 ★★★ ---
       const serverRole = data.role ? data.role.toUpperCase() : null;
-
-      // 서버에서 받은 권한과 UI에서 선택한 권한이 다르면 로그인 차단
+      
       if (serverRole && serverRole !== loginRole) {
         Alert.alert(
             "로그인 실패",
             "선택하신 로그인 유형과 계정의 실제 권한이 일치하지 않습니다."
         );
-        return; // 로그인 절차 중단
+        return;
       }
-      // --- ★★★ 검증 로직 끝 ★★★ ---
 
       const fetchedUserStatus = data.status;
       setUserStatus(fetchedUserStatus);
@@ -48,7 +45,6 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
 
       const savedStore = await AsyncStorage.getItem(`store_${data.username}`);
 
-      // 검증이 끝났으므로, 최종 권한을 확정합니다.
       const finalRole = serverRole || loginRole;
 
       if (data.store_id || data.branchName || data.brandName || savedStore) {
@@ -66,7 +62,11 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
   };
 
   return (
-      <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.keyboardAvoidingContainer}
+    >
+      <ScrollView contentContainerStyle={styles.container}>
         <Image
             source={require('../../../assets/img/logo_3.png')}
             style={styles.logoImage}
@@ -111,18 +111,21 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
 
         <TouchableOpacity
             style={styles.button}
-            onPress={() => navigation.navigate('Signup')}
+            onPress={() => navigation.navigate('SignupChoice')}
         >
           <Text style={styles.buttonText}>회원가입</Text>
         </TouchableOpacity>
-
-      </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  keyboardAvoidingContainer: {
     flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
     backgroundColor: '#fff'
@@ -160,7 +163,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   roleButtonTextActive: {
-    color: '#8B5CF6',
+    color: '#6EE7B7', // ★★★ 수정된 부분 ★★★
   },
   input: {
     borderWidth: 1,
@@ -170,14 +173,14 @@ const styles = StyleSheet.create({
     marginBottom: 15
   },
   button: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#6EE7B7', // ★★★ 수정된 부분 ★★★
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 10
   },
   buttonText: {
-    color: '#fff',
+    color: '#064E3B', // 어두운 녹색 계열로 가독성 확보
     fontSize: 16,
     fontWeight: 'bold'
   }

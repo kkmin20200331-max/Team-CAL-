@@ -12,6 +12,7 @@ import { User } from './src/types/User';
 // Screens
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SignupScreen from './src/screens/auth/SignupScreen';
+import SignupChoiceScreen from './src/screens/auth/SignupChoiceScreen'; // 선택 화면 임포트
 import PendingScreen from './src/screens/auth/PendingScreen';
 import DashboardScreen from './src/screens/main/DashboardScreen';
 import BranchSelectScreen from './src/screens/main/BranchSelectScreen';
@@ -30,7 +31,7 @@ import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
 import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
 import AdminScheduleScreen from './src/screens/admin/AdminScheduleScreen';
 import AdminDailyScheduleScreen from './src/screens/admin/AdminDailyScheduleScreen';
-import EmployeeManagementScreen from './src/screens/admin/EmployeeManagementScreen'; // 직원 관리 화면 임포트
+import EmployeeManagementScreen from './src/screens/admin/EmployeeManagementScreen';
 
 // Contexts
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
@@ -124,7 +125,6 @@ function StaffTabNavigator({ route }: any) {
   );
 }
 
-// 관리자용 스크린들을 묶는 스택 네비게이터
 function AdminHomeNavigator() {
   return (
     <AdminScreensStack.Navigator screenOptions={{ headerShown: false }}>
@@ -136,7 +136,6 @@ function AdminHomeNavigator() {
   );
 }
 
-// 수정된 관리자 탭 네비게이터
 function AdminTabNavigator({ route }: any) {
   const { handleLogout, userInfo, setUserInfo } = route.params || {};
   const { t } = useLanguage();
@@ -220,10 +219,10 @@ export default function App() {
         <LanguageProvider>
           <NotificationProvider>
             <NavigationContainer ref={navigationRef}>
-              <Stack.Navigator>
+              <Stack.Navigator screenOptions={{ headerShown: false }}>
                 {!isLoggedIn ? (
                   <Stack.Group>
-                    <Stack.Screen name="Login" options={{ headerShown: false }}>
+                    <Stack.Screen name="Login">
                       {(props: any) => (
                         <LoginScreen 
                           {...props} 
@@ -234,15 +233,12 @@ export default function App() {
                         />
                       )}
                     </Stack.Screen>
-                    <Stack.Screen 
-                      name="Signup" 
-                      component={SignupScreen} 
-                      options={{ title: '회원가입' }} 
-                    />
+                    <Stack.Screen name="SignupChoice" component={SignupChoiceScreen} />
+                    <Stack.Screen name="Signup" component={SignupScreen} />
                   </Stack.Group>
                 ) : !hasSelectedBranch ? (
                   <Stack.Group>
-                    <Stack.Screen name="BranchSelect" options={{ headerShown: false }}>
+                    <Stack.Screen name="BranchSelect">
                       {({ navigation }: any) => (
                         <BranchSelectScreen 
                           navigation={navigation} 
@@ -260,27 +256,25 @@ export default function App() {
                         name="AdminTab" 
                         component={AdminTabNavigator} 
                         initialParams={{ handleLogout, userInfo, setUserInfo }}
-                        options={{ headerShown: false }} 
                       />
                     ) : (
                       <Stack.Screen 
                         name="StaffTab" 
                         component={StaffTabNavigator} 
                         initialParams={{ handleLogout, userInfo, setUserInfo }}
-                        options={{ headerShown: false }} 
                       />
                     )}
-                    <Stack.Screen name="QRCheckIn" component={QRCheckInScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="BoardNavigator" component={BoardNavigator} options={{ headerShown: false }} />
-                    <Stack.Screen name="Substitute" component={SubstituteScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="Payroll" component={PayrollScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="Contract" component={ContractScreen} options={{ headerShown: false }} />
-                    <Stack.Screen name="HealthCert" component={HealthCertScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="QRCheckIn" component={QRCheckInScreen} />
+                    <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+                    <Stack.Screen name="BoardNavigator" component={BoardNavigator} />
+                    <Stack.Screen name="Substitute" component={SubstituteScreen} />
+                    <Stack.Screen name="Payroll" component={PayrollScreen} />
+                    <Stack.Screen name="Contract" component={ContractScreen} />
+                    <Stack.Screen name="HealthCert" component={HealthCertScreen} />
                   </Stack.Group>
                 ) : (
                   <Stack.Group>
-                    <Stack.Screen name="Pending" options={{ headerShown: false }}>
+                    <Stack.Screen name="Pending">
                       {({ navigation }: any) => (
                         <PendingScreen 
                           navigation={navigation} 
