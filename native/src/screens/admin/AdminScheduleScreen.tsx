@@ -18,41 +18,41 @@ const generateDummyShifts = (month: Date) => {
   const monthStr = format(month, 'yyyy-MM');
   const shifts = [
     // Week 1
-    { userId: 'user_1', date: `${monthStr}-02`, time: '09-15' },
-    { userId: 'user_2', date: `${monthStr}-02`, time: '15-22' },
-    { userId: 'user_3', date: `${monthStr}-03`, time: '09-17' },
-    { userId: 'user_4', date: `${monthStr}-04`, time: '14-22' },
-    { userId: 'user_5', date: `${monthStr}-05`, time: '09-15' },
-    { userId: 'user_1', date: `${monthStr}-06`, time: '15-22' },
-    { userId: 'user_2', date: `${monthStr}-07`, time: '09-17' },
+    { userId: 'user_1', date: `${monthStr}-02`, time: '09:00-15:00' },
+    { userId: 'user_2', date: `${monthStr}-02`, time: '15:00-22:00' },
+    { userId: 'user_3', date: `${monthStr}-03`, time: '09:00-17:00' },
+    { userId: 'user_4', date: `${monthStr}-04`, time: '14:00-22:00' },
+    { userId: 'user_5', date: `${monthStr}-05`, time: '09:00-15:00' },
+    { userId: 'user_1', date: `${monthStr}-06`, time: '15:00-22:00' },
+    { userId: 'user_2', date: `${monthStr}-07`, time: '09:00-17:00' },
     // Week 2
-    { userId: 'user_3', date: `${monthStr}-09`, time: '09-15' },
-    { userId: 'user_4', date: `${monthStr}-09`, time: '15-22' },
-    { userId: 'user_5', date: `${monthStr}-10`, time: '09-17' },
-    { userId: 'user_1', date: `${monthStr}-11`, time: '14-22' },
-    { userId: 'user_2', date: `${monthStr}-12`, time: '09-15' },
-    { userId: 'user_3', date: `${monthStr}-13`, time: '15-22' },
-    { userId: 'user_4', date: `${monthStr}-14`, time: '09-17' },
+    { userId: 'user_3', date: `${monthStr}-09`, time: '09:00-15:00' },
+    { userId: 'user_4', date: `${monthStr}-09`, time: '15:00-22:00' },
+    { userId: 'user_5', date: `${monthStr}-10`, time: '09:00-17:00' },
+    { userId: 'user_1', date: `${monthStr}-11`, time: '14:00-22:00' },
+    { userId: 'user_2', date: `${monthStr}-12`, time: '09:00-15:00' },
+    { userId: 'user_3', date: `${monthStr}-13`, time: '15:00-22:00' },
+    { userId: 'user_4', date: `${monthStr}-14`, time: '09:00-17:00' },
     // Week 3
-    { userId: 'user_5', date: `${monthStr}-16`, time: '09-15' },
-    { userId: 'user_1', date: `${monthStr}-16`, time: '15-22' },
-    { userId: 'user_2', date: `${monthStr}-17`, time: '09-17' },
-    { userId: 'user_3', date: `${monthStr}-18`, time: '14-22' },
-    { userId: 'user_4', date: `${monthStr}-19`, time: '09-15' },
-    { userId: 'user_5', date: `${monthStr}-20`, time: '15-22' },
-    { userId: 'user_1', date: `${monthStr}-21`, time: '09-17' },
+    { userId: 'user_5', date: `${monthStr}-16`, time: '09:00-15:00' },
+    { userId: 'user_1', date: `${monthStr}-16`, time: '15:00-22:00' },
+    { userId: 'user_2', date: `${monthStr}-17`, time: '09:00-17:00' },
+    { userId: 'user_3', date: `${monthStr}-18`, time: '14:00-22:00' },
+    { userId: 'user_4', date: `${monthStr}-19`, time: '09:00-15:00' },
+    { userId: 'user_5', date: `${monthStr}-20`, time: '15:00-22:00' },
+    { userId: 'user_1', date: `${monthStr}-21`, time: '09:00-17:00' },
+    // Week 4
+    { userId: 'user_2', date: `${monthStr}-23`, time: '10:00-18:00' },
+    { userId: 'user_3', date: `${monthStr}-24`, time: '10:00-18:00' },
+    { userId: 'user_1', date: `${monthStr}-25`, time: '10:00-18:00' },
   ];
-  // Add more shifts for variety
-  shifts.push({ userId: 'user_2', date: `${monthStr}-23`, time: '10-18' });
-  shifts.push({ userId: 'user_3', date: `${monthStr}-24`, time: '10-18' });
-  shifts.push({ userId: 'user_1', date: `${monthStr}-25`, time: '10-18' });
 
   return shifts;
 };
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-const AdminScheduleScreen = () => {
+const AdminScheduleScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
 
@@ -62,11 +62,11 @@ const AdminScheduleScreen = () => {
     const shifts = generateDummyShifts(currentMonth);
     const grouped: { [key: string]: any[] } = {};
     shifts.forEach(shift => {
-      if (!grouped[shift.date]) {
-        grouped[shift.date] = [];
-      }
       const user = dummyUsers.find(u => u.id === shift.userId);
       if (user) {
+        if (!grouped[shift.date]) {
+          grouped[shift.date] = [];
+        }
         grouped[shift.date].push({ ...shift, user });
       }
     });
@@ -76,11 +76,16 @@ const AdminScheduleScreen = () => {
   const calendarDates = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday start
-    return Array.from({ length: 35 }, (_, i) => addDays(gridStart, i));
+    return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)); // 6 weeks
   }, [currentMonth]);
 
   const changeMonth = (offset: number) => {
     setCurrentMonth(prev => addMonths(prev, offset));
+  };
+
+  const handleDatePress = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    navigation.navigate('AdminDailySchedule', { date: dateStr });
   };
 
   const renderCell = (date: Date) => {
@@ -90,7 +95,11 @@ const AdminScheduleScreen = () => {
     const isToday = isSameDay(date, new Date());
 
     return (
-      <View style={[styles.cell, !isCurrentMonth && styles.cellNotInMonth]}>
+      <TouchableOpacity 
+        style={[styles.cell, !isCurrentMonth && styles.cellNotInMonth]}
+        onPress={() => handleDatePress(date)}
+        disabled={!isCurrentMonth}
+      >
         <Text style={[styles.dateText, isToday && styles.todayText]}>
           {format(date, 'd')}
         </Text>
@@ -98,27 +107,33 @@ const AdminScheduleScreen = () => {
           {dayShifts.map((shift, index) => (
             <View key={index} style={[styles.shiftBadge, { backgroundColor: shift.user.color }]}>
               <Text style={styles.shiftText} numberOfLines={1}>
-                {shift.user.name} {shift.time}
+                {`${shift.user.name} ${shift.time}`}
               </Text>
             </View>
           ))}
         </ScrollView>
-      </View>
+      </TouchableOpacity>
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => changeMonth(-1)}>
-          <Text style={styles.arrow}>◀</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.backButton}>◀</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {format(currentMonth, 'yyyy년 M월', { locale: ko })}
-        </Text>
-        <TouchableOpacity onPress={() => changeMonth(1)}>
-          <Text style={styles.arrow}>▶</Text>
-        </TouchableOpacity>
+        <View style={styles.monthControl}>
+          <TouchableOpacity onPress={() => changeMonth(-1)}>
+            <Text style={styles.arrow}>◀</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            {format(currentMonth, 'yyyy년 M월', { locale: ko })}
+          </Text>
+          <TouchableOpacity onPress={() => changeMonth(1)}>
+            <Text style={styles.arrow}>▶</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.dayLabels}>
@@ -147,12 +162,26 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  backButton: {
+    fontSize: 24,
+    color: colors.primary,
+    width: 40,
+  },
+  monthControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text,
+    marginHorizontal: 16,
   },
   arrow: {
     fontSize: 20,
@@ -160,7 +189,6 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   dayLabels: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -170,7 +198,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     fontWeight: 'bold',
     color: colors.subText,
     textAlign: 'center',
-    width: '14%',
+    width: '14.28%',
   },
   calendarGrid: {
     flex: 1,
@@ -179,7 +207,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   cellWrapper: {
     width: '14.28%',
-    height: '20%', // 5 weeks
+    height: '16.66%', // 100% / 6 weeks
     padding: 2,
   },
   cell: {

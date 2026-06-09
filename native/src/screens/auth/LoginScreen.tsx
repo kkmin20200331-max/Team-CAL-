@@ -29,6 +29,8 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
     try {
       const response = await loginAPI(username, password);
       const data = response.data;
+
+      console.log("서버 로그인 응답 데이터:", data);
       
       // ✅ [개선 8] .toLowerCase()를 제거하여 백엔드에서 받은 상태값('ACTIVE')을 그대로 사용합니다.
       // 이 부분이 'active'로 바뀌면 App.tsx의 조건문(userStatus === 'ACTIVE')과 맞지 않아 버그가 발생합니다.
@@ -38,8 +40,6 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
       setIsLoggedIn(true);
       
       const savedStore = await AsyncStorage.getItem(`store_${data.username}`);
-
-      console.log("서버 로그인 응답 데이터:", data);
 
       const finalRole = data.role ? data.role.toUpperCase() : loginRole;
       console.log("최종 부여된 권한(Role):", finalRole);

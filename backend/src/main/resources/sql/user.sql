@@ -82,4 +82,4 @@ DELETE FROM users WHERE id = 'USR_c54710b4566e4749';
 
 COMMIT;
 
-UPDATE users SET role = 'STAFF' WHERE username = '123';
+UPDATE users SET password = '123' WHERE username = 'admin01';

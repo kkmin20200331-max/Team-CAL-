@@ -9,10 +9,11 @@ import * as Notifications from 'expo-notifications';
 
 import { User } from './src/types/User';
 
+// Screens
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SignupScreen from './src/screens/auth/SignupScreen';
-import DashboardScreen from './src/screens/main/DashboardScreen';
 import PendingScreen from './src/screens/auth/PendingScreen';
+import DashboardScreen from './src/screens/main/DashboardScreen';
 import BranchSelectScreen from './src/screens/main/BranchSelectScreen';
 import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
 import MyPageScreen from './src/screens/mypage/MyPageScreen';
@@ -26,7 +27,11 @@ import ContractScreen from './src/screens/mypage/ContractScreen';
 import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
 import PayrollScreen from './src/screens/main/PayrollScreen';
 import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
+import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
+import AdminScheduleScreen from './src/screens/admin/AdminScheduleScreen';
+import AdminDailyScheduleScreen from './src/screens/admin/AdminDailyScheduleScreen'; // 상세 페이지 임포트
 
+// Contexts
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
 import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
@@ -63,11 +68,11 @@ Notifications.setNotificationHandler({
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-const BoardStack = createStackNavigator(); // ✅ [오류 수정] 게시판 전용 스택 네비게이터 생성
+const BoardStack = createStackNavigator();
+const AdminScreensStack = createStackNavigator();
 
 export const navigationRef = createNavigationContainerRef<any>();
 
-// ✅ [오류 수정] 게시판 관련 화면들을 별도의 스택으로 묶어 관리합니다.
 function BoardNavigator() {
   return (
     <BoardStack.Navigator screenOptions={{ headerShown: false }}>
@@ -79,7 +84,6 @@ function BoardNavigator() {
 }
 
 function StaffTabNavigator({ route }: any) {
-  // ✅ [개선 2] 로그아웃 함수(handleLogout)를 하위 화면(MyPage, Dashboard)으로 전달합니다.
   const { handleLogout, userInfo, setUserInfo } = route.params || {};
   const { unreadCount } = useContext(NotificationContext);
   const { t } = useLanguage();
@@ -92,7 +96,6 @@ function StaffTabNavigator({ route }: any) {
         headerShown: false,
       }}
     >
-      {/* ✅ [오류 수정] component prop을 사용하고, 필요한 데이터는 initialParams로 전달합니다. */}
       <Tab.Screen
         name="Home" 
         component={DashboardScreen}
@@ -120,6 +123,18 @@ function StaffTabNavigator({ route }: any) {
   );
 }
 
+// 관리자용 스크린들을 묶는 스택 네비게이터
+function AdminHomeNavigator() {
+  return (
+    <AdminScreensStack.Navigator screenOptions={{ headerShown: false }}>
+      <AdminScreensStack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+      <AdminScreensStack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
+      <AdminScreensStack.Screen name="AdminDailySchedule" component={AdminDailyScheduleScreen} />
+    </AdminScreensStack.Navigator>
+  );
+}
+
+// 수정된 관리자 탭 네비게이터
 function AdminTabNavigator({ route }: any) {
   const { handleLogout, userInfo, setUserInfo } = route.params || {};
   const { t } = useLanguage();
@@ -132,18 +147,10 @@ function AdminTabNavigator({ route }: any) {
         headerShown: false,
       }}
     >
-      {/* ✅ [오류 수정] component prop을 사용하고, 필요한 데이터는 initialParams로 전달합니다. */}
       <Tab.Screen
         name="AdminHome" 
-        component={DashboardScreen}
-        initialParams={{ handleLogout, userInfo }}
+        component={AdminHomeNavigator}
         options={{ title: t('tabAdminHome') as string, tabBarIcon: () => <Text>🏪</Text> }}
-      />
-      <Tab.Screen
-        name="AdminSchedule"
-        component={ScheduleScreen}
-        initialParams={{ userInfo }}
-        options={{ title: t('tabAdminSchedule'), tabBarIcon: () => <Text>📅</Text> }}
       />
       <Tab.Screen 
         name="AdminSettings" 
@@ -157,14 +164,10 @@ function AdminTabNavigator({ route }: any) {
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  // ✅ [개선 3] 'any' 대신 User 타입의 status('ACTIVE' | 'PENDING')를 사용하도록 수정합니다.
   const [userStatus, setUserStatus] = useState<User['status']>('PENDING');
   const [hasSelectedBranch, setHasSelectedBranch] = useState(false);
-  // ✅ [개선 4] 'any' 대신 User 또는 null 타입을 사용하도록 하여 안정성을 높입니다.
   const [userInfo, setUserInfo] = useState<User | null>(null);
 
-  // ✅ [개선 5] 로그아웃 시 모든 사용자 관련 상태를 초기화하는 함수입니다.
-  // 이 함수를 사용해야 다른 계정으로 로그인 시 이전 정보가 남는 버그를 막을 수 있습니다.
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserStatus('PENDING');
@@ -248,7 +251,6 @@ export default function App() {
                       )}
                     </Stack.Screen>
                   </Stack.Group>
-                // ✅ [개선 6] 'active' 대신 'ACTIVE' (대문자)로 확인하여 로그인 로직과 일치시킵니다.
                 ) : userStatus === 'ACTIVE' ? (
                   <Stack.Group> 
                     {userInfo?.role === 'ADMIN' ? (
@@ -268,7 +270,6 @@ export default function App() {
                     )}
                     <Stack.Screen name="QRCheckIn" component={QRCheckInScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ headerShown: false }} />
-                    {/* ✅ [오류 수정] 개별 등록 대신 BoardNavigator 그룹을 등록합니다. */}
                     <Stack.Screen name="BoardNavigator" component={BoardNavigator} options={{ headerShown: false }} />
                     <Stack.Screen name="Substitute" component={SubstituteScreen} options={{ headerShown: false }} />
                     <Stack.Screen name="Payroll" component={PayrollScreen} options={{ headerShown: false }} />
