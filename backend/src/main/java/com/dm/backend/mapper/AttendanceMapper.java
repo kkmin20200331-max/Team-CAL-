@@ -11,12 +11,13 @@ public interface AttendanceMapper {
     // =========================
 
     @Select("""
-        SELECT *
-        FROM ATTENDANCE
-        WHERE USER_ID = #{user_id}
-        AND WORK_DATE = TRUNC(SYSDATE)
-    """)
+    SELECT *
+    FROM ATTENDANCE
+    WHERE STORE_ID = #{store_id}
+    AND USER_ID = #{user_id}
+""")
     AttendanceVO getTodayAttendance(
+            @Param("store_id") String store_id,
             @Param("user_id") String user_id
     );
 
