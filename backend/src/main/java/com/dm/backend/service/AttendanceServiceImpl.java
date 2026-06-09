@@ -16,7 +16,7 @@ public class AttendanceServiceImpl
     private AttendanceMapper attendanceMapper;
 
     @Override
-    public String attendanceCheck(
+    public String checkAttendance(
             String store_id,
             String user_id
     ) {
@@ -45,6 +45,8 @@ public class AttendanceServiceImpl
                             new Date(),
                             new Date(),
                             null,
+                            0,
+                            0,
                             "WORKING"
                     );
 

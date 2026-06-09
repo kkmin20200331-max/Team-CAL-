@@ -23,4 +23,12 @@ public class BoardPostVO {
 
     private Date created_at;
     private Date updated_at;
+
+    private String status;
+
+    private String is_pinned;
+
+    private Integer comment_count;
+
+    private Integer view_count;
 }

@@ -22,7 +22,7 @@ public class AttendanceC {
             @RequestBody Map<String,String> request
     ) {
 
-        return attendanceService.attendanceCheck(
+        return attendanceService.checkAttendance(
                 request.get("store_id"),
                 request.get("user_id")
         );
