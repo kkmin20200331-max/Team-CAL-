@@ -29,10 +29,10 @@ public class BoardPostC {
     // 게시글 목록 조회
     @GetMapping
     public List<BoardPostVO> getPostList(
-            @RequestParam String store_id
+            @RequestParam String board_id
     ) {
         return boardPostService.getPostList(
-                store_id
+                board_id
         );
     }
 
@@ -47,7 +47,6 @@ public class BoardPostC {
                 keyword
         );
     }
-
 
     // =========================
     // [관리자]
@@ -64,7 +63,6 @@ public class BoardPostC {
     }
 
     // 게시글 수정
-    // 일반 수정 / 고정 / 임시저장 / 보관
     @PutMapping
     public void updatePost(
             @RequestBody BoardPostVO boardPostVO
@@ -84,10 +82,8 @@ public class BoardPostC {
         );
     }
 
-
     // =========================
     // [직원]
     // =========================
 
-    // 현재 없음
 }
