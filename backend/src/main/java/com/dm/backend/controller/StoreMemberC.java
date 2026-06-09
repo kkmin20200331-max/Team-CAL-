@@ -27,6 +27,19 @@ public class StoreMemberC {
         storeMemberService.approveRegister(storeMemberVo);
     }
 
+    // 근무 가능 요일 설정
+    @PutMapping("/available-days")
+    public void updateAvailableDays(
+            @RequestParam String store_id,
+            @RequestParam String user_id,
+            @RequestParam String available_days
+    ) {
+        storeMemberService.updateAvailableDays(
+                store_id,
+                user_id,
+                available_days
+        );
+    }
 
     // =========================
     // [관리자]
@@ -67,5 +80,15 @@ public class StoreMemberC {
     @PutMapping("/pay")
     public void updatePayInfo(@RequestBody StoreMemberVo vo) {
         storeMemberService.updatePayInfo(vo);
+    }
+
+    // 대타 가능 직원 조회
+    @GetMapping("/available-days")
+    public List<StoreMemberVo> getAvailableMemberList(
+            @RequestParam String store_id
+    ) {
+        return storeMemberService.getAvailableMemberList(
+                store_id
+        );
     }
 }
