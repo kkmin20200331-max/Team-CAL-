@@ -1,6 +1,5 @@
 package com.dm.backend.controller;
 
-
 import com.dm.backend.service.BoardPostService;
 import com.dm.backend.vo.BoardPostVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/board_post")
+@RequestMapping("/api/board/post")
 public class BoardPostC {
 
     @Autowired
@@ -19,20 +18,60 @@ public class BoardPostC {
     // [공통]
     // =========================
 
-    // 게시글 작성
+    // 게시글 단건 조회
+    @GetMapping("/{id}")
+    public BoardPostVO getPost(
+            @PathVariable String id
+    ) {
+        return boardPostService.getPost(id);
+    }
+
+    // 게시글 목록 조회
+    @GetMapping
+    public List<BoardPostVO> getPostList(
+            @RequestParam String store_id
+    ) {
+        return boardPostService.getPostList(
+                store_id
+        );
+    }
+
+    // 게시글 검색
+    @GetMapping("/search")
+    public List<BoardPostVO> searchPost(
+            @RequestParam String store_id,
+            @RequestParam String keyword
+    ) {
+        return boardPostService.searchPost(
+                store_id,
+                keyword
+        );
+    }
+
+
+    // =========================
+    // [관리자]
+    // =========================
+
+    // 게시글 등록
     @PostMapping
-    public void registerPost(
+    public void createPost(
             @RequestBody BoardPostVO boardPostVO
     ) {
-        boardPostService.registerPost(boardPostVO);
+        boardPostService.createPost(
+                boardPostVO
+        );
     }
 
     // 게시글 수정
+    // 일반 수정 / 고정 / 임시저장 / 보관
     @PutMapping
     public void updatePost(
             @RequestBody BoardPostVO boardPostVO
     ) {
-        boardPostService.updatePost(boardPostVO);
+        boardPostService.updatePost(
+                boardPostVO
+        );
     }
 
     // 게시글 삭제
@@ -40,24 +79,15 @@ public class BoardPostC {
     public void deletePost(
             @RequestParam String id
     ) {
-        boardPostService.deletePost(id);
+        boardPostService.deletePost(
+                id
+        );
     }
 
 
-    // 게시글 목록 조회
-    @GetMapping
-    public List<BoardPostVO> getPostList(
-            @RequestParam String board_id
-    ) {
-        return boardPostService.getPostList(board_id);
-    }
+    // =========================
+    // [직원]
+    // =========================
 
-    // 게시글 조회
-    @GetMapping("/{id}")
-    public BoardPostVO getPost(
-            @PathVariable String id
-    ) {
-        return boardPostService.getPost(id);
-    }
+    // 현재 없음
 }
-
