@@ -3,50 +3,42 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ko } from 'date-fns/locale';
-import { format, addMonths, startOfMonth, endOfMonth, startOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
+import { format, addMonths, startOfMonth, getDaysInMonth, startOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
 
-// --- 더미 데이터 ---
 const dummyUsers = [
-  { id: 'user_1', name: '김민준', color: '#4A90E2' },
-  { id: 'user_2', name: '이서연', color: '#50E3C2' },
-  { id: 'user_3', name: '박도윤', color: '#F5A623' },
-  { id: 'user_4', name: '최지우', color: '#BD10E0' },
-  { id: 'user_5', name: '정시우', color: '#9013FE' },
+  { id: 'user_1', name: '김민준', role: '매니저', color: '#4A90E2' },
+  { id: 'user_2', name: '이서연', role: '파트타임', color: '#50E3C2' },
+  { id: 'user_3', name: '박도윤', role: '파트타임', color: '#F5A623' },
+  { id: 'user_4', name: '최지우', role: '풀타임', color: '#BD10E0' },
+  { id: 'user_5', name: '정시우', role: '파트타임', color: '#9013FE' },
 ];
 
 const generateDummyShifts = (month: Date) => {
+  const shifts = [];
+  const daysInMonth = getDaysInMonth(month);
   const monthStr = format(month, 'yyyy-MM');
-  const shifts = [
-    // Week 1
-    { userId: 'user_1', date: `${monthStr}-02`, time: '09:00-15:00' },
-    { userId: 'user_2', date: `${monthStr}-02`, time: '15:00-22:00' },
-    { userId: 'user_3', date: `${monthStr}-03`, time: '09:00-17:00' },
-    { userId: 'user_4', date: `${monthStr}-04`, time: '14:00-22:00' },
-    { userId: 'user_5', date: `${monthStr}-05`, time: '09:00-15:00' },
-    { userId: 'user_1', date: `${monthStr}-06`, time: '15:00-22:00' },
-    { userId: 'user_2', date: `${monthStr}-07`, time: '09:00-17:00' },
-    // Week 2
-    { userId: 'user_3', date: `${monthStr}-09`, time: '09:00-15:00' },
-    { userId: 'user_4', date: `${monthStr}-09`, time: '15:00-22:00' },
-    { userId: 'user_5', date: `${monthStr}-10`, time: '09:00-17:00' },
-    { userId: 'user_1', date: `${monthStr}-11`, time: '14:00-22:00' },
-    { userId: 'user_2', date: `${monthStr}-12`, time: '09:00-15:00' },
-    { userId: 'user_3', date: `${monthStr}-13`, time: '15:00-22:00' },
-    { userId: 'user_4', date: `${monthStr}-14`, time: '09:00-17:00' },
-    // Week 3
-    { userId: 'user_5', date: `${monthStr}-16`, time: '09:00-15:00' },
-    { userId: 'user_1', date: `${monthStr}-16`, time: '15:00-22:00' },
-    { userId: 'user_2', date: `${monthStr}-17`, time: '09:00-17:00' },
-    { userId: 'user_3', date: `${monthStr}-18`, time: '14:00-22:00' },
-    { userId: 'user_4', date: `${monthStr}-19`, time: '09:00-15:00' },
-    { userId: 'user_5', date: `${monthStr}-20`, time: '15:00-22:00' },
-    { userId: 'user_1', date: `${monthStr}-21`, time: '09:00-17:00' },
-    // Week 4
-    { userId: 'user_2', date: `${monthStr}-23`, time: '10:00-18:00' },
-    { userId: 'user_3', date: `${monthStr}-24`, time: '10:00-18:00' },
-    { userId: 'user_1', date: `${monthStr}-25`, time: '10:00-18:00' },
-  ];
 
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${monthStr}-${String(day).padStart(2, '0')}`;
+    const dayOfWeek = new Date(dateStr).getDay();
+
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      if (day % 2 !== 0) {
+        shifts.push({ userId: dummyUsers[day % 5].id, date: dateStr, time: '09:00-17:00' });
+        shifts.push({ userId: dummyUsers[(day + 1) % 5].id, date: dateStr, time: '15:00-23:00' });
+      }
+      else if (day % 4 === 0) {
+        shifts.push({ userId: dummyUsers[day % 5].id, date: dateStr, time: '08:00-16:00' });
+        shifts.push({ userId: dummyUsers[(day + 2) % 5].id, date: dateStr, time: '12:00-20:00' });
+        shifts.push({ userId: dummyUsers[(day + 3) % 5].id, date: dateStr, time: '16:00-23:00' });
+      }
+    }
+    else if (dayOfWeek === 6) {
+        shifts.push({ userId: dummyUsers[day % 5].id, date: dateStr, time: '10:00-18:00' });
+        shifts.push({ userId: dummyUsers[(day + 1) % 5].id, date: dateStr, time: '12:00-20:00' });
+        shifts.push({ userId: dummyUsers[(day + 2) % 5].id, date: dateStr, time: '14:00-22:00' });
+    }
+  }
   return shifts;
 };
 
@@ -75,8 +67,8 @@ const AdminScheduleScreen = ({ navigation }: { navigation: any }) => {
 
   const calendarDates = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
-    const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday start
-    return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)); // 6 weeks
+    const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    return Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
   }, [currentMonth]);
 
   const changeMonth = (offset: number) => {
@@ -85,7 +77,11 @@ const AdminScheduleScreen = ({ navigation }: { navigation: any }) => {
 
   const handleDatePress = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    navigation.navigate('AdminDailySchedule', { date: dateStr });
+    navigation.navigate('AdminDailySchedule', {
+      date: dateStr,
+      shifts: shiftsByDate[dateStr] || [],
+      employees: dummyUsers,
+    });
   };
 
   const renderCell = (date: Date) => {
@@ -107,7 +103,7 @@ const AdminScheduleScreen = ({ navigation }: { navigation: any }) => {
           {dayShifts.map((shift, index) => (
             <View key={index} style={[styles.shiftBadge, { backgroundColor: shift.user.color }]}>
               <Text style={styles.shiftText} numberOfLines={1}>
-                {`${shift.user.name} ${shift.time}`}
+                {`${shift.user.name}`}
               </Text>
             </View>
           ))}
@@ -207,7 +203,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   cellWrapper: {
     width: '14.28%',
-    height: '16.66%', // 100% / 6 weeks
+    height: '16.66%',
     padding: 2,
   },
   cell: {
