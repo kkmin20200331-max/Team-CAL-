@@ -78,7 +78,7 @@ insert into users (
 
 select * from users;
 
-DELETE FROM users WHERE id = 'USR_c54710b4566e4749';
+DELETE FROM users WHERE username = '1111';
 
 COMMIT;
 

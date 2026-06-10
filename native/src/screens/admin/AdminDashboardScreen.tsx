@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { format } from 'date-fns';
 import { useIsFocused } from '@react-navigation/native';
-import { useScheduleStore } from '../../store/scheduleStore'; // 전역 스토어 임포트
+import { useAppStore } from '../../store/appStore';
 
 const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   const isFocused = useIsFocused();
 
-  // ★★★ 수정된 부분: 전역 스토어에서 데이터와 함수를 가져옴 ★★★
-  const { shifts, employees } = useScheduleStore();
+  const { shifts, employees, userInfo, setActiveBranch } = useAppStore();
 
   const [currentlyWorking, setCurrentlyWorking] = useState(0);
   const [substituteRequests, setSubstituteRequests] = useState(0);
   const [todayShifts, setTodayShifts] = useState<any[]>([]);
+  const [isBranchModalVisible, setBranchModalVisible] = useState(false);
+
+  const activeBranch = useMemo(() => {
+    return userInfo?.branches?.find(b => b.id === userInfo.activeBranchId);
+  }, [userInfo]);
 
   useEffect(() => {
     if (isFocused) {
@@ -45,7 +49,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
       const subCount = shifts.filter(s => s.status === 'SUBSTITUTE_REQ').length;
       setSubstituteRequests(subCount);
     }
-  }, [isFocused, shifts]); // shifts가 변경될 때마다 다시 계산
+  }, [isFocused, shifts]);
 
   const handleNavigateToDailySchedule = () => {
     navigation.navigate('AdminDailySchedule', {
@@ -67,7 +71,11 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>관리자 대시보드</Text>
-          <Text style={styles.storeName}>컴포즈 미금점</Text>
+          <TouchableOpacity style={styles.branchSelector} onPress={() => setBranchModalVisible(true)}>
+            <Text style={styles.storeName}>
+              {activeBranch?.brandName || '브랜드'} {activeBranch?.branchName || '지점'} ▼
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.summaryContainer}>
@@ -83,89 +91,74 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
 
         <View style={styles.menuGrid}>
           {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onPress={() => navigation.navigate(item.screen)}
-            >
+            <TouchableOpacity key={index} style={styles.card} onPress={() => navigation.navigate(item.screen)}>
               <Text style={styles.cardIcon}>{item.icon}</Text>
               <Text style={styles.cardLabel}>{item.title}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isBranchModalVisible}
+        onRequestClose={() => setBranchModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>지점 선택</Text>
+            {userInfo?.branches?.map(branch => (
+              <TouchableOpacity
+                key={branch.id}
+                style={[styles.branchItem, branch.id === activeBranch?.id && styles.branchItemActive]}
+                onPress={() => {
+                  setActiveBranch(branch.id);
+                  setBranchModalVisible(false);
+                }}
+              >
+                <Text style={[styles.branchName, branch.id === activeBranch?.id && styles.branchNameActive]}>{branch.brandName} {branch.branchName}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.addBranchButton}>
+              <Text style={styles.addBranchButtonText}>+ 새 지점 추가</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setBranchModalVisible(false)}>
+              <Text style={styles.closeButtonText}>닫기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const getThemedStyles = (colors: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContainer: {
-    padding: 16,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  storeName: {
-    fontSize: 16,
-    color: colors.subText,
-    marginTop: 4,
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 24,
-  },
-  summaryBox: {
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    padding: 20,
-    borderRadius: 12,
-    width: '45%',
-  },
-  summaryValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: colors.subText,
-    marginTop: 8,
-  },
-  menuGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  card: {
-    width: '48%',
-    height: 120,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    padding: 16,
-  },
-  cardIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  cardLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  scrollContainer: { padding: 16 },
+  header: { marginBottom: 24 },
+  headerTitle: { fontSize: 28, fontWeight: 'bold', color: colors.text },
+  branchSelector: { marginTop: 4 },
+  storeName: { fontSize: 18, color: colors.primary, fontWeight: '600' },
+  summaryContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 24 },
+  summaryBox: { alignItems: 'center', backgroundColor: colors.card, padding: 20, borderRadius: 12, width: '45%' },
+  summaryValue: { fontSize: 24, fontWeight: 'bold', color: colors.primary },
+  summaryLabel: { fontSize: 14, color: colors.subText, marginTop: 8 },
+  menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  card: { width: '48%', height: 120, backgroundColor: colors.card, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 16, padding: 16 },
+  cardIcon: { fontSize: 32, marginBottom: 8 },
+  cardLabel: { fontSize: 14, fontWeight: '600', color: colors.text, textAlign: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 30 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, textAlign: 'center', marginBottom: 20 },
+  branchItem: { padding: 16, borderRadius: 8, marginBottom: 10 },
+  branchItemActive: { backgroundColor: colors.primary },
+  branchName: { fontSize: 18, color: colors.text },
+  branchNameActive: { color: '#FFFFFF', fontWeight: 'bold' },
+  addBranchButton: { padding: 16, borderRadius: 8, backgroundColor: colors.disabled, alignItems: 'center', marginTop: 10 },
+  addBranchButtonText: { fontSize: 16, color: colors.primary, fontWeight: '600' },
+  closeButton: { marginTop: 20, alignItems: 'center' },
+  closeButtonText: { fontSize: 16, color: colors.subText },
 });
 
 export default AdminDashboardScreen;

@@ -4,20 +4,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { useScheduleStore } from '../../store/scheduleStore';
+import { useAppStore } from '../../store/appStore'; // ★★★ 수정된 부분 ★★★
 
 const SubstituteManagementScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
 
-  const { shifts, employees, setShifts } = useScheduleStore();
+  // ★★★ 수정된 부분 ★★★
+  const { shifts, employees, setShifts } = useAppStore();
   
   const [requests, setRequests] = useState<any[]>([]);
 
   useEffect(() => {
     const subRequests = shifts
       .filter(s => s.status === 'SUBSTITUTE_REQ')
-      // ★★★ 수정된 부분: 날짜를 기준으로 내림차순 정렬 ★★★
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .map(s => ({ ...s, user: employees.find(e => e.id === s.userId) }));
     setRequests(subRequests);

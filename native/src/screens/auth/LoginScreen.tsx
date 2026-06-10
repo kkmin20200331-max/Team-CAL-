@@ -3,22 +3,20 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { loginAPI } from '../../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User } from '../../types/User';
+import { useAppStore } from '../../store/appStore';
 
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
 
 type Props = {
   navigation: LoginScreenNavigationProp;
-  setIsLoggedIn: (value: boolean) => void;
-  setUserStatus: (status: User['status']) => void;
-  setHasSelectedBranch: (value: boolean) => void;
-  setUserInfo: (value: User) => void;
 };
 
-export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, setHasSelectedBranch, setUserInfo }: Props) {
+export default function LoginScreen({ navigation }: Props) {
   const [inputs, setInputs] = useState({username : "", password : ""});
   const { username, password } = inputs;
   const [loginRole, setLoginRole] = useState<'STAFF' | 'ADMIN'>('STAFF');
+  
+  const login = useAppStore((state) => state.login);
 
   const handleInputChange = (name: string, text: string) => {
     setInputs({ ...inputs, [name]: text });
@@ -32,28 +30,33 @@ export default function LoginScreen({ navigation, setIsLoggedIn, setUserStatus, 
       const serverRole = data.role ? data.role.toUpperCase() : null;
       
       if (serverRole && serverRole !== loginRole) {
-        Alert.alert(
-            "로그인 실패",
-            "선택하신 로그인 유형과 계정의 실제 권한이 일치하지 않습니다."
-        );
+        Alert.alert("로그인 실패", "선택하신 로그인 유형과 계정의 실제 권한이 일치하지 않습니다.");
         return;
       }
 
-      const fetchedUserStatus = data.status;
-      setUserStatus(fetchedUserStatus);
-      setIsLoggedIn(true);
-
-      const savedStore = await AsyncStorage.getItem(`store_${data.username}`);
-
       const finalRole = serverRole || loginRole;
+      let finalUserInfo: any = { ...data, role: finalRole };
+      let hasBranch = false;
 
-      if (data.store_id || data.branchName || data.brandName || savedStore) {
-        setHasSelectedBranch(true);
-        setUserInfo({ ...data, role: finalRole, store_id: data.store_id || savedStore });
+      if (finalRole === 'ADMIN') {
+        if (data.branches && data.branches.length > 0) {
+          finalUserInfo.branches = data.branches;
+          finalUserInfo.activeBranchId = data.branches[0].id;
+          hasBranch = true;
+        } else if (data.brandName && data.branchName) {
+          // API 응답에 branches 배열이 없는 경우, 최상위 필드를 기반으로 임시 생성
+          finalUserInfo.branches = [{ id: 'branch_1', brandName: data.brandName, branchName: data.branchName }];
+          finalUserInfo.activeBranchId = 'branch_1';
+          hasBranch = true;
+        }
       } else {
-        setHasSelectedBranch(false);
-        setUserInfo({ ...data, role: finalRole });
+        const savedStore = await AsyncStorage.getItem(`store_${data.username}`);
+        if (data.store_id || savedStore) {
+          hasBranch = true;
+        }
       }
+
+      login(finalUserInfo, hasBranch);
 
     } catch (error) {
       console.error("로그인 에러:", error);
@@ -163,7 +166,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   roleButtonTextActive: {
-    color: '#6EE7B7', // ★★★ 수정된 부분 ★★★
+    color: '#6EE7B7',
   },
   input: {
     borderWidth: 1,
@@ -173,14 +176,14 @@ const styles = StyleSheet.create({
     marginBottom: 15
   },
   button: {
-    backgroundColor: '#6EE7B7', // ★★★ 수정된 부분 ★★★
+    backgroundColor: '#6EE7B7',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 10
   },
   buttonText: {
-    color: '#064E3B', // 어두운 녹색 계열로 가독성 확보
+    color: '#064E3B',
     fontSize: 16,
     fontWeight: 'bold'
   }

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { format, getDaysInMonth } from 'date-fns';
+import { User } from '../types/User';
 
 const dummyEmployees = [
   { id: 'user_1', name: '김민준', role: '매니저', color: '#4A90E2', payType: 'SALARY' as const, payRate: 3000000 },
@@ -36,13 +37,35 @@ const generateDummyShifts = (month: Date) => {
   return shifts;
 };
 
-interface ScheduleState {
+interface Branch {
+  id: string;
+  brandName: string;
+  branchName: string;
+}
+
+interface AppState {
+  userInfo: (User & { branches?: Branch[]; activeBranchId?: string }) | null;
+  userStatus: User['status'] | null;
+  hasSelectedBranch: boolean;
+  login: (user: User, hasBranch: boolean) => void;
+  logout: () => void;
+  setHasSelectedBranch: (hasBranch: boolean) => void;
+  setActiveBranch: (branchId: string) => void;
   employees: typeof dummyEmployees;
-  shifts: ReturnType<typeof generateDummyShifts>;
+  shifts: any[];
   setShifts: (shifts: any[]) => void;
 }
 
-export const useScheduleStore = create<ScheduleState>((set) => ({
+export const useAppStore = create<AppState>((set) => ({
+  userInfo: null,
+  userStatus: null,
+  hasSelectedBranch: false,
+  login: (user, hasBranch) => set({ userInfo: user, userStatus: user.status, hasSelectedBranch: hasBranch }),
+  logout: () => set({ userInfo: null, userStatus: null, hasSelectedBranch: false }),
+  setHasSelectedBranch: (hasBranch) => set({ hasSelectedBranch: hasBranch }),
+  setActiveBranch: (branchId) => set((state) => ({
+    userInfo: state.userInfo ? { ...state.userInfo, activeBranchId: branchId } : null,
+  })),
   employees: dummyEmployees,
   shifts: generateDummyShifts(new Date()),
   setShifts: (newShifts) => set({ shifts: newShifts }),

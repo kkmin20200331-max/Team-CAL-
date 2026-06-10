@@ -7,6 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
+import { useAppStore } from '../../store/appStore'; // 전역 스토어 임포트
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -19,6 +20,7 @@ export default function SignupScreen({ navigation, route }: Props) {
   const { role } = route.params;
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
+  const login = useAppStore((state) => state.login); // 전역 스토어의 login 함수 가져오기
 
   const [inputs, setInputs] = useState({
     id: "",
@@ -64,11 +66,9 @@ export default function SignupScreen({ navigation, route }: Props) {
       Alert.alert("입력 오류", "모든 필수 항목을 입력해주세요.");
       return;
     }
-    if (role === 'ADMIN') {
-      if (!brandName || !branchName || !maxCapacity) {
-        Alert.alert("입력 오류", "관리자 정보를 모두 입력해주세요.");
-        return;
-      }
+    if (role === 'ADMIN' && (!brandName || !branchName || !maxCapacity)) {
+      Alert.alert("입력 오류", "관리자 정보를 모두 입력해주세요.");
+      return;
     }
     if (password !== passwordCheck) {
       Alert.alert("비밀번호 오류", "비밀번호가 일치하지 않습니다.");
@@ -76,8 +76,9 @@ export default function SignupScreen({ navigation, route }: Props) {
     }
 
     try {
+      const userId = `U_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`.slice(0, 21);
       const signupData: any = {
-        id: `U_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`.slice(0, 21),
+        id: userId,
         username: id,
         password,
         name,
@@ -102,7 +103,19 @@ export default function SignupScreen({ navigation, route }: Props) {
         text1: '가입 성공',
         text2: `${name}님 환영합니다!`,
       });
-      navigation.navigate('Login');
+
+      // ★★★ 수정된 부분: 가입 성공 후 바로 로그인 처리 ★★★
+      if (role === 'ADMIN') {
+        const userInfoForLogin = {
+          ...signupData,
+          branches: [{ id: 'branch_1', brandName, branchName }],
+          activeBranchId: 'branch_1',
+        };
+        login(userInfoForLogin, true); // hasBranch를 true로 설정하여 지점 선택 화면 건너뛰기
+      } else {
+        // 직원은 지점 선택 화면으로 이동해야 하므로, 로그인만 처리
+        login(signupData, false);
+      }
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
