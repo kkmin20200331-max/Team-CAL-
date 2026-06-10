@@ -2,89 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
-import { format, getDaysInMonth } from 'date-fns';
-
-// --- 데이터 소스 (다른 화면과 일관성 유지) ---
-const dummyEmployees = [
-  { id: 'user_1', name: '김민준', role: '매니저', color: '#4A90E2' },
-  { id: 'user_2', name: '이서연', role: '파트타임', color: '#50E3C2' },
-  { id: 'user_3', name: '박도윤', role: '파트타임', color: '#F5A623' },
-  { id: 'user_4', name: '최지우', role: '풀타임', color: '#BD10E0' },
-  { id: 'user_5', name: '정시우', role: '파트타임', color: '#9013FE' },
-];
-
-const generateDummyShifts = (month: Date) => {
-  const shifts = [];
-  const daysInMonth = getDaysInMonth(month);
-  const monthStr = format(month, 'yyyy-MM');
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dateStr = `${monthStr}-${String(day).padStart(2, '0')}`;
-    const dayOfWeek = new Date(dateStr).getDay();
-
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      if (day % 2 !== 0) {
-        shifts.push({ userId: dummyEmployees[day % 5].id, date: dateStr, time: '09:00-17:00', status: 'CONFIRMED' });
-        shifts.push({ userId: dummyEmployees[(day + 1) % 5].id, date: dateStr, time: '15:00-23:00', status: 'CONFIRMED' });
-      }
-      else if (day % 4 === 0) {
-        shifts.push({ userId: dummyEmployees[day % 5].id, date: dateStr, time: '08:00-16:00', status: 'CONFIRMED' });
-        shifts.push({ userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '12:00-20:00', status: 'SUBSTITUTE_REQ' });
-        shifts.push({ userId: dummyEmployees[(day + 3) % 5].id, date: dateStr, time: '16:00-23:00', status: 'CONFIRMED' });
-      }
-    }
-    else if (dayOfWeek === 6) {
-        shifts.push({ userId: dummyEmployees[day % 5].id, date: dateStr, time: '10:00-18:00', status: 'CONFIRMED' });
-        shifts.push({ userId: dummyEmployees[(day + 1) % 5].id, date: dateStr, time: '12:00-20:00', status: 'CONFIRMED' });
-        shifts.push({ userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '14:00-22:00', status: 'SUBSTITUTE_REQ' });
-    }
-  }
-  return shifts;
-};
-
+import { format } from 'date-fns';
+import { useIsFocused } from '@react-navigation/native';
+import { useScheduleStore } from '../../store/scheduleStore'; // 전역 스토어 임포트
 
 const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
+  const isFocused = useIsFocused();
+
+  // ★★★ 수정된 부분: 전역 스토어에서 데이터와 함수를 가져옴 ★★★
+  const { shifts, employees } = useScheduleStore();
 
   const [currentlyWorking, setCurrentlyWorking] = useState(0);
   const [substituteRequests, setSubstituteRequests] = useState(0);
   const [todayShifts, setTodayShifts] = useState<any[]>([]);
 
   useEffect(() => {
-    const now = new Date();
-    const todayStr = format(now, 'yyyy-MM-dd');
-    const allShifts = generateDummyShifts(now);
+    if (isFocused) {
+      const now = new Date();
+      const todayStr = format(now, 'yyyy-MM-dd');
 
-    const filteredTodayShifts = allShifts
-      .filter(s => s.date === todayStr)
-      .map(s => ({ ...s, user: dummyEmployees.find(e => e.id === s.userId) }));
-    
-    setTodayShifts(filteredTodayShifts);
+      const filteredTodayShifts = shifts
+        .filter(s => s.date === todayStr)
+        .map(s => ({ ...s, user: employees.find(e => e.id === s.userId) }));
+      
+      setTodayShifts(filteredTodayShifts);
 
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    const workingNowCount = filteredTodayShifts.filter(shift => {
-      const [startStr, endStr] = shift.time.split('-');
-      const [startH, startM] = startStr.split(':').map(Number);
-      const [endH, endM] = endStr.split(':').map(Number);
-      const startMinutes = startH * 60 + startM;
-      const endMinutes = endH * 60 + endM;
-      return currentMinutes >= startMinutes && currentMinutes < endMinutes;
-    }).length;
+      const workingNowCount = filteredTodayShifts.filter(shift => {
+        const [startStr, endStr] = shift.time.split('-');
+        const [startH, startM] = startStr.split(':').map(Number);
+        const [endH, endM] = endStr.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+        return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+      }).length;
 
-    setCurrentlyWorking(workingNowCount);
+      setCurrentlyWorking(workingNowCount);
 
-    const subCount = allShifts.filter(s => s.status === 'SUBSTITUTE_REQ').length;
-    setSubstituteRequests(subCount);
-
-  }, []);
+      const subCount = shifts.filter(s => s.status === 'SUBSTITUTE_REQ').length;
+      setSubstituteRequests(subCount);
+    }
+  }, [isFocused, shifts]); // shifts가 변경될 때마다 다시 계산
 
   const handleNavigateToDailySchedule = () => {
     navigation.navigate('AdminDailySchedule', {
       date: format(new Date(), 'yyyy-MM-dd'),
       shifts: todayShifts,
-      employees: dummyEmployees,
+      employees: employees,
     });
   };
 
@@ -108,10 +75,10 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
             <Text style={styles.summaryValue}>{currentlyWorking}명</Text>
             <Text style={styles.summaryLabel}>현재 근무중</Text>
           </TouchableOpacity>
-          <View style={styles.summaryBox}>
+          <TouchableOpacity style={styles.summaryBox} onPress={() => navigation.navigate('SubstituteManagement')}>
             <Text style={styles.summaryValue}>{substituteRequests}건</Text>
             <Text style={styles.summaryLabel}>대타 요청</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.menuGrid}>

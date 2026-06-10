@@ -33,7 +33,8 @@ import AdminScheduleScreen from './src/screens/admin/AdminScheduleScreen';
 import AdminDailyScheduleScreen from './src/screens/admin/AdminDailyScheduleScreen';
 import EmployeeManagementScreen from './src/screens/admin/EmployeeManagementScreen';
 import ShiftEditorScreen from './src/screens/admin/ShiftEditorScreen';
-import EmployeeDetailScreen from './src/screens/admin/EmployeeDetailScreen'; // 시급 수정 화면 임포트
+import EmployeeDetailScreen from './src/screens/admin/EmployeeDetailScreen';
+import SubstituteManagementScreen from './src/screens/admin/SubstituteManagementScreen';
 
 // Contexts
 import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
@@ -136,6 +137,7 @@ function AdminHomeNavigator() {
       <AdminScreensStack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />
       <AdminScreensStack.Screen name="ShiftEditor" component={ShiftEditorScreen} />
       <AdminScreensStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
+      <AdminScreensStack.Screen name="SubstituteManagement" component={SubstituteManagementScreen} />
     </AdminScreensStack.Navigator>
   );
 }
