@@ -29,14 +29,14 @@ const generateDummyShifts = (month: Date) => {
       }
       else if (day % 4 === 0) {
         shifts.push({ userId: dummyEmployees[day % 5].id, date: dateStr, time: '08:00-16:00', status: 'CONFIRMED' });
-        shifts.push({ userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '12:00-20:00', status: 'SUBSTITUTE_REQ' }); // 대타 요청
+        shifts.push({ userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '12:00-20:00', status: 'SUBSTITUTE_REQ' });
         shifts.push({ userId: dummyEmployees[(day + 3) % 5].id, date: dateStr, time: '16:00-23:00', status: 'CONFIRMED' });
       }
     }
     else if (dayOfWeek === 6) {
         shifts.push({ userId: dummyEmployees[day % 5].id, date: dateStr, time: '10:00-18:00', status: 'CONFIRMED' });
         shifts.push({ userId: dummyEmployees[(day + 1) % 5].id, date: dateStr, time: '12:00-20:00', status: 'CONFIRMED' });
-        shifts.push({ userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '14:00-22:00', status: 'SUBSTITUTE_REQ' }); // 대타 요청
+        shifts.push({ userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '14:00-22:00', status: 'SUBSTITUTE_REQ' });
     }
   }
   return shifts;
@@ -49,17 +49,22 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
 
   const [currentlyWorking, setCurrentlyWorking] = useState(0);
   const [substituteRequests, setSubstituteRequests] = useState(0);
+  const [todayShifts, setTodayShifts] = useState<any[]>([]);
 
   useEffect(() => {
     const now = new Date();
     const todayStr = format(now, 'yyyy-MM-dd');
     const allShifts = generateDummyShifts(now);
 
-    // 1. 현재 근무중인 인원 계산
-    const todayShifts = allShifts.filter(s => s.date === todayStr);
+    const filteredTodayShifts = allShifts
+      .filter(s => s.date === todayStr)
+      .map(s => ({ ...s, user: dummyEmployees.find(e => e.id === s.userId) }));
+    
+    setTodayShifts(filteredTodayShifts);
+
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    const workingNowCount = todayShifts.filter(shift => {
+    const workingNowCount = filteredTodayShifts.filter(shift => {
       const [startStr, endStr] = shift.time.split('-');
       const [startH, startM] = startStr.split(':').map(Number);
       const [endH, endM] = endStr.split(':').map(Number);
@@ -70,11 +75,18 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
 
     setCurrentlyWorking(workingNowCount);
 
-    // 2. 대타 요청 건수 계산
     const subCount = allShifts.filter(s => s.status === 'SUBSTITUTE_REQ').length;
     setSubstituteRequests(subCount);
 
-  }, []); // 컴포넌트가 마운트될 때 한 번만 실행
+  }, []);
+
+  const handleNavigateToDailySchedule = () => {
+    navigation.navigate('AdminDailySchedule', {
+      date: format(new Date(), 'yyyy-MM-dd'),
+      shifts: todayShifts,
+      employees: dummyEmployees,
+    });
+  };
 
   const menuItems = [
     { title: '직원 관리', icon: '👥', screen: 'EmployeeManagement' },
@@ -92,10 +104,10 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
         </View>
 
         <View style={styles.summaryContainer}>
-          <View style={styles.summaryBox}>
+          <TouchableOpacity style={styles.summaryBox} onPress={handleNavigateToDailySchedule}>
             <Text style={styles.summaryValue}>{currentlyWorking}명</Text>
             <Text style={styles.summaryLabel}>현재 근무중</Text>
-          </View>
+          </TouchableOpacity>
           <View style={styles.summaryBox}>
             <Text style={styles.summaryValue}>{substituteRequests}건</Text>
             <Text style={styles.summaryLabel}>대타 요청</Text>
