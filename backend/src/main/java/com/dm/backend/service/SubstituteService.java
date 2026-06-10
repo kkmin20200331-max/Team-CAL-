@@ -1,13 +1,16 @@
 package com.dm.backend.service;
 
+import com.dm.backend.mapper.ShiftMapper;
+import com.dm.backend.mapper.StoreMemberMapper;
 import com.dm.backend.mapper.SubstituteMapper;
-import com.dm.backend.vo.SubstituteApplicationVO;
-import com.dm.backend.vo.SubstituteHistoryVO;
-import com.dm.backend.vo.SubstitutePostVO;
+import com.dm.backend.mapper.UserLineMapper;
+import com.dm.backend.vo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -15,7 +18,14 @@ public class SubstituteService {
 
     @Autowired
     private SubstituteMapper substituteMapper;
-
+    @Autowired
+    private UserLineMapper userLineMapper;
+    @Autowired
+    private LineService lineService;
+    @Autowired
+    private StoreMemberMapper storeMemberMapper;
+    @Autowired
+    private ShiftMapper shiftMapper;
 
     // =========================
     // [공통]
@@ -58,7 +68,32 @@ public class SubstituteService {
                 "SUBSTITUTED"
         );
 
-        substituteMapper.insertHistory(historyVO);
+        substituteMapper.insertHistory(
+                historyVO
+        );
+
+        // =========================
+        // LINE 알림
+        // =========================
+
+        String lineUserId =
+                userLineMapper.getLineUserId(
+                        selectedUserId
+                );
+
+        if(lineUserId != null){
+
+            lineService.sendMessage(
+                    lineUserId,
+                    """
+                    [대타 승인]
+    
+                    신청하신 대타 근무가 승인되었습니다.
+    
+                    앱에서 근무 일정을 확인해주세요.
+                    """
+            );
+        }
     }
 
     // 모집글 취소
@@ -91,6 +126,67 @@ public class SubstituteService {
                 postVO.getShift_id(),
                 "SUBSTITUTE_OPEN"
         );
+
+        // =========================
+        // 근무 요일 확인
+        // =========================
+
+        ShiftVO shift =
+                shiftMapper.getShift(
+                        postVO.getShift_id()
+                );
+
+        LocalDate workDate =
+                shift.getWork_date()
+                        .toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate();
+
+        String day =
+                workDate.getDayOfWeek().name();
+
+        // =========================
+        // 해당 요일 가능한 직원 조회
+        // =========================
+
+        List<StoreMemberVo> members =
+                storeMemberMapper.getAvailableMembersByDay(
+                        postVO.getStore_id(),
+                        day
+                );
+
+        // =========================
+        // LINE 알림
+        // =========================
+
+        for(StoreMemberVo member : members){
+
+            // 모집글 작성자 제외
+            if(member.getUser_id().equals(
+                    postVO.getRequester_user_id()
+            )){
+                continue;
+            }
+
+            String lineUserId =
+                    userLineMapper.getLineUserId(
+                            member.getUser_id()
+                    );
+
+            if(lineUserId != null){
+
+                lineService.sendMessage(
+                        lineUserId,
+                        """
+                        [대타 모집]
+    
+                        새로운 대타 모집글이 등록되었습니다.
+    
+                        앱에서 확인해주세요.
+                        """
+                );
+            }
+        }
     }
 
     // 대타 지원
