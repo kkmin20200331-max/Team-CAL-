@@ -1,35 +1,34 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { createBoardPostAPI } from '../../../api/auth';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext'; // ✅ 다국어 변환용 추가
-import Toast from 'react-native-toast-message'; // ✅ 토스트 추가
-import * as Notifications from 'expo-notifications'; // ✅ 푸시 알림 라이브러리 추가
+import { useLanguage } from '../../contexts/LanguageContext';
+import Toast from 'react-native-toast-message';
+import * as Notifications from 'expo-notifications';
+import { useApp } from '../../contexts/AppContext';
+import { useBoard } from '../../contexts/BoardContext';
+import { Post } from '../../types/Post';
 
 const BoardWriteScreen = ({ route, navigation }: any) => {
-  // ✅ 이전 화면에서 넘겨받은 파라미터 (수정 모드 플래그 및 기존 글 데이터 포함)
-  const { userInfo, isEdit, postToEdit, onAddPost, onUpdatePost } = route.params || {};
-
-  // ✅ userInfo가 없을 경우를 대비한 안전 장치
-  const currentUserId = userInfo?.username || 'my_test_id';
+  const { isEdit, postId } = route.params || {};
+  const { userInfo } = useApp();
+  const { posts, addPost, updatePost } = useBoard();
   
-  const { t } = useLanguage(); // ✅ 기존 더미 타이틀 변환을 위해 사용
+  const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
-  // ✅ 기존 작성된 글이 있으면 초기값으로 세팅 (수정 모드)
-  const [title, setTitle] = useState(isEdit && postToEdit ? t(postToEdit.title) : '');
-  const [content, setContent] = useState(isEdit && postToEdit ? t(postToEdit.content) : '');
-  
-  // ✅ 영문 카테고리를 한글로 역변환 (기존 더미 글 카테고리 매핑)
-  const getInitialCategory = (catCode: string) => {
+  const postToEdit = isEdit ? posts.find(p => p.id === postId) : null;
+
+  const getInitialCategory = (catCode?: string) => {
     if (catCode === 'MENU') return '건의사항';
     if (catCode === 'EVENT') return '자유게시판';
     if (catCode === 'LOST') return '분실물';
-    return '공지사항'; // NOTICE 등 기본
+    return '공지사항';
   };
   
+  const [title, setTitle] = useState(isEdit && postToEdit ? t(postToEdit.title) : '');
+  const [content, setContent] = useState(isEdit && postToEdit ? t(postToEdit.content) : '');
   const [category, setCategory] = useState(isEdit && postToEdit ? getInitialCategory(postToEdit.category) : '공지사항'); 
   const predefinedCategories = ['공지사항', '건의사항', '분실물', '자유게시판'];
 
@@ -39,92 +38,55 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       return;
     }
 
-    try {
-      // 백엔드로 보낼 데이터 조립
-      const postData = {
-        store_id: userInfo?.store_id,
-        user_id: currentUserId, // 작성자 ID
-        author_name: userInfo?.name, // 작성자 이름
+    let dummyCategory = 'NOTICE';
+    if (category === '건의사항') dummyCategory = 'MENU';
+    if (category === '자유게시판') dummyCategory = 'EVENT';
+    if (category === '분실물') dummyCategory = 'LOST';
+      
+    if (isEdit && postToEdit) {
+      const updatedPost: Post = {
+        ...postToEdit,
+        category: dummyCategory,
         title: title,
         content: content,
-        category: category,
-        role: userInfo?.role // 직원인지 관리자인지 권한 전달
       };
-
-      // [TODO] 실제 Spring Boot 백엔드 연동 시 주석 해제
-      // await createBoardPostAPI(postData); 
-
-      // ✅ [임시] 프론트엔드 UI 테스트를 위한 더미 데이터 조립
-      let dummyCategory = 'NOTICE';
-      if (category === '건의사항') dummyCategory = 'MENU';
-      if (category === '자유게시판') dummyCategory = 'EVENT';
-      if (category === '분실물') dummyCategory = 'LOST';
+      updatePost(updatedPost);
+      Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 수정되었습니다.' });
+    } else {
+      const newPostData = {
+        category: dummyCategory,
+        title: title,
+        content: content,
+        badge: 'badgeNew',
+        isPinned: false,
+      };
+      addPost(newPostData);
       
-      if (isEdit) {
-        // ✅ [임시] 수정 모드일 때는 기존 id를 유지하고 데이터만 덮어씀
-        const updatedDummyPost = {
-          ...postToEdit,
-          category: dummyCategory,
-          title: title,
-          content: content,
-        };
-        
-        // ✅ [수정] 구버전 JS 엔진 오류 방지를 위해 옵셔널 체이닝(?:) 대신 명시적 if문 사용
-        if (onUpdatePost) { onUpdatePost(updatedDummyPost); }
-        
-        Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 수정되었습니다.' });
-        navigation.goBack();
-      } else {
-        // ✅ [임시] 새 글 모드
-        const today = new Date();
-        const newDummyPost = {
-          id: Date.now().toString(),
-          authorId: currentUserId,
-          category: dummyCategory,
-          title: title,
-          date: `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`,
-          content: content,
-          badge: 'badgeNew'
-        };
-        
-        // ✅ [수정] 명시적 if문 사용
-        if (onAddPost) { onAddPost(newDummyPost); }
-        
-        Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 등록되었습니다.' });
-
-        // ✅ [수정] 안드로이드 권한(Exact Alarm) 문제를 우회하여 5초 뒤에 발송되도록 변경
-        if (category === '공지사항') {
-          setTimeout(async () => {
-            try {
-              await Notifications.scheduleNotificationAsync({
-                content: {
-                  title: "📢 새로운 공지사항 등록",
-                  body: `[공지] ${title}`,
-                  // ✅ [핵심 추가] 알림 클릭 시 Board 화면으로 가고, 이 글 데이터를 넘기도록 설정
-                  data: {
-                    screen: 'Board',
-                    postToOpen: newDummyPost
-                  }
-                },
-                trigger: null, // 5초 뒤에 이 함수가 실행되므로 즉시 발송(null)으로 설정
-              });
-            } catch (notifError) {
-              console.log("알림 발송 실패:", notifError);
-            }
-          }, 5000); // 5000ms = 5초 대기
+      if (category === '공지사항') {
+        try {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: "📢 새로운 공지사항 등록",
+              body: `[공지] ${title}`,
+              data: {
+                screen: 'Board',
+              }
+            },
+            // ✅ [오류 수정] trigger를 null로 설정하여 즉시 발송
+            trigger: null,
+          });
+        } catch (notifError) {
+          console.log("알림 발송 실패:", notifError);
+          Alert.alert("알림 실패", "푸시 알림을 보내는 데 실패했습니다.");
         }
-        
-        navigation.goBack();
       }
-    } catch (error) {
-      console.error('글쓰기 에러:', error);
-      Toast.show({ type: 'error', text1: '오류', text2: '게시글 등록 중 문제가 발생했습니다.' });
+      Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 등록되었습니다.' });
     }
+    navigation.goBack();
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
@@ -134,7 +96,6 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* 카테고리 선택 영역 */}
         <Text style={styles.label}>카테고리 선택</Text>
         <View style={styles.categoryContainer}>
           {predefinedCategories.map((cat) => (
@@ -146,16 +107,8 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
               <Text style={[styles.categoryText, category === cat && styles.categoryTextActive]}>{cat}</Text>
             </TouchableOpacity>
           ))}
-          
-          {/* 💡 [추후 확장] 만약 관리자(ADMIN)라면 여기에 카테고리 추가(+) 버튼을 보여줍니다 */}
-          {/* {userInfo?.role === 'ADMIN' && (
-             <TouchableOpacity style={styles.addCategoryButton}>
-               <Text style={styles.addCategoryText}>+ 추가</Text>
-             </TouchableOpacity>
-          )} */}
         </View>
 
-        {/* 제목 입력 */}
         <Text style={styles.label}>제목</Text>
         <TextInput 
           style={styles.input} 
@@ -165,7 +118,6 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
           placeholderTextColor={colors.subText}
         />
 
-        {/* 내용 입력 */}
         <Text style={styles.label}>내용</Text>
         <TextInput 
           style={[styles.input, styles.contentInput]} 
@@ -177,7 +129,6 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
           placeholderTextColor={colors.subText}
         />
 
-        {/* 등록 버튼 */}
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>{isEdit ? '수정하기' : '등록하기'}</Text>
         </TouchableOpacity>

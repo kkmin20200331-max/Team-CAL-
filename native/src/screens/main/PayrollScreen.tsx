@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import Toast from 'react-native-toast-message';
+import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { Shift } from '../../types/Schedule';
+import { User } from '../../types/User';
 
-// ✅ 1. 백엔드에서 받아올 데이터의 형태(타입)를 미리 정의합니다.
 interface DailyWage {
   id: string;
   date: string;
@@ -18,86 +20,78 @@ interface PayrollSummary {
   basePay: number;
   holidayPay: number;
   substituteBonus: number;
-  accumulatedWeekly: number; // 주급 신청 가능한 이번 주 누적 급여
 }
 
 const PayrollScreen = ({ route, navigation }: any) => {
   const { t } = useLanguage();
-  const { userInfo } = route.params || {};
+  const { schedule, userInfo }: { schedule: Shift[], userInfo: User } = route.params || {};
   
-  // 테마 색상 상태 가져오기
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
-  // ✅ 2. 서버에서 불러올 상태 관리
   const [summary, setSummary] = useState<PayrollSummary | null>(null);
   const [dailyWages, setDailyWages] = useState<DailyWage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRequested, setIsRequested] = useState(false);
 
-  // ✅ 3. 화면이 켜지면 급여 데이터를 불러옵니다.
   useEffect(() => {
-    fetchPayrollData();
-  }, []);
-
-  const fetchPayrollData = async () => {
-    setIsLoading(true);
-    try {
-      // [TODO: 실제 백엔드 연동 시 아래 코드를 사용하세요]
-      // const response = await getPayrollAPI(userInfo.username);
-      // setSummary(response.data.summary);
-      // setDailyWages(response.data.dailyWages);
-      // setIsRequested(response.data.isWeeklyAdvanceRequested);
-
-      // 🚀 백엔드 통신을 흉내내는 임시 지연 로직 (1초 대기 후 더미데이터 삽입)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSummary({
-        estimatedTotal: 1248320,
-        basePay: 1048320,
-        holidayPay: 150000,
-        substituteBonus: 50000,
-        accumulatedWeekly: 288960,
-      });
-      setDailyWages([
-        { id: '1', date: '6월 01일 (월)', hours: '8시간', amount: 82560 },
-        { id: '2', date: '6월 02일 (화)', hours: '8시간', amount: 82560 },
-        { id: '3', date: '6월 05일 (금)', hours: '8시간', amount: 82560 },
-        { id: '4', date: '6월 06일 (토)', hours: '4시간 (대타)', amount: 41280 },
-      ]);
-    } catch (error) {
-      Toast.show({ type: 'error', text1: '오류', text2: '급여 내역을 불러오지 못했습니다.' });
-    } finally {
+    if (schedule && userInfo && schedule.length > 0) {
+      calculatePayroll();
+    } else {
       setIsLoading(false);
     }
-  };
+  }, [schedule, userInfo]);
 
-  // ✅ 4. 주급 신청 백엔드 통신 시뮬레이션
-  const handleAdvancePayRequest = () => {
-    Alert.alert(
-      t('advancePayConfirmTitle'),
-      t('advancePayConfirmMsg'),
-      [
-        { text: t('cancel'), style: 'cancel' },
-        { 
-          text: t('applyBtn'), 
-          onPress: async () => {
-            setIsRequested(true);
-            try {
-              // [TODO: 실제 연동 시 주급 신청 API 호출]
-              // await requestAdvancePayAPI({ userId: userInfo.username, amount: summary?.accumulatedWeekly });
-              await new Promise(resolve => setTimeout(resolve, 1500)); // 통신 대기
-              Toast.show({ type: 'success', text1: t('advancePaySuccessTitle'), text2: t('advancePaySuccessMsg') });
-            } catch (error) {
-              Toast.show({ type: 'error', text1: '오류', text2: '주급 신청 중 문제가 발생했습니다.' });
-              setIsRequested(false); // 실패 시 상태 되돌림
-            }
-          } 
+  const calculatePayroll = () => {
+    setIsLoading(true);
+    
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    const payRate = userInfo.payRate || 9860;
+
+    let totalMinutes = 0;
+    const wages: DailyWage[] = [];
+
+    schedule.forEach(item => {
+      const shiftDate = parseISO(item.fullDate);
+      if (isWithinInterval(shiftDate, { start: monthStart, end: monthEnd })) {
+        if (item.status !== 'OFF' && item.status !== 'SUBSTITUTE_REQ' && item.time && item.time.includes(' - ')) {
+          const [start, end] = item.time.split(' - ');
+          const [sH, sM] = start.split(':').map(Number);
+          const [eH, eM] = end.split(':').map(Number);
+          
+          let diff = (eH * 60 + eM) - (sH * 60 + sM);
+          if (diff < 0) diff += 24 * 60;
+          
+          totalMinutes += diff;
+          const dailyHours = diff / 60;
+          const dailyAmount = dailyHours * payRate;
+
+          wages.push({
+            id: item.id,
+            date: format(shiftDate, "M월 d일 (eee)", { locale: ko }),
+            hours: `${dailyHours.toFixed(1)}시간`,
+            amount: Math.round(dailyAmount),
+          });
         }
-      ]
-    );
+      }
+    });
+
+    const totalHours = totalMinutes / 60;
+    const totalPay = totalHours * payRate;
+
+    setSummary({
+      estimatedTotal: Math.round(totalPay),
+      basePay: Math.round(totalPay),
+      holidayPay: 0,
+      substituteBonus: 0,
+    });
+
+    setDailyWages(wages.sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()));
+    setIsLoading(false);
   };
 
-  const renderDailyWage = ({ item }: { item: any }) => (
+  const renderDailyWage = ({ item }: { item: DailyWage }) => (
     <View style={styles.dailyRow}>
       <View>
         <Text style={styles.dailyDate}>{item.date}</Text>
@@ -109,7 +103,6 @@ const PayrollScreen = ({ route, navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
@@ -118,16 +111,17 @@ const PayrollScreen = ({ route, navigation }: any) => {
         <View style={{ width: 40 }} />
       </View>
 
-      {isLoading || !summary ? (
-        // 로딩 화면
+      {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.loadingText}>데이터를 불러오는 중입니다...</Text>
+          <Text style={styles.loadingText}>급여 내역을 계산 중입니다...</Text>
+        </View>
+      ) : !summary || dailyWages.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.emptyText}>이번 달 근무 기록이 없습니다.</Text>
         </View>
       ) : (
-        // 데이터가 불러와졌을 때 보여줄 실제 화면
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* 이번 달 누적 급여 요약 카드 */}
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>{t('estMonthlySalary')}</Text>
           <Text style={styles.summaryAmount}>{summary.estimatedTotal.toLocaleString()}<Text style={styles.summaryCurrency}>{t('currency')}</Text></Text>
@@ -148,19 +142,6 @@ const PayrollScreen = ({ route, navigation }: any) => {
           </View>
         </View>
 
-        {/* 이번 주 주급 신청 버튼 */}
-        <TouchableOpacity 
-          style={[styles.advanceButton, isRequested && styles.advanceButtonDisabled]} 
-          onPress={handleAdvancePayRequest}
-          disabled={isRequested}
-        >
-          <Text style={styles.advanceButtonText}>
-            {isRequested ? '⏳ 승인 대기 중...' : `💸 ${t('advancePayBtn')}`}
-          </Text>
-        </TouchableOpacity>
-        <Text style={styles.helpText}>현재까지 누적된 이번 주 예상 급여: {summary.accumulatedWeekly.toLocaleString()}원</Text>
-
-        {/* 일별 상세 리스트 */}
         <View style={styles.listSection}>
           <Text style={styles.sectionTitle}>{t('dailyWageDetail')}</Text>
           <View style={styles.listCard}>
@@ -201,11 +182,6 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   detailLabel: { fontSize: 14, color: colors.subText },
   detailValue: { fontSize: 15, fontWeight: '600', color: colors.text },
 
-  advanceButton: { backgroundColor: '#2563EB', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginBottom: 8 },
-  advanceButtonDisabled: { backgroundColor: isDarkMode ? '#374151' : '#D1D5DB' },
-  advanceButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-  helpText: { textAlign: 'center', fontSize: 13, color: colors.subText, marginBottom: 32 },
-
   listSection: { marginBottom: 40 },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
   listCard: { backgroundColor: colors.card, borderRadius: 16, padding: 20, elevation: 1 },
@@ -214,6 +190,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   dailyHours: { fontSize: 13, color: colors.subText },
   dailyAmount: { fontSize: 16, fontWeight: '700', color: colors.text },
   listDivider: { height: 1, backgroundColor: colors.border, marginVertical: 12 },
+  emptyText: { textAlign: 'center', paddingVertical: 20, color: colors.subText },
 });
 
 export default PayrollScreen;

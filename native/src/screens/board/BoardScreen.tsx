@@ -1,30 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import Toast from 'react-native-toast-message';
 import { Post } from '../../types/Post';
-import { User } from '../../types/User'; // User 타입 임포트
+import { useApp } from '../../contexts/AppContext';
+import { useBoard } from '../../contexts/BoardContext';
 
-type BoardScreenNavigationProp = any; // StackNavigationProp<any, 'Board'>;
+type BoardScreenNavigationProp = any;
 
 type Props = {
   navigation: BoardScreenNavigationProp;
   route: {
     params?: {
-      userInfo?: User | null;
-      postToOpen?: Post;
-      // ✅ [추가] DashboardScreen으로부터 전달받을 고정 상태 업데이트 함수 타입 정의
-      updateDashboardPostPinStatus?: (postId: string, isPinned: boolean) => void;
+      postToOpenId?: string;
     };
   };
 };
 
 const BoardScreen = ({ route, navigation }: Props) => {
-  // ✅ [수정] route.params에서 updateDashboardPostPinStatus를 가져옵니다.
-  const { userInfo, postToOpen, updateDashboardPostPinStatus } = route.params || {};
-  const currentUserId = userInfo?.username || 'my_test_id';
+  const { userInfo } = useApp();
+  const { posts } = useBoard();
+  const { postToOpenId } = route.params || {};
   
   const [activeCategory, setActiveCategory] = useState('ALL');
   const { t } = useLanguage();
@@ -40,38 +37,11 @@ const BoardScreen = ({ route, navigation }: Props) => {
     { id: 'LOST', label: 'boardTabLost' },
   ];
 
-  const [allPosts, setAllPosts] = useState<Post[]>([
-    { id: '3', authorId: currentUserId, category: 'NOTICE', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant', isPinned: true },
-    { id: '1', authorId: currentUserId, category: 'MENU', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew', isPinned: false },
-    { id: '2', authorId: currentUserId, category: 'NOTICE', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null, isPinned: false },
-    { id: '4', authorId: 'admin', category: 'MANUAL', title: 'boardDummy4Title', date: '2026.05.10', content: 'boardDummy4Content', badge: null, isPinned: false },
-    { id: '5', authorId: 'admin', category: 'EVENT', title: 'boardDummy5Title', date: '2026.05.01', content: 'boardDummy5Content', badge: null, isPinned: false },
-    { id: '6', authorId: 'admin', category: 'NOTICE', title: 'boardDummy6Title', date: '2026.04.15', content: 'boardDummy6Content', badge: null, isPinned: false },
-  ]);
-
   useEffect(() => {
-    if (postToOpen) {
-      setAllPosts(prev => prev.find(p => p.id === postToOpen.id) ? prev : [postToOpen, ...prev]);
-      // ✅ [수정] BoardDetailScreen으로 이동할 때 updateDashboardPostPinStatus도 함께 전달합니다.
-      navigation.navigate('BoardDetail', { post: postToOpen, userInfo, updatePostPinStatus, updateDashboardPostPinStatus });
+    if (postToOpenId) {
+      navigation.navigate('BoardDetail', { postId: postToOpenId });
     }
-  }, [postToOpen]);
-
-  const handleAddNewPost = (newPost: Post) => {
-    setAllPosts(prevPosts => [newPost, ...prevPosts]);
-  };
-
-  const handleUpdatePost = (editedPost: Post) => {
-    setAllPosts(prevPosts => 
-      prevPosts.map(p => (p.id === editedPost.id ? editedPost : p))
-    );
-  };
-
-  const updatePostPinStatus = (postId: string, isPinned: boolean) => {
-    setAllPosts(prevPosts =>
-      prevPosts.map(p => (p.id === postId ? { ...p, isPinned } : p))
-    );
-  };
+  }, [postToOpenId]);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
@@ -79,17 +49,16 @@ const BoardScreen = ({ route, navigation }: Props) => {
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
-  const filteredPosts = allPosts
+  const filteredPosts = posts
     .filter(post => activeCategory === 'ALL' || post.category === activeCategory)
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      return b.date.localeCompare(a.date);
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
 
   const renderItem = ({ item }: { item: Post }) => (
-    // ✅ [수정] BoardDetailScreen으로 이동할 때 updateDashboardPostPinStatus도 함께 전달합니다.
-    <TouchableOpacity style={styles.noticeItem} onPress={() => navigation.navigate('BoardDetail', { post: item, userInfo, updatePostPinStatus, updateDashboardPostPinStatus })} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.noticeItem} onPress={() => navigation.navigate('BoardDetail', { postId: item.id })} activeOpacity={0.7}>
       <View style={styles.noticeTextContainer}>
         {item.isPinned && <Text style={styles.pinIcon}>📌 </Text>}
         {activeCategory === 'ALL' && (
@@ -111,7 +80,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('StaffTab')} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('notice')}</Text>
@@ -150,11 +119,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
 
       <TouchableOpacity 
         style={styles.fab} 
-        onPress={() => navigation.navigate('BoardWrite', { 
-          userInfo,
-          isEdit: false,
-          onAddPost: handleAddNewPost,
-        })}
+        onPress={() => navigation.navigate('BoardWrite', { isEdit: false })}
         activeOpacity={0.8}
       >
         <Text style={styles.fabIcon}>+</Text>

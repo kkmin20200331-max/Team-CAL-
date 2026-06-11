@@ -1,80 +1,84 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useApp } from '../../contexts/AppContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type BranchScreenNavigationProp = StackNavigationProp<any, 'BranchSelect'>;
-
-type Props = {
-  navigation: BranchScreenNavigationProp;
-  setHasSelectedBranch: (value: boolean) => void;
-  userInfo?: any;
-  setUserInfo?: (value: any) => void;
-};
-
-// 테스트용 지점 데이터
-const BRANCH_DATA = [
-  { id: '1', name: '컴포즈 미금점' },
-  { id: '2', name: '컴포즈 서현점' },
-  { id: '3', name: '컴포즈 판교점' },
+const dummyStores = [
+  { id: 'store_1', brandName: '컴포즈커피', branchName: '미금점' },
+  { id: 'store_2', brandName: '스타벅스', branchName: '정자점' },
+  { id: 'store_3', brandName: '메가커피', branchName: '오리점' },
+  { id: 'store_4', brandName: '컴포즈커피', branchName: '서현점' },
 ];
 
-const BranchSelectScreen = ({ setHasSelectedBranch, userInfo, setUserInfo }: Props) => {
-  // 사용자가 현재 터치한 지점의 ID를 저장하는 상태
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+const BranchSelectScreen = () => {
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
 
-  // '선택 완료' 버튼을 눌렀을 때 실행
+  const { userInfo, login } = useApp();
+  
+  const [selectedStore, setSelectedStore] = useState<any>(null);
+
+  const handleSelectStore = (store: any) => {
+    setSelectedStore(store);
+  };
+
   const handleConfirm = async () => {
-    if (selectedId) {
-      // ✅ [수정] 선택한 지점 이름을 추출하여 userInfo에 업데이트합니다.
-      const selectedBranch = BRANCH_DATA.find(b => b.id === selectedId);
-      if (setUserInfo && userInfo && selectedBranch) {
-        setUserInfo({ ...userInfo, store_id: selectedBranch.name });
+    if (!selectedStore) {
+      Alert.alert("알림", "근무할 지점을 선택해주세요.");
+      return;
+    }
+
+    try {
+      if (userInfo) {
+        await AsyncStorage.setItem(`store_${userInfo.username}`, selectedStore.id);
         
-        // ✅ 다음 로그인 시 지점 선택을 건너뛰기 위해 기기에 지점명을 저장합니다.
-        try { await AsyncStorage.setItem(`store_${userInfo.username}`, selectedBranch.name); } catch(e) {}
+        const updatedUserInfo = {
+          ...userInfo,
+          store_id: selectedStore.id,
+          brandName: selectedStore.brandName,
+          branchName: selectedStore.branchName,
+        };
+        login(updatedUserInfo, true);
       }
 
-      // 💡 여기서 상태가 true로 바뀌면 App.js의 조건문이 실행되어 Pending(또는 Dashboard) 화면으로 넘어갑니다.
-      setHasSelectedBranch(true);
+    } catch (error) {
+      console.error("지점 선택 저장 오류:", error);
+      Alert.alert("오류", "지점 선택 중 문제가 발생했습니다.");
     }
   };
 
+  const renderStoreItem = ({ item }: { item: any }) => {
+    const isSelected = selectedStore?.id === item.id;
+    return (
+      <TouchableOpacity
+        style={[styles.card, isSelected && styles.cardSelected]}
+        onPress={() => handleSelectStore(item)}
+      >
+        <Text style={[styles.brandName, isSelected && styles.textSelected]}>{item.brandName}</Text>
+        <Text style={[styles.branchName, isSelected && styles.textSelected]}>{item.branchName}</Text>
+      </TouchableOpacity>
+    );
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>지점 선택</Text>
+        <Text style={styles.title}>근무 지점 선택</Text>
+        <Text style={styles.subtitle}>근무할 지점을 선택해주세요.</Text>
       </View>
-
-      <View style={styles.container}>
-        <Text style={styles.subtitle}>근무하실 지점을 선택해주세요.</Text>
-
-        {/* 지점 리스트 렌더링 */}
-        <FlatList
-          data={BRANCH_DATA}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          renderItem={({ item }) => {
-            const isSelected = item.id === selectedId;
-            return (
-              <TouchableOpacity
-                style={[styles.branchCard, isSelected && styles.branchCardSelected]}
-                onPress={() => setSelectedId(item.id)}
-              >
-                <Text style={[styles.branchName, isSelected && styles.branchNameSelected]}>
-                  📍 {item.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          }}
-        />
-
-        {/* 하단 고정 완료 버튼 */}
+      <FlatList
+        data={dummyStores}
+        renderItem={renderStoreItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContainer}
+      />
+      <View style={styles.bottomContainer}>
         <TouchableOpacity
-          style={[styles.confirmButton, !selectedId && styles.confirmButtonDisabled]}
-          disabled={!selectedId} // 아무것도 안 골랐으면 버튼 비활성화
+          style={[styles.confirmButton, !selectedStore && styles.confirmButtonDisabled]}
           onPress={handleConfirm}
+          disabled={!selectedStore}
         >
           <Text style={styles.confirmButtonText}>선택 완료</Text>
         </TouchableOpacity>
@@ -83,68 +87,72 @@ const BranchSelectScreen = ({ setHasSelectedBranch, userInfo, setUserInfo }: Pro
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
+const getThemedStyles = (colors: any) => StyleSheet.create({
+  container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   header: {
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    alignItems: 'center',
+    paddingBottom: 10,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  container: {
-    flex: 1,
-    padding: 20,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666666',
-    marginBottom: 20,
+    color: colors.subText,
+    marginTop: 8,
   },
   listContainer: {
-    gap: 12, // 리스트 아이템 간의 간격
+    paddingHorizontal: 20,
   },
-  branchCard: {
-    padding: 18,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    padding: 20,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: colors.border,
   },
-  branchCardSelected: {
-    borderColor: '#2563EB', // 선택 시 테두리 파란색
-    backgroundColor: '#EFF6FF', // 선택 시 배경 옅은 파란색
+  cardSelected: {
+    borderColor: '#6EE7B7', // 에메랄드 색상 테두리
+    backgroundColor: '#6EE7B7', // 에메랄드 색상 배경
+  },
+  brandName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
   },
   branchName: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
+    color: colors.subText,
+    marginTop: 4,
   },
-  branchNameSelected: {
-    color: '#2563EB', // 선택 시 글자색 파란색
-    fontWeight: '700',
+  textSelected: {
+    color: '#000000', // 검은색 글자
+  },
+  bottomContainer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.card,
   },
   confirmButton: {
-    backgroundColor: '#2563EB',
-    padding: 18,
-    borderRadius: 12,
+    backgroundColor: '#6EE7B7', // 에메랄드 색상 배경
+    padding: 16,
     alignItems: 'center',
-    marginTop: 20,
+    borderRadius: 8,
   },
   confirmButtonDisabled: {
-    backgroundColor: '#D1D5DB', // 비활성화 시 회색
+    backgroundColor: colors.disabled,
   },
   confirmButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    color: '#000000', // 검은색 글자
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

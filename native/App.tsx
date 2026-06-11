@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useAppStore } from './src/store/appStore';
+import * as Notifications from 'expo-notifications';
 
 // Screens
 import LoginScreen from './src/screens/auth/LoginScreen';
@@ -21,54 +21,133 @@ import EmployeeManagementScreen from './src/screens/admin/EmployeeManagementScre
 import ShiftEditorScreen from './src/screens/admin/ShiftEditorScreen';
 import EmployeeDetailScreen from './src/screens/admin/EmployeeDetailScreen';
 import SubstituteManagementScreen from './src/screens/admin/SubstituteManagementScreen';
+import AddBranchScreen from './src/screens/admin/AddBranchScreen';
 import StaffDashboardScreen from './src/screens/main/DashboardScreen';
 import StaffScheduleScreen from './src/screens/schedule/ScheduleScreen';
+import NotificationScreen from './src/screens/board/NotificationScreen';
+import BoardScreen from './src/screens/board/BoardScreen';
+import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
+import BoardWriteScreen from './src/screens/board/BoardWriteScreen';
+import PayrollScreen from './src/screens/main/PayrollScreen';
+import ContractScreen from './src/screens/mypage/ContractScreen';
+import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
+import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
+import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
+import SubstituteScreen from './src/screens/schedule/SubstituteScreen';
 
 // Contexts
+import { AppProvider, useApp } from './src/contexts/AppContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import { BoardProvider } from './src/contexts/BoardContext'; // 1. BoardProvider 임포트
 
-const Stack = createStackNavigator();
-const Tab = createBottomTabNavigator();
-const AdminStack = createStackNavigator();
-const StaffStack = createStackNavigator();
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
-function AdminNavigator() {
-  return (
-    <AdminStack.Navigator screenOptions={{ headerShown: false }}>
-      <AdminStack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
-      <AdminStack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
-      <AdminStack.Screen name="AdminDailySchedule" component={AdminDailyScheduleScreen} />
-      <AdminStack.Screen name="EmployeeManagement" component={EmployeeManagementScreen} />
-      <AdminStack.Screen name="ShiftEditor" component={ShiftEditorScreen} />
-      <AdminStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
-      <AdminStack.Screen name="SubstituteManagement" component={SubstituteManagementScreen} />
-    </AdminStack.Navigator>
-  );
+async function registerForPushNotificationsAsync() {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+  if (finalStatus !== 'granted') {
+    alert('푸시 알림을 받으려면 알림 권한을 허용해주세요!');
+    return;
+  }
 }
 
-function StaffNavigator() {
-  return (
-    <StaffStack.Navigator screenOptions={{ headerShown: false }}>
-      <StaffStack.Screen name="StaffDashboard" component={StaffDashboardScreen} />
-      <StaffStack.Screen name="StaffSchedule" component={StaffScheduleScreen} />
-    </StaffStack.Navigator>
-  );
-}
+
+const AuthStack = createStackNavigator();
+const MainStack = createStackNavigator();
+const AdminTab = createBottomTabNavigator();
+const StaffTab = createBottomTabNavigator();
+const BoardStack = createStackNavigator();
 
 function AuthNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="SignupChoice" component={SignupChoiceScreen} />
-      <Stack.Screen name="Signup" component={SignupScreen} />
-    </Stack.Navigator>
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="SignupChoice" component={SignupChoiceScreen} />
+      <AuthStack.Screen name="Signup" component={SignupScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
+function AdminTabNavigator() {
+  return (
+    <AdminTab.Navigator screenOptions={{ headerShown: false }}>
+      <AdminTab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: '대시보드' }} />
+      <AdminTab.Screen name="EmployeeManagement" component={EmployeeManagementScreen} options={{ title: '직원관리' }} />
+      <AdminTab.Screen name="AdminMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
+    </AdminTab.Navigator>
+  );
+}
+
+function BoardNavigator() {
+  return (
+    <BoardStack.Navigator screenOptions={{ headerShown: false }}>
+      <BoardStack.Screen name="Board" component={BoardScreen} />
+      <BoardStack.Screen name="BoardDetail" component={BoardDetailScreen} />
+      <BoardStack.Screen name="BoardWrite" component={BoardWriteScreen} />
+    </BoardStack.Navigator>
+  );
+}
+
+function StaffTabNavigator() {
+  return (
+    <StaffTab.Navigator screenOptions={{ headerShown: false }}>
+      <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '홈' }} />
+      <StaffTab.Screen name="StaffSchedule" component={StaffScheduleScreen} options={{ title: '스케줄' }} />
+      <StaffTab.Screen name="Notifications" component={NotificationScreen} options={{ title: '알림' }} />
+      <StaffTab.Screen name="StaffMyPage" component={MyPageScreen} options={{ title: '마이페이지' }} />
+    </StaffTab.Navigator>
+  );
+}
+
+function MainNavigator() {
+  const { userInfo } = useApp();
+  return (
+    <MainStack.Navigator screenOptions={{ headerShown: false }}>
+      {userInfo?.role === 'ADMIN' ? (
+        <MainStack.Screen name="AdminRoot" component={AdminTabNavigator} />
+      ) : (
+        <MainStack.Screen name="StaffRoot" component={StaffTabNavigator} />
+      )}
+      <MainStack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
+      <MainStack.Screen name="AdminDailySchedule" component={AdminDailyScheduleScreen} />
+      <MainStack.Screen name="ShiftEditor" component={ShiftEditorScreen} />
+      <MainStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
+      <MainStack.Screen name="SubstituteManagement" component={SubstituteManagementScreen} />
+      <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
+      <MainStack.Screen name="BoardNavigator" component={BoardNavigator} />
+      <MainStack.Screen name="Payroll" component={PayrollScreen} />
+      <MainStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+      <MainStack.Screen name="Contract" component={ContractScreen} />
+      <MainStack.Screen name="HealthCert" component={HealthCertScreen} />
+      <MainStack.Screen name="QRCheckIn" component={QRCheckInScreen} />
+      <MainStack.Screen name="Substitute" component={SubstituteScreen} />
+    </MainStack.Navigator>
   );
 }
 
 function AppContent() {
-  const { userInfo, userStatus, hasSelectedBranch, logout } = useAppStore();
+  const { userInfo, userStatus, hasSelectedBranch, logout } = useApp();
   const isLoggedIn = !!userInfo;
 
   if (!isLoggedIn) {
@@ -83,20 +162,29 @@ function AppContent() {
     return <PendingScreen handleLogout={logout} />;
   }
 
-  return userInfo.role === 'ADMIN' ? <AdminNavigator /> : <StaffNavigator />;
+  return <MainNavigator />;
 }
 
 export default function App() {
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <LanguageProvider>
-          <NotificationProvider>
-            <NavigationContainer>
-              <AppContent />
-            </NavigationContainer>
-            <Toast />
-          </NotificationProvider>
+          <AppProvider>
+            <NotificationProvider>
+              {/* 2. BoardProvider로 감싸기 */}
+              <BoardProvider>
+                <NavigationContainer>
+                  <AppContent />
+                </NavigationContainer>
+              </BoardProvider>
+              <Toast />
+            </NotificationProvider>
+          </AppProvider>
         </LanguageProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

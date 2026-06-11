@@ -1,76 +1,34 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
 import { User } from '../../types/User';
 import { Shift } from '../../types/Schedule';
+import { format, addDays, startOfWeek, getDay, getDaysInMonth, getMonth, getYear, setMonth, setYear, startOfMonth, parseISO } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 const today = new Date();
-const formatDate = (d: Date) => {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-
+const formatDate = (d: Date) => format(d, 'yyyy-MM-dd');
 const initialSelectedDate = formatDate(today);
-
-// ★★★ 수정된 부분: 한국어 요일 배열 직접 사용 ★★★
 const KOREAN_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
+// 1. 삭제되었던 generateWeekDates 함수 복원
 const generateWeekDates = (base: Date) => {
-  const day = base.getDay();
-  const sunday = new Date(base);
-  sunday.setDate(base.getDate() - day);
-
-  const week = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(sunday);
-    d.setDate(sunday.getDate() + i);
-    week.push({ fullDate: formatDate(d), date: String(d.getDate()), dayIndex: d.getDay() });
-  }
-  return week;
-};
-
-const generateDummyScheduleForCurrentWeek = (storeName: string): Shift[] => {
-  const now = new Date();
-  const weekDates = generateWeekDates(now);
-  const schedule: Shift[] = [];
-
-  weekDates.forEach((dayInfo, index) => {
-    const dayOfWeek = dayInfo.dayIndex;
-    let shift: Partial<Shift> = {
-      id: String(index),
-      fullDate: dayInfo.fullDate,
-      date: dayInfo.date,
-      day: KOREAN_DAYS[dayOfWeek], // 데이터 생성 시점부터 한국어 요일 저장
-      storeName: storeName,
-    };
-
-    if (dayOfWeek === 2) {
-      shift.time = '휴무';
-      shift.status = 'OFF';
-    } else if (dayOfWeek === 4) {
-      shift.time = '14:00 - 22:00';
-      shift.status = 'SUBSTITUTE_REQ';
-    } else {
-      shift.time = '14:00 - 22:00';
-      shift.status = 'SCHEDULED';
-    }
-    schedule.push(shift as Shift);
+  const sunday = startOfWeek(base, { weekStartsOn: 0 });
+  return Array.from({ length: 7 }).map((_, i) => {
+    const d = addDays(sunday, i);
+    return { fullDate: formatDate(d), date: String(d.getDate()), dayIndex: d.getDay() };
   });
-
-  return schedule;
 };
 
 const getRealTimeItem = (item: Shift): Shift => {
   if (item.status === 'OFF' || item.status === 'SUBSTITUTE_REQ' || !item.time || !item.time.includes(' - ')) {
     return item;
   }
-
   const now = new Date();
   const todayStr = formatDate(now);
-
   if (item.fullDate < todayStr) return { ...item, status: 'COMPLETED' };
   if (item.fullDate > todayStr) return { ...item, status: 'SCHEDULED' };
 
@@ -78,7 +36,6 @@ const getRealTimeItem = (item: Shift): Shift => {
   const [startStr, endStr] = item.time.split(' - ');
   const [startH, startM] = startStr.split(':').map(Number);
   const [endH, endM] = endStr.split(':').map(Number);
-
   const startMinutes = startH * 60 + startM;
   const endMinutes = endH * 60 + endM;
 
@@ -89,11 +46,61 @@ const getRealTimeItem = (item: Shift): Shift => {
   return { ...item, status: newStatus };
 };
 
+const generateDummyScheduleForWeek = (baseDate: Date, storeName: string): Shift[] => {
+  const weekDates = generateWeekDates(baseDate);
+  return weekDates.map((dayInfo, index) => {
+    const dayOfWeek = dayInfo.dayIndex;
+    let shift: Partial<Shift> = {
+      id: `${dayInfo.fullDate}-${index}`,
+      fullDate: dayInfo.fullDate,
+      date: dayInfo.date,
+      day: KOREAN_DAYS[dayOfWeek],
+      storeName: storeName,
+    };
+    if (dayOfWeek % 4 === 0) {
+      shift.time = '휴무';
+      shift.status = 'OFF';
+    } else {
+      shift.time = '14:00 - 22:00';
+      shift.status = 'SCHEDULED';
+    }
+    return getRealTimeItem(shift as Shift);
+  });
+};
+
+const generateDummyScheduleForMonth = (date: Date, storeName: string): Shift[] => {
+    const monthStart = startOfMonth(date);
+    const daysInMonth = getDaysInMonth(date);
+    const schedule: Shift[] = [];
+
+    for (let i = 0; i < daysInMonth; i++) {
+        const currentDate = addDays(monthStart, i);
+        const dayOfWeek = getDay(currentDate);
+        let shift: Partial<Shift> = {
+            id: `month_shift_${formatDate(currentDate)}`,
+            fullDate: formatDate(currentDate),
+            date: String(currentDate.getDate()),
+            day: KOREAN_DAYS[dayOfWeek],
+            storeName: storeName,
+        };
+
+        if (dayOfWeek % 4 === 0) {
+            shift.time = '휴무';
+            shift.status = 'OFF';
+        } else {
+            shift.time = '14:00 - 22:00';
+            shift.status = 'SCHEDULED';
+        }
+        schedule.push(getRealTimeItem(shift as Shift));
+    }
+    return schedule;
+};
+
+
 const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null } } }) => {
   const { userInfo } = route?.params || {};
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
-
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
 
   const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
@@ -101,19 +108,19 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
   const [scheduleData, setScheduleData] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [isModalVisible, setModalVisible] = useState(false);
+  const [isReqModalVisible, setReqModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'LEAVE' | 'SUBSTITUTE'>('LEAVE');
   const [reason, setReason] = useState('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      const now = new Date();
-      setBaseDate(now);
-      setSelectedDate(formatDate(now));
-      setScheduleData(generateDummyScheduleForCurrentWeek(storeName));
-    }, [storeName])
-  );
+  const [isMonthModalVisible, setMonthModalVisible] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    const newSchedule = generateDummyScheduleForWeek(baseDate, storeName);
+    setScheduleData(newSchedule);
+    setLoading(false);
+  }, [baseDate, storeName]);
 
   const renderStatusBadge = (status: string) => {
     const statusMap = {
@@ -132,7 +139,7 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
     setSelectedShift(item);
     setModalType(type);
     setReason('');
-    setModalVisible(true);
+    setReqModalVisible(true);
   };
 
   const handleSubmitRequest = async () => {
@@ -140,68 +147,53 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
       Toast.show({ type: 'error', text1: '알림', text2: '사유를 입력해주세요.' });
       return;
     }
-    
-    try {
-      const newStatus = modalType === 'SUBSTITUTE' ? 'SUBSTITUTE_REQ' : 'OFF';
-      setScheduleData(prev => prev.map(shift => 
-        shift.id === selectedShift!.id ? { ...shift, status: newStatus, time: modalType === 'LEAVE' ? '휴무' : shift.time } : shift
-      ));
-
-      Toast.show({ type: 'success', text1: '신청 완료', text2: '점주에게 요청이 전송되었습니다.' });
-      setModalVisible(false);
-      setSelectedShift(null);
-    } catch (error) {
-      Toast.show({ type: 'error', text1: '신청 실패', text2: '요청 중 오류가 발생했습니다.' });
-    }
+    const newStatus = modalType === 'SUBSTITUTE' ? 'SUBSTITUTE_REQ' : 'OFF';
+    setScheduleData(prev => prev.map(shift => 
+      shift.id === selectedShift!.id ? { ...shift, status: newStatus, time: modalType === 'LEAVE' ? '휴무' : shift.time } : shift
+    ));
+    Toast.show({ type: 'success', text1: '신청 완료', text2: '점주에게 요청이 전송되었습니다.' });
+    setReqModalVisible(false);
+    setSelectedShift(null);
   };
 
   const moveWeek = (offset: number) => {
     const newBase = new Date(baseDate);
     newBase.setDate(newBase.getDate() + offset * 7);
     setBaseDate(newBase);
-    setScheduleData(generateDummyScheduleForCurrentWeek(storeName));
   };
 
-  const renderShiftCard = ({ item }: { item: Shift }) => {
-    const currentItem = getRealTimeItem(item);
-    return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-           <Text style={styles.cardDate}>{currentItem.fullDate} ({currentItem.day})</Text>
-          {renderStatusBadge(currentItem.status)}
-        </View>
-        
-        <View style={styles.cardBody}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoIcon}>🕒</Text>
-            <Text style={styles.infoText}>{currentItem.time}</Text>
-          </View>
-          {currentItem.status !== 'OFF' && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoIcon}>📍</Text>
-              <Text style={styles.infoText}>{currentItem.storeName}</Text>
-            </View>
-          )}
-        </View>
+  const onDateSelectFromCalendar = (date: Date) => {
+    setBaseDate(date);
+    setSelectedDate(formatDate(date));
+    setMonthModalVisible(false);
+  };
 
-        {currentItem.status === 'SCHEDULED' && (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenModal(currentItem, 'LEAVE')}>
-              <Text style={styles.actionButtonText}>휴가 신청</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, styles.substituteButton]} onPress={() => handleOpenModal(currentItem, 'SUBSTITUTE')}>
-              <Text style={styles.actionButtonText}>대타 신청</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+  const renderShiftCard = ({ item }: { item: Shift }) => (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+         <Text style={styles.cardDate}>{item.fullDate} ({item.day})</Text>
+        {renderStatusBadge(item.status)}
       </View>
-    );
-  };
+      <View style={styles.cardBody}>
+        <View style={styles.infoRow}><Text style={styles.infoIcon}>🕒</Text><Text style={styles.infoText}>{item.time}</Text></View>
+        {item.status !== 'OFF' && <View style={styles.infoRow}><Text style={styles.infoIcon}>📍</Text><Text style={styles.infoText}>{item.storeName}</Text></View>}
+      </View>
+      {item.status === 'SCHEDULED' && (
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenModal(item, 'LEAVE')}><Text style={styles.actionButtonText}>휴가 신청</Text></TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.substituteButton]} onPress={() => handleOpenModal(item, 'SUBSTITUTE')}><Text style={styles.actionButtonText}>대타 신청</Text></TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{`${baseDate.getFullYear()}년 ${baseDate.getMonth() + 1}월`}</Text>
+        <Text style={styles.headerTitle}>{`${getYear(baseDate)}년 ${getMonth(baseDate) + 1}월`}</Text>
+        <TouchableOpacity onPress={() => setMonthModalVisible(true)}>
+          <Text style={styles.monthViewButton}>월간 보기</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.calendarContainer}>
         <View style={styles.weekDaysContainer}>
@@ -210,7 +202,7 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
             const isSelected = item.fullDate === selectedDate;
             const isWeekend = item.dayIndex === 0 ? '#EF4444' : item.dayIndex === 6 ? '#3B82F6' : colors.subText;
             return (
-              <TouchableOpacity key={item.fullDate} style={[styles.dateBox, isSelected && styles.dateBoxSelected]} onPress={() => { setSelectedDate(item.fullDate); setBaseDate(new Date(item.fullDate)); }}>
+              <TouchableOpacity key={item.fullDate} style={[styles.dateBox, isSelected && styles.dateBoxSelected]} onPress={() => setSelectedDate(item.fullDate)}>
                 <Text style={[styles.dayText, { color: isSelected ? '#FFFFFF' : isWeekend }]}>{KOREAN_DAYS[item.dayIndex]}</Text>
                 <Text style={[styles.dateText, isSelected && styles.dateTextSelected]}>{item.date}</Text>
               </TouchableOpacity>
@@ -220,41 +212,20 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
         </View>
       </View>
 
-      {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color="#2563EB" /></View>
-      ) : (
-        <FlatList
-          data={scheduleData.filter((item) => item.fullDate === selectedDate)} 
-          renderItem={renderShiftCard}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>🏖️</Text>
-              <Text style={styles.emptyText}>예정된 근무가 없습니다.</Text>
-            </View>
-          }
-        />
-      )}
+      {loading ? <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color="#2563EB" /></View>
+       : <FlatList data={scheduleData.filter((item) => item.fullDate === selectedDate)} renderItem={renderShiftCard} keyExtractor={item => item.id} contentContainerStyle={styles.listContainer} ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyIcon}>🏖️</Text><Text style={styles.emptyText}>예정된 근무가 없습니다.</Text></View>} />
+      }
 
-      <Modal animationType="fade" transparent={true} visible={isModalVisible} onRequestClose={() => setModalVisible(false)}>
+      <CalendarModal isVisible={isMonthModalVisible} onClose={() => setMonthModalVisible(false)} onDateSelect={onDateSelectFromCalendar} storeName={storeName} colors={colors} />
+
+      <Modal animationType="fade" transparent={true} visible={isReqModalVisible} onRequestClose={() => setReqModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{modalType === 'LEAVE' ? '휴가 신청' : '대타 요청'}</Text>
-            {selectedShift && (
-              <Text style={styles.modalSubtitle}>{selectedShift.fullDate} ({selectedShift.day}) {selectedShift.time}</Text>
-            )}
-            <TextInput
-              style={styles.reasonInput}
-              placeholder={modalType === 'LEAVE' ? '휴가 사유를 입력해주세요.' : '대타 요청 사유를 입력해주세요.'}
-              placeholderTextColor={colors.subText}
-              value={reason}
-              onChangeText={setReason}
-              multiline={true}
-              textAlignVertical="top"
-            />
+            {selectedShift && <Text style={styles.modalSubtitle}>{selectedShift.fullDate} ({selectedShift.day}) {selectedShift.time}</Text>}
+            <TextInput style={styles.reasonInput} placeholder={modalType === 'LEAVE' ? '휴가 사유를 입력해주세요.' : '대타 요청 사유를 입력해주세요.'} placeholderTextColor={colors.subText} value={reason} onChangeText={setReason} multiline={true} textAlignVertical="top" />
             <View style={styles.modalButtonGroup}>
-              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setModalVisible(false)}><Text style={styles.modalCancelText}>취소</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setReqModalVisible(false)}><Text style={styles.modalCancelText}>취소</Text></TouchableOpacity>
               <TouchableOpacity style={styles.modalSubmitButton} onPress={handleSubmitRequest}><Text style={styles.modalSubmitText}>신청</Text></TouchableOpacity>
             </View>
           </View>
@@ -264,10 +235,84 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const CalendarModal = ({ isVisible, onClose, onDateSelect, storeName, colors }: any) => {
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [monthlySchedule, setMonthlySchedule] = useState<Shift[]>([]);
+  const styles = getThemedStyles(colors);
+
+  useEffect(() => {
+    if (isVisible) {
+      const newMonthlySchedule = generateDummyScheduleForMonth(calendarDate, storeName);
+      setMonthlySchedule(newMonthlySchedule);
+    }
+  }, [isVisible, calendarDate, storeName]);
+
+  const markedDates = useMemo(() => {
+    const marks: { [key: string]: { dots: { color: string }[] } } = {};
+    monthlySchedule.forEach((item: Shift) => {
+      const color = item.status === 'OFF' ? 'red' : 'blue';
+      if (!marks[item.fullDate]) {
+        marks[item.fullDate] = { dots: [] };
+      }
+      if (!marks[item.fullDate].dots.some(d => d.color === color)) {
+        marks[item.fullDate].dots.push({ color });
+      }
+    });
+    return marks;
+  }, [monthlySchedule]);
+
+  const changeMonth = (offset: number) => {
+    setCalendarDate(prev => setMonth(prev, getMonth(prev) + offset));
+  };
+
+  const renderCalendarGrid = () => {
+    const monthStart = startOfMonth(calendarDate);
+    const firstDayOfMonth = getDay(monthStart);
+    const daysInMonth = getDaysInMonth(calendarDate);
+    const grid = [];
+
+    for (let i = 0; i < firstDayOfMonth; i++) grid.push(<View key={`empty-${i}`} style={styles.dayCell} />);
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const currentDate = new Date(getYear(calendarDate), getMonth(calendarDate), day);
+      const dateString = formatDate(currentDate);
+      
+      grid.push(
+        <TouchableOpacity key={day} style={styles.dayCell} onPress={() => onDateSelect(currentDate)}>
+          <Text style={styles.dayNumber}>{day}</Text>
+          <View style={styles.dotsContainer}>
+            {markedDates[dateString]?.dots.map((dot: any, index: number) => <View key={index} style={[styles.dot, { backgroundColor: dot.color }]} />)}
+          </View>
+        </TouchableOpacity>
+      );
+    }
+    return grid;
+  };
+
+  return (
+    <Modal visible={isVisible} transparent={true} animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity style={styles.calendarModalContent} activeOpacity={1}>
+          <View style={styles.calendarHeader}>
+            <TouchableOpacity onPress={() => changeMonth(-1)}><Text style={styles.calendarNav}>◀</Text></TouchableOpacity>
+            <Text style={styles.calendarTitle}>{`${getYear(calendarDate)}년 ${getMonth(calendarDate) + 1}월`}</Text>
+            <TouchableOpacity onPress={() => changeMonth(1)}><Text style={styles.calendarNav}>▶</Text></TouchableOpacity>
+          </View>
+          <View style={styles.weekHeader}>
+            {KOREAN_DAYS.map(day => <Text key={day} style={styles.weekDay}>{day}</Text>)}
+          </View>
+          <View style={styles.calendarGrid}>{renderCalendarGrid()}</View>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
+const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10, backgroundColor: colors.card },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10, backgroundColor: colors.card },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
+  monthViewButton: { fontSize: 14, color: colors.primary, fontWeight: '600' },
   calendarContainer: { backgroundColor: colors.card, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   weekDaysContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 10 },
   arrowButton: { paddingHorizontal: 5, paddingVertical: 10 },
@@ -313,6 +358,18 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   modalCancelText: { color: colors.text, fontSize: 15, fontWeight: '600' },
   modalSubmitButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   modalSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  // Calendar Modal Styles
+  calendarModalContent: { width: '90%', backgroundColor: colors.card, borderRadius: 16, padding: 20 },
+  calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10 },
+  calendarNav: { fontSize: 20, color: colors.primary, padding: 10 },
+  calendarTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  weekHeader: { flexDirection: 'row', justifyContent: 'space-around', borderBottomWidth: 1, borderColor: colors.border, paddingBottom: 10, marginBottom: 5 },
+  weekDay: { flex: 1, textAlign: 'center', fontSize: 13, color: colors.subText, fontWeight: '600' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  dayCell: { width: `${100/7}%`, aspectRatio: 1, justifyContent: 'center', alignItems: 'center', position: 'relative' },
+  dayNumber: { fontSize: 15, color: colors.text },
+  dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: -5 },
+  dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
 });
 
 export default ScheduleScreen;

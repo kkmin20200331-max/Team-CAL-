@@ -7,7 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
-import { useAppStore } from '../../store/appStore'; // 전역 스토어 임포트
+import { useApp } from '../../contexts/AppContext';
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -20,7 +20,7 @@ export default function SignupScreen({ navigation, route }: Props) {
   const { role } = route.params;
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
-  const login = useAppStore((state) => state.login); // 전역 스토어의 login 함수 가져오기
+  const { login } = useApp();
 
   const [inputs, setInputs] = useState({
     id: "",
@@ -104,16 +104,14 @@ export default function SignupScreen({ navigation, route }: Props) {
         text2: `${name}님 환영합니다!`,
       });
 
-      // ★★★ 수정된 부분: 가입 성공 후 바로 로그인 처리 ★★★
       if (role === 'ADMIN') {
         const userInfoForLogin = {
           ...signupData,
           branches: [{ id: 'branch_1', brandName, branchName }],
           activeBranchId: 'branch_1',
         };
-        login(userInfoForLogin, true); // hasBranch를 true로 설정하여 지점 선택 화면 건너뛰기
+        login(userInfoForLogin, true);
       } else {
-        // 직원은 지점 선택 화면으로 이동해야 하므로, 로그인만 처리
         login(signupData, false);
       }
 

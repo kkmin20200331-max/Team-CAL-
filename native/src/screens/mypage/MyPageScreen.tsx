@@ -1,36 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native'; // ✅ Alert 임포트 추가
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { User } from '../../types/User';
-import Toast from 'react-native-toast-message'; // ✅ Toast 임포트 추가
+import { useApp } from '../../contexts/AppContext'; // 1. useApp 훅 임포트
+import Toast from 'react-native-toast-message';
 
 type Props = {
-  route: {
-    params: {
-      handleLogout: () => void;
-      userInfo: User;
-      setUserInfo: (user: User) => void;
-    };
-  };
   navigation: any;
 };
 
-const MyPageScreen = ({ route, navigation }: Props) => {
-  // ✅ [개선 19] handleLogout 함수를 받아와 로그아웃 버튼에 연결합니다.
-  const { handleLogout, userInfo, setUserInfo } = route.params || {};
+const MyPageScreen = ({ navigation }: Props) => {
+  // 2. useApp 훅을 사용하여 전역 상태와 함수를 가져옵니다.
+  const { userInfo, logout } = useApp(); 
 
-  const [localUserInfo, setLocalUserInfo] = useState(userInfo);
   const { themeMode, setThemeMode, colors } = useTheme();
   const [themeModalVisible, setThemeModalVisible] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [isPushEnabled, setIsPushEnabled] = useState(true);
 
-  const name = localUserInfo?.name || '사용자';
-  const role = localUserInfo?.role || 'STAFF';
-  const branch = localUserInfo?.brandName || localUserInfo?.store_id || '컴포즈 미금점';
+  const name = userInfo?.name || '사용자';
+  const role = userInfo?.role || 'STAFF';
+  const branch = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
 
   const styles = getThemedStyles(colors);
 
@@ -60,30 +52,20 @@ const MyPageScreen = ({ route, navigation }: Props) => {
     </View>
   );
 
-  // ✅ [추가] 회원 탈퇴 처리 함수
   const handleWithdraw = () => {
     Alert.alert(
-      t('withdrawConfirmTitle'), // 예: "회원 탈퇴"
-      t('withdrawConfirmMsg'),   // 예: "정말 회원 탈퇴를 하시겠습니까? 모든 정보가 삭제됩니다."
+      t('withdrawConfirmTitle'),
+      t('withdrawConfirmMsg'),
       [
-        {
-          text: t('cancel'),
-          style: 'cancel',
-        },
+        { text: t('cancel'), style: 'cancel' },
         {
           text: t('confirm'),
           onPress: () => {
-            // 🚨 백엔드 API 연동 시 여기에 탈퇴 API 호출 로직을 추가합니다.
-            // 예: await deleteUserAPI(userInfo.id);
-
-            // 현재는 API 호출 대신 로그아웃 처리 및 성공 토스트 메시지를 띄웁니다.
-            if (handleLogout) {
-              handleLogout(); // App.tsx에서 전달받은 로그아웃 함수 호출
-            }
+            logout(); // 3. 전역 logout 함수 사용
             Toast.show({
               type: 'success',
-              text1: t('withdrawSuccessTitle'), // 예: "탈퇴 완료"
-              text2: t('withdrawSuccessMsg'),   // 예: "회원 탈퇴가 성공적으로 처리되었습니다."
+              text1: t('withdrawSuccessTitle'),
+              text2: t('withdrawSuccessMsg'),
             });
           },
         },
@@ -96,8 +78,8 @@ const MyPageScreen = ({ route, navigation }: Props) => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         <View style={styles.profileSection}>
-          {localUserInfo?.profileImage ? (
-            <Image source={{ uri: localUserInfo.profileImage }} style={styles.avatarImage} />
+          {userInfo?.profileImage ? (
+            <Image source={{ uri: userInfo.profileImage }} style={styles.avatarImage} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>{name.substring(0, 1)}</Text>
@@ -105,7 +87,6 @@ const MyPageScreen = ({ route, navigation }: Props) => {
           )}
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{name} 님</Text>
-            {/* ✅ [개선 20] 'STAFF' 또는 'GUEST'일 경우 모두 '직원'으로 표시되도록 수정합니다. */}
             <Text style={styles.userRole}>
               {branch} | {role === 'ADMIN' ? t('admin') : t('staff')}
             </Text>
@@ -114,9 +95,9 @@ const MyPageScreen = ({ route, navigation }: Props) => {
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
-          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo: localUserInfo, setUserInfo: setLocalUserInfo }))}
-          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo: localUserInfo }))}
-          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo: localUserInfo }))}
+          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo }))}
+          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
+          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
         </View>
 
         <View style={styles.menuSection}>
@@ -128,12 +109,11 @@ const MyPageScreen = ({ route, navigation }: Props) => {
 
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={() => handleLogout && handleLogout()}
+          onPress={logout} // 4. 전역 logout 함수 직접 사용
         >
           <Text style={styles.logoutButtonText}>{t('logout')}</Text>
         </TouchableOpacity>
 
-        {/* ✅ [추가] 회원 탈퇴 버튼 */}
         <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}>
           <Text style={styles.withdrawText}>{t('withdrawBtn')}</Text>
         </TouchableOpacity>
@@ -154,7 +134,7 @@ const MyPageScreen = ({ route, navigation }: Props) => {
                 key={mode}
                 style={[styles.modalOption, themeMode === mode && styles.modalOptionSelected]}
                 onPress={() => {
-                  setThemeMode(mode);
+                  setThemeMode(mode as any);
                   setThemeModalVisible(false);
                 }}
               >
@@ -298,7 +278,6 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // ✅ [오류 수정] 빠진 회원 탈퇴 버튼 스타일을 추가합니다.
   withdrawButton: {
     alignItems: 'center',
     paddingVertical: 10,

@@ -5,7 +5,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Post } from '../../types/Post';
-import { User } from '../../types/User';
+import { useApp } from '../../contexts/AppContext';
+import { useBoard } from '../../contexts/BoardContext';
 import Toast from "react-native-toast-message";
 
 interface Comment {
@@ -23,35 +24,38 @@ type Props = {
   navigation: BoardDetailScreenNavigationProp;
   route: {
     params: {
-      post: Post;
-      userInfo: User | null;
-      updatePostPinStatus: (postId: string, isPinned: boolean) => void;
-      updateDashboardPostPinStatus?: (postId: string, isPinned: boolean) => void; // ✅ [추가] Dashboard의 상태 업데이트 함수 (optional)
+      postId: string;
     };
   };
 };
 
 const BoardDetailScreen = ({ route, navigation }: Props) => {
-  const { post, userInfo, updatePostPinStatus, updateDashboardPostPinStatus } = route.params;
+  const { postId } = route.params;
+  const { userInfo } = useApp();
+  const { posts, updatePinStatus } = useBoard();
   const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
+  const [post, setPost] = useState<Post | null>(null);
   const [viewCount, setViewCount] = useState(123);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [isPinned, setIsPinned] = useState(post.isPinned || false);
 
   const currentUserId = userInfo?.username || 'my_test_id';
   const currentUserName = userInfo?.name || '현재사용자';
 
   useEffect(() => {
-    setViewCount(prev => prev + 1);
-    setComments([
-      { id: 'c1', postId: post.id, author: '김직원', content: '좋은 정보 감사합니다!', timestamp: '2026.06.01 10:00', isMine: false },
-      { id: 'c2', postId: post.id, author: currentUserName, content: '궁금한 점이 있어요.', timestamp: '2026.06.01 10:30', isMine: true },
-    ]);
-  }, [post.id]);
+    const foundPost = posts.find(p => p.id === postId);
+    if (foundPost) {
+      setPost(foundPost);
+      setViewCount(prev => prev + 1);
+      setComments([
+        { id: 'c1', postId: postId, author: '김직원', content: '좋은 정보 감사합니다!', timestamp: '2026.06.01 10:00', isMine: false },
+        { id: 'c2', postId: postId, author: currentUserName, content: '궁금한 점이 있어요.', timestamp: '2026.06.01 10:30', isMine: true },
+      ]);
+    }
+  }, [postId, posts]);
 
   const handleAddComment = () => {
     if (newComment.trim() === '') {
@@ -60,7 +64,7 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
     }
     const newCommentObj: Comment = {
       id: `c${comments.length + 1}`,
-      postId: post.id,
+      postId: post!.id,
       author: currentUserName,
       content: newComment.trim(),
       timestamp: new Date().toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }),
@@ -88,22 +92,22 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
   };
 
   const handleTogglePin = () => {
-    const newPinnedStatus = !isPinned;
-    setIsPinned(newPinnedStatus);
-    
-    // ✅ [수정] BoardScreen과 DashboardScreen의 상태를 모두 업데이트합니다.
-    if (updatePostPinStatus) {
-      updatePostPinStatus(post.id, newPinnedStatus);
-    }
-    if (updateDashboardPostPinStatus) {
-      updateDashboardPostPinStatus(post.id, newPinnedStatus);
-    }
-
+    if (!post) return;
+    const newPinnedStatus = !post.isPinned;
+    updatePinStatus(post.id, newPinnedStatus);
     Toast.show({
       type: 'success',
       text1: newPinnedStatus ? t('pinSuccess') : t('unpinSuccess'),
     });
   };
+
+  if (!post) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}><Text>게시글을 찾을 수 없습니다.</Text></View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -119,7 +123,7 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
           <Text style={styles.headerTitle}>{t('boardDetailTitle')}</Text>
           {userInfo?.role === 'ADMIN' ? (
             <TouchableOpacity onPress={handleTogglePin} style={styles.pinButton}>
-              <Text style={styles.pinButtonText}>{isPinned ? t('unpin') : t('pin')}</Text>
+              <Text style={styles.pinButtonText}>{post.isPinned ? t('unpin') : t('pin')}</Text>
             </TouchableOpacity>
           ) : (
             <View style={{ width: 40 }} />
@@ -130,7 +134,7 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
           <View style={styles.postContainer}>
             <Text style={styles.postTitle}>{t(post.title)}</Text>
             <View style={styles.postMeta}>
-              <Text style={styles.postAuthor}>{t('writer')}: {post.author || t('unknown')}</Text>
+              <Text style={styles.postAuthor}>{t('writer')}: {post.authorId || t('unknown')}</Text>
               <Text style={styles.postDate}>{post.date}</Text>
             </View>
             <View style={styles.postStats}>
@@ -184,6 +188,7 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
 
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

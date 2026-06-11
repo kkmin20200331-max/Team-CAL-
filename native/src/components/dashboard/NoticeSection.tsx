@@ -1,36 +1,36 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { User } from '../../types/User';
 import { Post } from '../../types/Post';
 
 type Props = {
-  sortedDummyPosts: Post[];
+  posts: Post[];
   handleOpenPost: (post: Post) => void;
   navigation: any;
   colors: any;
   isDarkMode: boolean;
   t: (key: string) => string;
   CATEGORIES: any[];
-  userInfo?: User | null;
-  updateDashboardPostPinStatus: (postId: string, isPinned: boolean) => void;
 };
 
-const NoticeSection = ({ sortedDummyPosts, handleOpenPost, navigation, colors, isDarkMode, t, CATEGORIES, userInfo, updateDashboardPostPinStatus }: Props) => {
+const NoticeSection = ({ posts, handleOpenPost, navigation, colors, isDarkMode, t, CATEGORIES }: Props) => {
   const styles = getThemedStyles(colors, isDarkMode);
+
+  const postsToShow = posts.slice(0, 3);
 
   return (
     <View style={styles.noticeSection}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{t('notice')}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('BoardNavigator', { screen: 'Board', params: { userInfo, updateDashboardPostPinStatus } })}>
+        <TouchableOpacity onPress={() => navigation.navigate('BoardNavigator')}>
           <Text style={styles.moreText}>{t('more')}</Text>
         </TouchableOpacity>
       </View>
       
-      {sortedDummyPosts.map((post, index) => (
+      {postsToShow.map((post, index) => (
         <React.Fragment key={post.id}>
           <TouchableOpacity style={styles.noticeItem} onPress={() => handleOpenPost(post)} activeOpacity={0.7}>
             <View style={styles.noticeTextContainer}>
+              {post.isPinned && <Text style={styles.pinIcon}>📌</Text>}
               <View style={styles.categoryBadge}>
                 <Text style={styles.categoryBadgeText}>{t(CATEGORIES.find(c => c.id === post.category)?.label || 'boardTabNotice')}</Text>
               </View>
@@ -43,7 +43,7 @@ const NoticeSection = ({ sortedDummyPosts, handleOpenPost, navigation, colors, i
             </View>
             <Text style={styles.noticeDate}>{post.date}</Text>
           </TouchableOpacity>
-          {index < sortedDummyPosts.length - 1 && <View style={styles.noticeDivider} />}
+          {index < postsToShow.length - 1 && <View style={styles.noticeDivider} />}
         </React.Fragment>
       ))}
     </View>
@@ -90,6 +90,10 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     alignItems: 'center',
     flex: 1,
     paddingRight: 10,
+  },
+  pinIcon: {
+    fontSize: 14,
+    marginRight: 8,
   },
   categoryBadge: {
     backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',

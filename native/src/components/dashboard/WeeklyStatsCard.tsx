@@ -6,21 +6,25 @@ type Props = {
     totalHours: number;
     expectedSalary: number;
   };
-  userInfo: any;
-  navigation: any;
+  onPress: () => void;
   colors: any;
   isDarkMode: boolean;
   t: (key: string) => string;
 };
 
-const WeeklyStatsCard = ({ weeklyStats, userInfo, navigation, colors, isDarkMode, t }: Props) => {
+const WeeklyStatsCard = ({ weeklyStats, onPress, colors, isDarkMode, t }: Props) => {
   const styles = getThemedStyles(colors, isDarkMode);
 
+  const formatNumber = (num: number) => {
+    if (num === 0) return '0';
+    return num.toLocaleString();
+  }
+
   return (
-    <TouchableOpacity style={styles.statsCard} onPress={() => navigation.navigate('Payroll', { userInfo })} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.statsCard} onPress={onPress} activeOpacity={0.8}>
       {/* 왼쪽: 이번 주 근무 시간 */}
       <View style={styles.statHalf}>
-        <Text style={styles.statValue}>{weeklyStats.totalHours}</Text>
+        <Text style={styles.statValue}>{weeklyStats.totalHours > 0 ? weeklyStats.totalHours.toFixed(1) : '0'}</Text>
         <Text style={styles.statLabel}>{t('weeklyHours')}</Text>
       </View>
 
@@ -29,7 +33,7 @@ const WeeklyStatsCard = ({ weeklyStats, userInfo, navigation, colors, isDarkMode
 
       {/* 오른쪽: 이번 주 예상 급여 */}
       <View style={styles.statHalf}>
-        <Text style={styles.statValue}>{weeklyStats.expectedSalary.toLocaleString()}</Text>
+        <Text style={styles.statValue}>{formatNumber(weeklyStats.expectedSalary)}</Text>
         <Text style={styles.statLabel}>{t('weeklySalary')}</Text>
       </View>
     </TouchableOpacity>

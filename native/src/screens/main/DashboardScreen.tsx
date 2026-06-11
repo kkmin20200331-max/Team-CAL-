@@ -2,11 +2,12 @@ import React, { useState, useEffect, useContext, useCallback, useRef } from 'rea
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert, RefreshControl, Animated, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { getMyScheduleAPI } from '../../../api/auth';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
+import { startOfWeek, endOfWeek, parseISO, format, isWithinInterval, subDays, addDays } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 import { User } from '../../types/User';
 import { Shift } from '../../types/Schedule';
@@ -16,22 +17,56 @@ import TodayShiftCard from '../../components/dashboard/TodayShiftCard';
 import WeeklyStatsCard from '../../components/dashboard/WeeklyStatsCard';
 import SubstituteAlertCard from '../../components/dashboard/SubstituteAlertCard';
 import NoticeSection from '../../components/dashboard/NoticeSection';
+import { useApp } from '../../contexts/AppContext';
+import { useBoard } from '../../contexts/BoardContext'; // 1. useBoard 훅 임포트
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
 type Props = {
   navigation: DashboardScreenNavigationProp;
-  route: {
-    params?: {
-      handleLogout?: () => void;
-      userInfo?: User | null;
-    }
-  }
 };
 
-const DashboardScreen = ({ navigation, route }: Props) => {
-  const { userInfo, handleLogout } = route.params || {};
-  
+const generateDummySchedule = (storeName: string, t: (key: string) => string): Shift[] => {
+    const now = new Date();
+    const schedule: Shift[] = [];
+    const statuses: Shift['status'][] = ['COMPLETED', 'COMPLETED', 'IN_PROGRESS', 'SCHEDULED', 'SUBSTITUTE_REQ', 'OFF'];
+
+    for (let i = -3; i <= 3; i++) {
+        const date = addDays(now, i);
+        const status = statuses[(i + 3) % statuses.length];
+        
+        if (status === 'OFF') {
+            schedule.push({
+                id: `shift_${i}`,
+                fullDate: format(date, 'yyyy-MM-dd'),
+                date: format(date, 'dd'),
+                day: format(date, 'eee', { locale: ko }),
+                time: t('offDay'),
+                storeName: '-',
+                status: 'OFF',
+                checkInTime: null,
+                checkOutTime: null,
+            });
+        } else {
+            schedule.push({
+                id: `shift_${i}`,
+                fullDate: format(date, 'yyyy-MM-dd'),
+                date: format(date, 'dd'),
+                day: format(date, 'eee', { locale: ko }),
+                time: '14:00 - 22:00', // 8 hours
+                storeName,
+                status: status,
+                checkInTime: status === 'COMPLETED' || status === 'IN_PROGRESS' ? '13:58' : null,
+                checkOutTime: status === 'COMPLETED' ? '22:03' : null,
+            });
+        }
+    }
+    return schedule;
+};
+
+const DashboardScreen = ({ navigation }: Props) => {
+  const { userInfo } = useApp();
+  const { posts } = useBoard(); // 2. BoardContext에서 posts 상태 가져오기
   const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
@@ -44,9 +79,11 @@ const DashboardScreen = ({ navigation, route }: Props) => {
   const [todayShift, setTodayShift] = useState<Shift | null>(null);
   const [loading, setLoading] = useState(false);
   const [weeklyStats, setWeeklyStats] = useState({ totalHours: 0, expectedSalary: 0 });
+  const [fullSchedule, setFullSchedule] = useState<Shift[]>([]);
   const [isAlertVisible, setIsAlertVisible] = useState(true);
 
   const fadeAnim = useRef(new Animated.Value(0.4)).current;
+  
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -55,9 +92,6 @@ const DashboardScreen = ({ navigation, route }: Props) => {
       ])
     ).start();
   }, [fadeAnim]);
-
-  const [isPostModalVisible, setPostModalVisible] = useState(false);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
   const CATEGORIES = [
     { id: 'ALL', label: 'boardTabAll' },
@@ -68,25 +102,16 @@ const DashboardScreen = ({ navigation, route }: Props) => {
     { id: 'LOST', label: 'boardTabLost' },
   ];
 
-  // ✅ [오류 수정] dummyPosts를 dashboardPosts 상태로 변경합니다.
-  const [dashboardPosts, setDashboardPosts] = useState<Post[]>([
-    { id: '1', authorId: 'user123', category: 'MENU', title: 'boardDummy1Title', date: '2026.08.25', content: 'boardDummy1Content', badge: 'badgeNew' },
-    { id: '2', authorId: 'user123', category: 'NOTICE', title: 'boardDummy2Title', date: '2026.05.28', content: 'boardDummy2Content', badge: null },
-    { id: '3', authorId: 'user123', category: 'NOTICE', title: 'boardDummy3Title', date: '2026.09.20', content: 'boardDummy3Content', badge: 'badgeImportant' },
-  ]);
+  // 3. BoardContext의 posts를 정렬하여 사용
+  const sortedDashboardPosts = [...posts].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 
-  // ✅ [오류 수정] dashboardPosts를 정렬하여 sortedDashboardPosts를 생성합니다.
-  const sortedDashboardPosts = [...dashboardPosts].sort((a, b) => b.date.localeCompare(a.date));
-
-  // ✅ [오류 수정] 대시보드 게시글의 고정 상태를 업데이트하는 함수를 정의합니다.
-  const updateDashboardPostPinStatus = (postId: string, isPinned: boolean) => {
-    setDashboardPosts(prevPosts =>
-      prevPosts.map(p => (p.id === postId ? { ...p, isPinned } : p))
-    );
-  };
-
+  // 4. 네비게이션 파라미터에서 함수 전달 제거
   const handleOpenPost = (post: Post) => {
-    navigation.navigate('BoardNavigator', { screen: 'BoardDetail', params: { post, userInfo, updateDashboardPostPinStatus } });
+    navigation.navigate('BoardNavigator', { screen: 'BoardDetail', params: { postId: post.id } });
   };
 
   const handleAcceptSubstitute = () => {
@@ -109,82 +134,77 @@ const DashboardScreen = ({ navigation, route }: Props) => {
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    fetchData();
     setTimeout(() => setRefreshing(false), 1000);
-  }, []);
-
-  useEffect(() => {
-    fetchTodaySchedule();
   }, [userInfo]);
 
-  const fetchTodaySchedule = async () => {
+  useEffect(() => {
+    if (userInfo) {
+      fetchData();
+    }
+  }, [userInfo]);
+
+  // 5. fetchData에서 게시글 관련 로직 제거
+  const fetchData = async () => {
     if (!userInfo) return;
     
     setLoading(true);
 
-    const dummySchedule: Shift[] = [
-      { id: '0', fullDate: '2026-05-31', date: '31', day: '일', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED', checkInTime: '13:58', checkOutTime: '22:03' },
-      { id: '1', fullDate: '2026-06-01', date: '01', day: '월', time: '14:00 - 22:00', storeName: storeName, status: 'COMPLETED', checkInTime: '14:05 (지각)', checkOutTime: '22:01' },
-      { id: '2', fullDate: '2026-06-02', date: '02', day: '화', time: '14:00 - 22:00', storeName: storeName, status: 'IN_PROGRESS', checkInTime: '13:59', checkOutTime: null },
-      { id: '3', fullDate: '2026-06-03', date: '03', day: '수', time: t('offDay'), storeName: '-', status: 'OFF', checkInTime: null, checkOutTime: null },
-      { id: '4', fullDate: '2026-06-05', date: '05', day: '목', time: '14:00 - 22:00', storeName: storeName, status: 'SCHEDULED', checkInTime: null, checkOutTime: null },
-      { id: '5', fullDate: '2026-06-06', date: '06', day: '금', time: '14:00 - 22:00', storeName: storeName, status: 'SUBSTITUTE_REQ', checkInTime: null, checkOutTime: null },
-    ];
-    
+    const schedule = generateDummySchedule(storeName, t);
+    setFullSchedule(schedule);
+
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+
     let calculatedMinutes = 0;
-    dummySchedule.forEach(item => {
-      if (item.status !== 'OFF' && item.time && item.time.includes(' - ')) {
-        const [start, end] = item.time.split(' - ');
-        const [sH, sM] = start.split(':').map(Number);
-        const [eH, eM] = end.split(':').map(Number);
-        
-        let diff = (eH * 60 + eM) - (sH * 60 + sM);
-        if (diff < 0) diff += 24 * 60;
-        calculatedMinutes += diff;
+    schedule.forEach(item => {
+      const shiftDate = parseISO(item.fullDate);
+      if (isWithinInterval(shiftDate, { start: weekStart, end: weekEnd })) {
+        if (item.status !== 'OFF' && item.status !== 'SUBSTITUTE_REQ' && item.time && item.time.includes(' - ')) {
+          const [start, end] = item.time.split(' - ');
+          const [sH, sM] = start.split(':').map(Number);
+          const [eH, eM] = end.split(':').map(Number);
+          
+          let diff = (eH * 60 + eM) - (sH * 60 + sM);
+          if (diff < 0) diff += 24 * 60;
+          calculatedMinutes += diff;
+        }
       }
     });
 
-    const calculatedHours = Math.round((calculatedMinutes / 60) * 10) / 10;
-    const dummyStats = {
+    const calculatedHours = calculatedMinutes / 60;
+    const stats = {
       totalHours: calculatedHours,
-      expectedSalary: calculatedHours * 10320
+      expectedSalary: calculatedHours * (userInfo.payRate || 9860)
     };
+    setWeeklyStats(stats);
 
-    try {
-      const storeId = userInfo.store_id || userInfo.brandName || 'default_store';
-      const response = await getMyScheduleAPI(userInfo.username, storeId);
-      
-    } catch (error) {
-      console.log("오늘의 근무 불러오기 에러 (더미 데이터 사용 중):", error);
-    } finally {
-      const scheduleList = dummySchedule;
-      const shift = scheduleList.find((item: any) => item.id === '2');
-      
-      if (shift) {
-        if (shift.status !== 'OFF' && shift.status !== 'SUBSTITUTE_REQ' && shift.time && shift.time.includes(' - ')) {
-          const now = new Date();
-          const currentMinutes = now.getHours() * 60 + now.getMinutes();
-          
-          const [startStr, endStr] = shift.time.split(' - ');
-          const [startH, startM] = startStr.split(':').map(Number);
-          const [endH, endM] = endStr.split(':').map(Number);
-          
-          const startMinutes = startH * 60 + startM;
-          const endMinutes = endH * 60 + endM;
-          
-          if (currentMinutes < startMinutes) shift.status = 'SCHEDULED';
-          else if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) shift.status = 'IN_PROGRESS';
-          else shift.status = 'COMPLETED';
+    const todayString = format(now, 'yyyy-MM-dd');
+    const shiftForToday = schedule.find((item: any) => item.fullDate === todayString);
+    
+    if (shiftForToday && shiftForToday.status === 'IN_PROGRESS') {
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const [startStr, endStr] = shiftForToday.time.split(' - ');
+        const [startH, startM] = startStr.split(':').map(Number);
+        const startMinutes = startH * 60 + startM;
+        if (currentMinutes < startMinutes) {
+            shiftForToday.status = 'SCHEDULED';
         }
-      }
-      
-      setTodayShift(shift ? { ...shift } : null);
-      setWeeklyStats(dummyStats);
-      setLoading(false);
     }
+    setTodayShift(shiftForToday ? { ...shiftForToday } : null);
+
+    setLoading(false);
   };
 
   const handleNotification = () => navigation.navigate('Notifications');
   const handleQRCheckIn = () => navigation.navigate('QRCheckIn');
+  const handleNavigateToPayroll = () => {
+    navigation.navigate('Payroll', {
+      schedule: fullSchedule,
+      userInfo: userInfo,
+    });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -235,8 +255,7 @@ const DashboardScreen = ({ navigation, route }: Props) => {
 
         <WeeklyStatsCard
           weeklyStats={weeklyStats}
-          userInfo={userInfo}
-          navigation={navigation}
+          onPress={handleNavigateToPayroll}
           colors={colors}
           isDarkMode={isDarkMode}
           t={t}
@@ -253,48 +272,21 @@ const DashboardScreen = ({ navigation, route }: Props) => {
         />
 
         <NoticeSection
-          sortedDummyPosts={sortedDashboardPosts} // ✅ [오류 수정] sortedDummyPosts -> sortedDashboardPosts
+          posts={sortedDashboardPosts} // 6. Prop 이름 변경
           handleOpenPost={handleOpenPost}
           navigation={navigation}
           colors={colors}
           isDarkMode={isDarkMode}
           t={t}
           CATEGORIES={CATEGORIES}
-          userInfo={userInfo}
-          updateDashboardPostPinStatus={updateDashboardPostPinStatus}
         />
 
       </ScrollView>
-
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isPostModalVisible}
-        onRequestClose={() => setPostModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.postModalContent}>
-            {selectedPost && (
-              <>
-                <Text style={styles.postModalTitle}>{t(selectedPost.title)}</Text>
-                <Text style={styles.postModalDate}>{selectedPost.date}</Text>
-                <View style={styles.postModalDivider} />
-                <ScrollView style={styles.postModalBody} showsVerticalScrollIndicator={false}>
-                  <Text style={styles.postModalText}>{t(selectedPost.content)}</Text>
-                </ScrollView>
-                <TouchableOpacity style={styles.closeModalButton} onPress={() => setPostModalVisible(false)}>
-                  <Text style={styles.closeModalButtonText}>{t('close')}</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-
     </SafeAreaView>
   );
 };
 
+// ... styles ...
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: {
     flex: 1,
