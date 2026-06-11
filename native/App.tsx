@@ -40,7 +40,8 @@ import { AppProvider, useApp } from './src/contexts/AppContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
-import { BoardProvider } from './src/contexts/BoardContext'; // 1. BoardProvider 임포트
+import { BoardProvider } from './src/contexts/BoardContext';
+import { ScheduleProvider } from './src/contexts/ScheduleContext'; // 1. ScheduleProvider 임포트
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -176,11 +177,13 @@ export default function App() {
         <LanguageProvider>
           <AppProvider>
             <NotificationProvider>
-              {/* 2. BoardProvider로 감싸기 */}
               <BoardProvider>
-                <NavigationContainer>
-                  <AppContent />
-                </NavigationContainer>
+                {/* 2. ScheduleProvider로 감싸기 */}
+                <ScheduleProvider>
+                  <NavigationContainer>
+                    <AppContent />
+                  </NavigationContainer>
+                </ScheduleProvider>
               </BoardProvider>
               <Toast />
             </NotificationProvider>
