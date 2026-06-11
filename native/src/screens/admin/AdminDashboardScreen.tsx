@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { useIsFocused } from '@react-navigation/native';
 import { useApp } from '../../contexts/AppContext';
 import { useSchedule } from '../../contexts/ScheduleContext';
+import TodayScheduleCard from '../../components/admin/TodayScheduleCard';
 
 const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
@@ -17,6 +18,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
 
   const [currentlyWorking, setCurrentlyWorking] = useState(0);
   const [substituteRequests, setSubstituteRequests] = useState(0);
+  const [todaySchedule, setTodaySchedule] = useState({ morning: [], afternoon: [], closing: [] });
   const [todayShifts, setTodayShifts] = useState<any[]>([]);
   const [isBranchModalVisible, setBranchModalVisible] = useState(false);
 
@@ -29,15 +31,35 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
       const now = new Date();
       const todayStr = format(now, 'yyyy-MM-dd');
 
-      const filteredTodayShifts = shifts
-        .filter(s => s.date === todayStr)
-        .map(s => ({ ...s, user: employees.find(e => e.id === s.userId) }));
+      const processedTodayShifts = shifts
+        .filter(s => s.date === todayStr && s.status !== 'OFF')
+        .map(s => {
+          const user = employees.find(e => e.id === s.userId);
+          return { ...s, user: { name: user?.name || 'N/A', color: user?.color || '#A1A1AA' } };
+        });
       
-      setTodayShifts(filteredTodayShifts);
+      setTodayShifts(processedTodayShifts);
+
+      const scheduleByTime = { morning: [], afternoon: [], closing: [] };
+      processedTodayShifts.forEach(shift => {
+        if (!shift.time || !shift.time.includes('-')) return;
+        
+        // ✅ [오류 수정] 시간 파싱 로직을 더 안전하게 변경
+        const startTime = shift.time.split(' - ')[0];
+        const startHourNum = parseInt(startTime.split(':')[0], 10);
+
+        if (startHourNum < 12) {
+          scheduleByTime.morning.push(shift);
+        } else if (startHourNum >= 12 && startHourNum < 18) {
+          scheduleByTime.afternoon.push(shift);
+        } else {
+          scheduleByTime.closing.push(shift);
+        }
+      });
+      setTodaySchedule(scheduleByTime);
 
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-      const workingNowCount = filteredTodayShifts.filter(shift => {
+      const workingNowCount = processedTodayShifts.filter(shift => {
         if (!shift.time || !shift.time.includes('-')) return false;
         const [startStr, endStr] = shift.time.split('-');
         const [startH, startM] = startStr.split(':').map(Number);
@@ -46,7 +68,6 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
         const endMinutes = endH * 60 + endM;
         return currentMinutes >= startMinutes && currentMinutes < endMinutes;
       }).length;
-
       setCurrentlyWorking(workingNowCount);
 
       const subCount = shifts.filter(s => s.status === 'SUBSTITUTE_REQ').length;
@@ -66,7 +87,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
     { title: '직원 관리', icon: '👥', screen: 'EmployeeManagement' },
     { title: '월간 근무표 보기', icon: '📅', screen: 'AdminSchedule' },
     { title: '급여 정산', icon: '💰', screen: 'Payroll' },
-    { title: '공지사항 관리', icon: '📢', screen: 'NoticeManagement' },
+    { title: '사내 게시판', icon: '📢', screen: 'BoardNavigator' },
   ];
 
   return (
@@ -91,6 +112,12 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
             <Text style={styles.summaryLabel}>대타 요청</Text>
           </TouchableOpacity>
         </View>
+        
+        <TodayScheduleCard 
+          schedule={todaySchedule}
+          onPress={handleNavigateToDailySchedule}
+          colors={colors}
+        />
 
         <View style={styles.menuGrid}>
           {menuItems.map((item, index) => (
@@ -149,7 +176,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   headerTitle: { fontSize: 28, fontWeight: 'bold', color: colors.text },
   branchSelector: { marginTop: 4 },
   storeName: { fontSize: 18, color: colors.primary, fontWeight: '600' },
-  summaryContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 24 },
+  summaryContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
   summaryBox: { alignItems: 'center', backgroundColor: colors.card, padding: 20, borderRadius: 12, width: '45%' },
   summaryValue: { fontSize: 24, fontWeight: 'bold', color: colors.primary },
   summaryLabel: { fontSize: 14, color: colors.subText, marginTop: 8 },
