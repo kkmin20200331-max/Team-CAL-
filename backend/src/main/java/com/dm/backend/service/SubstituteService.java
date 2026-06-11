@@ -190,10 +190,50 @@ public class SubstituteService {
     }
 
     // 대타 지원
+    @Transactional
     public void apply(
             SubstituteApplicationVO applicationVO
     ) {
-        substituteMapper.apply(applicationVO);
+
+        substituteMapper.apply(
+                applicationVO
+        );
+
+        // =========================
+        // 관리자 LINE 알림
+        // =========================
+
+        SubstitutePostVO post =
+                substituteMapper.getPost(
+                        applicationVO.getSubstitute_post_id()
+                );
+
+        List<StoreMemberVo> admins =
+                storeMemberMapper.getAdmins(
+                        post.getStore_id()
+                );
+
+        for(StoreMemberVo admin : admins){
+
+            String lineUserId =
+                    userLineMapper.getLineUserId(
+                            admin.getUser_id()
+                    );
+
+            if(lineUserId != null){
+
+                lineService.sendMessage(
+                        lineUserId,
+                        """
+                        [대타 지원]
+                        
+                        새로운 대타 지원이 등록되었습니다.
+                        
+                        앱에서 확인해주세요.
+                        """
+                );
+            }
+        }
     }
 
     // 지원 취소
@@ -216,6 +256,42 @@ public class SubstituteService {
         }
 
         substituteMapper.cancelApplication(id);
+
+        // =========================
+        // 관리자 LINE 알림
+        // =========================
+
+        SubstitutePostVO post =
+                substituteMapper.getPost(
+                        application.getSubstitute_post_id()
+                );
+
+        List<StoreMemberVo> admins =
+                storeMemberMapper.getAdmins(
+                        post.getStore_id()
+                );
+
+        for(StoreMemberVo admin : admins){
+
+            String lineUserId =
+                    userLineMapper.getLineUserId(
+                            admin.getUser_id()
+                    );
+
+            if(lineUserId != null){
+
+                lineService.sendMessage(
+                        lineUserId,
+                        """
+                        [대타 지원 취소]
+                        
+                        지원자 1명이 대타 신청을 취소했습니다.
+                        
+                        앱에서 확인해주세요.
+                        """
+                );
+            }
+        }
     }
 
     // 내 지원 내역 조회
