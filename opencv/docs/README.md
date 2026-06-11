@@ -1,51 +1,60 @@
 # ShiftOps AI Docs
 
-이 폴더는 OpenCV/FastAPI 기반 AI 서버의 구조, 실행 방법, 발표 자료, 성능 실험 기록을 모아둔 문서 공간입니다.
+OpenCV/FastAPI 기반 CCTV 분석 서버와 Spring Boot, React 관리자 화면의 연동 문서입니다.
 
-## 먼저 볼 문서
+## 문서 목록
 
-| 목적 | 문서 |
+| 문서 | 내용 |
 | --- | --- |
-| 프로젝트 전체 구조 파악 | [project_analysis.md](./project_analysis.md) |
-| 실행/시연 흐름 확인 | [today_tasks.md](./today_tasks.md) |
-| 발표용 설명 정리 | [opencv_portfolio.md](./opencv_portfolio.md) |
-| 서버 기능 빠른 요약 | [ai_server_summary.md](./ai_server_summary.md) |
-| 성능 실험 기록 | [performance_report.md](./performance_report.md) |
+| [integration_status.md](./integration_status.md) | 현재 실제 연동 상태, API 흐름, 프론트 반영 방식 |
+| [project_analysis.md](./project_analysis.md) | FastAPI 서버 구조, 추론/집계/AI 인사이트 설계 |
+| [today_tasks.md](./today_tasks.md) | 시연 전 점검 항목과 테스트 순서 |
+| [opencv_portfolio.md](./opencv_portfolio.md) | 발표/포트폴리오용 설명 자료 |
+| [ai_server_summary.md](./ai_server_summary.md) | AI 서버 기능 요약 |
+| [performance_report.md](./performance_report.md) | 모델/처리 성능 기록 |
 
-## 문서 역할
+## 현재 실행 흐름
 
-- [project_analysis.md](./project_analysis.md): 코드 구조, API, 요청/응답 모델, 환경변수, 운영 체크포인트를 정리한 기준 문서입니다.
-- [today_tasks.md](./today_tasks.md): 발표 또는 시연 전에 확인할 체크리스트와 테스트 절차입니다.
-- [opencv_portfolio.md](./opencv_portfolio.md): 포트폴리오/발표에서 사용할 설명 문장과 강조 포인트입니다.
-- [ai_server_summary.md](./ai_server_summary.md): AI 서버의 역할, 처리 파이프라인, 주요 API를 짧게 요약한 문서입니다.
-- [performance_report.md](./performance_report.md): 모델, 이미지 크기, worker 수에 따른 성능 실험 결과를 기록하는 문서입니다.
+1. React 관리자 화면에서 CCTV 분석 시작
+2. Spring Boot `/api/cctv/start` 호출
+3. Spring Boot가 FastAPI `/api/v1/camera/start`로 전달
+4. FastAPI가 OpenCV/YOLO 분석 루프 실행
+5. `aggregationIntervalSec`마다 집계 결과 생성
+6. `SEND_TO_SPRING=true`이면 Spring `/api/ai/congestion`으로 집계 전송
+7. Spring이 `PEOPLE_LOG`에 저장
+8. React 인사이트 페이지가 `people_log`, `metrics`, `aggregate`를 주기적으로 조회
+9. 인사이트 페이지의 새로고침 버튼은 FastAPI LLM 인사이트 API를 호출
 
-## 실행 핵심
+## 주요 URL
+
+| 대상 | URL |
+| --- | --- |
+| React 관리자 화면 | `http://localhost:5173` |
+| Spring Boot API | `http://localhost:8080` |
+| FastAPI 서버 | `http://localhost:8000` |
+| FastAPI Swagger | `http://localhost:8000/docs` |
+| FastAPI 실험 페이지 | `http://localhost:8000/experiment` |
+
+## 서버 실행
 
 ```powershell
+cd opencv
 venv\Scripts\activate
 python -m pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-- Swagger: <http://127.0.0.1:8000/docs>
-- 실험 페이지: <http://127.0.0.1:8000/experiment>
-- 헬스체크: <http://127.0.0.1:8000/api/v1/health>
+Spring Boot와 React도 함께 실행해야 전체 화면이 동작합니다.
 
-## 자주 헷갈리는 부분
+## 환경변수 핵심
 
-- `/api/v1/camera/start`는 `POST` 전용입니다. `GET` 요청의 `405 Method Not Allowed`는 정상입니다.
-- 웹캠을 사용할 때는 `source: "0"`만 넣으면 안 되고 `sourceType: "WEBCAM"`을 함께 넣어야 합니다.
-- 영상 파일을 사용할 때는 `sourceType: "VIDEO_FILE"`과 실제 mp4 경로를 넣어야 합니다.
-- `aggregationIntervalSec`는 aggregate 기능을 켜는 값입니다. 예를 들어 `intervalSec=1`, `aggregationIntervalSec=5`이면 5개 샘플 단위로 집계합니다.
-- `ultralytics is not installed`가 나오면 서버를 실행하는 같은 Python 환경에서 `python -m pip install -r requirements.txt`를 실행합니다.
+```env
+SEND_TO_SPRING=true
+SPRING_CONGESTION_URL=http://127.0.0.1:8080/api/ai/congestion
 
-## 현재 범위
+LLM_PROVIDER=openai
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-4o-mini
+```
 
-AI 서버는 고객의 신원, 신규/재방문 여부, 연령대, 대기열 길이, 근무자 배치, 안전 이벤트를 판단하지 않습니다. CCTV 분석 범위는 영상 속 사람 수와 시간대별 혼잡도 추정으로 제한합니다.
-
-프론트엔드와 LLM 인사이트는 이 집계 데이터를 다른 운영 데이터와 조합할 수 있지만, 영상 분석 결과 자체는 사람 수와 혼잡도 데이터로 한정합니다.
-
-- 시간대별 감지 인원
-- 혼잡도 변화
-- 피크 구간 참고 데이터
+`LLM_PROVIDER` 또는 API 키가 없으면 LLM API는 `llm-fallback`으로 룰 기반 결과를 반환합니다.
