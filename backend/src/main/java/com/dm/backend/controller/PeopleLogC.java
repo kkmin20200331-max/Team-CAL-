@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/people_log")
+@RequestMapping({"/people_log", "/api/people_log"})
 public class PeopleLogC {
 
     @Autowired
