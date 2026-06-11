@@ -5,7 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { format } from 'date-fns';
 import { useIsFocused } from '@react-navigation/native';
 import { useApp } from '../../contexts/AppContext';
-import { useSchedule } from '../../contexts/ScheduleContext'; // 1. useSchedule 훅 임포트
+import { useSchedule } from '../../contexts/ScheduleContext';
 
 const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
@@ -13,7 +13,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const isFocused = useIsFocused();
 
   const { userInfo, setActiveBranch } = useApp();
-  const { shifts, employees } = useSchedule(); // 2. 전역 상태에서 shifts와 employees 가져오기
+  const { shifts, employees } = useSchedule();
 
   const [currentlyWorking, setCurrentlyWorking] = useState(0);
   const [substituteRequests, setSubstituteRequests] = useState(0);
@@ -24,7 +24,6 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
     return userInfo?.branches?.find(b => b.id === userInfo.activeBranchId);
   }, [userInfo]);
 
-  // 3. useEffect에서 isFocused와 전역 shifts를 의존성으로 사용
   useEffect(() => {
     if (isFocused) {
       const now = new Date();
@@ -124,7 +123,13 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
                 <Text style={[styles.branchName, branch.id === activeBranch?.id && styles.branchNameActive]}>{branch.brandName} {branch.branchName}</Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity style={styles.addBranchButton} onPress={() => navigation.navigate('AddBranch')}>
+            <TouchableOpacity 
+              style={styles.addBranchButton}
+              onPress={() => {
+                setBranchModalVisible(false);
+                navigation.navigate('AddBranch');
+              }}
+            >
               <Text style={styles.addBranchButtonText}>+ 새 지점 추가</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.closeButton} onPress={() => setBranchModalVisible(false)}>
@@ -159,7 +164,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   branchItemActive: { backgroundColor: colors.primary },
   branchName: { fontSize: 18, color: colors.text },
   branchNameActive: { color: '#FFFFFF', fontWeight: 'bold' },
-  addBranchButton: { padding: 16, borderRadius: 8, backgroundColor: colors.disabled, alignItems: 'center', marginTop: 10 },
+  addBranchButton: { padding: 16, borderRadius: 8, backgroundColor: '#E5E7EB', alignItems: 'center', marginTop: 10 },
   addBranchButtonText: { fontSize: 16, color: colors.primary, fontWeight: '600' },
   closeButton: { marginTop: 20, alignItems: 'center' },
   closeButtonText: { fontSize: 16, color: colors.subText },

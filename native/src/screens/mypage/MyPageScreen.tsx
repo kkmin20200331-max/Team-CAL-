@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react'; // useMemo 임포트
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useApp } from '../../contexts/AppContext'; // 1. useApp 훅 임포트
+import { useApp } from '../../contexts/AppContext';
 import Toast from 'react-native-toast-message';
 
 type Props = {
@@ -11,7 +11,6 @@ type Props = {
 };
 
 const MyPageScreen = ({ navigation }: Props) => {
-  // 2. useApp 훅을 사용하여 전역 상태와 함수를 가져옵니다.
   const { userInfo, logout } = useApp(); 
 
   const { themeMode, setThemeMode, colors } = useTheme();
@@ -22,7 +21,22 @@ const MyPageScreen = ({ navigation }: Props) => {
 
   const name = userInfo?.name || '사용자';
   const role = userInfo?.role || 'STAFF';
-  const branch = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
+
+  // ✅ [수정] 활성 지점 정보를 동적으로 찾도록 수정
+  const activeBranch = useMemo(() => {
+    if (!userInfo) return null;
+    // 관리자인 경우
+    if (userInfo.role === 'ADMIN' && userInfo.branches && userInfo.activeBranchId) {
+      return userInfo.branches.find(b => b.id === userInfo.activeBranchId);
+    }
+    // 직원인 경우 (또는 관리자인데 지점 정보가 없는 예외 케이스)
+    return {
+      brandName: userInfo.brandName || '브랜드',
+      branchName: userInfo.branchName || '지점',
+    };
+  }, [userInfo]);
+
+  const branchDisplayName = activeBranch ? `${activeBranch.brandName} ${activeBranch.branchName}` : '지점 정보 없음';
 
   const styles = getThemedStyles(colors);
 
@@ -61,7 +75,7 @@ const MyPageScreen = ({ navigation }: Props) => {
         {
           text: t('confirm'),
           onPress: () => {
-            logout(); // 3. 전역 logout 함수 사용
+            logout();
             Toast.show({
               type: 'success',
               text1: t('withdrawSuccessTitle'),
@@ -88,7 +102,7 @@ const MyPageScreen = ({ navigation }: Props) => {
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{name} 님</Text>
             <Text style={styles.userRole}>
-              {branch} | {role === 'ADMIN' ? t('admin') : t('staff')}
+              {branchDisplayName} | {role === 'ADMIN' ? t('admin') : t('staff')}
             </Text>
           </View>
         </View>
@@ -109,7 +123,7 @@ const MyPageScreen = ({ navigation }: Props) => {
 
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={logout} // 4. 전역 logout 함수 직접 사용
+          onPress={logout}
         >
           <Text style={styles.logoutButtonText}>{t('logout')}</Text>
         </TouchableOpacity>

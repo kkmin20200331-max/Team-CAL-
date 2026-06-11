@@ -7,7 +7,7 @@ import { useApp } from '../../contexts/AppContext';
 const AddBranchScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
-  const { setActiveBranch } = useApp();
+  const { userInfo, login } = useApp();
 
   const [brandName, setBrandName] = useState('');
   const [branchName, setBranchName] = useState('');
@@ -18,9 +18,20 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
       return;
     }
 
-    const newBranchId = `branch_${Date.now()}`;
-    
-    // setActiveBranch(newBranchId);
+    const newBranch = {
+      id: `branch_${Date.now()}`,
+      brandName,
+      branchName,
+    };
+
+    if (userInfo) {
+      const updatedUserInfo = {
+        ...userInfo,
+        branches: [...(userInfo.branches || []), newBranch],
+      };
+      login(updatedUserInfo, true);
+    }
+
     navigation.goBack();
   };
 
