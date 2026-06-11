@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
   Activity,
@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
-  CloudSun,
   Download,
   LineChart as LineChartIcon,
   RefreshCw,
@@ -24,11 +23,8 @@ import {
   AreaChart,
   Bar,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -40,29 +36,74 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 
 type TabKey = 'live' | 'pattern' | 'insight' | 'schedule';
 
+type PeopleLog = {
+  id?: string | number;
+  store_id?: string;
+  storeId?: string;
+  camera_id?: string;
+  cameraId?: string;
+  record_time?: string;
+  recordTime?: string;
+  people_count?: number;
+  peopleCount?: number;
+};
+
+type CctvMetrics = {
+  running?: boolean;
+  processedFrames?: number;
+  droppedFrames?: number;
+  lastCustomerCount?: number;
+  lastConfidenceAvg?: number;
+  lastMeasuredAt?: string;
+  queueSize?: number;
+};
+
+type CctvAggregate = {
+  available?: boolean;
+  aggregate?: {
+    avgCustomerCount?: number;
+    maxCustomerCount?: number;
+    minCustomerCount?: number;
+    lastCustomerCount?: number;
+    sampleCount?: number;
+    measuredAt?: string;
+  };
+};
+
+type TrafficRow = {
+  time: string;
+  visitors: number;
+  sales: number;
+  staff: number;
+  recommended: number;
+  wait: number;
+};
+
+const API_BASE = 'http://localhost:8080/api';
+
 const branchNames: Record<string, string> = {
   migeum: '컴포즈 미금점',
   sunae: '컴포즈 수내점',
   dongcheon: '컴포즈 동천점'
 };
 
-const trafficByHour = [
-  { time: '08:00', visitors: 12, sales: 9, staff: 1, recommended: 1, wait: 1 },
-  { time: '09:00', visitors: 18, sales: 15, staff: 1, recommended: 1, wait: 2 },
-  { time: '10:00', visitors: 24, sales: 22, staff: 1, recommended: 1, wait: 2 },
-  { time: '11:00', visitors: 38, sales: 35, staff: 2, recommended: 2, wait: 3 },
-  { time: '12:00', visitors: 72, sales: 68, staff: 3, recommended: 3, wait: 5 },
-  { time: '13:00', visitors: 68, sales: 64, staff: 3, recommended: 3, wait: 4 },
-  { time: '14:00', visitors: 42, sales: 34, staff: 2, recommended: 2, wait: 3 },
-  { time: '15:00', visitors: 34, sales: 25, staff: 2, recommended: 2, wait: 2 },
-  { time: '16:00', visitors: 39, sales: 29, staff: 2, recommended: 2, wait: 3 },
-  { time: '17:00', visitors: 58, sales: 48, staff: 2, recommended: 3, wait: 6 },
-  { time: '18:00', visitors: 86, sales: 78, staff: 2, recommended: 4, wait: 10 },
-  { time: '19:00', visitors: 94, sales: 84, staff: 3, recommended: 4, wait: 9 },
-  { time: '20:00', visitors: 76, sales: 69, staff: 3, recommended: 3, wait: 6 },
-  { time: '21:00', visitors: 48, sales: 41, staff: 2, recommended: 2, wait: 3 },
-  { time: '22:00', visitors: 22, sales: 17, staff: 1, recommended: 1, wait: 2 }
-];
+const branchStoreIds: Record<string, number> = {
+  migeum: 1,
+  sunae: 2,
+  dongcheon: 3
+};
+
+const fallbackTraffic: TrafficRow[] = Array.from({ length: 15 }, (_, index) => {
+  const hour = index + 8;
+  return {
+    time: `${String(hour).padStart(2, '0')}:00`,
+    visitors: 0,
+    sales: 0,
+    staff: 0,
+    recommended: 1,
+    wait: 0
+  };
+});
 
 const weeklyPattern = [
   { day: '월', morning: 45, lunch: 132, evening: 168 },
@@ -74,69 +115,6 @@ const weeklyPattern = [
   { day: '일', morning: 69, lunch: 176, evening: 214 }
 ];
 
-const flowSources = [
-  { name: 'CCTV 방문 집계', value: 43, color: '#2563eb' },
-  { name: 'POS 매출/주문', value: 29, color: '#16a34a' },
-  { name: '근무 스케줄', value: 18, color: '#f97316' },
-  { name: '날씨/행사', value: 10, color: '#7c3aed' }
-];
-
-const aiInsights = [
-  {
-    label: '인력 부족 예상',
-    title: '오늘 18:00-20:00 응대 지연 가능성이 높습니다',
-    body: '최근 4주 금요일 저녁 방문 흐름, 오늘 날씨, 주변 학원 종료 시간 데이터를 합산하면 피크 구간 방문량이 평소보다 24% 높게 예상됩니다.',
-    action: '홀 1명 추가 배치',
-    impact: '높음'
-  },
-  {
-    label: '전환율 점검',
-    title: '15:00-17:00 방문 대비 매출 전환이 낮습니다',
-    body: '방문 흐름은 유지되지만 주문 건수는 같은 시간대 평균보다 낮습니다. 직원 증원보다 세트 메뉴 안내, 진열 위치, 키오스크 추천 문구 점검이 우선입니다.',
-    action: '프로모션 점검',
-    impact: '보통'
-  },
-  {
-    label: '휴게 분산',
-    title: '점심 피크 이후 휴게 시간이 한 구간에 몰립니다',
-    body: '12:00-14:00 집중 근무 후 14:30에 휴게가 겹쳐 16:00 준비 업무가 부족해질 수 있습니다. 14:00, 14:40, 15:20으로 분산하는 안을 추천합니다.',
-    action: '휴게 30분 분산',
-    impact: '보통'
-  },
-  {
-    label: '매출 기회',
-    title: '비 오는 날 오후 포장 주문이 증가하는 패턴이 있습니다',
-    body: '최근 비 오는 평일에는 16:00-18:00 포장 주문 비중이 평균보다 11% 높았습니다. 제조 담당을 유지하고 계산 보조를 짧게 배치하는 편이 효율적입니다.',
-    action: '포장 대응 유지',
-    impact: '낮음'
-  }
-];
-
-const scheduleRecommendations = [
-  { time: '08:00-10:00', current: '1명', recommended: '1명', status: '유지', reason: '출근 전 커피 수요는 있으나 주문 난이도가 낮아 1명으로 대응 가능합니다.' },
-  { time: '11:00-14:00', current: '3명', recommended: '3명', status: '적정', reason: '점심 방문량과 POS 주문량이 균형적이며 평균 대기 시간이 5분 이하입니다.' },
-  { time: '14:00-16:00', current: '2명', recommended: '2명', status: '유지', reason: '방문 흐름은 안정적이고 재고 정리/청소 업무를 함께 처리할 수 있습니다.' },
-  { time: '17:00-18:00', current: '2명', recommended: '3명', status: '보강', reason: '퇴근 전 유입이 빠르게 증가하는 전환 구간입니다. 1명은 1시간 단기 보강을 추천합니다.' },
-  { time: '18:00-20:00', current: '2-3명', recommended: '4명', status: '긴급', reason: '방문량, 매출, 날씨, 주변 행사 지표가 모두 상승 방향입니다.' },
-  { time: '20:00-21:00', current: '3명', recommended: '3명', status: '적정', reason: '피크 이후 정리 업무까지 현 배치로 대응 가능합니다.' },
-  { time: '21:00-22:00', current: '1명', recommended: '1명', status: '유지', reason: '마감 주문과 정리 업무 중심이라 추가 배치는 필요하지 않습니다.' }
-];
-
-const operatingMetrics = [
-  { label: '혼잡도', value: '높음', width: 'w-[78%]', color: 'bg-orange-500' },
-  { label: '응대 여유', value: '주의', width: 'w-[42%]', color: 'bg-blue-500' },
-  { label: '매출 전환', value: '양호', width: 'w-[82%]', color: 'bg-emerald-500' },
-  { label: '스케줄 적합도', value: '보강 필요', width: 'w-[64%]', color: 'bg-violet-500' },
-  { label: '대기 시간 리스크', value: '높음', width: 'w-[71%]', color: 'bg-red-500' }
-];
-
-const signalCards = [
-  { title: '날씨 영향', value: '방문 +7%', detail: '맑음, 체감 23도', icon: CloudSun },
-  { title: '주변 일정', value: '행사 있음', detail: '19시 학원가 종료 집중', icon: Calendar },
-  { title: '평균 대기', value: '4.8분', detail: '피크 예상 10분', icon: Clock },
-  { title: '주문 전환', value: '82%', detail: '목표 대비 -3%', icon: Wallet }
-];
-
 const tabLabels: Array<[TabKey, string]> = [
   ['live', '실시간 현황'],
   ['pattern', '방문 패턴'],
@@ -144,23 +122,210 @@ const tabLabels: Array<[TabKey, string]> = [
   ['schedule', '스케줄 추천']
 ];
 
-const kpis = [
-  { title: '현재 매장 인원', value: '32명', delta: '보통 대비 +18%', icon: Users, tone: 'text-blue-600' },
-  { title: '오늘 누적 방문', value: '486명', delta: '전주 같은 요일 +12%', icon: Activity, tone: 'text-emerald-600' },
-  { title: '피크 예상', value: '18-20시', delta: '필요 인원 4명', icon: Clock, tone: 'text-orange-600' },
-  { title: '방문-매출 전환', value: '82%', delta: '목표 대비 -3%', icon: Wallet, tone: 'text-violet-600' }
-];
+const resolveStoreId = (branchId?: string) => {
+  if (!branchId) return 1;
+  const numericId = Number(branchId);
+  if (Number.isFinite(numericId) && numericId > 0) return numericId;
+  return branchStoreIds[branchId] || 1;
+};
+
+const toDateText = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getPeopleCount = (log: PeopleLog) => Number(log.people_count ?? log.peopleCount ?? 0);
+
+const getRecordTime = (log: PeopleLog) => String(log.record_time ?? log.recordTime ?? '');
+
+const buildTrafficByHour = (logs: PeopleLog[]): TrafficRow[] => {
+  if (logs.length === 0) return fallbackTraffic;
+
+  const latestByHour = new Map<number, number>();
+  logs.forEach((log) => {
+    const recordTime = getRecordTime(log);
+    const date = recordTime ? new Date(recordTime.replace(' ', 'T')) : null;
+    if (!date || Number.isNaN(date.getTime())) return;
+    latestByHour.set(date.getHours(), getPeopleCount(log));
+  });
+
+  return fallbackTraffic.map((row, index) => {
+    const hour = index + 8;
+    const visitors = latestByHour.get(hour) ?? 0;
+    return {
+      ...row,
+      visitors,
+      sales: 0,
+      staff: 0,
+      recommended: Math.max(1, Math.ceil(visitors / 25)),
+      wait: Math.max(0, Math.ceil(visitors / 8))
+    };
+  });
+};
+
+const riskLevel = (count: number) => {
+  if (count >= 30) return '높음';
+  if (count >= 15) return '주의';
+  return '정상';
+};
 
 export default function CustomerAnalytics() {
   const navigate = useNavigate();
   const { branchId } = useParams();
   const [activeTab, setActiveTab] = useState<TabKey>('live');
+  const [peopleLogs, setPeopleLogs] = useState<PeopleLog[]>([]);
+  const [metrics, setMetrics] = useState<CctvMetrics | null>(null);
+  const [aggregate, setAggregate] = useState<CctvAggregate | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState('-');
+  const [syncError, setSyncError] = useState('');
 
-  const currentBranch = branchNames[branchId || 'migeum'] || '선택 매장';
+  const storeId = resolveStoreId(branchId);
+  const currentBranch = branchNames[branchId || 'migeum'] || localStorage.getItem('store_name') || '선택 매장';
+  const trafficByHour = useMemo(() => buildTrafficByHour(peopleLogs), [peopleLogs]);
   const peakHour = useMemo(
     () => trafficByHour.reduce((max, row) => (row.visitors > max.visitors ? row : max), trafficByHour[0]),
-    []
+    [trafficByHour]
   );
+  const todayTotalVisitors = useMemo(
+    () => peopleLogs.reduce((sum, log) => sum + getPeopleCount(log), 0),
+    [peopleLogs]
+  );
+  const currentCount = metrics?.lastCustomerCount ?? aggregate?.aggregate?.lastCustomerCount ?? 0;
+  const avgCount = aggregate?.aggregate?.avgCustomerCount ?? 0;
+  const maxCount = aggregate?.aggregate?.maxCustomerCount ?? peakHour.visitors;
+
+  const kpis = [
+    {
+      title: '현재 매장 인원',
+      value: `${currentCount}명`,
+      delta: `${metrics?.running ? '분석 실행 중' : '분석 대기'} | ${lastSyncedAt}`,
+      icon: Users,
+      tone: 'text-blue-600'
+    },
+    {
+      title: '오늘 누적 로그',
+      value: `${todayTotalVisitors}명`,
+      delta: `people_log ${peopleLogs.length}건`,
+      icon: Activity,
+      tone: 'text-emerald-600'
+    },
+    {
+      title: '피크 시간',
+      value: peakHour.time,
+      delta: `최대 ${maxCount}명`,
+      icon: Clock,
+      tone: 'text-orange-600'
+    },
+    {
+      title: 'AI 처리 프레임',
+      value: `${metrics?.processedFrames ?? 0}`,
+      delta: `confidence ${metrics?.lastConfidenceAvg ?? 0}`,
+      icon: Wallet,
+      tone: 'text-violet-600'
+    }
+  ];
+
+  const aiInsights = [
+    {
+      label: '혼잡도',
+      title: `현재 매장 위험도는 ${riskLevel(currentCount)}입니다`,
+      body: `최근 집계 평균은 ${avgCount}명, 최대 인원은 ${maxCount}명입니다. CCTV 분석 루프의 최신 값을 기준으로 판단했습니다.`,
+      action: currentCount >= 15 ? '인력 배치 확인' : '현재 배치 유지',
+      impact: currentCount >= 30 ? '높음' : currentCount >= 15 ? '주의' : '정상'
+    },
+    {
+      label: '분석 상태',
+      title: metrics?.running ? 'OpenCV 분석이 실행 중입니다' : 'OpenCV 분석이 대기 중입니다',
+      body: `처리 프레임 ${metrics?.processedFrames ?? 0}개, 드롭 프레임 ${metrics?.droppedFrames ?? 0}개, 큐 ${metrics?.queueSize ?? 0}개입니다.`,
+      action: metrics?.running ? '모니터링 계속' : 'CCTV 분석 시작',
+      impact: metrics?.running ? '정상' : '주의'
+    },
+    {
+      label: '데이터 저장',
+      title: 'Spring people_log 기준으로 차트를 갱신합니다',
+      body: `오늘 조회된 DB 로그는 ${peopleLogs.length}건입니다. OpenCV 집계가 Spring으로 전송되면 이 화면의 시간대별 그래프에 반영됩니다.`,
+      action: 'DB 로그 확인',
+      impact: peopleLogs.length > 0 ? '정상' : '주의'
+    }
+  ];
+
+  const scheduleRecommendations = [
+    {
+      time: peakHour.time,
+      current: currentCount,
+      recommended: Math.max(1, Math.ceil(maxCount / 25)),
+      status: maxCount >= 30 ? '긴급' : maxCount >= 15 ? '보강' : '적정',
+      reason: `최신 CCTV 집계 최대 인원 ${maxCount}명을 기준으로 계산했습니다.`
+    }
+  ];
+
+  const operatingMetrics = [
+    { label: '혼잡도', value: riskLevel(currentCount), width: `${Math.min(100, currentCount * 3)}%`, color: 'bg-orange-500' },
+    { label: '분석 신뢰도', value: String(metrics?.lastConfidenceAvg ?? 0), width: `${Math.round((metrics?.lastConfidenceAvg ?? 0) * 100)}%`, color: 'bg-blue-500' },
+    { label: '처리 프레임', value: String(metrics?.processedFrames ?? 0), width: `${Math.min(100, (metrics?.processedFrames ?? 0) / 10)}%`, color: 'bg-emerald-500' },
+    { label: '전송 샘플', value: String(aggregate?.aggregate?.sampleCount ?? 0), width: `${Math.min(100, (aggregate?.aggregate?.sampleCount ?? 0) * 8)}%`, color: 'bg-violet-500' }
+  ];
+
+  const loadLiveData = async () => {
+    const today = toDateText(new Date());
+    const query = new URLSearchParams({
+      store_id: String(storeId),
+      start_date: `${today} 00:00:00`,
+      end_date: `${today} 23:59:59`
+    });
+
+    const [logsRes, metricsRes, aggregateRes] = await Promise.all([
+      fetch(`${API_BASE}/people_log?${query.toString()}`),
+      fetch(`${API_BASE}/cctv/metrics`),
+      fetch(`${API_BASE}/cctv/aggregate/latest`)
+    ]);
+
+    if (!logsRes.ok || !metricsRes.ok || !aggregateRes.ok) {
+      throw new Error('실시간 분석 데이터를 불러오지 못했습니다.');
+    }
+
+    const [logsData, metricsData, aggregateData] = await Promise.all([
+      logsRes.json(),
+      metricsRes.json(),
+      aggregateRes.json()
+    ]);
+
+    setPeopleLogs(Array.isArray(logsData) ? logsData : []);
+    setMetrics(metricsData);
+    setAggregate(aggregateData);
+    setLastSyncedAt(
+      new Date().toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    );
+    setSyncError('');
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const sync = async () => {
+      try {
+        await loadLiveData();
+      } catch (error) {
+        if (!cancelled) {
+          setSyncError(error instanceof Error ? error.message : '실시간 분석 데이터 동기화 실패');
+        }
+      }
+    };
+
+    sync();
+    const intervalId = window.setInterval(sync, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [storeId]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -186,12 +351,12 @@ export default function CustomerAnalytics() {
                 실시간 고객 행동 분석 및 인사이트
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-                CCTV 방문 집계, POS, 날씨, 근무 데이터를 조합해 방문 흐름과 인력 배치 추천을 제공합니다.
+                OpenCV/FastAPI 분석 상태와 Spring people_log 데이터를 5초마다 동기화합니다.
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" onClick={loadLiveData}>
               <RefreshCw className="h-4 w-4" />
               새로고침
             </Button>
@@ -204,6 +369,12 @@ export default function CustomerAnalytics() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+        {syncError && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {syncError}
+          </div>
+        )}
+
         <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
           {kpis.map((item) => (
             <Card key={item.title} className="rounded-lg">
@@ -254,9 +425,8 @@ export default function CustomerAnalytics() {
                     <YAxis tick={{ fill: '#64748b', fontSize: 12 }} />
                     <Tooltip />
                     <Bar dataKey="visitors" name="방문 인원" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                    <Line dataKey="sales" name="주문 건수" stroke="#7c3aed" strokeWidth={2} dot={false} />
-                    <Line dataKey="staff" name="현재 배치" stroke="#16a34a" strokeWidth={3} dot={false} />
                     <Line dataKey="recommended" name="추천 인원" stroke="#f97316" strokeWidth={3} strokeDasharray="5 5" />
+                    <Line dataKey="wait" name="예상 대기" stroke="#7c3aed" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -267,7 +437,7 @@ export default function CustomerAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="h-5 w-5 text-orange-500" />
-                현재 판단
+                현재 진단
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -275,32 +445,19 @@ export default function CustomerAnalytics() {
                 <p className="text-sm font-medium text-orange-700">가장 혼잡한 시간</p>
                 <p className="mt-1 text-3xl font-bold text-orange-950">{peakHour.time}</p>
                 <p className="mt-2 text-sm text-orange-800">
-                  예상 방문 {peakHour.visitors}명, 추천 배치 {peakHour.recommended}명, 대기 {peakHour.wait}분
+                  방문 {peakHour.visitors}명, 추천 배치 {peakHour.recommended}명, 예상 대기 {peakHour.wait}분
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {signalCards.map((signal) => (
-                  <div key={signal.title} className="rounded-lg border p-3">
-                    <signal.icon className="mb-2 h-5 w-5 text-blue-600" />
-                    <p className="text-sm text-slate-500">{signal.title}</p>
-                    <p className="font-semibold">{signal.value}</p>
-                    <p className="mt-1 text-xs text-slate-500">{signal.detail}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-lg border p-4">
-                <p className="text-sm font-medium text-slate-700">데이터 조합 비중</p>
-                <div className="mt-3 h-[160px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={flowSources} dataKey="value" innerRadius={42} outerRadius={68} paddingAngle={3}>
-                        {flowSources.map((source) => (
-                          <Cell key={source.name} fill={source.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <div className="rounded-lg border p-3">
+                  <Calendar className="mb-2 h-5 w-5 text-blue-600" />
+                  <p className="text-sm text-slate-500">마지막 분석</p>
+                  <p className="font-semibold">{metrics?.lastMeasuredAt ? metrics.lastMeasuredAt.slice(11, 19) : '-'}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <Wallet className="mb-2 h-5 w-5 text-blue-600" />
+                  <p className="text-sm text-slate-500">집계 샘플</p>
+                  <p className="font-semibold">{aggregate?.aggregate?.sampleCount ?? 0}개</p>
                 </div>
               </div>
             </CardContent>
@@ -335,7 +492,7 @@ export default function CustomerAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-blue-600" />
-                Gemini AI 인사이트 초안
+                AI 인사이트 초안
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -345,15 +502,7 @@ export default function CustomerAnalytics() {
                     <div>
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <Badge variant="outline">{insight.label}</Badge>
-                        <Badge
-                          className={
-                            insight.impact === '높음'
-                              ? 'bg-red-600'
-                              : insight.impact === '보통'
-                                ? 'bg-amber-500'
-                                : 'bg-slate-600'
-                          }
-                        >
+                        <Badge className={insight.impact === '높음' ? 'bg-red-600' : insight.impact === '주의' ? 'bg-amber-500' : 'bg-emerald-600'}>
                           {insight.impact}
                         </Badge>
                       </div>
@@ -385,7 +534,7 @@ export default function CustomerAnalytics() {
                     <span className="font-medium text-slate-950">{metric.value}</span>
                   </div>
                   <div className="h-2 rounded-full bg-slate-100">
-                    <div className={`h-2 rounded-full ${metric.width} ${metric.color}`} />
+                    <div className={`h-2 rounded-full ${metric.color}`} style={{ width: metric.width }} />
                   </div>
                 </div>
               ))}
@@ -406,7 +555,7 @@ export default function CustomerAnalytics() {
                 <thead className="border-b text-slate-500">
                   <tr>
                     <th className="py-3 font-medium">시간대</th>
-                    <th className="py-3 font-medium">현재 배치</th>
+                    <th className="py-3 font-medium">현재 인원</th>
                     <th className="py-3 font-medium">추천 배치</th>
                     <th className="py-3 font-medium">상태</th>
                     <th className="py-3 font-medium">추천 이유</th>
@@ -416,20 +565,10 @@ export default function CustomerAnalytics() {
                   {scheduleRecommendations.map((row) => (
                     <tr key={row.time} className="border-b last:border-0">
                       <td className="py-4 font-semibold text-slate-950">{row.time}</td>
-                      <td className="py-4 text-slate-600">{row.current}</td>
-                      <td className="py-4 text-slate-950">{row.recommended}</td>
+                      <td className="py-4 text-slate-600">{row.current}명</td>
+                      <td className="py-4 text-slate-950">{row.recommended}명</td>
                       <td className="py-4">
-                        <Badge
-                          className={
-                            row.status === '긴급'
-                              ? 'bg-red-600'
-                              : row.status === '보강'
-                                ? 'bg-orange-500'
-                                : row.status === '적정'
-                                  ? 'bg-emerald-600'
-                                  : 'bg-slate-700'
-                          }
-                        >
+                        <Badge className={row.status === '긴급' ? 'bg-red-600' : row.status === '보강' ? 'bg-orange-500' : 'bg-emerald-600'}>
                           {row.status}
                         </Badge>
                       </td>

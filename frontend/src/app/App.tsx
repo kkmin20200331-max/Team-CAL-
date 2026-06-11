@@ -21,6 +21,7 @@ import BoardManagement from './pages/admin/BoardManagement';
 import CustomerAnalytics from './pages/admin/CustomerAnalytics';
 import MultibranchDashboard from './pages/admin/MultibranchDashboard';
 import MonthlySchedule from './pages/admin/MonthlySchedule';
+import CctvAnalysis from './pages/admin/CctvAnalysis';
 
 // Employee pages
 import EmployeeHome from './pages/employee/EmployeeHome';
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="/admin/documents/:branchId" element={<DocumentManagement />} />
           <Route path="/admin/board/:branchId" element={<BoardManagement />} />
           <Route path="/admin/analytics/:branchId" element={<CustomerAnalytics />} />
+          <Route path="/admin/cctv/:branchId" element={<CctvAnalysis />} />
 
           {/* Employee routes */}
           <Route path="/employee/home" element={<EmployeeHome />} />
