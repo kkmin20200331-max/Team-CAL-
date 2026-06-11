@@ -1,0 +1,110 @@
+{
+  "storeId": 3,
+  "storeName": "ShiftOps Bowling",
+  "storeType": "BOWLING",
+  "storeTypeLabel": "볼링장",
+  "date": "2026-06-05",
+  "current": {
+    "currentCustomerCount": 58,
+    "todayTotalVisitors": 244,
+    "peakExpectedHour": "20:00-22:00",
+    "conversionRate": 76
+  },
+  "cameraAggregates": [
+    {
+      "time": "16:00",
+      "avgCustomerCount": 24,
+      "maxCustomerCount": 31,
+      "minCustomerCount": 14,
+      "lastCustomerCount": 27,
+      "workingStaffCount": 2
+    },
+    {
+      "time": "18:00",
+      "avgCustomerCount": 43,
+      "maxCustomerCount": 51,
+      "minCustomerCount": 29,
+      "lastCustomerCount": 48,
+      "workingStaffCount": 2
+    },
+    {
+      "time": "20:00",
+      "avgCustomerCount": 69,
+      "maxCustomerCount": 82,
+      "minCustomerCount": 53,
+      "lastCustomerCount": 78,
+      "workingStaffCount": 2
+    },
+    {
+      "time": "21:00",
+      "avgCustomerCount": 74,
+      "maxCustomerCount": 88,
+      "minCustomerCount": 60,
+      "lastCustomerCount": 81,
+      "workingStaffCount": 2
+    },
+    {
+      "time": "22:00",
+      "avgCustomerCount": 57,
+      "maxCustomerCount": 66,
+      "minCustomerCount": 41,
+      "lastCustomerCount": 54,
+      "workingStaffCount": 2
+    }
+  ],
+  "historicalBaseline": {
+    "sameDayAverageVisitors": 205,
+    "sameHourAverage": {
+      "20:00": 61,
+      "21:00": 65,
+      "22:00": 47
+    }
+  },
+  "pos": {
+    "totalSales": 6120000,
+    "conversionRate": 76,
+    "avgOrderAmount": 24000,
+    "hourlyOrders": [
+      {
+        "time": "18:00",
+        "orders": 22,
+        "conversionRate": 71
+      },
+      {
+        "time": "20:00",
+        "orders": 46,
+        "conversionRate": 76
+      },
+      {
+        "time": "21:00",
+        "orders": 50,
+        "conversionRate": 78
+      },
+      {
+        "time": "22:00",
+        "orders": 31,
+        "conversionRate": 69
+      }
+    ]
+  },
+  "staffSchedule": [
+    {
+      "timeRange": "16:00-18:00",
+      "currentStaff": 2
+    },
+    {
+      "timeRange": "18:00-22:00",
+      "currentStaff": 2
+    },
+    {
+      "timeRange": "22:00-23:00",
+      "currentStaff": 2
+    }
+  ],
+  "externalFactors": {
+    "weather": "cloudy",
+    "temperature": 24,
+    "nearbyEvent": true,
+    "nearbyEventDescription": "Company team-building reservations are concentrated in the evening."
+  }
+}

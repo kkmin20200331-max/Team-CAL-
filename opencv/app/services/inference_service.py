@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.core.logger import get_logger
 from app.core.state import inference_state
 from app.schemas.request import CameraStartRequest, SourceType
-from app.schemas.response import AggregatedCongestionResponse, CameraStartResponse, DetectionResponse
+from app.schemas.response import AggregatedCongestionResponse, AggregatedSample, CameraStartResponse, DetectionResponse
 from app.services.spring_client import spring_client
 from app.vision.frame_sampler import FrameSampler
 from app.vision.person_detector import PersonDetector
@@ -36,11 +36,14 @@ class AggregationBucket:
         customer_counts = [sample.customerCount for sample in self.samples]
         confidence_values = [sample.confidenceAvg for sample in self.samples]
         processing_values = [sample.processingMs for sample in self.samples]
+        first_sample = self.samples[0]
         last_sample = self.samples[-1]
         summary = AggregatedCongestionResponse(
             storeId=last_sample.storeId,
             cameraId=last_sample.cameraId,
             measuredAt=last_sample.measuredAt,
+            windowStartAt=first_sample.measuredAt,
+            windowEndAt=last_sample.measuredAt,
             intervalSec=self.interval_sec,
             avgCustomerCount=round(sum(customer_counts) / len(customer_counts), 2),
             maxCustomerCount=max(customer_counts),
@@ -56,6 +59,15 @@ class AggregationBucket:
             confidenceThreshold=last_sample.confidenceThreshold,
             sourceType=last_sample.sourceType,
             status="SUCCESS",
+            samples=[
+                AggregatedSample(
+                    measuredAt=sample.measuredAt,
+                    customerCount=sample.customerCount,
+                    confidenceAvg=sample.confidenceAvg,
+                    processingMs=sample.processingMs,
+                )
+                for sample in self.samples
+            ],
         )
         self.samples = []
         return summary
@@ -102,7 +114,11 @@ class InferenceService:
         return inference_state.snapshot()
 
     def metrics(self):
-        return inference_state.metrics()
+        metrics = inference_state.metrics()
+        if settings.send_to_spring:
+            metrics.senderQueuePending = spring_client.pending_count()
+            metrics.senderQueueFailed = spring_client.failed_count()
+        return metrics
 
     def infer_image_bytes(
         self,
@@ -129,7 +145,7 @@ class InferenceService:
             image_size=image_size,
             confidence_threshold=confidence_threshold,
         )
-        annotated_image = self._annotate_frame(image, detection.boxes)
+        annotated_image = self._annotate_frame(image, detection.boxes) if settings.include_image_annotated_image else None
 
         payload = self._build_payload(
             store_id=store_id,
@@ -229,7 +245,7 @@ class InferenceService:
             image_size=request.imageSize,
             confidence_threshold=request.confidence,
         )
-        annotated_image = self._annotate_frame(frame, detection.boxes)
+        annotated_image = self._annotate_frame(frame, detection.boxes) if settings.include_camera_annotated_image else None
         return self._build_payload(
             store_id=request.storeId,
             camera_id=request.cameraId,
@@ -299,6 +315,7 @@ class InferenceService:
 
     def _send_aggregate(self, summary: AggregatedCongestionResponse) -> None:
         summary.droppedFrames = inference_state.metrics().droppedFrames
+        inference_state.mark_aggregate(summary)
         send_success = spring_client.send_congestion(summary)
         inference_state.mark_send_result(send_success, summary.measuredAt)
         logger.info(

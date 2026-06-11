@@ -134,3 +134,45 @@ VALUES
     );
 select * from board;
 select * from board_post;
+
+ALTER TABLE BOARD_POST
+    ADD STATUS VARCHAR2(20);
+
+ALTER TABLE BOARD_POST
+    ADD IS_PINNED CHAR(1) DEFAULT 'N';
+
+ALTER TABLE BOARD_POST
+    ADD VIEW_COUNT NUMBER DEFAULT 0;
+
+ALTER TABLE BOARD_POST
+    ADD COMMENT_COUNT NUMBER DEFAULT 0;
+
+
+CREATE TABLE BOARD_COMMENT (
+
+                               ID VARCHAR2(30) PRIMARY KEY,
+
+                               POST_ID VARCHAR2(30) NOT NULL,
+
+                               USER_ID VARCHAR2(30) NOT NULL,
+
+                               CONTENT VARCHAR2(1000),
+
+                               CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE BOARD_FILE (
+
+                            ID VARCHAR2(30) PRIMARY KEY,
+
+                            POST_ID VARCHAR2(30) NOT NULL,
+
+                            FILE_NAME VARCHAR2(255),
+
+                            FILE_PATH VARCHAR2(1000),
+
+                            CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE BOARD_COMMENT
+    ADD CONSTRAINT FK_BOARD_COMMENT_POST
+        FOREIGN KEY (POST_ID)
+            REFERENCES BOARD_POST(ID);

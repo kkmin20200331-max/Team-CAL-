@@ -46,7 +46,18 @@ public class StoreMemberService {
         storeMemberMapper.approveRegister(storeMemberVo);
     }
 
-
+    // 근무 가능 요일 설정
+    public void updateAvailableDays(
+            String store_id,
+            String user_id,
+            String available_days
+    ) {
+        storeMemberMapper.updateAvailableDays(
+                store_id,
+                user_id,
+                available_days
+        );
+    }
     // =========================
     // [관리자]
     // =========================
@@ -88,5 +99,14 @@ public class StoreMemberService {
     // 경민 수정 6/5 12:00
     public void updatePayInfo(StoreMemberVo vo) {
         storeMemberMapper.updatePayInfo(vo);
+    }
+
+    // 대타 가능 직원 조회
+    public List<StoreMemberVo> getAvailableMemberList(
+            String store_id
+    ) {
+        return storeMemberMapper.getAvailableMemberList(
+                store_id
+        );
     }
 }
