@@ -12,7 +12,7 @@ public interface BoardPostMapper {
     // [공통]
     // =========================
 
-    // 게시글 목록 조회 (게시판별)
+    // 게시글 목록 조회
     @Select("""
         SELECT *
         FROM BOARD_POST
@@ -58,9 +58,9 @@ public interface BoardPostMapper {
         WHERE STORE_ID = #{store_id}
         AND STATUS = 'PUBLISHED'
         AND (
-                TITLE LIKE '%' || #{keyword} || '%'
-                OR CONTENT LIKE '%' || #{keyword} || '%'
-            )
+            TITLE LIKE '%' || #{keyword} || '%'
+            OR CONTENT LIKE '%' || #{keyword} || '%'
+        )
         ORDER BY IS_PINNED DESC,
                  CREATED_AT DESC
     """)
@@ -98,8 +98,8 @@ public interface BoardPostMapper {
             #{writer_id},
             #{title},
             #{content},
-            #{status},
-            #{is_pinned},
+            'PUBLISHED',
+            'N',
             0,
             0
         )

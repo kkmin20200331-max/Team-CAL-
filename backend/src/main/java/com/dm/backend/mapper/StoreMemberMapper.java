@@ -24,6 +24,17 @@ public interface StoreMemberMapper {
             @Param("store_id") String store_id
     );
 
+    //관리자 정보가 필요한 경우 조회
+    @Select("""
+                SELECT *
+                FROM STORE_MEMBER
+                WHERE STORE_ID = #{store_id}
+                AND MEMBER_ROLE = 'ADMIN'
+            """)
+    List<StoreMemberVo> getAdmins(
+            String store_id
+    );
+
 
     // =========================
     // [직원]
@@ -58,6 +69,18 @@ public interface StoreMemberMapper {
             @Param("user_id") String user_id
     );
 
+    //근무가능요일 직원설정
+    @Update("""
+                UPDATE STORE_MEMBER
+                SET AVAILABLE_DAYS = #{available_days}
+                WHERE STORE_ID = #{store_id}
+                AND USER_ID = #{user_id}
+            """)
+    void updateAvailableDays(
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id,
+            @Param("available_days") String available_days
+    );
 
     // =========================
     // [관리자]
@@ -90,4 +113,28 @@ public interface StoreMemberMapper {
             WHERE store_id = #{store_id}
             """)
     List<StoreMemberVo> getStoreMembers(String storeId);
+
+    //직원 근무가능요일 관리자 조회용
+    @Select("""
+                SELECT *
+                FROM STORE_MEMBER
+                WHERE STORE_ID = #{store_id}
+                AND AVAILABLE_DAYS IS NOT NULL
+            """)
+    List<StoreMemberVo> getAvailableMemberList(
+            String store_id
+    );
+
+
+    //특정 요일만 근무 가능한 사람 조회
+    @Select("""
+                SELECT *
+                FROM STORE_MEMBER
+                WHERE STORE_ID = #{store_id}
+                AND AVAILABLE_DAYS LIKE '%' || #{day} || '%'
+            """)
+    List<StoreMemberVo> getAvailableMembersByDay(
+            @Param("store_id") String store_id,
+            @Param("day") String day
+    );
 }

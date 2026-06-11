@@ -196,4 +196,15 @@ public interface SubstituteMapper {
             @Param("user_id") String user_id,
             @Param("status") String status
     );
+
+
+    //대타모집글 조회
+    @Select("""
+                SELECT *
+                FROM SUBSTITUTE_POST
+                WHERE ID = #{id}
+            """)
+    SubstitutePostVO getPost(
+            String id
+    );
 }

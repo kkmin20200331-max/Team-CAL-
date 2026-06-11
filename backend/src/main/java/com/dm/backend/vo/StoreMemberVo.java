@@ -16,4 +16,5 @@ public class StoreMemberVo {
     private String approval_status;
     private String pay_type;
     private Integer pay_amount;
+    private String available_days;
 }

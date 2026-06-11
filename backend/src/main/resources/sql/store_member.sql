@@ -28,5 +28,6 @@ ALTER TABLE store_member
         pay_type VARCHAR2(20),
         pay_amount NUMBER
         );
-
+ALTER TABLE STORE_MEMBER
+    ADD AVAILABLE_DAYS VARCHAR2(20);
 select * from store_member;

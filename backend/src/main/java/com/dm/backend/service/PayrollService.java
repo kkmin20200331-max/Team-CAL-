@@ -98,8 +98,6 @@ public class PayrollService {
                 continue;
             }
 
-
-
             LocalDate workDate =
                     shift.getWork_date()
                             .toInstant()

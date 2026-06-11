@@ -12,6 +12,13 @@ public interface UserMapper {
     // [공통]
     // =========================
 
+    //중복체크를 위한 카운트
+    @Select("SELECT COUNT(*) FROM users WHERE username = #{username}")
+    int countByUsername(String username);
+    //중복체크를 위한 카운트
+    @Select("SELECT COUNT(*) FROM users WHERE name = #{name}")
+    int countByName(String name);
+
     // 회원가입
     @Insert("insert into users (id, username, password, name, phone, role, status) values (#{id}, #{username}, #{password}, #{name}, #{phone}, #{role}, #{status})")
     void registerUser(UserVo userVo);
