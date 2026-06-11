@@ -66,8 +66,8 @@ export default function SignupScreen({ navigation, route }: Props) {
       Alert.alert("입력 오류", "모든 필수 항목을 입력해주세요.");
       return;
     }
-    if (role === 'ADMIN' && (!brandName || !branchName || !maxCapacity)) {
-      Alert.alert("입력 오류", "관리자 정보를 모두 입력해주세요.");
+    if (role === 'ADMIN' && (!brandName || !branchName)) { // maxCapacity는 선택 사항으로 변경
+      Alert.alert("입력 오류", "브랜드명과 지점명을 모두 입력해주세요.");
       return;
     }
     if (password !== passwordCheck) {
@@ -93,7 +93,8 @@ export default function SignupScreen({ navigation, route }: Props) {
         signupData.branchName = branchName;
         signupData.openTime = formatTime(openTime);
         signupData.closeTime = formatTime(closeTime);
-        signupData.maxCapacity = parseInt(maxCapacity, 10);
+        // ✅ [오류 수정] maxCapacity가 비어있으면 0을 보내도록 수정
+        signupData.maxCapacity = parseInt(maxCapacity, 10) || 0;
       }
       
       await signupAPI(signupData);
@@ -183,7 +184,7 @@ export default function SignupScreen({ navigation, route }: Props) {
                 </View>
               </View>
 
-              <Text style={styles.inputLabel}>최대 수용 인원</Text>
+              <Text style={styles.inputLabel}>최대 수용 인원 (선택)</Text>
               <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('maxCapacity', text)} keyboardType="number-pad" />
             </>
           )}
