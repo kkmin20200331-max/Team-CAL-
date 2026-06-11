@@ -13,8 +13,27 @@ public interface StoreMapper {
     // =========================
 
     // 가게 등록
-    @Insert("insert into store values(#{id}, #{name}, #{address}, #{capacity}, #{open_time}, #{close_time})")
-    void registerStore(StoreVo storeVo);
+   @Insert("""
+        INSERT INTO store (
+            id,
+            name,
+            type,
+            address,
+            capacity,
+            open_time,
+            close_time
+        )
+        VALUES (
+            #{id},
+            #{name},
+            #{type},
+            #{address},
+            #{capacity},
+            #{open_time},
+            #{close_time}
+        )
+        """)
+void registerStore(StoreVo storeVo);
 
     // 내가 관리하는 가게 목록 조회
     @Select("""
