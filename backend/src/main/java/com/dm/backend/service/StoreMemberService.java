@@ -23,28 +23,31 @@ public class StoreMemberService {
 
     // 매장 근무 신청
     // 이미 신청 중이거나 근무 중인 경우 신청 불가
-    public void approveRegister(StoreMemberVo storeMemberVo) {
+   public void approveRegister(StoreMemberVo storeMemberVo) {
 
-        int count = storeMemberMapper.existsMember(
-                storeMemberVo.getStore_id(),
-                storeMemberVo.getUser_id()
-        );
+    int count = storeMemberMapper.existsMember(
+            storeMemberVo.getStore_id(),
+            storeMemberVo.getUser_id()
+    );
 
-        if (count > 0) {
-            throw new RuntimeException("이미 신청했거나 근무중인 매장입니다.");
-        }
-
-        // 기본값 세팅 (선택)
-        if (storeMemberVo.getPay_type() == null) {
-            storeMemberVo.setPay_type("HOURLY");
-        }
-
-        if (storeMemberVo.getPay_amount() == null) {
-            storeMemberVo.setPay_amount(10320); // 기본 시급
-        }
-
-        storeMemberMapper.approveRegister(storeMemberVo);
+    if (count > 0) {
+        throw new RuntimeException("이미 신청했거나 근무중인 매장입니다.");
     }
+
+    storeMemberVo.setApproval_status("PENDING");
+    storeMemberVo.setMember_role("STAFF");
+    storeMemberVo.setUser_level("NEWBIE");
+
+    if (storeMemberVo.getPay_type() == null) {
+        storeMemberVo.setPay_type("HOURLY");
+    }
+
+    if (storeMemberVo.getPay_amount() == null) {
+        storeMemberVo.setPay_amount(10320);
+    }
+
+    storeMemberMapper.approveRegister(storeMemberVo);
+}
 
     // 근무 가능 요일 설정
     public void updateAvailableDays(
