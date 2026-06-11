@@ -1,13 +1,17 @@
 import React, { createContext, useState, ReactNode, useContext } from 'react';
 import { format, getDaysInMonth } from 'date-fns';
 import { Shift } from '../types/Schedule';
+import { User } from '../types/User'; // User 타입을 임포트해야 할 수 있습니다.
 
+// 1. '가입 대기' 상태의 더미 직원 추가
 const dummyEmployees = [
-  { id: 'user_1', name: '김민준', role: '매니저', color: '#4A90E2', payType: 'SALARY' as const, payRate: 3000000 },
-  { id: 'user_2', name: '이서연', role: '파트타임', color: '#50E3C2', payType: 'HOURLY' as const, payRate: 10000 },
-  { id: 'user_3', name: '박도윤', role: '파트타임', color: '#F5A623', payType: 'HOURLY' as const, payRate: 9860 },
-  { id: 'user_4', name: '최지우', role: '풀타임', color: '#BD10E0', payType: 'SALARY' as const, payRate: 2500000 },
-  { id: 'user_5', name: '정시우', role: '파트타임', color: '#9013FE', payType: 'HOURLY' as const, payRate: 11000 },
+  { id: 'user_1', name: '김민준', role: '매니저', color: '#4A90E2', payType: 'SALARY' as const, payRate: 3000000, status: 'ACTIVE' },
+  { id: 'user_2', name: '이서연', role: '파트타임', color: '#50E3C2', payType: 'HOURLY' as const, payRate: 10000, status: 'ACTIVE' },
+  { id: 'user_3', name: '박도윤', role: '파트타임', color: '#F5A623', payType: 'HOURLY' as const, payRate: 9860, status: 'ACTIVE' },
+  { id: 'user_4', name: '최지우', role: '풀타임', color: '#BD10E0', payType: 'SALARY' as const, payRate: 2500000, status: 'ACTIVE' },
+  { id: 'user_5', name: '정시우', role: '파트타임', color: '#9013FE', payType: 'HOURLY' as const, payRate: 11000, status: 'ACTIVE' },
+  { id: 'user_6', name: '황예지', role: '파트타임', color: '#FF7A00', payType: 'HOURLY' as const, payRate: 9860, status: 'PENDING' },
+  { id: 'user_7', name: '신류진', role: '파트타임', color: '#00C4FF', payType: 'HOURLY' as const, payRate: 9860, status: 'PENDING' },
 ];
 
 const generateDummyShifts = (month: Date): Shift[] => {
@@ -41,6 +45,8 @@ interface ScheduleContextType {
   employees: typeof dummyEmployees;
   shifts: Shift[];
   setShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
+  updateEmployeeStatus: (employeeId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING') => void;
+  removeEmployee: (employeeId: string) => void;
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
@@ -59,11 +65,22 @@ interface ScheduleProviderProps {
 
 export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
   const [shifts, setShifts] = useState<Shift[]>(generateDummyShifts(new Date()));
+  const [employees, setEmployees] = useState(dummyEmployees);
+
+  const updateEmployeeStatus = (employeeId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING') => {
+    setEmployees(prev => prev.map(emp => emp.id === employeeId ? { ...emp, status: newStatus } : emp));
+  };
+
+  const removeEmployee = (employeeId: string) => {
+    setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+  };
   
   const value = {
-    employees: dummyEmployees,
+    employees,
     shifts,
     setShifts,
+    updateEmployeeStatus,
+    removeEmployee,
   };
 
   return <ScheduleContext.Provider value={value}>{children}</ScheduleContext.Provider>;
