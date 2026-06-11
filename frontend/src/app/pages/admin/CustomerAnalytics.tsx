@@ -38,10 +38,6 @@ type TabKey = 'live' | 'pattern' | 'insight' | 'schedule';
 
 type PeopleLog = {
   id?: string | number;
-  store_id?: string;
-  storeId?: string;
-  camera_id?: string;
-  cameraId?: string;
   record_time?: string;
   recordTime?: string;
   people_count?: number;
@@ -73,13 +69,39 @@ type CctvAggregate = {
 type TrafficRow = {
   time: string;
   visitors: number;
-  sales: number;
-  staff: number;
   recommended: number;
   wait: number;
 };
 
+type AiInsightResponse = {
+  summary?: {
+    overallStatus?: string;
+    mainMessage?: string;
+    riskLevel?: string;
+  };
+  insights?: Array<{
+    id?: string;
+    type?: string;
+    severity?: string;
+    badge?: string;
+    title?: string;
+    message?: string;
+    actionLabel?: string;
+    reason?: string;
+  }>;
+  scheduleRecommendations?: Array<{
+    timeRange?: string;
+    currentStaff?: number;
+    recommendedStaff?: number;
+    recommendedExtraStaff?: number;
+    status?: string;
+    reason?: string;
+  }>;
+  source?: 'rule-based' | 'dummy' | 'llm' | 'llm-fallback';
+};
+
 const API_BASE = 'http://localhost:8080/api';
+const AI_INSIGHT_API = 'http://localhost:8000/api/v1/ai-insights';
 
 const branchNames: Record<string, string> = {
   migeum: '컴포즈 미금점',
@@ -98,8 +120,6 @@ const fallbackTraffic: TrafficRow[] = Array.from({ length: 15 }, (_, index) => {
   return {
     time: `${String(hour).padStart(2, '0')}:00`,
     visitors: 0,
-    sales: 0,
-    staff: 0,
     recommended: 1,
     wait: 0
   };
@@ -157,8 +177,6 @@ const buildTrafficByHour = (logs: PeopleLog[]): TrafficRow[] => {
     return {
       ...row,
       visitors,
-      sales: 0,
-      staff: 0,
       recommended: Math.max(1, Math.ceil(visitors / 25)),
       wait: Math.max(0, Math.ceil(visitors / 8))
     };
@@ -171,6 +189,12 @@ const riskLevel = (count: number) => {
   return '정상';
 };
 
+const severityClass = (severity?: string) => {
+  if (severity === 'HIGH' || severity === '높음' || severity === '긴급') return 'bg-red-600';
+  if (severity === 'MEDIUM' || severity === '주의' || severity === 'WATCH' || severity === '보강') return 'bg-amber-500';
+  return 'bg-emerald-600';
+};
+
 export default function CustomerAnalytics() {
   const navigate = useNavigate();
   const { branchId } = useParams();
@@ -178,8 +202,10 @@ export default function CustomerAnalytics() {
   const [peopleLogs, setPeopleLogs] = useState<PeopleLog[]>([]);
   const [metrics, setMetrics] = useState<CctvMetrics | null>(null);
   const [aggregate, setAggregate] = useState<CctvAggregate | null>(null);
+  const [aiResult, setAiResult] = useState<AiInsightResponse | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState('-');
   const [syncError, setSyncError] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   const storeId = resolveStoreId(branchId);
   const currentBranch = branchNames[branchId || 'migeum'] || localStorage.getItem('store_name') || '선택 매장';
@@ -195,6 +221,97 @@ export default function CustomerAnalytics() {
   const currentCount = metrics?.lastCustomerCount ?? aggregate?.aggregate?.lastCustomerCount ?? 0;
   const avgCount = aggregate?.aggregate?.avgCustomerCount ?? 0;
   const maxCount = aggregate?.aggregate?.maxCustomerCount ?? peakHour.visitors;
+
+  const cameraAggregates = useMemo(
+    () =>
+      trafficByHour.map((row) => ({
+        time: row.time,
+        avgCustomerCount: row.visitors,
+        maxCustomerCount: row.visitors,
+        minCustomerCount: Math.max(0, row.visitors - 2),
+        lastCustomerCount: row.visitors,
+        workingStaffCount: Math.max(1, row.recommended),
+        recommendedStaffCount: row.recommended,
+        waitMinutes: row.wait
+      })),
+    [trafficByHour]
+  );
+
+  const buildAiPayload = () => ({
+    storeId,
+    storeName: currentBranch,
+    storeType: 'CAFE',
+    storeTypeLabel: '카페',
+    date: toDateText(new Date()),
+    current: {
+      currentCustomerCount: currentCount,
+      todayTotalVisitors,
+      conversionRate: 0,
+      processedFrames: metrics?.processedFrames ?? 0,
+      confidenceAvg: metrics?.lastConfidenceAvg ?? 0
+    },
+    cameraAggregates,
+    historicalBaseline: {
+      sameDayAverageVisitors: Math.max(todayTotalVisitors, 1),
+      averagePeakCustomerCount: Math.max(maxCount, 1)
+    },
+    pos: {
+      conversionRate: 0,
+      hourlyOrders: trafficByHour.map((row) => ({
+        time: row.time,
+        orderCount: 0,
+        conversionRate: 0
+      }))
+    },
+    staffSchedule: [],
+    externalFactors: {
+      source: 'cctv-metrics-people-log',
+      aggregate
+    }
+  });
+
+  const fallbackInsights = [
+    {
+      label: '혼잡도',
+      title: `현재 매장 위험도는 ${riskLevel(currentCount)}입니다`,
+      body: `최근 집계 평균은 ${avgCount}명, 최대 인원은 ${maxCount}명입니다. CCTV 분석 루프의 최신 값을 기준으로 판단했습니다.`,
+      action: currentCount >= 15 ? '인력 배치 확인' : '현재 배치 유지',
+      impact: riskLevel(currentCount)
+    },
+    {
+      label: '분석 상태',
+      title: metrics?.running ? 'OpenCV 분석이 실행 중입니다' : 'OpenCV 분석이 대기 중입니다',
+      body: `처리 프레임 ${metrics?.processedFrames ?? 0}개, 드롭 프레임 ${metrics?.droppedFrames ?? 0}개, 큐 ${metrics?.queueSize ?? 0}개입니다.`,
+      action: metrics?.running ? '모니터링 계속' : 'CCTV 분석 시작',
+      impact: metrics?.running ? '정상' : '주의'
+    }
+  ];
+
+  const renderedInsights =
+    aiResult?.insights?.map((insight) => ({
+      label: insight.badge || insight.type || 'AI',
+      title: insight.title || '-',
+      body: insight.message || insight.reason || '-',
+      action: insight.actionLabel || '확인',
+      impact: insight.severity || 'LOW'
+    })) || fallbackInsights;
+
+  const scheduleRecommendations =
+    aiResult?.scheduleRecommendations?.map((row) => ({
+      time: row.timeRange || peakHour.time,
+      current: row.currentStaff ?? currentCount,
+      recommended: row.recommendedStaff ?? Math.max(1, Math.ceil(maxCount / 25)),
+      status: row.status || 'NORMAL',
+      reason: row.reason || 'AI 분석 결과입니다.'
+    })) || [
+      {
+        time: peakHour.time,
+        current: currentCount,
+        recommended: Math.max(1, Math.ceil(maxCount / 25)),
+        status: maxCount >= 30 ? 'URGENT' : maxCount >= 15 ? 'WATCH' : 'NORMAL',
+        reason: `최신 CCTV 집계 최대 인원 ${maxCount}명을 기준으로 계산했습니다.`
+      }
+    ];
 
   const kpis = [
     {
@@ -212,10 +329,10 @@ export default function CustomerAnalytics() {
       tone: 'text-emerald-600'
     },
     {
-      title: '피크 시간',
-      value: peakHour.time,
-      delta: `최대 ${maxCount}명`,
-      icon: Clock,
+      title: 'AI 응답 출처',
+      value: aiResult?.source === 'llm' ? 'OpenAI' : aiResult?.source || '대기',
+      delta: aiResult?.summary?.riskLevel ? `risk ${aiResult.summary.riskLevel}` : '새로고침으로 분석',
+      icon: Brain,
       tone: 'text-orange-600'
     },
     {
@@ -224,40 +341,6 @@ export default function CustomerAnalytics() {
       delta: `confidence ${metrics?.lastConfidenceAvg ?? 0}`,
       icon: Wallet,
       tone: 'text-violet-600'
-    }
-  ];
-
-  const aiInsights = [
-    {
-      label: '혼잡도',
-      title: `현재 매장 위험도는 ${riskLevel(currentCount)}입니다`,
-      body: `최근 집계 평균은 ${avgCount}명, 최대 인원은 ${maxCount}명입니다. CCTV 분석 루프의 최신 값을 기준으로 판단했습니다.`,
-      action: currentCount >= 15 ? '인력 배치 확인' : '현재 배치 유지',
-      impact: currentCount >= 30 ? '높음' : currentCount >= 15 ? '주의' : '정상'
-    },
-    {
-      label: '분석 상태',
-      title: metrics?.running ? 'OpenCV 분석이 실행 중입니다' : 'OpenCV 분석이 대기 중입니다',
-      body: `처리 프레임 ${metrics?.processedFrames ?? 0}개, 드롭 프레임 ${metrics?.droppedFrames ?? 0}개, 큐 ${metrics?.queueSize ?? 0}개입니다.`,
-      action: metrics?.running ? '모니터링 계속' : 'CCTV 분석 시작',
-      impact: metrics?.running ? '정상' : '주의'
-    },
-    {
-      label: '데이터 저장',
-      title: 'Spring people_log 기준으로 차트를 갱신합니다',
-      body: `오늘 조회된 DB 로그는 ${peopleLogs.length}건입니다. OpenCV 집계가 Spring으로 전송되면 이 화면의 시간대별 그래프에 반영됩니다.`,
-      action: 'DB 로그 확인',
-      impact: peopleLogs.length > 0 ? '정상' : '주의'
-    }
-  ];
-
-  const scheduleRecommendations = [
-    {
-      time: peakHour.time,
-      current: currentCount,
-      recommended: Math.max(1, Math.ceil(maxCount / 25)),
-      status: maxCount >= 30 ? '긴급' : maxCount >= 15 ? '보강' : '적정',
-      reason: `최신 CCTV 집계 최대 인원 ${maxCount}명을 기준으로 계산했습니다.`
     }
   ];
 
@@ -303,6 +386,31 @@ export default function CustomerAnalytics() {
       })
     );
     setSyncError('');
+
+    return { logsData, metricsData, aggregateData };
+  };
+
+  const runAiAnalysis = async () => {
+    setAiLoading(true);
+    try {
+      await loadLiveData();
+      const response = await fetch(`${AI_INSIGHT_API}/analyze/llm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildAiPayload())
+      });
+
+      if (!response.ok) {
+        throw new Error('OpenAI 인사이트 분석 요청에 실패했습니다.');
+      }
+
+      setAiResult(await response.json());
+      setSyncError('');
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : 'OpenAI 인사이트 분석 실패');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -351,14 +459,14 @@ export default function CustomerAnalytics() {
                 실시간 고객 행동 분석 및 인사이트
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-                OpenCV/FastAPI 분석 상태와 Spring people_log 데이터를 5초마다 동기화합니다.
+                운영 데이터는 5초마다 동기화하고, 새로고침 버튼은 OpenAI/LLM 인사이트 분석까지 실행합니다.
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="gap-2" onClick={loadLiveData}>
-              <RefreshCw className="h-4 w-4" />
-              새로고침
+            <Button variant="outline" className="gap-2" onClick={runAiAnalysis} disabled={aiLoading}>
+              <RefreshCw className={`h-4 w-4 ${aiLoading ? 'animate-spin' : ''}`} />
+              {aiLoading ? 'AI 분석 중' : '새로고침'}
             </Button>
             <Button className="gap-2">
               <Download className="h-4 w-4" />
@@ -372,6 +480,13 @@ export default function CustomerAnalytics() {
         {syncError && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {syncError}
+          </div>
+        )}
+
+        {aiResult?.summary && (
+          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <span className="font-semibold">{aiResult.source === 'llm' ? 'OpenAI 분석' : 'AI fallback 분석'}:</span>{' '}
+            {aiResult.summary.mainMessage}
           </div>
         )}
 
@@ -456,8 +571,8 @@ export default function CustomerAnalytics() {
                 </div>
                 <div className="rounded-lg border p-3">
                   <Wallet className="mb-2 h-5 w-5 text-blue-600" />
-                  <p className="text-sm text-slate-500">집계 샘플</p>
-                  <p className="font-semibold">{aggregate?.aggregate?.sampleCount ?? 0}개</p>
+                  <p className="text-sm text-slate-500">AI 출처</p>
+                  <p className="font-semibold">{aiResult?.source || '대기'}</p>
                 </div>
               </div>
             </CardContent>
@@ -492,19 +607,17 @@ export default function CustomerAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-blue-600" />
-                AI 인사이트 초안
+                AI 인사이트
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {aiInsights.map((insight) => (
+              {renderedInsights.map((insight) => (
                 <div key={insight.title} className="rounded-lg border p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <Badge variant="outline">{insight.label}</Badge>
-                        <Badge className={insight.impact === '높음' ? 'bg-red-600' : insight.impact === '주의' ? 'bg-amber-500' : 'bg-emerald-600'}>
-                          {insight.impact}
-                        </Badge>
+                        <Badge className={severityClass(insight.impact)}>{insight.impact}</Badge>
                       </div>
                       <h3 className="font-semibold text-slate-950">{insight.title}</h3>
                       <p className="mt-1 text-sm leading-6 text-slate-600">{insight.body}</p>
@@ -568,9 +681,7 @@ export default function CustomerAnalytics() {
                       <td className="py-4 text-slate-600">{row.current}명</td>
                       <td className="py-4 text-slate-950">{row.recommended}명</td>
                       <td className="py-4">
-                        <Badge className={row.status === '긴급' ? 'bg-red-600' : row.status === '보강' ? 'bg-orange-500' : 'bg-emerald-600'}>
-                          {row.status}
-                        </Badge>
+                        <Badge className={severityClass(row.status)}>{row.status}</Badge>
                       </td>
                       <td className="py-4 text-slate-600">{row.reason}</td>
                     </tr>

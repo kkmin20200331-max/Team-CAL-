@@ -91,7 +91,7 @@ uvicorn main:app --reload
 
 AI 인사이트는 `AiInsightService`가 담당합니다.
 
-- `rule-based`: 입력 데이터에서 피크 시간, 직원 1명당 고객 수, 방문 증가율, 전환율을 계산해 고정 규칙으로 응답합니다.
+- `rule-based`: 입력 데이터에서 피크 시간과 혼잡도 흐름을 계산해 고정 규칙으로 응답합니다.
 - `dummy`: `app/data/customer_analysis_dummy.json` 기반으로 룰 기반 응답을 만듭니다.
 - `samples`: `app/data/ai_insight_samples/*.json` 샘플을 사용합니다.
 - `llm`: OpenAI 또는 Gemini 설정이 있으면 룰 기반 baseline과 원본 데이터를 함께 보내 문구와 운영 제안을 생성합니다.
@@ -165,9 +165,8 @@ AI 인사이트는 `AiInsightService`가 담당합니다.
 - 날짜/요일/휴일/계절 context
 - 요약 상태와 위험도
 - 인사이트 카드 목록
-- 시간대별 인력 추천
-- 혼잡도, 인력 리스크, 전환 상태, 스케줄 적합도
-- 계산된 feature 값
+- 시간대별 혼잡도 요약
+- 혼잡도 수준과 계산된 feature 값
 
 ## 7. 영상 소스 처리 방식
 
