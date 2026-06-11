@@ -45,26 +45,22 @@ export default function LoginScreen({ navigation }: Props) {
 
       if (finalRole === 'ADMIN') {
         hasBranch = true;
+        // 1. 서버 응답에 지점 정보가 있는지 먼저 확인
         if (data.branches && data.branches.length > 0) {
           finalUserInfo.branches = data.branches;
           finalUserInfo.activeBranchId = data.branches[0].id;
-        } else if (data.brandName && data.branchName) {
-          finalUserInfo.branches = [{ id: 'branch_1', brandName: data.brandName, branchName: data.branchName }];
-          finalUserInfo.activeBranchId = 'branch_1';
+        } else {
+          // 2. 서버 응답에 지점 정보가 없으면, AsyncStorage에서 불러오기 시도
+          const storedBranchInfo = await AsyncStorage.getItem(`admin_branch_info_${username}`);
+          if (storedBranchInfo) {
+            const branches = JSON.parse(storedBranchInfo);
+            finalUserInfo.branches = branches;
+            finalUserInfo.activeBranchId = branches[0]?.id;
+          }
         }
-      } else { // 직원일 경우
-        // TODO: [미래 구현] 백엔드 연동 시, 아래 주석을 해제하여 최초 로그인이 아닐 경우 지점 선택 화면을 건너뛰게 합니다.
-        // 1. 백엔드 API 응답(data)에 사용자가 속한 지점 정보(예: store_id)가 있는지 확인합니다.
-        // 2. 지점 정보가 있다면, 이미 지점을 선택한 사용자이므로 hasBranch를 true로 설정합니다.
-        //
-        // 예시:
-        // if (data.store_id) {
-        //   hasBranch = true;
-        // } else {
-        //   hasBranch = false;
-        // }
-
-        // 현재는 개발 중이므로, 테스트를 위해 항상 지점 선택 화면으로 이동하도록 false로 설정합니다.
+      } else {
+        // 직원 로그인 로직 (주석 유지)
+        // TODO: [미래 구현] ...
         hasBranch = false;
       }
 

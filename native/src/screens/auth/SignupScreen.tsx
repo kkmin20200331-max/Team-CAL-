@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
 import { useApp } from '../../contexts/AppContext';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // 1. AsyncStorage 임포트
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -66,7 +67,7 @@ export default function SignupScreen({ navigation, route }: Props) {
       Alert.alert("입력 오류", "모든 필수 항목을 입력해주세요.");
       return;
     }
-    if (role === 'ADMIN' && (!brandName || !branchName)) { // maxCapacity는 선택 사항으로 변경
+    if (role === 'ADMIN' && (!brandName || !branchName)) {
       Alert.alert("입력 오류", "브랜드명과 지점명을 모두 입력해주세요.");
       return;
     }
@@ -93,7 +94,6 @@ export default function SignupScreen({ navigation, route }: Props) {
         signupData.branchName = branchName;
         signupData.openTime = formatTime(openTime);
         signupData.closeTime = formatTime(closeTime);
-        // ✅ [오류 수정] maxCapacity가 비어있으면 0을 보내도록 수정
         signupData.maxCapacity = parseInt(maxCapacity, 10) || 0;
       }
       
@@ -106,9 +106,13 @@ export default function SignupScreen({ navigation, route }: Props) {
       });
 
       if (role === 'ADMIN') {
+        const branches = [{ id: 'branch_1', brandName, branchName }];
+        // 2. 관리자 가입 성공 시, 지점 정보를 AsyncStorage에 저장
+        await AsyncStorage.setItem(`admin_branch_info_${id}`, JSON.stringify(branches));
+
         const userInfoForLogin = {
           ...signupData,
-          branches: [{ id: 'branch_1', brandName, branchName }],
+          branches: branches,
           activeBranchId: 'branch_1',
         };
         login(userInfoForLogin, true);
