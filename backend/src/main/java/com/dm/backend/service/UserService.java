@@ -18,10 +18,21 @@ public class UserService {
     // =========================
     // [공통]
     // =========================
+    //중복체크 로직
+    public void validateDuplicateUser(UserVo userVo) {
 
+        if (userMapper.countByUsername(userVo.getUsername()) > 0) {
+            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+        }
+
+        if (userMapper.countByName(userVo.getName()) > 0) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+        }
+    }
     // 회원가입
     // STAFF 신청 시 GUEST 상태로 저장
     public void registerUser(UserVo userVo) {
+        validateDuplicateUser(userVo);
         userVo.setId("USR_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
 
         if ("STAFF".equalsIgnoreCase(userVo.getRole())) {
@@ -42,6 +53,18 @@ public class UserService {
         }
 
         return member;
+    }
+
+    // 경민 수정 6/11 12:00
+    // 닉네임 중복체크
+    public boolean checkNickname(String nickname) {
+        return userMapper.countByName(nickname) > 0;
+    }
+
+    // 경민 수정 6/11 12:00
+    // 아이디 중복체크
+    public boolean checkUsername(String username) {
+        return userMapper.countByUsername(username) > 0;
     }
 
     // 개인정보 수정

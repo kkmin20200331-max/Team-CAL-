@@ -205,10 +205,16 @@ export default function Signup() {
         setErrorMsg('');
         setNicknameChecking(true);
         try {
-            await axios.get('http://localhost:8080/api/user/check-nickname', { params: { nickname } });
+            await axios.get('http://localhost:8080/api/users/check-nickname', { params: { nickname } });
             setNicknameStatus('ok');
         } catch (err: any) {
-            setNicknameStatus(err.response?.status === 409 ? 'error' : 'ok');
+            if (err.response?.status === 409) {
+                setNicknameStatus('error');
+            } else {
+                // 네트워크 오류 등 예상치 못한 에러
+                setErrorMsg(t.errorServer);
+                setNicknameStatus('idle');
+            }
         } finally {
             setNicknameChecking(false);
         }
@@ -227,7 +233,12 @@ export default function Signup() {
             await axios.get('http://localhost:8080/api/users/check-username', { params: { username } });
             setUsernameStatus('ok');
         } catch (err: any) {
-            setUsernameStatus(err.response?.status === 409 ? 'error' : 'ok');
+            if (err.response?.status === 409) {
+                setUsernameStatus('error');
+            } else {
+                setErrorMsg(t.errorServer);
+                setUsernameStatus('idle');
+            }
         } finally {
             setUsernameChecking(false);
         }
