@@ -20,6 +20,7 @@ import {
   FileText,
   MessageSquare,
   BarChart3,
+  Camera,
   Settings,
   ChevronRight,
   Store,
@@ -211,6 +212,7 @@ export default function AdminDashboard() {
     { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
     { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
     { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+    { icon: Camera, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
   ];
 
   return (
@@ -546,10 +548,10 @@ export default function AdminDashboard() {
             <Button
               variant="outline"
               className="h-24 flex-col gap-2"
-              onClick={() => navigate(`/admin/payroll/${branchId}`)}
+              onClick={() => navigate(`/admin/cctv/${branchId}`)}
             >
-              <Wallet className="w-6 h-6" />
-              <span>급여 관리</span>
+              <Camera className="w-6 h-6" />
+              <span>CCTV 분석</span>
             </Button>
           </div>
         </main>
