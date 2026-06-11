@@ -1,7 +1,7 @@
 package com.dm.backend.service;
 
+import com.dm.backend.mapper.AttendanceMapper;
 import com.dm.backend.mapper.FixedscheduleMapper;
-import com.dm.backend.mapper.ShiftMapper;
 import com.dm.backend.mapper.StoreMemberMapper;
 import com.dm.backend.mapper.SubstituteMapper;
 import com.dm.backend.vo.*;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class PayrollService {
 
     @Autowired
-    private ShiftMapper shiftMapper;
+    private AttendanceMapper attendanceMapper;
 
     @Autowired
     private StoreMemberMapper storeMemberMapper;
@@ -46,9 +46,10 @@ public class PayrollService {
             return new PayrollResultVO();
         }
 
-        List<ShiftVO> shifts =
-                shiftMapper.getMonthlyShift(
+        List<AttendanceVO> attendances =
+                attendanceMapper.getCompletedAttendanceList(
                         user_id,
+                        store_id,
                         start_date,
                         end_date
                 );
@@ -71,7 +72,7 @@ public class PayrollService {
         double nightPay = 0;
         double weeklyPay = 0;
 
-        Map<String, List<ShiftVO>> weekMap =
+        Map<String, List<AttendanceVO>> weekMap =
                 new HashMap<>();
 
         // =========================
@@ -91,15 +92,16 @@ public class PayrollService {
         // 주차별 그룹핑
         // =========================
 
-        for (ShiftVO shift : shifts) {
+        for (AttendanceVO attendance : attendances) {
 
             // 대타 근무는 주휴 계산 제외
-            if (substituteShiftIds.contains(shift.getId())) {
+            if (attendance.getShift_id() != null
+                    && substituteShiftIds.contains(attendance.getShift_id())) {
                 continue;
             }
 
             LocalDate workDate =
-                    shift.getWork_date()
+                    attendance.getWork_date()
                             .toInstant()
                             .atZone(ZoneId.systemDefault())
                             .toLocalDate();
@@ -122,32 +124,33 @@ public class PayrollService {
                             weekKey,
                             k -> new ArrayList<>()
                     )
-                    .add(shift);
+                    .add(attendance);
         }
 
         // =========================
         // 기본급 / 연장 / 야간
         // =========================
 
-        for (ShiftVO shift : shifts) {
+        for (AttendanceVO attendance : attendances) {
 
             LocalDateTime startTime =
-                    shift.getStart_at()
+                    attendance.getCheck_in_at()
                             .toInstant()
                             .atZone(ZoneId.systemDefault())
                             .toLocalDateTime();
 
             LocalDateTime endTime =
-                    shift.getEnd_at()
+                    attendance.getCheck_out_at()
                             .toInstant()
                             .atZone(ZoneId.systemDefault())
                             .toLocalDateTime();
 
             double workHours =
-                    Duration.between(
+                    resolveWorkHours(
+                            attendance,
                             startTime,
                             endTime
-                    ).toMinutes() / 60.0;
+                    );
 
             baseHours += workHours;
 
@@ -184,29 +187,30 @@ public class PayrollService {
             // 주휴수당 계산
             // =========================
 
-            for (List<ShiftVO> weekShifts : weekMap.values()) {
+            for (List<AttendanceVO> weekAttendances : weekMap.values()) {
 
                 double weekHours = 0;
 
-                for (ShiftVO shift : weekShifts) {
+                for (AttendanceVO attendance : weekAttendances) {
 
                     LocalDateTime startTime =
-                            shift.getStart_at()
+                            attendance.getCheck_in_at()
                                     .toInstant()
                                     .atZone(ZoneId.systemDefault())
                                     .toLocalDateTime();
 
                     LocalDateTime endTime =
-                            shift.getEnd_at()
+                            attendance.getCheck_out_at()
                                     .toInstant()
                                     .atZone(ZoneId.systemDefault())
                                     .toLocalDateTime();
 
                     weekHours +=
-                            Duration.between(
+                            resolveWorkHours(
+                                    attendance,
                                     startTime,
                                     endTime
-                            ).toMinutes() / 60.0;
+                            );
                 }
 
                 // 주 15시간 미만
@@ -216,7 +220,7 @@ public class PayrollService {
 
                 // 개근 체크
                 if (!isWeeklyAttendanceComplete(
-                        weekShifts,
+                        weekAttendances,
                         schedules
                 )) {
                     continue;
@@ -274,22 +278,39 @@ public class PayrollService {
         return result;
     }
 
+    private double resolveWorkHours(
+            AttendanceVO attendance,
+            LocalDateTime startTime,
+            LocalDateTime endTime
+    ) {
+
+        if (attendance.getWork_minutes() != null
+                && attendance.getWork_minutes() > 0) {
+            return attendance.getWork_minutes() / 60.0;
+        }
+
+        return Duration.between(
+                startTime,
+                endTime
+        ).toMinutes() / 60.0;
+    }
+
     // =========================
     // 주휴 개근 체크
     // =========================
 
     private boolean isWeeklyAttendanceComplete(
-            List<ShiftVO> weekShifts,
+            List<AttendanceVO> weekAttendances,
             List<FixedscheduleVO> schedules
     ) {
 
         Set<String> workedDays =
                 new HashSet<>();
 
-        for (ShiftVO shift : weekShifts) {
+        for (AttendanceVO attendance : weekAttendances) {
 
             LocalDate date =
-                    shift.getWork_date()
+                    attendance.getWork_date()
                             .toInstant()
                             .atZone(ZoneId.systemDefault())
                             .toLocalDate();

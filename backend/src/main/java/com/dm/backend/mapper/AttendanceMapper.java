@@ -3,6 +3,9 @@ package com.dm.backend.mapper;
 import com.dm.backend.vo.AttendanceVO;
 import org.apache.ibatis.annotations.*;
 
+import java.util.Date;
+import java.util.List;
+
 @Mapper
 public interface AttendanceMapper {
 
@@ -11,14 +14,38 @@ public interface AttendanceMapper {
     // =========================
 
     @Select("""
-    SELECT *
-    FROM ATTENDANCE
-    WHERE STORE_ID = #{store_id}
-    AND USER_ID = #{user_id}
-""")
+            SELECT *
+            FROM (
+                SELECT *
+                FROM ATTENDANCE
+                WHERE STORE_ID = #{store_id}
+                AND USER_ID = #{user_id}
+                AND TRUNC(WORK_DATE) = TRUNC(SYSDATE)
+                ORDER BY CHECK_IN_AT DESC
+            )
+            WHERE ROWNUM = 1
+            """)
     AttendanceVO getTodayAttendance(
             @Param("store_id") String store_id,
             @Param("user_id") String user_id
+    );
+
+    @Select("""
+            SELECT *
+            FROM ATTENDANCE
+            WHERE STORE_ID = #{store_id}
+            AND USER_ID = #{user_id}
+            AND WORK_DATE >= TRUNC(#{start_date})
+            AND WORK_DATE <= TRUNC(#{end_date})
+            AND CHECK_IN_AT IS NOT NULL
+            AND CHECK_OUT_AT IS NOT NULL
+            ORDER BY WORK_DATE, CHECK_IN_AT
+            """)
+    List<AttendanceVO> getCompletedAttendanceList(
+            @Param("user_id") String user_id,
+            @Param("store_id") String store_id,
+            @Param("start_date") Date start_date,
+            @Param("end_date") Date end_date
     );
 
     @Insert("""

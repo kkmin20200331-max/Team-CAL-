@@ -63,17 +63,18 @@ public class AttendanceServiceImpl
 
         if(attendance.getCheck_out_at() == null){
 
-            attendance.setCheck_out_at(
-                    new Date()
-            );
+            Date checkOutAt = new Date();
 
-            attendance.setStatus(
-                    "COMPLETED"
-            );
+            long workMinutes =
+                    (checkOutAt.getTime() - attendance.getCheck_in_at().getTime())
+                            / (1000 * 60);
 
-            attendanceMapper.checkOut(
-                    attendance
-            );
+            attendance.setCheck_out_at(checkOutAt);
+            attendance.setWork_minutes((int) workMinutes);
+            attendance.setOvertime_minutes(0);
+            attendance.setStatus("COMPLETED");
+
+            attendanceMapper.checkOut(attendance);
 
             return "퇴근 처리 완료";
         }
