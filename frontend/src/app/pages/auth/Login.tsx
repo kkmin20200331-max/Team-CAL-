@@ -74,19 +74,10 @@ const logoMap: Record<string, string> = {
     ja: '/logo_ja.png',
 };
 
-const inputStyle: React.CSSProperties = {
-    width: '100%',
-    height: 38,
-    background: '#F2F5EB',
-    boxShadow: 'inset -2px -1px 4px rgba(126, 147, 126, 0.14)',
-    borderRadius: 9,
-    border: 'none',
-    outline: 'none',
-    padding: '0 14px',
-    fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif",
-    fontWeight: 300,
-    fontSize: 16,
-    color: '#333',
+const fontMap: Record<string, string> = {
+    ko: "'Noto Sans KR', sans-serif",
+    en: "'Leferi', 'Noto Sans KR', sans-serif",
+    ja: "'Noto Sans JP', sans-serif",
 };
 
 export default function Login() {
@@ -99,6 +90,7 @@ export default function Login() {
 
     const t = translations[language as keyof typeof translations];
     const isDark = theme === 'dark';
+    const font = fontMap[language];
 
     const bgColor = isDark ? '#1c1c1e' : '#EEF5DD';
     const cardBg = isDark ? '#2c2c2e' : '#FFFFFF';
@@ -130,22 +122,26 @@ export default function Login() {
 
     return (
         <div style={{ minHeight: '100vh', background: bgColor, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <div style={{ width: '100%', maxWidth: 480 }}>
+            <div style={{ width: '100%', maxWidth: 560 }}>
                 <div style={{
                     background: cardBg,
                     borderRadius: 58,
                     boxShadow: isDark ? '3px 4px 20px rgba(0,0,0,0.4)' : '3px 4px 12.6px rgba(255,255,255,0.25)',
-                    padding: '52px 80px 52px 80px',
+                    padding: '48px 80px 48px 80px',
+                    minHeight: 780,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
                 }}>
                     {/* Logo */}
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
-                        <img src={logoMap[language]} alt="Baitomate" style={{ height: 120, width: 'auto', objectFit: 'contain' }} />
+                    <div style={{ height: 185, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', marginBottom: 24 }}>
+                        <img src={logoMap[language]} alt="Baitomate" style={{ width: 218, height: 'auto', objectFit: 'contain', marginTop: language === 'ko' ? -10 : 0 }} />
                     </div>
 
                     <form onSubmit={handleLogin}>
                         {/* Username */}
                         <div style={{ marginBottom: 20 }}>
-                            <div style={{ fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif", fontWeight: 300, fontSize: 16, color: labelColor, marginBottom: 6 }}>
+                            <div style={{ fontFamily: font, fontWeight: 300, fontSize: 16, color: labelColor, marginBottom: 6 }}>
                                 {t.username}
                             </div>
                             <input
@@ -153,13 +149,13 @@ export default function Login() {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 placeholder={t.username}
-                                style={{ ...inputStyle, background: inputBg, color: isDark ? '#fff' : '#333' }}
+                                style={{ width: '100%', height: 38, background: inputBg, boxShadow: 'inset -2px -1px 4px rgba(126,147,126,0.14)', borderRadius: 9, border: 'none', outline: 'none', padding: '0 14px', fontFamily: font, fontWeight: 300, fontSize: 16, color: isDark ? '#fff' : '#333', boxSizing: 'border-box' as const }}
                             />
                         </div>
 
                         {/* Password */}
                         <div style={{ marginBottom: 28 }}>
-                            <div style={{ fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif", fontWeight: 300, fontSize: 16, color: labelColor, marginBottom: 6 }}>
+                            <div style={{ fontFamily: font, fontWeight: 300, fontSize: 16, color: labelColor, marginBottom: 6 }}>
                                 {t.password}
                             </div>
                             <input
@@ -167,7 +163,7 @@ export default function Login() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder={t.password}
-                                style={{ ...inputStyle, background: inputBg, color: isDark ? '#fff' : '#333' }}
+                                style={{ width: '100%', height: 38, background: inputBg, boxShadow: 'inset -2px -1px 4px rgba(126,147,126,0.14)', borderRadius: 9, border: 'none', outline: 'none', padding: '0 14px', fontFamily: font, fontWeight: 300, fontSize: 16, color: isDark ? '#fff' : '#333', boxSizing: 'border-box' as const }}
                             />
                         </div>
 
@@ -180,7 +176,7 @@ export default function Login() {
                             type="submit"
                             style={{
                                 width: '100%', height: 67, background: '#00A200', borderRadius: 9, border: 'none',
-                                color: '#fff', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif",
+                                color: '#fff', fontFamily: font,
                                 fontWeight: 700, fontSize: 18, cursor: 'pointer', marginBottom: 14,
                                 transition: 'opacity 0.15s',
                             }}
@@ -196,7 +192,7 @@ export default function Login() {
                             onClick={() => navigate('/auth/signup')}
                             style={{
                                 width: '100%', height: 67, background: secondaryBtnBg, borderRadius: 9, border: 'none',
-                                color: secondaryBtnColor, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif",
+                                color: secondaryBtnColor, fontFamily: font,
                                 fontWeight: 700, fontSize: 18, cursor: 'pointer',
                                 transition: 'opacity 0.15s',
                             }}
@@ -212,7 +208,7 @@ export default function Login() {
 
                     {/* Language */}
                     <div style={{ marginBottom: 20 }}>
-                        <div style={{ fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif", fontWeight: 300, fontSize: 16, color: labelColor, marginBottom: 8 }}>
+                        <div style={{ fontFamily: font, fontWeight: 300, fontSize: 16, color: labelColor, marginBottom: 8 }}>
                             {t.language}
                         </div>
                         <Select value={language} onValueChange={handleLanguageChange}>
@@ -229,7 +225,7 @@ export default function Login() {
 
                     {/* Dark mode */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif", fontWeight: 300, fontSize: 16, color: labelColor }}>
+                        <div style={{ fontFamily: font, fontWeight: 300, fontSize: 16, color: labelColor }}>
                             {t.darkMode}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
