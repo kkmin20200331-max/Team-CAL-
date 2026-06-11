@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
+
+const STORE_CATEGORIES = ["카페", "음식점", "패스트푸드", "의류/잡화", "서비스", "기타"];
 
 const AddBranchScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
@@ -11,6 +13,8 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
 
   const [brandName, setBrandName] = useState('');
   const [branchName, setBranchName] = useState('');
+  const [storeCategory, setStoreCategory] = useState(STORE_CATEGORIES[0]);
+  const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
 
   const handleSave = () => {
     if (!brandName.trim() || !branchName.trim()) {
@@ -22,6 +26,7 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
       id: `branch_${Date.now()}`,
       brandName,
       branchName,
+      storeCategory,
     };
 
     if (userInfo) {
@@ -62,10 +67,41 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
           onChangeText={setBranchName}
         />
 
+        <Text style={styles.label}>업종 카테고리</Text>
+        <TouchableOpacity style={styles.pickerButton} onPress={() => setCategoryModalVisible(true)}>
+          <Text style={styles.pickerButtonText}>{storeCategory}</Text>
+          <Text style={styles.pickerButtonIcon}>▼</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveButtonText}>저장</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isCategoryModalVisible}
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setCategoryModalVisible(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>업종 선택</Text>
+            {STORE_CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.modalOption, storeCategory === cat && styles.modalOptionSelected]}
+                onPress={() => {
+                  setStoreCategory(cat);
+                  setCategoryModalVisible(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -95,15 +131,69 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   saveButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#6EE7B7', // 에메랄드 색상
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: '#000000', // 검은색
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  pickerButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+    backgroundColor: colors.card,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pickerButtonText: {
+    fontSize: 18,
+    color: colors.text,
+  },
+  pickerButtonIcon: {
+    fontSize: 16,
+    color: colors.subText,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+    color: colors.text,
+  },
+  modalOption: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  modalOptionSelected: {
+    backgroundColor: colors.primaryLight,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  modalOptionTextSelected: {
+    color: colors.primary,
     fontWeight: 'bold',
   },
 });

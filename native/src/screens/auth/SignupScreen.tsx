@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ScrollView, Switch, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ScrollView, Switch, KeyboardAvoidingView, Platform, Modal, Pressable } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { signupAPI } from '../../../api/auth';
 import axios from 'axios';
@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
 import { useApp } from '../../contexts/AppContext';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // 1. AsyncStorage 임포트
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -16,6 +16,8 @@ type Props = {
   navigation: SignupScreenNavigationProp;
   route: { params: { role: 'STAFF' | 'ADMIN' } };
 };
+
+const STORE_CATEGORIES = ["카페", "음식점", "패스트푸드", "의류/잡화", "서비스", "기타"];
 
 export default function SignupScreen({ navigation, route }: Props) {
   const { role } = route.params;
@@ -36,6 +38,8 @@ export default function SignupScreen({ navigation, route }: Props) {
     closeTime: new Date(),
     maxCapacity: "",
   });
+  const [storeCategory, setStoreCategory] = useState(STORE_CATEGORIES[0]);
+  const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
 
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'openTime' | 'closeTime'>('openTime');
@@ -95,6 +99,7 @@ export default function SignupScreen({ navigation, route }: Props) {
         signupData.openTime = formatTime(openTime);
         signupData.closeTime = formatTime(closeTime);
         signupData.maxCapacity = parseInt(maxCapacity, 10) || 0;
+        signupData.storeCategory = storeCategory;
       }
       
       await signupAPI(signupData);
@@ -107,7 +112,6 @@ export default function SignupScreen({ navigation, route }: Props) {
 
       if (role === 'ADMIN') {
         const branches = [{ id: 'branch_1', brandName, branchName }];
-        // 2. 관리자 가입 성공 시, 지점 정보를 AsyncStorage에 저장
         await AsyncStorage.setItem(`admin_branch_info_${id}`, JSON.stringify(branches));
 
         const userInfoForLogin = {
@@ -161,6 +165,13 @@ export default function SignupScreen({ navigation, route }: Props) {
           {role === 'ADMIN' && (
             <>
               <Text style={styles.sectionTitle}>매장 정보</Text>
+              
+              <Text style={styles.inputLabel}>업종 카테고리</Text>
+              <TouchableOpacity style={styles.pickerButton} onPress={() => setCategoryModalVisible(true)}>
+                <Text style={styles.pickerButtonText}>{storeCategory}</Text>
+                <Text style={styles.pickerButtonIcon}>▼</Text>
+              </TouchableOpacity>
+
               <View style={styles.toggleContainer}>
                 <Text style={styles.inputLabel}>프랜차이즈 매장인가요?</Text>
                 <Switch
@@ -198,6 +209,31 @@ export default function SignupScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={isCategoryModalVisible}
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setCategoryModalVisible(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>업종 선택</Text>
+            {STORE_CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.modalOption, storeCategory === cat && styles.modalOptionSelected]}
+                onPress={() => {
+                  setStoreCategory(cat);
+                  setCategoryModalVisible(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
 
       {isTimePickerVisible && (
         <TimePickerModal
@@ -276,5 +312,59 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: '600',
-  }
+  },
+  pickerButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+    backgroundColor: colors.card,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  pickerButtonIcon: {
+    fontSize: 16,
+    color: colors.subText,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+    color: colors.text,
+  },
+  modalOption: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  modalOptionSelected: {
+    backgroundColor: colors.primaryLight,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  modalOptionTextSelected: {
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
 });
