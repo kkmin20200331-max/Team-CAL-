@@ -44,6 +44,16 @@ type PeopleLog = {
   peopleCount?: number;
 };
 
+type ShiftVO = {
+  id?: string;
+  store_id?: string;
+  user_id?: string;
+  work_date?: string;
+  start_at?: string;
+  end_at?: string;
+  status?: string;
+};
+
 type CctvMetrics = {
   running?: boolean;
   processedFrames?: number;
@@ -71,6 +81,13 @@ type TrafficRow = {
   visitors: number;
   recommended: number;
   wait: number;
+};
+
+type WeeklyPatternRow = {
+  day: string;
+  morning: number;
+  lunch: number;
+  evening: number;
 };
 
 type AiInsightResponse = {
@@ -115,6 +132,15 @@ const branchStoreIds: Record<string, number> = {
   dongcheon: 3
 };
 
+const branchShiftStoreIds: Record<string, string> = {
+  '1': 'V1StGXR8_Z5jdHi6B-myT',
+  migeum: 'V1StGXR8_Z5jdHi6B-myT',
+  '2': 'N2xY8pQ3_a1BcDeFgH1jK',
+  sunae: 'N2xY8pQ3_a1BcDeFgH1jK',
+  '3': 'k9L0mN1o_P2qR3sT4uV5w',
+  dongcheon: 'k9L0mN1o_P2qR3sT4uV5w'
+};
+
 const fallbackTraffic: TrafficRow[] = Array.from({ length: 15 }, (_, index) => {
   const hour = index + 8;
   return {
@@ -125,14 +151,14 @@ const fallbackTraffic: TrafficRow[] = Array.from({ length: 15 }, (_, index) => {
   };
 });
 
-const weeklyPattern = [
-  { day: '월', morning: 45, lunch: 132, evening: 168 },
-  { day: '화', morning: 42, lunch: 118, evening: 154 },
-  { day: '수', morning: 48, lunch: 126, evening: 172 },
-  { day: '목', morning: 53, lunch: 141, evening: 188 },
-  { day: '금', morning: 58, lunch: 156, evening: 238 },
-  { day: '토', morning: 74, lunch: 184, evening: 252 },
-  { day: '일', morning: 69, lunch: 176, evening: 214 }
+const fallbackWeeklyPattern: WeeklyPatternRow[] = [
+  { day: '월', morning: 0, lunch: 0, evening: 0 },
+  { day: '화', morning: 0, lunch: 0, evening: 0 },
+  { day: '수', morning: 0, lunch: 0, evening: 0 },
+  { day: '목', morning: 0, lunch: 0, evening: 0 },
+  { day: '금', morning: 0, lunch: 0, evening: 0 },
+  { day: '토', morning: 0, lunch: 0, evening: 0 },
+  { day: '일', morning: 0, lunch: 0, evening: 0 }
 ];
 
 const tabLabels: Array<[TabKey, string]> = [
@@ -149,6 +175,11 @@ const resolveStoreId = (branchId?: string) => {
   return branchStoreIds[branchId] || 1;
 };
 
+const resolveShiftStoreId = (branchId?: string) => {
+  if (!branchId) return 'V1StGXR8_Z5jdHi6B-myT';
+  return branchShiftStoreIds[branchId] || branchId;
+};
+
 const toDateText = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -156,9 +187,24 @@ const toDateText = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const getWeekStart = (date: Date) => {
+  const start = new Date(date);
+  const day = start.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
+};
+
 const getPeopleCount = (log: PeopleLog) => Number(log.people_count ?? log.peopleCount ?? 0);
 
 const getRecordTime = (log: PeopleLog) => String(log.record_time ?? log.recordTime ?? '');
+
+const getMinutesFromDateTime = (value?: string) => {
+  const time = value?.includes(' ') ? value.split(' ')[1] : value;
+  const [hour = '0', minute = '0'] = (time || '').split(':');
+  return Number(hour) * 60 + Number(minute);
+};
 
 const buildTrafficByHour = (logs: PeopleLog[]): TrafficRow[] => {
   if (logs.length === 0) return fallbackTraffic;
@@ -183,6 +229,45 @@ const buildTrafficByHour = (logs: PeopleLog[]): TrafficRow[] => {
   });
 };
 
+const buildWeeklyPattern = (logs: PeopleLog[]): WeeklyPatternRow[] => {
+  if (logs.length === 0) return fallbackWeeklyPattern;
+
+  const rows = fallbackWeeklyPattern.map((row) => ({ ...row }));
+
+  logs.forEach((log) => {
+    const recordTime = getRecordTime(log);
+    const date = recordTime ? new Date(recordTime.replace(' ', 'T')) : null;
+    if (!date || Number.isNaN(date.getTime())) return;
+
+    const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1;
+    const hour = date.getHours();
+    const count = getPeopleCount(log);
+
+    if (hour >= 9 && hour < 11) rows[dayIndex].morning += count;
+    if (hour >= 11 && hour < 14) rows[dayIndex].lunch += count;
+    if (hour >= 18 && hour <= 20) rows[dayIndex].evening += count;
+  });
+
+  return rows;
+};
+
+const buildStaffSchedule = (shifts: ShiftVO[]) =>
+  fallbackTraffic.map((row) => {
+    const hour = Number(row.time.slice(0, 2));
+    const hourStart = hour * 60;
+    const hourEnd = hourStart + 60;
+    const currentStaff = shifts.filter((shift) => {
+      const start = getMinutesFromDateTime(shift.start_at);
+      const end = getMinutesFromDateTime(shift.end_at);
+      return start < hourEnd && end > hourStart;
+    }).length;
+
+    return {
+      timeRange: `${row.time}-${String(hour + 1).padStart(2, '0')}:00`,
+      currentStaff
+    };
+  });
+
 const riskLevel = (count: number) => {
   if (count >= 30) return '높음';
   if (count >= 15) return '주의';
@@ -200,6 +285,8 @@ export default function CustomerAnalytics() {
   const { branchId } = useParams();
   const [activeTab, setActiveTab] = useState<TabKey>('live');
   const [peopleLogs, setPeopleLogs] = useState<PeopleLog[]>([]);
+  const [weeklyLogs, setWeeklyLogs] = useState<PeopleLog[]>([]);
+  const [shiftRows, setShiftRows] = useState<ShiftVO[]>([]);
   const [metrics, setMetrics] = useState<CctvMetrics | null>(null);
   const [aggregate, setAggregate] = useState<CctvAggregate | null>(null);
   const [aiResult, setAiResult] = useState<AiInsightResponse | null>(null);
@@ -210,6 +297,8 @@ export default function CustomerAnalytics() {
   const storeId = resolveStoreId(branchId);
   const currentBranch = branchNames[branchId || 'migeum'] || localStorage.getItem('store_name') || '선택 매장';
   const trafficByHour = useMemo(() => buildTrafficByHour(peopleLogs), [peopleLogs]);
+  const weeklyPattern = useMemo(() => buildWeeklyPattern(weeklyLogs), [weeklyLogs]);
+  const staffSchedule = useMemo(() => buildStaffSchedule(shiftRows), [shiftRows]);
   const peakHour = useMemo(
     () => trafficByHour.reduce((max, row) => (row.visitors > max.visitors ? row : max), trafficByHour[0]),
     [trafficByHour]
@@ -263,7 +352,7 @@ export default function CustomerAnalytics() {
         conversionRate: 0
       }))
     },
-    staffSchedule: [],
+    staffSchedule,
     externalFactors: {
       source: 'cctv-metrics-people-log',
       aggregate
@@ -353,29 +442,49 @@ export default function CustomerAnalytics() {
 
   const loadLiveData = async () => {
     const today = toDateText(new Date());
+    const weekStart = getWeekStart(new Date());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
     const query = new URLSearchParams({
       store_id: String(storeId),
       start_date: `${today} 00:00:00`,
       end_date: `${today} 23:59:59`
     });
+    const weeklyQuery = new URLSearchParams({
+      store_id: String(storeId),
+      start_date: `${toDateText(weekStart)} 00:00:00`,
+      end_date: `${toDateText(weekEnd)} 23:59:59`
+    });
+    const shiftQuery = new URLSearchParams({
+      store_id: resolveShiftStoreId(branchId),
+      start_date: today,
+      end_date: today
+    });
 
-    const [logsRes, metricsRes, aggregateRes] = await Promise.all([
+    const [logsRes, metricsRes, aggregateRes, weeklyLogsRes, shiftsRes] = await Promise.all([
       fetch(`${API_BASE}/people_log?${query.toString()}`),
       fetch(`${API_BASE}/cctv/metrics`),
-      fetch(`${API_BASE}/cctv/aggregate/latest`)
+      fetch(`${API_BASE}/cctv/aggregate/latest`),
+      fetch(`${API_BASE}/people_log?${weeklyQuery.toString()}`),
+      fetch(`${API_BASE}/shift?${shiftQuery.toString()}`)
     ]);
 
-    if (!logsRes.ok || !metricsRes.ok || !aggregateRes.ok) {
+    if (!logsRes.ok || !metricsRes.ok || !aggregateRes.ok || !weeklyLogsRes.ok || !shiftsRes.ok) {
       throw new Error('실시간 분석 데이터를 불러오지 못했습니다.');
     }
 
-    const [logsData, metricsData, aggregateData] = await Promise.all([
+    const [logsData, metricsData, aggregateData, weeklyLogsData, shiftsData] = await Promise.all([
       logsRes.json(),
       metricsRes.json(),
-      aggregateRes.json()
+      aggregateRes.json(),
+      weeklyLogsRes.json(),
+      shiftsRes.json()
     ]);
 
     setPeopleLogs(Array.isArray(logsData) ? logsData : []);
+    setWeeklyLogs(Array.isArray(weeklyLogsData) ? weeklyLogsData : []);
+    setShiftRows(Array.isArray(shiftsData) ? shiftsData : []);
     setMetrics(metricsData);
     setAggregate(aggregateData);
     setLastSyncedAt(
