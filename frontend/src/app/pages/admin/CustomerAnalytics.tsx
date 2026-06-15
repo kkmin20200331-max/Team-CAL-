@@ -38,14 +38,20 @@ type TabKey = 'live' | 'pattern' | 'insight' | 'schedule';
 
 type PeopleLog = {
   id?: string | number;
-  store_id?: string;
-  storeId?: string;
-  camera_id?: string;
-  cameraId?: string;
   record_time?: string;
   recordTime?: string;
   people_count?: number;
   peopleCount?: number;
+};
+
+type ShiftVO = {
+  id?: string;
+  store_id?: string;
+  user_id?: string;
+  work_date?: string;
+  start_at?: string;
+  end_at?: string;
+  status?: string;
 };
 
 type CctvMetrics = {
@@ -73,13 +79,46 @@ type CctvAggregate = {
 type TrafficRow = {
   time: string;
   visitors: number;
-  sales: number;
-  staff: number;
   recommended: number;
   wait: number;
 };
 
+type WeeklyPatternRow = {
+  day: string;
+  morning: number;
+  lunch: number;
+  evening: number;
+};
+
+type AiInsightResponse = {
+  summary?: {
+    overallStatus?: string;
+    mainMessage?: string;
+    riskLevel?: string;
+  };
+  insights?: Array<{
+    id?: string;
+    type?: string;
+    severity?: string;
+    badge?: string;
+    title?: string;
+    message?: string;
+    actionLabel?: string;
+    reason?: string;
+  }>;
+  scheduleRecommendations?: Array<{
+    timeRange?: string;
+    currentStaff?: number;
+    recommendedStaff?: number;
+    recommendedExtraStaff?: number;
+    status?: string;
+    reason?: string;
+  }>;
+  source?: 'rule-based' | 'dummy' | 'llm' | 'llm-fallback';
+};
+
 const API_BASE = 'http://localhost:8080/api';
+const AI_INSIGHT_API = 'http://localhost:8000/api/v1/ai-insights';
 
 const branchNames: Record<string, string> = {
   migeum: '컴포즈 미금점',
@@ -93,26 +132,33 @@ const branchStoreIds: Record<string, number> = {
   dongcheon: 3
 };
 
+const branchShiftStoreIds: Record<string, string> = {
+  '1': 'V1StGXR8_Z5jdHi6B-myT',
+  migeum: 'V1StGXR8_Z5jdHi6B-myT',
+  '2': 'N2xY8pQ3_a1BcDeFgH1jK',
+  sunae: 'N2xY8pQ3_a1BcDeFgH1jK',
+  '3': 'k9L0mN1o_P2qR3sT4uV5w',
+  dongcheon: 'k9L0mN1o_P2qR3sT4uV5w'
+};
+
 const fallbackTraffic: TrafficRow[] = Array.from({ length: 15 }, (_, index) => {
   const hour = index + 8;
   return {
     time: `${String(hour).padStart(2, '0')}:00`,
     visitors: 0,
-    sales: 0,
-    staff: 0,
     recommended: 1,
     wait: 0
   };
 });
 
-const weeklyPattern = [
-  { day: '월', morning: 45, lunch: 132, evening: 168 },
-  { day: '화', morning: 42, lunch: 118, evening: 154 },
-  { day: '수', morning: 48, lunch: 126, evening: 172 },
-  { day: '목', morning: 53, lunch: 141, evening: 188 },
-  { day: '금', morning: 58, lunch: 156, evening: 238 },
-  { day: '토', morning: 74, lunch: 184, evening: 252 },
-  { day: '일', morning: 69, lunch: 176, evening: 214 }
+const fallbackWeeklyPattern: WeeklyPatternRow[] = [
+  { day: '월', morning: 0, lunch: 0, evening: 0 },
+  { day: '화', morning: 0, lunch: 0, evening: 0 },
+  { day: '수', morning: 0, lunch: 0, evening: 0 },
+  { day: '목', morning: 0, lunch: 0, evening: 0 },
+  { day: '금', morning: 0, lunch: 0, evening: 0 },
+  { day: '토', morning: 0, lunch: 0, evening: 0 },
+  { day: '일', morning: 0, lunch: 0, evening: 0 }
 ];
 
 const tabLabels: Array<[TabKey, string]> = [
@@ -129,6 +175,11 @@ const resolveStoreId = (branchId?: string) => {
   return branchStoreIds[branchId] || 1;
 };
 
+const resolveShiftStoreId = (branchId?: string) => {
+  if (!branchId) return 'V1StGXR8_Z5jdHi6B-myT';
+  return branchShiftStoreIds[branchId] || branchId;
+};
+
 const toDateText = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -136,9 +187,24 @@ const toDateText = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const getWeekStart = (date: Date) => {
+  const start = new Date(date);
+  const day = start.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + diff);
+  start.setHours(0, 0, 0, 0);
+  return start;
+};
+
 const getPeopleCount = (log: PeopleLog) => Number(log.people_count ?? log.peopleCount ?? 0);
 
 const getRecordTime = (log: PeopleLog) => String(log.record_time ?? log.recordTime ?? '');
+
+const getMinutesFromDateTime = (value?: string) => {
+  const time = value?.includes(' ') ? value.split(' ')[1] : value;
+  const [hour = '0', minute = '0'] = (time || '').split(':');
+  return Number(hour) * 60 + Number(minute);
+};
 
 const buildTrafficByHour = (logs: PeopleLog[]): TrafficRow[] => {
   if (logs.length === 0) return fallbackTraffic;
@@ -157,13 +223,50 @@ const buildTrafficByHour = (logs: PeopleLog[]): TrafficRow[] => {
     return {
       ...row,
       visitors,
-      sales: 0,
-      staff: 0,
       recommended: Math.max(1, Math.ceil(visitors / 25)),
       wait: Math.max(0, Math.ceil(visitors / 8))
     };
   });
 };
+
+const buildWeeklyPattern = (logs: PeopleLog[]): WeeklyPatternRow[] => {
+  if (logs.length === 0) return fallbackWeeklyPattern;
+
+  const rows = fallbackWeeklyPattern.map((row) => ({ ...row }));
+
+  logs.forEach((log) => {
+    const recordTime = getRecordTime(log);
+    const date = recordTime ? new Date(recordTime.replace(' ', 'T')) : null;
+    if (!date || Number.isNaN(date.getTime())) return;
+
+    const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1;
+    const hour = date.getHours();
+    const count = getPeopleCount(log);
+
+    if (hour >= 9 && hour < 11) rows[dayIndex].morning += count;
+    if (hour >= 11 && hour < 14) rows[dayIndex].lunch += count;
+    if (hour >= 18 && hour <= 20) rows[dayIndex].evening += count;
+  });
+
+  return rows;
+};
+
+const buildStaffSchedule = (shifts: ShiftVO[]) =>
+  fallbackTraffic.map((row) => {
+    const hour = Number(row.time.slice(0, 2));
+    const hourStart = hour * 60;
+    const hourEnd = hourStart + 60;
+    const currentStaff = shifts.filter((shift) => {
+      const start = getMinutesFromDateTime(shift.start_at);
+      const end = getMinutesFromDateTime(shift.end_at);
+      return start < hourEnd && end > hourStart;
+    }).length;
+
+    return {
+      timeRange: `${row.time}-${String(hour + 1).padStart(2, '0')}:00`,
+      currentStaff
+    };
+  });
 
 const riskLevel = (count: number) => {
   if (count >= 30) return '높음';
@@ -171,19 +274,31 @@ const riskLevel = (count: number) => {
   return '정상';
 };
 
+const severityClass = (severity?: string) => {
+  if (severity === 'HIGH' || severity === '높음' || severity === '긴급') return 'bg-red-600';
+  if (severity === 'MEDIUM' || severity === '주의' || severity === 'WATCH' || severity === '보강') return 'bg-amber-500';
+  return 'bg-emerald-600';
+};
+
 export default function CustomerAnalytics() {
   const navigate = useNavigate();
   const { branchId } = useParams();
   const [activeTab, setActiveTab] = useState<TabKey>('live');
   const [peopleLogs, setPeopleLogs] = useState<PeopleLog[]>([]);
+  const [weeklyLogs, setWeeklyLogs] = useState<PeopleLog[]>([]);
+  const [shiftRows, setShiftRows] = useState<ShiftVO[]>([]);
   const [metrics, setMetrics] = useState<CctvMetrics | null>(null);
   const [aggregate, setAggregate] = useState<CctvAggregate | null>(null);
+  const [aiResult, setAiResult] = useState<AiInsightResponse | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState('-');
   const [syncError, setSyncError] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   const storeId = resolveStoreId(branchId);
   const currentBranch = branchNames[branchId || 'migeum'] || localStorage.getItem('store_name') || '선택 매장';
   const trafficByHour = useMemo(() => buildTrafficByHour(peopleLogs), [peopleLogs]);
+  const weeklyPattern = useMemo(() => buildWeeklyPattern(weeklyLogs), [weeklyLogs]);
+  const staffSchedule = useMemo(() => buildStaffSchedule(shiftRows), [shiftRows]);
   const peakHour = useMemo(
     () => trafficByHour.reduce((max, row) => (row.visitors > max.visitors ? row : max), trafficByHour[0]),
     [trafficByHour]
@@ -195,6 +310,97 @@ export default function CustomerAnalytics() {
   const currentCount = metrics?.lastCustomerCount ?? aggregate?.aggregate?.lastCustomerCount ?? 0;
   const avgCount = aggregate?.aggregate?.avgCustomerCount ?? 0;
   const maxCount = aggregate?.aggregate?.maxCustomerCount ?? peakHour.visitors;
+
+  const cameraAggregates = useMemo(
+    () =>
+      trafficByHour.map((row) => ({
+        time: row.time,
+        avgCustomerCount: row.visitors,
+        maxCustomerCount: row.visitors,
+        minCustomerCount: Math.max(0, row.visitors - 2),
+        lastCustomerCount: row.visitors,
+        workingStaffCount: Math.max(1, row.recommended),
+        recommendedStaffCount: row.recommended,
+        waitMinutes: row.wait
+      })),
+    [trafficByHour]
+  );
+
+  const buildAiPayload = () => ({
+    storeId,
+    storeName: currentBranch,
+    storeType: 'CAFE',
+    storeTypeLabel: '카페',
+    date: toDateText(new Date()),
+    current: {
+      currentCustomerCount: currentCount,
+      todayTotalVisitors,
+      conversionRate: 0,
+      processedFrames: metrics?.processedFrames ?? 0,
+      confidenceAvg: metrics?.lastConfidenceAvg ?? 0
+    },
+    cameraAggregates,
+    historicalBaseline: {
+      sameDayAverageVisitors: Math.max(todayTotalVisitors, 1),
+      averagePeakCustomerCount: Math.max(maxCount, 1)
+    },
+    pos: {
+      conversionRate: 0,
+      hourlyOrders: trafficByHour.map((row) => ({
+        time: row.time,
+        orderCount: 0,
+        conversionRate: 0
+      }))
+    },
+    staffSchedule,
+    externalFactors: {
+      source: 'cctv-metrics-people-log',
+      aggregate
+    }
+  });
+
+  const fallbackInsights = [
+    {
+      label: '혼잡도',
+      title: `현재 매장 위험도는 ${riskLevel(currentCount)}입니다`,
+      body: `최근 집계 평균은 ${avgCount}명, 최대 인원은 ${maxCount}명입니다. CCTV 분석 루프의 최신 값을 기준으로 판단했습니다.`,
+      action: currentCount >= 15 ? '인력 배치 확인' : '현재 배치 유지',
+      impact: riskLevel(currentCount)
+    },
+    {
+      label: '분석 상태',
+      title: metrics?.running ? 'OpenCV 분석이 실행 중입니다' : 'OpenCV 분석이 대기 중입니다',
+      body: `처리 프레임 ${metrics?.processedFrames ?? 0}개, 드롭 프레임 ${metrics?.droppedFrames ?? 0}개, 큐 ${metrics?.queueSize ?? 0}개입니다.`,
+      action: metrics?.running ? '모니터링 계속' : 'CCTV 분석 시작',
+      impact: metrics?.running ? '정상' : '주의'
+    }
+  ];
+
+  const renderedInsights =
+    aiResult?.insights?.map((insight) => ({
+      label: insight.badge || insight.type || 'AI',
+      title: insight.title || '-',
+      body: insight.message || insight.reason || '-',
+      action: insight.actionLabel || '확인',
+      impact: insight.severity || 'LOW'
+    })) || fallbackInsights;
+
+  const scheduleRecommendations =
+    aiResult?.scheduleRecommendations?.map((row) => ({
+      time: row.timeRange || peakHour.time,
+      current: row.currentStaff ?? currentCount,
+      recommended: row.recommendedStaff ?? Math.max(1, Math.ceil(maxCount / 25)),
+      status: row.status || 'NORMAL',
+      reason: row.reason || 'AI 분석 결과입니다.'
+    })) || [
+      {
+        time: peakHour.time,
+        current: currentCount,
+        recommended: Math.max(1, Math.ceil(maxCount / 25)),
+        status: maxCount >= 30 ? 'URGENT' : maxCount >= 15 ? 'WATCH' : 'NORMAL',
+        reason: `최신 CCTV 집계 최대 인원 ${maxCount}명을 기준으로 계산했습니다.`
+      }
+    ];
 
   const kpis = [
     {
@@ -212,10 +418,10 @@ export default function CustomerAnalytics() {
       tone: 'text-emerald-600'
     },
     {
-      title: '피크 시간',
-      value: peakHour.time,
-      delta: `최대 ${maxCount}명`,
-      icon: Clock,
+      title: 'AI 응답 출처',
+      value: aiResult?.source === 'llm' ? 'OpenAI' : aiResult?.source || '대기',
+      delta: aiResult?.summary?.riskLevel ? `risk ${aiResult.summary.riskLevel}` : '새로고침으로 분석',
+      icon: Brain,
       tone: 'text-orange-600'
     },
     {
@@ -224,40 +430,6 @@ export default function CustomerAnalytics() {
       delta: `confidence ${metrics?.lastConfidenceAvg ?? 0}`,
       icon: Wallet,
       tone: 'text-violet-600'
-    }
-  ];
-
-  const aiInsights = [
-    {
-      label: '혼잡도',
-      title: `현재 매장 위험도는 ${riskLevel(currentCount)}입니다`,
-      body: `최근 집계 평균은 ${avgCount}명, 최대 인원은 ${maxCount}명입니다. CCTV 분석 루프의 최신 값을 기준으로 판단했습니다.`,
-      action: currentCount >= 15 ? '인력 배치 확인' : '현재 배치 유지',
-      impact: currentCount >= 30 ? '높음' : currentCount >= 15 ? '주의' : '정상'
-    },
-    {
-      label: '분석 상태',
-      title: metrics?.running ? 'OpenCV 분석이 실행 중입니다' : 'OpenCV 분석이 대기 중입니다',
-      body: `처리 프레임 ${metrics?.processedFrames ?? 0}개, 드롭 프레임 ${metrics?.droppedFrames ?? 0}개, 큐 ${metrics?.queueSize ?? 0}개입니다.`,
-      action: metrics?.running ? '모니터링 계속' : 'CCTV 분석 시작',
-      impact: metrics?.running ? '정상' : '주의'
-    },
-    {
-      label: '데이터 저장',
-      title: 'Spring people_log 기준으로 차트를 갱신합니다',
-      body: `오늘 조회된 DB 로그는 ${peopleLogs.length}건입니다. OpenCV 집계가 Spring으로 전송되면 이 화면의 시간대별 그래프에 반영됩니다.`,
-      action: 'DB 로그 확인',
-      impact: peopleLogs.length > 0 ? '정상' : '주의'
-    }
-  ];
-
-  const scheduleRecommendations = [
-    {
-      time: peakHour.time,
-      current: currentCount,
-      recommended: Math.max(1, Math.ceil(maxCount / 25)),
-      status: maxCount >= 30 ? '긴급' : maxCount >= 15 ? '보강' : '적정',
-      reason: `최신 CCTV 집계 최대 인원 ${maxCount}명을 기준으로 계산했습니다.`
     }
   ];
 
@@ -270,29 +442,49 @@ export default function CustomerAnalytics() {
 
   const loadLiveData = async () => {
     const today = toDateText(new Date());
+    const weekStart = getWeekStart(new Date());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
     const query = new URLSearchParams({
       store_id: String(storeId),
       start_date: `${today} 00:00:00`,
       end_date: `${today} 23:59:59`
     });
+    const weeklyQuery = new URLSearchParams({
+      store_id: String(storeId),
+      start_date: `${toDateText(weekStart)} 00:00:00`,
+      end_date: `${toDateText(weekEnd)} 23:59:59`
+    });
+    const shiftQuery = new URLSearchParams({
+      store_id: resolveShiftStoreId(branchId),
+      start_date: today,
+      end_date: today
+    });
 
-    const [logsRes, metricsRes, aggregateRes] = await Promise.all([
+    const [logsRes, metricsRes, aggregateRes, weeklyLogsRes, shiftsRes] = await Promise.all([
       fetch(`${API_BASE}/people_log?${query.toString()}`),
       fetch(`${API_BASE}/cctv/metrics`),
-      fetch(`${API_BASE}/cctv/aggregate/latest`)
+      fetch(`${API_BASE}/cctv/aggregate/latest`),
+      fetch(`${API_BASE}/people_log?${weeklyQuery.toString()}`),
+      fetch(`${API_BASE}/shift?${shiftQuery.toString()}`)
     ]);
 
-    if (!logsRes.ok || !metricsRes.ok || !aggregateRes.ok) {
+    if (!logsRes.ok || !metricsRes.ok || !aggregateRes.ok || !weeklyLogsRes.ok || !shiftsRes.ok) {
       throw new Error('실시간 분석 데이터를 불러오지 못했습니다.');
     }
 
-    const [logsData, metricsData, aggregateData] = await Promise.all([
+    const [logsData, metricsData, aggregateData, weeklyLogsData, shiftsData] = await Promise.all([
       logsRes.json(),
       metricsRes.json(),
-      aggregateRes.json()
+      aggregateRes.json(),
+      weeklyLogsRes.json(),
+      shiftsRes.json()
     ]);
 
     setPeopleLogs(Array.isArray(logsData) ? logsData : []);
+    setWeeklyLogs(Array.isArray(weeklyLogsData) ? weeklyLogsData : []);
+    setShiftRows(Array.isArray(shiftsData) ? shiftsData : []);
     setMetrics(metricsData);
     setAggregate(aggregateData);
     setLastSyncedAt(
@@ -303,6 +495,31 @@ export default function CustomerAnalytics() {
       })
     );
     setSyncError('');
+
+    return { logsData, metricsData, aggregateData };
+  };
+
+  const runAiAnalysis = async () => {
+    setAiLoading(true);
+    try {
+      await loadLiveData();
+      const response = await fetch(`${AI_INSIGHT_API}/analyze/llm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildAiPayload())
+      });
+
+      if (!response.ok) {
+        throw new Error('OpenAI 인사이트 분석 요청에 실패했습니다.');
+      }
+
+      setAiResult(await response.json());
+      setSyncError('');
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : 'OpenAI 인사이트 분석 실패');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -351,14 +568,14 @@ export default function CustomerAnalytics() {
                 실시간 고객 행동 분석 및 인사이트
               </h1>
               <p className="mt-1 text-sm text-slate-600">
-                OpenCV/FastAPI 분석 상태와 Spring people_log 데이터를 5초마다 동기화합니다.
+                운영 데이터는 5초마다 동기화하고, 새로고침 버튼은 OpenAI/LLM 인사이트 분석까지 실행합니다.
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="gap-2" onClick={loadLiveData}>
-              <RefreshCw className="h-4 w-4" />
-              새로고침
+            <Button variant="outline" className="gap-2" onClick={runAiAnalysis} disabled={aiLoading}>
+              <RefreshCw className={`h-4 w-4 ${aiLoading ? 'animate-spin' : ''}`} />
+              {aiLoading ? 'AI 분석 중' : '새로고침'}
             </Button>
             <Button className="gap-2">
               <Download className="h-4 w-4" />
@@ -372,6 +589,13 @@ export default function CustomerAnalytics() {
         {syncError && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {syncError}
+          </div>
+        )}
+
+        {aiResult?.summary && (
+          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <span className="font-semibold">{aiResult.source === 'llm' ? 'OpenAI 분석' : 'AI fallback 분석'}:</span>{' '}
+            {aiResult.summary.mainMessage}
           </div>
         )}
 
@@ -456,8 +680,8 @@ export default function CustomerAnalytics() {
                 </div>
                 <div className="rounded-lg border p-3">
                   <Wallet className="mb-2 h-5 w-5 text-blue-600" />
-                  <p className="text-sm text-slate-500">집계 샘플</p>
-                  <p className="font-semibold">{aggregate?.aggregate?.sampleCount ?? 0}개</p>
+                  <p className="text-sm text-slate-500">AI 출처</p>
+                  <p className="font-semibold">{aiResult?.source || '대기'}</p>
                 </div>
               </div>
             </CardContent>
@@ -492,19 +716,17 @@ export default function CustomerAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-blue-600" />
-                AI 인사이트 초안
+                AI 인사이트
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {aiInsights.map((insight) => (
+              {renderedInsights.map((insight) => (
                 <div key={insight.title} className="rounded-lg border p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <Badge variant="outline">{insight.label}</Badge>
-                        <Badge className={insight.impact === '높음' ? 'bg-red-600' : insight.impact === '주의' ? 'bg-amber-500' : 'bg-emerald-600'}>
-                          {insight.impact}
-                        </Badge>
+                        <Badge className={severityClass(insight.impact)}>{insight.impact}</Badge>
                       </div>
                       <h3 className="font-semibold text-slate-950">{insight.title}</h3>
                       <p className="mt-1 text-sm leading-6 text-slate-600">{insight.body}</p>
@@ -568,9 +790,7 @@ export default function CustomerAnalytics() {
                       <td className="py-4 text-slate-600">{row.current}명</td>
                       <td className="py-4 text-slate-950">{row.recommended}명</td>
                       <td className="py-4">
-                        <Badge className={row.status === '긴급' ? 'bg-red-600' : row.status === '보강' ? 'bg-orange-500' : 'bg-emerald-600'}>
-                          {row.status}
-                        </Badge>
+                        <Badge className={severityClass(row.status)}>{row.status}</Badge>
                       </td>
                       <td className="py-4 text-slate-600">{row.reason}</td>
                     </tr>

@@ -3,20 +3,16 @@ import { useNavigate, useParams } from 'react-router';
 import {
   ArrowLeft,
   Camera,
-  CheckCircle2,
   ChevronRight,
   CircleStop,
   Clock,
   Eye,
-  Gauge,
   MapPin,
   Play,
   Radio,
   RotateCw,
   Save,
   Settings,
-  ShieldAlert,
-  SlidersHorizontal,
   Users,
   Video
 } from 'lucide-react';
@@ -32,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '../../components/ui/select';
-import { Switch } from '../../components/ui/switch';
 
 type SourceType = 'WEBCAM' | 'RTSP' | 'VIDEO_FILE';
 
@@ -47,10 +42,6 @@ type CameraConfig = {
   modelName: string;
   imageSize: number;
   confidence: number;
-  crowdDetection: boolean;
-  queueDetection: boolean;
-  staffDetection: boolean;
-  safetyDetection: boolean;
 };
 
 type CameraStartPayload = {
@@ -99,19 +90,8 @@ const initialConfig: CameraConfig = {
   aggregationIntervalSec: 60,
   modelName: 'yolo11s',
   imageSize: 640,
-  confidence: 0.3,
-  crowdDetection: true,
-  queueDetection: true,
-  staffDetection: true,
-  safetyDetection: false
+  confidence: 0.3
 };
-
-const recentEvents = [
-  { time: '14:28', title: '입장 고객 6명 감지', tone: 'bg-blue-600' },
-  { time: '14:24', title: '대기열 4명 이상 유지', tone: 'bg-orange-500' },
-  { time: '14:17', title: '카운터 근무자 2명 확인', tone: 'bg-emerald-600' },
-  { time: '14:09', title: '혼잡도 정상 범위 복귀', tone: 'bg-slate-600' }
-];
 
 const resolveStoreId = (branchId?: string) => {
   if (!branchId) return 1;
@@ -148,17 +128,6 @@ export default function CctvAnalysis() {
       confidence: config.confidence
     }),
     [config, storeId]
-  );
-
-  const activeDetections = useMemo(
-    () =>
-      [
-        config.crowdDetection,
-        config.queueDetection,
-        config.staffDetection,
-        config.safetyDetection
-      ].filter(Boolean).length,
-    [config]
   );
 
   const updateConfig = <K extends keyof CameraConfig>(key: K, value: CameraConfig[K]) => {
@@ -382,11 +351,15 @@ export default function CctvAnalysis() {
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm text-slate-500">감지 옵션</p>
-                  <p className="mt-2 text-3xl font-bold text-slate-950">{activeDetections}개</p>
-                  <p className="mt-2 text-sm text-slate-500">마지막 저장 {lastSavedAt}</p>
+                  <p className="text-sm text-slate-500">최근 측정</p>
+                  <p className="mt-2 text-3xl font-bold text-slate-950">
+                    {metrics?.lastCustomerCount ?? '-'}명
+                  </p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    {metrics?.lastMeasuredAt ? new Date(metrics.lastMeasuredAt).toLocaleTimeString() : '수신 대기'}
+                  </p>
                 </div>
-                <SlidersHorizontal className="h-6 w-6 text-violet-600" />
+                <Eye className="h-6 w-6 text-violet-600" />
               </div>
             </CardContent>
           </Card>
@@ -540,39 +513,7 @@ export default function CctvAnalysis() {
           </Card>
         </section>
 
-        <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="rounded-lg lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Gauge className="h-5 w-5 text-emerald-600" />
-                분석 옵션
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {[
-                { key: 'crowdDetection', title: '매장 혼잡도 감지', description: '입장/퇴장과 체류 인원을 집계합니다.', icon: Users },
-                { key: 'queueDetection', title: '대기열 감지', description: '계산대 앞 대기 인원과 예상 시간을 추정합니다.', icon: Clock },
-                { key: 'staffDetection', title: '근무자 배치 감지', description: '카운터와 홀 근무자 수를 확인합니다.', icon: CheckCircle2 },
-                { key: 'safetyDetection', title: '안전 이벤트 감지', description: '넘어짐, 장시간 정체 같은 이상 상황을 표시합니다.', icon: ShieldAlert }
-              ].map((item) => (
-                <div key={item.key} className="flex items-start justify-between gap-4 rounded-lg border bg-white p-4">
-                  <div className="flex gap-3">
-                    <item.icon className="mt-0.5 h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="font-semibold text-slate-950">{item.title}</p>
-                      <p className="mt-1 text-sm leading-5 text-slate-500">{item.description}</p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={Boolean(config[item.key as keyof CameraConfig])}
-                    onCheckedChange={(checked) => updateConfig(item.key as keyof CameraConfig, checked as never)}
-                    aria-label={item.title}
-                  />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
+        <section className="mt-4">
           <Card className="rounded-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -601,13 +542,17 @@ export default function CctvAnalysis() {
                   {lastResponse}
                 </pre>
               </div>
-              {recentEvents.map((event) => (
-                <div key={`${event.time}-${event.title}`} className="flex items-start gap-3 rounded-lg border p-3">
-                  <span className={`mt-1 h-2.5 w-2.5 rounded-full ${isRunning ? event.tone : 'bg-slate-300'}`} />
-                  <div>
-                    <p className="text-sm font-medium text-slate-950">{event.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{isRunning ? event.time : '분석 대기'}</p>
-                  </div>
+              {[
+                ['최근 감지 인원', metrics?.lastCustomerCount ?? '-'],
+                ['처리 프레임', metrics?.processedFrames ?? '-'],
+                ['드롭 프레임', metrics?.droppedFrames ?? '-'],
+                ['대기 큐', metrics?.queueSize ?? '-'],
+                ['평균 confidence', metrics?.lastConfidenceAvg ?? '-'],
+                ['최근 측정 시각', metrics?.lastMeasuredAt ? new Date(metrics.lastMeasuredAt).toLocaleTimeString() : '-']
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between rounded-lg border p-3">
+                  <span className="text-sm text-slate-600">{label}</span>
+                  <span className="text-sm font-semibold text-slate-950">{value}</span>
                 </div>
               ))}
             </CardContent>
