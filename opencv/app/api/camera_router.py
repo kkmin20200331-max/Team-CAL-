@@ -2,6 +2,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, File, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 
 from app.core.state import inference_state
 from app.core.config import settings
@@ -55,6 +56,22 @@ def camera_status():
 @router.get("/metrics")
 def camera_metrics():
     return inference_service.metrics()
+
+
+@router.get("/stream")
+def camera_stream():
+    try:
+        return StreamingResponse(
+            inference_service.preview_stream(),
+            media_type="multipart/x-mixed-replace; boundary=frame",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("/aggregate/latest")

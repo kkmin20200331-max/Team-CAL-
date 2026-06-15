@@ -66,7 +66,14 @@ type CctvMetrics = {
   queueSize?: number;
 };
 
+type CctvStatus = CctvMetrics & {
+  annotatedImage?: string;
+  statusMessage?: string;
+  lastError?: string;
+};
+
 const CCTV_API = 'http://localhost:8080/api/cctv';
+const OPENCV_CAMERA_STREAM = 'http://localhost:8000/api/v1/camera/stream';
 
 const branchNames: Record<string, string> = {
   migeum: '컴포즈 미금점',
@@ -107,6 +114,9 @@ export default function CctvAnalysis() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState('-');
   const [metrics, setMetrics] = useState<CctvMetrics | null>(null);
+  const [cameraFrame, setCameraFrame] = useState('');
+  const [cameraStatusMessage, setCameraStatusMessage] = useState('');
+  const [streamNonce, setStreamNonce] = useState(Date.now());
   const [lastSavedAt, setLastSavedAt] = useState('저장 전');
   const [lastResponse, setLastResponse] = useState('응답 대기');
   const [errorMessage, setErrorMessage] = useState('');
@@ -173,8 +183,12 @@ export default function CctvAnalysis() {
 
         if (cancelled) return;
 
-        setIsRunning(Boolean(metricsData?.running ?? statusData?.running));
+        const status = statusData as CctvStatus;
+
+        setIsRunning(Boolean(metricsData?.running ?? status.running));
         setMetrics(metricsData);
+        setCameraFrame(status.annotatedImage || '');
+        setCameraStatusMessage(status.lastError || status.statusMessage || '');
         setLastSyncedAt(
           new Date().toLocaleTimeString('ko-KR', {
             hour: '2-digit',
@@ -222,6 +236,7 @@ export default function CctvAnalysis() {
       });
 
       setIsRunning(Boolean(data?.running ?? true));
+      setStreamNonce(Date.now());
       setLastResponse(JSON.stringify(data, null, 2));
     } catch (error) {
       const message = error instanceof Error ? error.message : '분석 시작 요청 실패';
@@ -242,6 +257,7 @@ export default function CctvAnalysis() {
       });
 
       setIsRunning(Boolean(data?.running));
+      setStreamNonce(Date.now());
       setLastResponse(JSON.stringify(data, null, 2));
     } catch (error) {
       const message = error instanceof Error ? error.message : '분석 중지 요청 실패';
@@ -375,7 +391,21 @@ export default function CctvAnalysis() {
             </CardHeader>
             <CardContent>
               <div className="relative aspect-video overflow-hidden rounded-lg border bg-slate-950">
-                <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(30,64,175,0.28),rgba(15,23,42,0.08)),repeating-linear-gradient(0deg,rgba(255,255,255,0.06)_0px,rgba(255,255,255,0.06)_1px,transparent_1px,transparent_36px),repeating-linear-gradient(90deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_1px,transparent_1px,transparent_48px)]" />
+                {isRunning ? (
+                  <img
+                    src={`${OPENCV_CAMERA_STREAM}?t=${streamNonce}`}
+                    alt="실시간 CCTV 스트림"
+                    className="absolute inset-0 h-full w-full object-contain"
+                  />
+                ) : cameraFrame ? (
+                  <img
+                    src={cameraFrame}
+                    alt="OpenCV가 분석한 최신 CCTV 프레임"
+                    className="absolute inset-0 h-full w-full object-contain"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(30,64,175,0.28),rgba(15,23,42,0.08)),repeating-linear-gradient(0deg,rgba(255,255,255,0.06)_0px,rgba(255,255,255,0.06)_1px,transparent_1px,transparent_36px),repeating-linear-gradient(90deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_1px,transparent_1px,transparent_48px)]" />
+                )}
                 <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                   <Badge className={isRunning ? 'bg-red-600' : 'bg-slate-700'}>
                     {isRunning ? 'REC' : 'OFF'}
@@ -396,9 +426,18 @@ export default function CctvAnalysis() {
                   ))}
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="rounded-full border border-white/20 bg-white/10 p-5 text-white backdrop-blur">
-                    {isRunning ? <Eye className="h-10 w-10" /> : <Radio className="h-10 w-10" />}
-                  </div>
+                  {!isRunning && !cameraFrame && (
+                    <div className="rounded-full border border-white/20 bg-white/10 p-5 text-white backdrop-blur">
+                      {isRunning ? <Eye className="h-10 w-10" /> : <Radio className="h-10 w-10" />}
+                    </div>
+                  )}
+                </div>
+                <div className="absolute right-4 top-4 max-w-[60%] rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-xs text-white backdrop-blur">
+                  {isRunning
+                    ? `실시간 스트림 ${lastSyncedAt}`
+                    : cameraFrame
+                      ? `최근 프레임 ${lastSyncedAt}`
+                      : cameraStatusMessage || '분석 시작 후 최신 프레임이 표시됩니다'}
                 </div>
               </div>
             </CardContent>
