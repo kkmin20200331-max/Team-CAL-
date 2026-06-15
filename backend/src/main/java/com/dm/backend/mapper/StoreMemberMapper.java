@@ -24,26 +24,46 @@ public interface StoreMemberMapper {
             @Param("store_id") String store_id
     );
 
+    //관리자 정보가 필요한 경우 조회
+    @Select("""
+                SELECT *
+                FROM STORE_MEMBER
+                WHERE STORE_ID = #{store_id}
+                AND MEMBER_ROLE = 'ADMIN'
+            """)
+    List<StoreMemberVo> getAdmins(
+            String store_id
+    );
+
 
     // =========================
     // [직원]
     // =========================
 
     // 매장 근무 신청
-    @Insert("""
-            insert into store_member
-            values (
-                #{id},
-                #{store_id},
-                #{user_id},
-                #{member_role},
-                #{user_level},
-                #{approval_status},
-                #{pay_type},
-                #{pay_amount}
-            )
-            """)
-    void approveRegister(StoreMemberVo storeMemberVo);
+ @Insert("""
+        INSERT INTO store_member (
+            id,
+            store_id,
+            user_id,
+            member_role,
+            user_level,
+            approval_status,
+            pay_type,
+            pay_amount
+        )
+        VALUES (
+            #{id},
+            #{store_id},
+            #{user_id},
+            #{member_role},
+            #{user_level},
+            #{approval_status},
+            #{pay_type},
+            #{pay_amount}
+        )
+        """)
+void approveRegister(StoreMemberVo storeMemberVo);
 
     // 신청 여부 확인
     @Select("""
@@ -112,5 +132,18 @@ public interface StoreMemberMapper {
             """)
     List<StoreMemberVo> getAvailableMemberList(
             String store_id
+    );
+
+
+    //특정 요일만 근무 가능한 사람 조회
+    @Select("""
+                SELECT *
+                FROM STORE_MEMBER
+                WHERE STORE_ID = #{store_id}
+                AND AVAILABLE_DAYS LIKE '%' || #{day} || '%'
+            """)
+    List<StoreMemberVo> getAvailableMembersByDay(
+            @Param("store_id") String store_id,
+            @Param("day") String day
     );
 }
