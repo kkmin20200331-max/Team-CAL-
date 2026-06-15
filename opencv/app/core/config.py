@@ -20,8 +20,10 @@ class Settings(BaseSettings):
     sender_queue_db: str = "logs/sender_queue.sqlite3"
     sender_poll_interval_sec: float = 1.0
     include_aggregate_samples: bool = True
-    include_camera_annotated_image: bool = False
+    include_camera_annotated_image: bool = True
     include_image_annotated_image: bool = True
+    preview_stream_fps: int = 12
+    preview_jpeg_quality: int = 75
     spring_send_retry: int = 3
     spring_send_timeout_sec: float = 3.0
     failed_payload_log: str = "logs/failed_payloads.log"
