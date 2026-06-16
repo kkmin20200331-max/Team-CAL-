@@ -8,13 +8,13 @@ import { User } from '../../types/User';
 import { Shift } from '../../types/Schedule';
 import { format, addDays, startOfWeek, getDay, getDaysInMonth, getMonth, getYear, setMonth, setYear, startOfMonth, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { useApp } from '../../contexts/AppContext';
 
 const today = new Date();
 const formatDate = (d: Date) => format(d, 'yyyy-MM-dd');
 const initialSelectedDate = formatDate(today);
 const KOREAN_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-// 1. 삭제되었던 generateWeekDates 함수 복원
 const generateWeekDates = (base: Date) => {
   const sunday = startOfWeek(base, { weekStartsOn: 0 });
   return Array.from({ length: 7 }).map((_, i) => {
@@ -97,8 +97,8 @@ const generateDummyScheduleForMonth = (date: Date, storeName: string): Shift[] =
 };
 
 
-const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null } } }) => {
-  const { userInfo } = route?.params || {};
+const ScheduleScreen = ({ navigation }: { navigation: any }) => {
+  const { userInfo } = useApp();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
@@ -168,32 +168,50 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
     setMonthModalVisible(false);
   };
 
-  const renderShiftCard = ({ item }: { item: Shift }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-         <Text style={styles.cardDate}>{item.fullDate} ({item.day})</Text>
-        {renderStatusBadge(item.status)}
-      </View>
-      <View style={styles.cardBody}>
-        <View style={styles.infoRow}><Text style={styles.infoIcon}>🕒</Text><Text style={styles.infoText}>{item.time}</Text></View>
-        {item.status !== 'OFF' && <View style={styles.infoRow}><Text style={styles.infoIcon}>📍</Text><Text style={styles.infoText}>{item.storeName}</Text></View>}
-      </View>
-      {item.status === 'SCHEDULED' && (
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenModal(item, 'LEAVE')}><Text style={styles.actionButtonText}>휴가 신청</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.substituteButton]} onPress={() => handleOpenModal(item, 'SUBSTITUTE')}><Text style={styles.actionButtonText}>대타 신청</Text></TouchableOpacity>
+  const renderShiftCard = ({ item }: { item: Shift }) => {
+    const cardContent = (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+           <Text style={styles.cardDate}>{item.fullDate} ({item.day})</Text>
+          {renderStatusBadge(item.status)}
         </View>
-      )}
-    </View>
-  );
+        <View style={styles.cardBody}>
+          <View style={styles.infoRow}><Text style={styles.infoIcon}>🕒</Text><Text style={styles.infoText}>{item.time}</Text></View>
+          {item.status !== 'OFF' && <View style={styles.infoRow}><Text style={styles.infoIcon}>📍</Text><Text style={styles.infoText}>{item.storeName}</Text></View>}
+        </View>
+        {userInfo?.role === 'STAFF' && item.status === 'SCHEDULED' && (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenModal(item, 'LEAVE')}><Text style={styles.actionButtonText}>휴가 신청</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.actionButton, styles.substituteButton]} onPress={() => handleOpenModal(item, 'SUBSTITUTE')}><Text style={styles.actionButtonText}>대타 신청</Text></TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+
+    if (userInfo?.role === 'ADMIN') {
+      return (
+        <TouchableOpacity onPress={() => navigation.navigate('ShiftEditor', { isEdit: true, shift: item })}>
+          {cardContent}
+        </TouchableOpacity>
+      );
+    }
+    return cardContent;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{`${getYear(baseDate)}년 ${getMonth(baseDate) + 1}월`}</Text>
-        <TouchableOpacity onPress={() => setMonthModalVisible(true)}>
-          <Text style={styles.monthViewButton}>월간 보기</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity onPress={() => setMonthModalVisible(true)}>
+            <Text style={styles.monthViewButton}>월간 보기</Text>
+          </TouchableOpacity>
+          {userInfo?.role === 'ADMIN' && (
+            <TouchableOpacity onPress={() => navigation.navigate('ShiftEditor', { isEdit: false })}>
+              <Text style={styles.addButton}>+ 새 근무</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
       <View style={styles.calendarContainer}>
         <View style={styles.weekDaysContainer}>
@@ -312,7 +330,9 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10, backgroundColor: colors.card },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   monthViewButton: { fontSize: 14, color: colors.primary, fontWeight: '600' },
+  addButton: { fontSize: 14, color: colors.primary, fontWeight: 'bold' },
   calendarContainer: { backgroundColor: colors.card, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   weekDaysContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 10 },
   arrowButton: { paddingHorizontal: 5, paddingVertical: 10 },
@@ -368,7 +388,7 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: { width: `${100/7}%`, aspectRatio: 1, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   dayNumber: { fontSize: 15, color: colors.text },
-  dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: -5 },
+  dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: 8 },
   dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
 });
 

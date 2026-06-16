@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { Platform, View, Text, StyleSheet } from 'react-native'; // 1. View, Text, StyleSheet 임포트
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message'; // 2. BaseToast, ErrorToast 임포트
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
 
@@ -15,7 +15,7 @@ import PendingScreen from './src/screens/auth/PendingScreen';
 import BranchSelectScreen from './src/screens/main/BranchSelectScreen';
 import MyPageScreen from './src/screens/mypage/MyPageScreen';
 import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
-import AdminScheduleScreen from './src/screens/admin/AdminScheduleScreen';
+import ScheduleScreen from './src/screens/schedule/ScheduleScreen'; // 1. ScheduleScreen으로 변경
 import AdminDailyScheduleScreen from './src/screens/admin/AdminDailyScheduleScreen';
 import EmployeeManagementScreen from './src/screens/admin/EmployeeManagementScreen';
 import ShiftEditorScreen from './src/screens/admin/ShiftEditorScreen';
@@ -23,7 +23,6 @@ import EmployeeDetailScreen from './src/screens/admin/EmployeeDetailScreen';
 import SubstituteManagementScreen from './src/screens/admin/SubstituteManagementScreen';
 import AddBranchScreen from './src/screens/admin/AddBranchScreen';
 import StaffDashboardScreen from './src/screens/main/DashboardScreen';
-import StaffScheduleScreen from './src/screens/schedule/ScheduleScreen';
 import NotificationScreen from './src/screens/board/NotificationScreen';
 import BoardScreen from './src/screens/board/BoardScreen';
 import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
@@ -43,20 +42,14 @@ import { ThemeProvider } from './src/contexts/ThemeContext';
 import { BoardProvider } from './src/contexts/BoardContext';
 import { ScheduleProvider } from './src/contexts/ScheduleContext';
 
-// 3. 커스텀 토스트 메시지 UI 설정
 const toastConfig = {
   success: (props: any) => (
     <BaseToast
       {...props}
       style={{ borderLeftColor: '#69C779', height: 65, width: '90%' }}
       contentContainerStyle={{ paddingHorizontal: 15 }}
-      text1Style={{
-        fontSize: 16,
-        fontWeight: 'bold',
-      }}
-      text2Style={{
-        fontSize: 14,
-      }}
+      text1Style={{ fontSize: 16, fontWeight: 'bold' }}
+      text2Style={{ fontSize: 14 }}
     />
   ),
   error: (props: any) => (
@@ -64,17 +57,11 @@ const toastConfig = {
       {...props}
       style={{ borderLeftColor: '#FE6301', height: 65, width: '90%' }}
       contentContainerStyle={{ paddingHorizontal: 15 }}
-      text1Style={{
-        fontSize: 16,
-        fontWeight: 'bold',
-      }}
-      text2Style={{
-        fontSize: 14,
-      }}
+      text1Style={{ fontSize: 16, fontWeight: 'bold' }}
+      text2Style={{ fontSize: 14 }}
     />
   ),
 };
-
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -106,7 +93,6 @@ async function registerForPushNotificationsAsync() {
   }
 }
 
-
 const AuthStack = createStackNavigator();
 const MainStack = createStackNavigator();
 const AdminTab = createBottomTabNavigator();
@@ -127,6 +113,7 @@ function AdminTabNavigator() {
   return (
     <AdminTab.Navigator screenOptions={{ headerShown: false }}>
       <AdminTab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: '대시보드' }} />
+      <AdminTab.Screen name="AdminSchedule" component={ScheduleScreen} options={{ title: '근무 관리' }} />
       <AdminTab.Screen name="EmployeeManagement" component={EmployeeManagementScreen} options={{ title: '직원관리' }} />
       <AdminTab.Screen name="AdminMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
     </AdminTab.Navigator>
@@ -147,7 +134,7 @@ function StaffTabNavigator() {
   return (
     <StaffTab.Navigator screenOptions={{ headerShown: false }}>
       <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '홈' }} />
-      <StaffTab.Screen name="StaffSchedule" component={StaffScheduleScreen} options={{ title: '스케줄' }} />
+      <StaffTab.Screen name="StaffSchedule" component={ScheduleScreen} options={{ title: '스케줄' }} />
       <StaffTab.Screen name="Notifications" component={NotificationScreen} options={{ title: '알림' }} />
       <StaffTab.Screen name="StaffMyPage" component={MyPageScreen} options={{ title: '마이페이지' }} />
     </StaffTab.Navigator>
@@ -163,7 +150,6 @@ function MainNavigator() {
       ) : (
         <MainStack.Screen name="StaffRoot" component={StaffTabNavigator} />
       )}
-      <MainStack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
       <MainStack.Screen name="AdminDailySchedule" component={AdminDailyScheduleScreen} />
       <MainStack.Screen name="ShiftEditor" component={ShiftEditorScreen} />
       <MainStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
@@ -217,7 +203,6 @@ export default function App() {
                   </NavigationContainer>
                 </ScheduleProvider>
               </BoardProvider>
-              {/* 4. Toast 컴포넌트에 config 전달 */}
               <Toast config={toastConfig} />
             </NotificationProvider>
           </AppProvider>
