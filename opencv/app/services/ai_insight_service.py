@@ -122,7 +122,22 @@ class AiInsightService:
     def build_features(self, data: dict[str, Any]) -> AiInsightFeatures:
         camera_rows = [self._normalize_camera_row(row) for row in data.get("cameraAggregates", [])]
         if not camera_rows:
-            raise ValueError("cameraAggregates must contain at least one row")
+            current = data.get("current", {})
+            current_count = self._first_value(
+                current,
+                "currentCustomerCount",
+                "current_customer_count",
+                "lastCustomerCount",
+                "last_customer_count",
+                default=0,
+            )
+            camera_rows = [
+                {
+                    "time": "09:00",
+                    "maxCustomerCount": int(round(float(current_count or 0))),
+                    "workingStaffCount": 1,
+                }
+            ]
 
         peak = max(camera_rows, key=lambda row: row["maxCustomerCount"])
 
