@@ -39,7 +39,7 @@ import {
 } from 'recharts';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
-const AI_INSIGHT_API = 'http://localhost:8000/api/v1/ai-insights';
+const AI_INSIGHT_API = 'http://localhost:8080/api/ai-insights';
 
 // ── 유틸 ──
 const toDateStr = (d: Date) => {
@@ -208,7 +208,9 @@ const getIdleRow = (rows: CustomerTrendRow[]) =>
 const getKoreanWeekday = () =>
   new Date().toLocaleDateString('ko-KR', { weekday: 'long' });
 
-const buildAiPayload = (context: DashboardOperationContext, storeId: number, storeName: string) => {
+/*
+Previous client-side dashboard AI payload builder removed.
+const legacyDashboardAiPayload = (context: DashboardOperationContext, storeId: number, storeName: string) => {
   const rows = context.rows;
   const peak = getPeakRow(rows);
   const totalVisitors = rows.reduce((sum, row) => sum + row.customers, 0);
@@ -270,6 +272,7 @@ const buildAiPayload = (context: DashboardOperationContext, storeId: number, sto
   };
 };
 
+*/
 const buildFallbackRecommendations = (context: DashboardOperationContext): OperationRecommendation[] => {
   const rows = context.rows;
   const peak = getPeakRow(rows);
@@ -484,10 +487,18 @@ export default function AdminDashboard() {
 
     const loadAiInsight = async () => {
       try {
+        const today = toDateStr(new Date());
         const response = await fetch(`${AI_INSIGHT_API}/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildAiPayload(operationContext, resolveStoreId(branchId), currentBranch))
+          body: JSON.stringify({
+            store_id: String(resolveStoreId(branchId)),
+            shift_store_id: branchId,
+            date: today,
+            start_date: `${today} 00:00:00`,
+            end_date: `${today} 23:59:59`,
+            mode: 'dashboard'
+          })
         });
 
         if (!response.ok) {

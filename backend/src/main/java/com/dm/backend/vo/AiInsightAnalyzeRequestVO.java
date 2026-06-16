@@ -7,10 +7,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AnalysisRequestVO {
+public class AiInsightAnalyzeRequestVO {
     private String store_id;
-
+    private String shift_store_id;
     private String start_date;
-
     private String end_date;
+    private String date;
+    private String mode;
 }

@@ -44,16 +44,6 @@ type PeopleLog = {
   peopleCount?: number;
 };
 
-type ShiftVO = {
-  id?: string;
-  store_id?: string;
-  user_id?: string;
-  work_date?: string;
-  start_at?: string;
-  end_at?: string;
-  status?: string;
-};
-
 type CctvMetrics = {
   running?: boolean;
   processedFrames?: number;
@@ -118,7 +108,7 @@ type AiInsightResponse = {
 };
 
 const API_BASE = 'http://localhost:8080/api';
-const AI_INSIGHT_API = 'http://localhost:8000/api/v1/ai-insights';
+const AI_INSIGHT_API = `${API_BASE}/ai-insights`;
 
 const branchNames: Record<string, string> = {
   migeum: '컴포즈 미금점',
@@ -251,23 +241,6 @@ const buildWeeklyPattern = (logs: PeopleLog[]): WeeklyPatternRow[] => {
   return rows;
 };
 
-const buildStaffSchedule = (shifts: ShiftVO[]) =>
-  fallbackTraffic.map((row) => {
-    const hour = Number(row.time.slice(0, 2));
-    const hourStart = hour * 60;
-    const hourEnd = hourStart + 60;
-    const currentStaff = shifts.filter((shift) => {
-      const start = getMinutesFromDateTime(shift.start_at);
-      const end = getMinutesFromDateTime(shift.end_at);
-      return start < hourEnd && end > hourStart;
-    }).length;
-
-    return {
-      timeRange: `${row.time}-${String(hour + 1).padStart(2, '0')}:00`,
-      currentStaff
-    };
-  });
-
 const riskLevel = (count: number) => {
   if (count >= 30) return '높음';
   if (count >= 15) return '주의';
@@ -286,7 +259,6 @@ export default function CustomerAnalytics() {
   const [activeTab, setActiveTab] = useState<TabKey>('live');
   const [peopleLogs, setPeopleLogs] = useState<PeopleLog[]>([]);
   const [weeklyLogs, setWeeklyLogs] = useState<PeopleLog[]>([]);
-  const [shiftRows, setShiftRows] = useState<ShiftVO[]>([]);
   const [metrics, setMetrics] = useState<CctvMetrics | null>(null);
   const [aggregate, setAggregate] = useState<CctvAggregate | null>(null);
   const [aiResult, setAiResult] = useState<AiInsightResponse | null>(null);
@@ -298,7 +270,6 @@ export default function CustomerAnalytics() {
   const currentBranch = branchNames[branchId || 'migeum'] || localStorage.getItem('store_name') || '선택 매장';
   const trafficByHour = useMemo(() => buildTrafficByHour(peopleLogs), [peopleLogs]);
   const weeklyPattern = useMemo(() => buildWeeklyPattern(weeklyLogs), [weeklyLogs]);
-  const staffSchedule = useMemo(() => buildStaffSchedule(shiftRows), [shiftRows]);
   const peakHour = useMemo(
     () => trafficByHour.reduce((max, row) => (row.visitors > max.visitors ? row : max), trafficByHour[0]),
     [trafficByHour]
@@ -311,22 +282,8 @@ export default function CustomerAnalytics() {
   const avgCount = aggregate?.aggregate?.avgCustomerCount ?? 0;
   const maxCount = aggregate?.aggregate?.maxCustomerCount ?? peakHour.visitors;
 
-  const cameraAggregates = useMemo(
-    () =>
-      trafficByHour.map((row) => ({
-        time: row.time,
-        avgCustomerCount: row.visitors,
-        maxCustomerCount: row.visitors,
-        minCustomerCount: Math.max(0, row.visitors - 2),
-        lastCustomerCount: row.visitors,
-        workingStaffCount: Math.max(1, row.recommended),
-        recommendedStaffCount: row.recommended,
-        waitMinutes: row.wait
-      })),
-    [trafficByHour]
-  );
-
-  const buildAiPayload = () => ({
+  /*
+  Previous client-side AI payload builder removed.
     storeId,
     storeName: currentBranch,
     storeType: 'CAFE',
@@ -339,7 +296,7 @@ export default function CustomerAnalytics() {
       processedFrames: metrics?.processedFrames ?? 0,
       confidenceAvg: metrics?.lastConfidenceAvg ?? 0
     },
-    cameraAggregates,
+    cameraAggregates: [],
     historicalBaseline: {
       sameDayAverageVisitors: Math.max(todayTotalVisitors, 1),
       averagePeakCustomerCount: Math.max(maxCount, 1)
@@ -352,13 +309,14 @@ export default function CustomerAnalytics() {
         conversionRate: 0
       }))
     },
-    staffSchedule,
+    staffSchedule: [],
     externalFactors: {
       source: 'cctv-metrics-people-log',
       aggregate
     }
   });
 
+  */
   const fallbackInsights = [
     {
       label: '혼잡도',
@@ -456,35 +414,26 @@ export default function CustomerAnalytics() {
       start_date: `${toDateText(weekStart)} 00:00:00`,
       end_date: `${toDateText(weekEnd)} 23:59:59`
     });
-    const shiftQuery = new URLSearchParams({
-      store_id: resolveShiftStoreId(branchId),
-      start_date: today,
-      end_date: today
-    });
-
-    const [logsRes, metricsRes, aggregateRes, weeklyLogsRes, shiftsRes] = await Promise.all([
+    const [logsRes, metricsRes, aggregateRes, weeklyLogsRes] = await Promise.all([
       fetch(`${API_BASE}/people_log?${query.toString()}`),
       fetch(`${API_BASE}/cctv/metrics`),
       fetch(`${API_BASE}/cctv/aggregate/latest`),
-      fetch(`${API_BASE}/people_log?${weeklyQuery.toString()}`),
-      fetch(`${API_BASE}/shift?${shiftQuery.toString()}`)
+      fetch(`${API_BASE}/people_log?${weeklyQuery.toString()}`)
     ]);
 
-    if (!logsRes.ok || !metricsRes.ok || !aggregateRes.ok || !weeklyLogsRes.ok || !shiftsRes.ok) {
+    if (!logsRes.ok || !metricsRes.ok || !aggregateRes.ok || !weeklyLogsRes.ok) {
       throw new Error('실시간 분석 데이터를 불러오지 못했습니다.');
     }
 
-    const [logsData, metricsData, aggregateData, weeklyLogsData, shiftsData] = await Promise.all([
+    const [logsData, metricsData, aggregateData, weeklyLogsData] = await Promise.all([
       logsRes.json(),
       metricsRes.json(),
       aggregateRes.json(),
-      weeklyLogsRes.json(),
-      shiftsRes.json()
+      weeklyLogsRes.json()
     ]);
 
     setPeopleLogs(Array.isArray(logsData) ? logsData : []);
     setWeeklyLogs(Array.isArray(weeklyLogsData) ? weeklyLogsData : []);
-    setShiftRows(Array.isArray(shiftsData) ? shiftsData : []);
     setMetrics(metricsData);
     setAggregate(aggregateData);
     setLastSyncedAt(
@@ -503,10 +452,17 @@ export default function CustomerAnalytics() {
     setAiLoading(true);
     try {
       await loadLiveData();
+      const today = toDateText(new Date());
       const response = await fetch(`${AI_INSIGHT_API}/analyze/llm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildAiPayload())
+        body: JSON.stringify({
+          store_id: String(storeId),
+          shift_store_id: resolveShiftStoreId(branchId),
+          date: today,
+          start_date: `${today} 00:00:00`,
+          end_date: `${today} 23:59:59`
+        })
       });
 
       if (!response.ok) {

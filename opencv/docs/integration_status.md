@@ -16,7 +16,7 @@
 - 메인 대시보드 `실시간 매장 인원 추이`: `people_log`와 오늘 근무표 기반으로 연동
 - 메인 대시보드 `AI 운영 추천`: 고객 수, 근무표, 출근 현황, 대타 모집, 예상 인건비를 종합해 추천
 - 고객 분석 `요일별 방문 패턴`: 이번 주 `people_log`를 요일/시간대별로 집계
-- 고객 분석 `AI 스케줄 추천`: 오늘 근무표를 `staffSchedule`로 AI payload에 포함
+- 고객 분석 `AI 스케줄 추천`: Spring이 DB에서 오늘 근무표를 조회해 `staffSchedule`로 AI payload에 포함
 - CCTV 화면 `실시간 카메라`: `/api/v1/camera/stream` MJPEG 스트림으로 최신 영상 프레임 표시
 
 ## CCTV 분석 시작/중지 흐름
@@ -313,12 +313,14 @@ historicalBaseline: 오늘 방문 수와 피크 기준값
 externalFactors: CCTV/people_log 기반 출처 정보
 ```
 
-`staffSchedule`은 `/api/shift`에서 오늘 근무표를 조회한 뒤 시간대별 근무 인원을 계산해 만듭니다.
+`staffSchedule`은 Spring `AiInsightPayloadService`가 오늘 근무표를 조회한 뒤 시간대별 근무 인원을 계산해 만듭니다.
 
 관련 파일:
 
 ```text
-frontend/src/app/pages/admin/CustomerAnalytics.tsx
+backend/src/main/java/com/dm/backend/controller/AiInsightProxyC.java
+backend/src/main/java/com/dm/backend/service/AiInsightPayloadService.java
+backend/src/main/java/com/dm/backend/vo/AiInsightAnalyzeRequestVO.java
 backend/src/main/resources/sql/shift.sql
 ```
 
@@ -394,13 +396,18 @@ FastAPI AI 분석 API도 호출하지만, 메인 대시보드는 화면 성격�
 
 2. 수동 `새로고침` 버튼
    - 최신 운영 데이터를 다시 조회합니다.
-   - `AiInsightAnalyzeRequest` 형태의 payload를 만듭니다.
-   - FastAPI LLM 인사이트 API를 호출합니다.
+   - Spring에 `store_id`, `shift_store_id`, 조회 기간만 전달합니다.
+   - Spring이 DB를 조회해 `AiInsightAnalyzeRequest` 형태의 payload를 만듭니다.
+   - Spring이 FastAPI LLM 인사이트 API를 호출합니다.
 
 수동 새로고침 흐름:
 
 ```text
 React
+  POST http://localhost:8080/api/ai-insights/analyze/llm
+Spring Boot
+  store, people_log, shift, store_member 조회
+  AiInsightAnalyzeRequest payload 생성
   POST http://localhost:8000/api/v1/ai-insights/analyze/llm
 FastAPI
   AiInsightService.analyze_with_llm()
@@ -420,6 +427,9 @@ http://127.0.0.1:5173
 관련 FastAPI 파일:
 
 ```text
+backend/src/main/java/com/dm/backend/controller/AiInsightProxyC.java
+backend/src/main/java/com/dm/backend/service/AiInsightPayloadService.java
+backend/src/main/java/com/dm/backend/vo/AiInsightAnalyzeRequestVO.java
 opencv/app/main.py
 opencv/app/api/ai_insight_router.py
 opencv/app/services/ai_insight_service.py

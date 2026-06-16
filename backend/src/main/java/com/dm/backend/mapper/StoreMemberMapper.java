@@ -121,7 +121,7 @@ void approveRegister(StoreMemberVo storeMemberVo);
             SELECT * FROM store_member
             WHERE store_id = #{store_id}
             """)
-    List<StoreMemberVo> getStoreMembers(String storeId);
+    List<StoreMemberVo> getStoreMembers(@Param("store_id") String storeId);
 
     //직원 근무가능요일 관리자 조회용
     @Select("""
