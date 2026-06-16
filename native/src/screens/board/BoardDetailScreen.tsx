@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -7,6 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Post } from '../../types/Post';
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext';
+import { useSchedule } from '../../contexts/ScheduleContext'; // 1. useSchedule 훅 임포트
 import Toast from "react-native-toast-message";
 
 interface Comment {
@@ -32,7 +33,8 @@ type Props = {
 const BoardDetailScreen = ({ route, navigation }: Props) => {
   const { postId } = route.params;
   const { userInfo } = useApp();
-  const { posts, updatePinStatus } = useBoard();
+  const { posts, updatePinStatus, deletePost } = useBoard();
+  const { employees } = useSchedule(); // 2. 전역 employees 목록 가져오기
   const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
@@ -56,6 +58,15 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
       ]);
     }
   }, [postId, posts]);
+
+  // 3. authorId를 이용해 작성자 이름 찾기
+  const authorName = useMemo(() => {
+    if (!post?.authorId) return t('unknown');
+    const author = employees.find(emp => emp.username === post.authorId);
+    return author?.name || post.authorId;
+  }, [post, employees]);
+
+  const isAuthor = post?.authorId === currentUserId;
 
   const handleAddComment = () => {
     if (newComment.trim() === '') {
@@ -101,6 +112,26 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
     });
   };
 
+  const handleDeletePost = () => {
+    if (!post) return;
+    Alert.alert(
+      "게시글 삭제",
+      "이 게시글을 정말 삭제하시겠습니까?",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: () => {
+            deletePost(post.id);
+            Toast.show({ type: 'info', text1: '게시글이 삭제되었습니다.' });
+            navigation.goBack();
+          },
+        },
+      ]
+    );
+  };
+
   if (!post) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -121,20 +152,31 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('boardDetailTitle')}</Text>
-          {userInfo?.role === 'ADMIN' ? (
-            <TouchableOpacity onPress={handleTogglePin} style={styles.pinButton}>
-              <Text style={styles.pinButtonText}>{post.isPinned ? t('unpin') : t('pin')}</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={{ width: 40 }} />
-          )}
+          <View style={styles.headerRight}>
+            {isAuthor && (
+              <>
+                <TouchableOpacity onPress={() => navigation.navigate('BoardWrite', { isEdit: true, postId: post.id })}>
+                  <Text style={styles.headerButtonText}>수정</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleDeletePost}>
+                  <Text style={[styles.headerButtonText, styles.deleteButtonText]}>삭제</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {userInfo?.role === 'ADMIN' && (
+              <TouchableOpacity onPress={handleTogglePin}>
+                <Text style={styles.headerButtonText}>{post.isPinned ? t('unpin') : t('pin')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
           <View style={styles.postContainer}>
             <Text style={styles.postTitle}>{t(post.title)}</Text>
             <View style={styles.postMeta}>
-              <Text style={styles.postAuthor}>{t('writer')}: {post.authorId || t('unknown')}</Text>
+              {/* 4. 작성자 이름을 표시하도록 수정 */}
+              <Text style={styles.postAuthor}>{t('writer')}: {authorName}</Text>
               <Text style={styles.postDate}>{post.date}</Text>
             </View>
             <View style={styles.postStats}>
@@ -202,15 +244,18 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   backButton: { padding: 4, width: 40 },
   backButtonText: { fontSize: 24, color: colors.text },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  pinButton: {
-    width: 60,
+  headerRight: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
+    gap: 16,
   },
-  pinButtonText: {
-    fontSize: 14,
-    color: '#2563EB',
+  headerButtonText: {
+    fontSize: 16,
+    color: colors.primary,
     fontWeight: '600',
+  },
+  deleteButtonText: {
+    color: '#EF4444',
   },
   
   container: { flex: 1, padding: 20 },

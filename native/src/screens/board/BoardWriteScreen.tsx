@@ -60,7 +60,8 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
         badge: 'badgeNew',
         isPinned: false,
       };
-      addPost(newPostData);
+      // ✅ [수정] addPost 호출 시 현재 로그인한 사용자의 username 전달
+      addPost(newPostData, userInfo?.username || 'unknown_user');
       
       if (category === '공지사항') {
         try {
@@ -72,7 +73,6 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
                 screen: 'Board',
               }
             },
-            // ✅ [오류 수정] trigger를 null로 설정하여 즉시 발송
             trigger: null,
           });
         } catch (notifError) {
