@@ -47,7 +47,7 @@ export default function EmployeeProfilePanel() {
         onClick={() => setOpen(true)}
         className="relative rounded-full hover:opacity-80 transition-opacity flex-shrink-0"
       >
-        <Avatar className="w-14 h-14 border-[3px] border-[#07790F] bg-[#80D180]">
+        <Avatar className="w-16 h-16 border-[3px] border-[#07790F] bg-[#80D180]">
           <AvatarImage src={profileImage} className="object-cover" />
           <AvatarFallback className="bg-[#80D180] text-white font-bold text-base">
             {currentUser?.name?.[0] ?? <User className="w-5 h-5" />}

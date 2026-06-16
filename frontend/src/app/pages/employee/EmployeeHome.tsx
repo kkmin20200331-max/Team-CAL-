@@ -105,7 +105,7 @@ function QuickCard({
   const textColor = style.background === GREEN ? '#fff' : style.background === '#F7FBF0' ? BORDER_GREEN : GREEN;
   return (
     <div
-      style={{ ...style, flex: 1, height: 110, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', transition: 'opacity 0.15s' }}
+      style={{ ...style, flex: 1, height: 122, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer', transition: 'opacity 0.15s' }}
       onClick={onClick}
       onMouseOver={e => (e.currentTarget.style.opacity = '0.85')}
       onMouseOut={e => (e.currentTarget.style.opacity = '1')}
@@ -225,42 +225,33 @@ export default function EmployeeHome() {
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <header style={{
-        height: 88, background: '#fff', position: 'sticky', top: 0, zIndex: 100,
+        height: 120, background: '#fff', position: 'sticky', top: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 40px',
         boxShadow: '0 1px 0 rgba(0,162,0,0.12)',
       }}>
         {/* Logo */}
-        <img src={logoMap[language]} alt="logo" style={{ height: 54, width: 'auto', objectFit: 'contain' }} />
+        <img src={logoMap[language]} alt="logo" style={{ height: 60, width: 'auto', objectFit: 'contain' }} />
 
         {/* Store name pill + User info + Avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
           {storeName && (
             <div style={{
-              display: 'flex', alignItems: 'stretch',
-              borderRadius: 35, overflow: 'hidden',
-              height: 42, flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 12,
+              height: 48, flexShrink: 0, padding: '0 30px 0 16px',
+              background: `linear-gradient(to right, ${LIGHT_GREEN} 0%, ${LIGHT_GREEN} 10%, ${GREEN} 30%, ${DARK_GREEN} 100%)`,
+              borderRadius: 999,
             }}>
-              <div style={{
-                background: LIGHT_GREEN, width: 58,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              }}>
-                <svg width="28" height="26" viewBox="1004 49 30 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M1007.23 49.4509H1030.31L1033.35 57.7411V60.3872C1033.35 61.6049 1032.89 62.7307 1032.14 63.5736V77.3991H1005.4V63.5736C1004.64 62.7307 1004.19 61.6049 1004.19 60.3872V57.7411L1007.23 49.4509ZM1028.79 65.0742C1029.11 65.0742 1029.41 65.0421 1029.7 64.9812V74.9688H1023.63V67.678H1013.91V74.9688H1007.83V64.9812C1008.13 65.0421 1008.43 65.0742 1008.74 65.0742C1010.08 65.0742 1011.26 64.4917 1012.09 63.5736C1012.91 64.4917 1014.09 65.0742 1015.43 65.0742C1016.76 65.0742 1017.94 64.4917 1018.77 63.5736C1019.59 64.4917 1020.78 65.0742 1022.11 65.0742C1023.44 65.0742 1024.63 64.4917 1025.45 63.5736C1026.28 64.4917 1027.46 65.0742 1028.79 65.0742ZM1016.34 74.9688H1021.2V70.1082H1016.34V74.9688ZM1030.92 59.172V60.3872C1030.92 61.6776 1029.92 62.6439 1028.79 62.6439C1027.66 62.6439 1026.67 61.6776 1026.67 60.3872V59.172H1030.92ZM1030.4 56.7417L1028.61 51.8812H1008.92L1007.14 56.7417H1030.4ZM1006.62 59.172V60.3872C1006.62 61.6776 1007.61 62.6439 1008.74 62.6439C1009.87 62.6439 1010.87 61.6776 1010.87 60.3872V59.172H1006.62ZM1013.3 59.172V60.3872C1013.3 61.6776 1014.3 62.6439 1015.43 62.6439C1016.56 62.6439 1017.55 61.6776 1017.55 60.3872V59.172H1013.3ZM1019.98 59.172V60.3872C1019.98 61.6776 1020.98 62.6439 1022.11 62.6439C1023.24 62.6439 1024.24 61.6776 1024.24 60.3872V59.172H1019.98Z" fill="white"/>
-                </svg>
-              </div>
-              <div style={{
-                background: DARK_GREEN, padding: '0 20px',
-                display: 'flex', alignItems: 'center',
-              }}>
-                <span style={{ fontSize: 18, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>{storeName}</span>
-              </div>
+              <svg width="25" height="26" viewBox="1004 49 30 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" clipRule="evenodd" d="M1007.23 49.4509H1030.31L1033.35 57.7411V60.3872C1033.35 61.6049 1032.89 62.7307 1032.14 63.5736V77.3991H1005.4V63.5736C1004.64 62.7307 1004.19 61.6049 1004.19 60.3872V57.7411L1007.23 49.4509ZM1028.79 65.0742C1029.11 65.0742 1029.41 65.0421 1029.7 64.9812V74.9688H1023.63V67.678H1013.91V74.9688H1007.83V64.9812C1008.13 65.0421 1008.43 65.0742 1008.74 65.0742C1010.08 65.0742 1011.26 64.4917 1012.09 63.5736C1012.91 64.4917 1014.09 65.0742 1015.43 65.0742C1016.76 65.0742 1017.94 64.4917 1018.77 63.5736C1019.59 64.4917 1020.78 65.0742 1022.11 65.0742C1023.44 65.0742 1024.63 64.4917 1025.45 63.5736C1026.28 64.4917 1027.46 65.0742 1028.79 65.0742ZM1016.34 74.9688H1021.2V70.1082H1016.34V74.9688ZM1030.92 59.172V60.3872C1030.92 61.6776 1029.92 62.6439 1028.79 62.6439C1027.66 62.6439 1026.67 61.6776 1026.67 60.3872V59.172H1030.92ZM1030.4 56.7417L1028.61 51.8812H1008.92L1007.14 56.7417H1030.4ZM1006.62 59.172V60.3872C1006.62 61.6776 1007.61 62.6439 1008.74 62.6439C1009.87 62.6439 1010.87 61.6776 1010.87 60.3872V59.172H1006.62ZM1013.3 59.172V60.3872C1013.3 61.6776 1014.3 62.6439 1015.43 62.6439C1016.56 62.6439 1017.55 61.6776 1017.55 60.3872V59.172H1013.3ZM1019.98 59.172V60.3872C1019.98 61.6776 1020.98 62.6439 1022.11 62.6439C1023.24 62.6439 1024.24 61.6776 1024.24 60.3872V59.172H1019.98Z" fill="white"/>
+              </svg>
+              <span style={{ fontSize: 18, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>{storeName}</span>
             </div>
           )}
 
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: DARK_GREEN }}>{currentUser?.name ?? ''}</div>
-            <div style={{ fontSize: 13, fontWeight: 300, color: DARK_GREEN }}>{currentUser?.role ?? ''}</div>
+          <div style={{ textAlign: 'right', marginRight: -20 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: DARK_GREEN }}>{currentUser?.name ?? ''}</div>
+            <div style={{ fontSize: 15, fontWeight: 300, color: DARK_GREEN }}>{currentUser?.role ?? ''}</div>
           </div>
 
           <div style={{ position: 'relative' }}>
@@ -285,26 +276,26 @@ export default function EmployeeHome() {
       }}>
 
         {/* ── STAT BOXES ROW ── */}
-        <div style={{ display: 'flex', gap: 24, marginBottom: 18 }}>
+        <div style={{ display: 'flex', gap: 24, marginTop: 25, marginBottom: 40 }}>
           {[
             { label: t.thisWeekWork, value: t.hours(totalHours) },
             { label: t.scheduledWork, value: t.count(upcomingShifts.length) },
             { label: t.completedTotal, value: `${completedShifts}/${thisWeekShifts.length}` },
           ].map((stat, i) => (
             <div key={i} style={{
-              ...cardWhite, flex: 1, height: 88,
+              ...cardWhite, flex: 1, height: 130,
               display: 'flex', flexDirection: 'column',
-              justifyContent: 'space-between', padding: '12px 20px',
+              justifyContent: 'space-between', padding: '12px 30px',
             }}>
-              <div style={{ fontSize: 14, fontWeight: 400, color: 'rgba(24,160,34,0.7)' }}>{stat.label}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: GREEN, textAlign: 'right' }}>{stat.value}</div>
+              <div style={{ fontSize: 20, fontWeight: 400, color: 'rgba(24,160,34,0.7)' }}>{stat.label}</div>
+              <div style={{ fontSize: 35, fontWeight: 800, color: GREEN, textAlign: 'right' }}>{stat.value}</div>
             </div>
           ))}
         </div>
 
         {/* ── 本日の勤務 SECTION ── */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40 }}>
             <SectionPill label={t.todayWork} />
             {todayShift && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 16, fontWeight: 500, color: DARK_GREEN }}>
@@ -316,8 +307,8 @@ export default function EmployeeHome() {
               <div style={{
                 marginLeft: 'auto',
                 background: 'rgba(245,253,232,0.5)', border: `1px solid ${BORDER_GREEN}`,
-                borderRadius: 54, padding: '3px 16px',
-                fontSize: 18, fontWeight: 500, color: GREEN,
+                borderRadius: 54, padding: '3px 25px',
+                fontSize: 17, fontWeight: 500, color: GREEN,
                 boxShadow: '3px 4px 12.6px rgba(255,255,255,0.25)',
               }}>
                 {getStatusLabel(todayShift.status)}
@@ -326,7 +317,7 @@ export default function EmployeeHome() {
           </div>
 
           {todayShift ? (
-            <div style={{ textAlign: 'center', fontSize: 48, fontWeight: 800, color: DARK_GREEN, letterSpacing: 2 }}>
+            <div style={{ textAlign: 'center', fontSize: 90, fontWeight: 900, color: DARK_GREEN, letterSpacing: 2 }}>
               {formatTime(todayShift.start_at)} - {formatTime(todayShift.end_at)}
             </div>
           ) : (
@@ -339,9 +330,9 @@ export default function EmployeeHome() {
         {/* ── QR BANNER ── */}
         <div
           style={{
-            background: LIGHT_GREEN, borderRadius: 14, height: 50,
+            background: LIGHT_GREEN, borderRadius: 14, height: 63,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-            marginBottom: 16, cursor: 'pointer',
+            marginTop: 80, marginBottom: 40, cursor: 'pointer',
             boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
           }}
           onClick={() => navigate('/employee/checkin')}
@@ -349,16 +340,16 @@ export default function EmployeeHome() {
           onMouseOut={e => (e.currentTarget.style.opacity = '1')}
         >
           <QrNavIcon size={22} color="#fff" />
-          <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{t.qrCheckInLabel}</span>
+          <span style={{ fontSize: 23, fontWeight: 800, color: '#fff' }}>{t.qrCheckInLabel}</span>
         </div>
 
         {/* ── クイックメニュー SECTION ── */}
         <div>
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 22 }}>
             <SectionPill label={t.quickMenu} />
           </div>
           {/* Row 1 */}
-          <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 16, marginBottom: 18 }}>
             <QuickCard style={cardGreen} onClick={() => navigate('/employee/checkin')}
               icon={<QrCardIcon size={38} />} label={t.qrCheckInLabel} />
             <QuickCard style={cardLight} onClick={() => navigate('/employee/schedule')}
@@ -379,16 +370,16 @@ export default function EmployeeHome() {
 
         {/* ── 今後のシフト SECTION ── */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, marginTop: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 17, marginTop: 30 }}>
             <SectionPill label={t.upcomingWork} />
             <button
               onClick={() => navigate('/employee/schedule')}
               style={{
-                background: GREEN, border: 'none', borderRadius: 9,
-                padding: '10px 24px', color: '#fff', fontFamily: font,
-                fontSize: 18, fontWeight: 800, cursor: 'pointer',
+                background: 'rgba(245,253,232,0.5)', border: `1px solid ${BORDER_GREEN}`,
+                borderRadius: 54, padding: '3px 25px', color: GREEN, fontFamily: font,
+                fontSize: 17, fontWeight: 500, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6,
-                boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
+                boxShadow: '3px 4px 12.6px rgba(255,255,255,0.25)',
               }}
             >
               {t.viewAll} →
