@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import EmployeeHeader from '../../components/employee/EmployeeHeader';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -60,16 +62,17 @@ const calcHours = (start: string, end: string) => {
   return Math.max(0, (getMin(end) - getMin(start)) / 60);
 };
 
-const DAY = ['일', '월', '화', '수', '목', '금', '토'];
-const getDayName = (d: string) => {
+const getDayName = (d: string, days: string[]) => {
   const [y, m, dd] = d.split('-').map(Number);
-  return DAY[new Date(y, m - 1, dd).getDay()];
+  return days[new Date(y, m - 1, dd).getDay()];
 };
 
 export default function QRCheckIn() {
   const navigate = useNavigate();
+  const language = useLanguage();
+  const t = translations.qrCheckIn[language];
   const user = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
-  const storeName = localStorage.getItem('store_name') || '매장';
+  const storeName = localStorage.getItem('store_name') || t.store;
 
   const [isScanning, setIsScanning] = useState(false);
   const [checkInStatus, setCheckInStatus] = useState<'idle' | 'success' | 'error' | 'loading'>('idle');
@@ -133,10 +136,10 @@ export default function QRCheckIn() {
 
     const diffMinutes = Math.floor((now.getTime() - scheduled.getTime()) / 60000);
 
-    if (diffMinutes < -10) return { status: 'early', text: '출근 시간 전입니다', color: 'text-gray-600' };
-    if (diffMinutes <= 5) return { status: 'ontime', text: '정시 출근', color: 'text-green-600' };
-    if (diffMinutes <= 30) return { status: 'late', text: `${diffMinutes}분 지각`, color: 'text-orange-600' };
-    return { status: 'verylate', text: `${diffMinutes}분 지각`, color: 'text-red-600' };
+    if (diffMinutes < -10) return { status: 'early', text: t.earlyForWork, color: 'text-gray-600' };
+    if (diffMinutes <= 5) return { status: 'ontime', text: t.onTime, color: 'text-green-600' };
+    if (diffMinutes <= 30) return { status: 'late', text: t.lateMin(diffMinutes), color: 'text-orange-600' };
+    return { status: 'verylate', text: t.lateMin(diffMinutes), color: 'text-red-600' };
   };
 
   const timeStatus = getTimeStatus();
@@ -156,18 +159,18 @@ export default function QRCheckIn() {
   };
 
   const bottomNavItems = [
-    { icon: Home, label: '홈', path: '/employee/home', active: false },
-    { icon: Calendar, label: '근무표', path: '/employee/schedule', active: false },
-    { icon: QrCode, label: '체크인', path: '/employee/checkin', active: true },
-    { icon: Wallet, label: '급여', path: '/employee/payroll', active: false },
-    { icon: MessageSquare, label: '게시판', path: '/employee/board', active: false }
+    { icon: Home, label: t.home, path: '/employee/home', active: false },
+    { icon: Calendar, label: t.schedule, path: '/employee/schedule', active: false },
+    { icon: QrCode, label: t.checkin, path: '/employee/checkin', active: true },
+    { icon: Wallet, label: t.payroll, path: '/employee/payroll', active: false },
+    { icon: MessageSquare, label: t.board, path: '/employee/board', active: false }
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       <EmployeeHeader>
         <div>
-          <h1 className="text-2xl font-bold">QR 체크인</h1>
+          <h1 className="text-2xl font-bold">{t.title}</h1>
           <div className="flex items-center gap-2 mt-1">
             <Clock className="w-4 h-4 text-blue-100" />
             <span className="text-lg font-mono text-blue-100">
@@ -182,15 +185,15 @@ export default function QRCheckIn() {
         {/* ── 오늘의 근무 ── */}
         <Card className="mb-4 border-2 border-blue-200 dark:border-blue-800">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">오늘의 근무</CardTitle>
+            <CardTitle className="text-lg">{t.todayWork}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {loadingToday ? (
-              <p className="text-sm text-gray-400 text-center py-2">불러오는 중...</p>
+              <p className="text-sm text-gray-400 text-center py-2">{t.loading}</p>
             ) : !todayShift ? (
               <div className="flex items-center gap-2 text-gray-500 py-2">
                 <AlertCircle className="w-5 h-5" />
-                <span className="text-sm">오늘 예정된 근무가 없습니다</span>
+                <span className="text-sm">{t.noSchedule}</span>
               </div>
             ) : (
               <>
@@ -202,7 +205,7 @@ export default function QRCheckIn() {
                     </span>
                   </div>
                   <Badge variant="secondary">
-                    {calcHours(todayShift.start_at, todayShift.end_at).toFixed(1)}시간
+                    {calcHours(todayShift.start_at, todayShift.end_at).toFixed(1)}h
                   </Badge>
                 </div>
 
@@ -231,13 +234,13 @@ export default function QRCheckIn() {
                   {isScanning ? (
                     <div className="text-center">
                       <RefreshCw className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-4" />
-                      <p className="text-blue-600 font-medium">QR 코드 스캔 중...</p>
+                      <p className="text-blue-600 font-medium">{t.scanQr}</p>
                     </div>
                   ) : (
                     <div className="text-center">
                       <QrCode className="w-24 h-24 text-blue-600 mx-auto mb-4" />
                       <p className="text-gray-600 dark:text-gray-400">
-                        매장의 QR 코드를 스캔하세요
+                        {t.qrInstruction}
                       </p>
                     </div>
                   )}
@@ -251,7 +254,7 @@ export default function QRCheckIn() {
                   disabled={isScanning}
                 >
                   <Camera className="w-5 h-5 mr-2" />
-                  QR 코드 스캔하기
+                  {t.scanButton}
                 </Button>
                 <Button
                   variant="outline"
@@ -259,7 +262,7 @@ export default function QRCheckIn() {
                   onClick={handleManualCheckIn}
                   disabled={isScanning}
                 >
-                  수동 체크인
+                  {t.manualCheckIn}
                 </Button>
               </div>
             </CardContent>
@@ -270,7 +273,7 @@ export default function QRCheckIn() {
           <Alert className="mb-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
             <RefreshCw className="w-4 h-4 animate-spin" />
             <AlertDescription>
-              <p className="font-medium">체크인 처리 중...</p>
+              <p className="font-medium">{t.processingCheckIn}</p>
             </AlertDescription>
           </Alert>
         )}
@@ -283,20 +286,20 @@ export default function QRCheckIn() {
                   <CheckCircle2 className="w-12 h-12 text-white" />
                 </div>
                 <h3 className="text-2xl font-bold text-green-700 dark:text-green-400 mb-2">
-                  출근 체크인 완료!
+                  {t.checkInSuccess}
                 </h3>
                 <p className="text-green-600 dark:text-green-500 mb-4">
-                  {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}에 체크인되었습니다
+                  {t.checkedInAt(currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))}
                 </p>
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">예정 시간</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.scheduledTime}</p>
                     <p className="text-lg font-bold">
                       {todayShift ? getTimePart(todayShift.start_at) : '-'}
                     </p>
                   </div>
                   <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">실제 시간</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.actualTime}</p>
                     <p className="text-lg font-bold text-green-600">
                       {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -307,14 +310,14 @@ export default function QRCheckIn() {
                     className="w-full bg-green-600 hover:bg-green-700"
                     onClick={() => navigate('/employee/home')}
                   >
-                    홈으로 돌아가기
+                    {t.goHome}
                   </Button>
                   <Button
                     variant="outline"
                     className="w-full"
                     onClick={() => setCheckInStatus('idle')}
                   >
-                    다시 체크인
+                    {t.retryCheckIn}
                   </Button>
                 </div>
               </div>
@@ -326,9 +329,9 @@ export default function QRCheckIn() {
           <Alert className="mb-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
             <XCircle className="w-5 h-5 text-red-600" />
             <AlertDescription>
-              <p className="font-medium text-red-700 dark:text-red-400">체크인 실패</p>
+              <p className="font-medium text-red-700 dark:text-red-400">{t.checkInFailed}</p>
               <p className="text-sm text-red-600 dark:text-red-500 mt-1">
-                QR 코드를 인식하지 못했습니다. 다시 시도해주세요.
+                {t.qrNotRecognized}
               </p>
               <Button
                 variant="outline"
@@ -336,7 +339,7 @@ export default function QRCheckIn() {
                 className="mt-3"
                 onClick={() => setCheckInStatus('idle')}
               >
-                다시 시도
+                {t.retry}
               </Button>
             </AlertDescription>
           </Alert>
@@ -345,13 +348,13 @@ export default function QRCheckIn() {
         {/* ── 체크인 안내 ── */}
         <Card className="mb-4">
           <CardHeader>
-            <CardTitle className="text-lg">체크인 안내</CardTitle>
+            <CardTitle className="text-lg">{t.howToCheckIn}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {[
-              { n: 1, title: '매장 입구의 QR 코드 찾기', desc: '출입구 또는 직원 공간에 비치된 QR 코드를 찾으세요' },
-              { n: 2, title: 'QR 코드 스캔', desc: '스캔 버튼을 눌러 카메라로 QR 코드를 스캔하세요' },
-              { n: 3, title: '체크인 완료', desc: '자동으로 출근이 기록됩니다' },
+              { n: 1, title: t.step1Title, desc: t.step1Desc },
+              { n: 2, title: t.step2Title, desc: t.step2Desc },
+              { n: 3, title: t.step3Title, desc: t.step3Desc },
             ].map(({ n, title, desc }) => (
               <div key={n} className="flex items-start gap-3">
                 <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -371,12 +374,12 @@ export default function QRCheckIn() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <History className="w-5 h-5" />
-              <CardTitle className="text-lg">최근 근무 기록</CardTitle>
+              <CardTitle className="text-lg">{t.recentWorkHistory}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
             {recentShifts.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">최근 근무 기록이 없습니다</p>
+              <p className="text-sm text-gray-400 text-center py-4">{t.noRecentHistory}</p>
             ) : (
               recentShifts.map((shift, index) => {
                 const d = getDatePart(shift.work_date);
@@ -388,7 +391,7 @@ export default function QRCheckIn() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="text-center min-w-[32px]">
-                          <p className="text-xs text-gray-500">{getDayName(d)}</p>
+                          <p className="text-xs text-gray-500">{getDayName(d, t.days)}</p>
                           <p className="font-bold">{d.split('-')[2]}</p>
                         </div>
                         <div className="h-8 w-px bg-gray-300 dark:bg-gray-600" />

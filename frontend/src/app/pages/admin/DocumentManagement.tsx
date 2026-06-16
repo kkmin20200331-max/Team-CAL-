@@ -23,6 +23,8 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import ProfilePanel from '../../components/admin/ProfilePanel';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 
 interface Document {
   id: string;
@@ -50,6 +52,8 @@ interface Document {
 const DocumentManagement: React.FC = () => {
   const navigate = useNavigate();
   const { branchId } = useParams();
+  const language = useLanguage();
+  const t = translations.documentManagement[language];
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -156,20 +160,20 @@ const DocumentManagement: React.FC = () => {
   ]);
 
   const documentTypes = [
-    { value: 'all', label: '전체' },
-    { value: 'health_certificate', label: '보건증' },
-    { value: 'contract', label: '근로계약서' },
-    { value: 'id_card', label: '신분증' },
-    { value: 'bank_account', label: '통장사본' },
-    { value: 'other', label: '기타' }
+    { value: 'all', label: t.typeAll },
+    { value: 'health_certificate', label: t.typeHealth },
+    { value: 'contract', label: t.typeContract },
+    { value: 'id_card', label: t.typeId },
+    { value: 'bank_account', label: t.typeBank },
+    { value: 'other', label: t.typeOther }
   ];
 
   const statuses = [
-    { value: 'all', label: '전체' },
-    { value: 'pending', label: '대기중' },
-    { value: 'verified', label: '확인완료' },
-    { value: 'rejected', label: '반려' },
-    { value: 'expired', label: '만료' }
+    { value: 'all', label: t.statusAll },
+    { value: 'pending', label: t.statusPending },
+    { value: 'verified', label: t.statusVerified },
+    { value: 'rejected', label: t.statusRejected },
+    { value: 'expired', label: t.statusExpired }
   ];
 
   const filteredDocuments = documents.filter(doc => {
@@ -183,13 +187,13 @@ const DocumentManagement: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'verified':
-        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />확인완료</Badge>;
+        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />{t.statusVerified}</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" />대기중</Badge>;
+        return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" />{t.statusPending}</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-500"><XCircle className="w-3 h-3 mr-1" />반려</Badge>;
+        return <Badge className="bg-red-500"><XCircle className="w-3 h-3 mr-1" />{t.statusRejected}</Badge>;
       case 'expired':
-        return <Badge className="bg-gray-500"><AlertCircle className="w-3 h-3 mr-1" />만료</Badge>;
+        return <Badge className="bg-gray-500"><AlertCircle className="w-3 h-3 mr-1" />{t.statusExpired}</Badge>;
       default:
         return null;
     }
@@ -198,13 +202,13 @@ const DocumentManagement: React.FC = () => {
   const getOCRStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700"><FileCheck className="w-3 h-3 mr-1" />OCR 완료</Badge>;
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700"><FileCheck className="w-3 h-3 mr-1" />{t.ocrCompleted}</Badge>;
       case 'processing':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700"><Scan className="w-3 h-3 mr-1" />처리중</Badge>;
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700"><Scan className="w-3 h-3 mr-1" />{t.ocrProcessingLabel}</Badge>;
       case 'pending':
-        return <Badge variant="outline" className="bg-gray-50 text-gray-700"><Clock className="w-3 h-3 mr-1" />대기</Badge>;
+        return <Badge variant="outline" className="bg-gray-50 text-gray-700"><Clock className="w-3 h-3 mr-1" />{t.ocrPending}</Badge>;
       case 'failed':
-        return <Badge variant="outline" className="bg-red-50 text-red-700"><XCircle className="w-3 h-3 mr-1" />실패</Badge>;
+        return <Badge variant="outline" className="bg-red-50 text-red-700"><XCircle className="w-3 h-3 mr-1" />{t.ocrFailed}</Badge>;
       default:
         return null;
     }
@@ -212,11 +216,11 @@ const DocumentManagement: React.FC = () => {
 
   const getDocumentTypeLabel = (type: string) => {
     const typeMap: { [key: string]: string } = {
-      health_certificate: '보건증',
-      contract: '근로계약서',
-      id_card: '신분증',
-      bank_account: '통장사본',
-      other: '기타'
+      health_certificate: t.typeHealth,
+      contract: t.typeContract,
+      id_card: t.typeId,
+      bank_account: t.typeBank,
+      other: t.typeOther
     };
     return typeMap[type] || type;
   };
@@ -250,25 +254,25 @@ const DocumentManagement: React.FC = () => {
                 onClick={() => navigate(`/admin/dashboard/${branchId}`)}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                대시보드로 돌아가기
+                {t.backToDashboard}
               </Button>
               <ProfilePanel />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">문서 관리</h1>
-                <p className="text-gray-600 mt-1">보건증 및 계약서 OCR 자동 추출</p>
+                <h1 className="text-3xl font-bold text-gray-900">{t.title}</h1>
+                <p className="text-gray-600 mt-1">{t.subtitle}</p>
               </div>
 
               <div className="flex gap-3">
                 <Button variant="outline">
                   <Scan className="w-4 h-4 mr-2" />
-                  일괄 OCR
+                  {t.bulkOcr}
                 </Button>
                 <Button onClick={() => setUploadModalOpen(true)}>
                   <Upload className="w-4 h-4 mr-2" />
-                  문서 업로드
+                  {t.uploadDoc}
                 </Button>
               </div>
             </div>
@@ -280,7 +284,7 @@ const DocumentManagement: React.FC = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">전체 문서</p>
+                    <p className="text-sm text-gray-600">{t.totalDocs}</p>
                     <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
                   </div>
                   <FileText className="w-8 h-8 text-gray-400" />
@@ -292,7 +296,7 @@ const DocumentManagement: React.FC = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">확인완료</p>
+                    <p className="text-sm text-gray-600">{t.verified}</p>
                     <p className="text-3xl font-bold text-green-600">{stats.verified}</p>
                   </div>
                   <CheckCircle className="w-8 h-8 text-green-400" />
@@ -304,7 +308,7 @@ const DocumentManagement: React.FC = () => {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">대기중</p>
+                    <p className="text-sm text-gray-600">{t.pending}</p>
                     <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
                   </div>
                   <Clock className="w-8 h-8 text-yellow-400" />

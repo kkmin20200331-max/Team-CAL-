@@ -1,10 +1,14 @@
 import EmployeeProfilePanel from './EmployeeProfilePanel';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 
 interface Props {
   children?: React.ReactNode;
 }
 
 export default function EmployeeHeader({ children }: Props) {
+  const language = useLanguage();
+  const t = translations.employeeHeader[language];
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const storeName = localStorage.getItem('store_name') || '';
 
@@ -15,7 +19,7 @@ export default function EmployeeHeader({ children }: Props) {
         <span className="text-sm text-blue-100 font-medium">{storeName}</span>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-xl font-bold leading-tight">{currentUser?.name || '직원'}</p>
+            <p className="text-xl font-bold leading-tight">{currentUser?.name || t.employee}</p>
             <p className="text-sm text-blue-100">{currentUser?.role || 'STAFF'}</p>
           </div>
           <EmployeeProfilePanel />

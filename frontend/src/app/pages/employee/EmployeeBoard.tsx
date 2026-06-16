@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import EmployeeHeader from '../../components/employee/EmployeeHeader';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 import {
   Home, Calendar, QrCode, Wallet, MessageSquare, ChevronLeft, ChevronRight, Clock
 } from 'lucide-react';
@@ -56,12 +58,14 @@ const checkIsNew = (s: string) => {
 
 export default function EmployeeBoard() {
   const navigate = useNavigate();
+  const language = useLanguage();
+  const t = translations.employeeBoard[language];
   const storeId = localStorage.getItem('store_id') || '';
 
   const [boards, setBoards] = useState<BoardVO[]>([]);
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('전체');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   // ── 게시판 목록 + 전체 포스트 불러오기 ──
@@ -103,10 +107,10 @@ export default function EmployeeBoard() {
 
   // ── 카테고리 필터 ──
   const filtered = useMemo(() =>
-    selectedCategory === '전체'
+    !selectedCategory || selectedCategory === t.allCategory
       ? posts
       : posts.filter(p => p.categoryName === selectedCategory),
-    [posts, selectedCategory]
+    [posts, selectedCategory, t.allCategory]
   );
 
   // ── 상세용 ──
@@ -131,15 +135,15 @@ export default function EmployeeBoard() {
   };
 
   const bottomNavItems = [
-    { icon: Home,          label: '홈',    path: '/employee/home' },
-    { icon: Calendar,      label: '근무표', path: '/employee/schedule' },
-    { icon: QrCode,        label: '체크인', path: '/employee/checkin' },
-    { icon: Wallet,        label: '급여',   path: '/employee/payroll' },
-    { icon: MessageSquare, label: '게시판', path: '/employee/board', active: true },
+    { icon: Home,          label: t.home,     path: '/employee/home' },
+    { icon: Calendar,      label: t.schedule, path: '/employee/schedule' },
+    { icon: QrCode,        label: t.checkin,  path: '/employee/checkin' },
+    { icon: Wallet,        label: t.payroll,  path: '/employee/payroll' },
+    { icon: MessageSquare, label: t.board,    path: '/employee/board', active: true },
   ];
 
   // 카테고리 칩 목록 (전체 + DB board 이름들)
-  const categoryChips = ['전체', ...boards.map(b => b.name)];
+  const categoryChips = [t.allCategory, ...boards.map(b => b.name)];
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 pb-20">
@@ -147,8 +151,8 @@ export default function EmployeeBoard() {
       {/* ── 헤더 ── */}
       <EmployeeHeader>
         <div>
-          <h1 className="text-2xl font-bold">게시판</h1>
-          <p className="text-blue-100 text-sm mt-1">공지사항과 소식을 확인하세요</p>
+          <h1 className="text-2xl font-bold">{t.title}</h1>
+          <p className="text-blue-100 text-sm mt-1">{t.subtitle}</p>
         </div>
       </EmployeeHeader>
 
@@ -178,9 +182,9 @@ export default function EmployeeBoard() {
       {!isDetail && (
         <>
           {loading ? (
-            <p className="text-center py-12 text-sm text-gray-400">불러오는 중...</p>
+            <p className="text-center py-12 text-sm text-gray-400">{t.loading}</p>
           ) : filtered.length === 0 ? (
-            <p className="text-center py-12 text-sm text-gray-400">게시물이 없습니다</p>
+            <p className="text-center py-12 text-sm text-gray-400">{t.noPosts}</p>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {filtered.map(post => (
@@ -221,7 +225,7 @@ export default function EmployeeBoard() {
             className="flex items-center gap-1 px-4 py-3 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
-            목록으로
+            {t.backToList}
           </button>
 
           <div className="px-4 pb-6">
@@ -263,7 +267,7 @@ export default function EmployeeBoard() {
               >
                 <ChevronLeft className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-400 mb-0.5">다음 글 (최신)</p>
+                  <p className="text-xs text-gray-400 mb-0.5">{t.nextPost}</p>
                   <p className="text-sm text-gray-700 dark:text-gray-200 truncate">{prevPost.title}</p>
                 </div>
               </button>
@@ -275,7 +279,7 @@ export default function EmployeeBoard() {
               >
                 <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-400 mb-0.5">이전 글 (오래된)</p>
+                  <p className="text-xs text-gray-400 mb-0.5">{t.prevPost}</p>
                   <p className="text-sm text-gray-700 dark:text-gray-200 truncate">{nextPost.title}</p>
                 </div>
               </button>

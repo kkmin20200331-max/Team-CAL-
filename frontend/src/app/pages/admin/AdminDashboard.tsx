@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import axios from 'axios';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -103,6 +105,8 @@ const customerData = [
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { branchId } = useParams();
+  const language = useLanguage();
+  const t = translations.adminDashboard[language];
 
   const currentBranch = localStorage.getItem('store_name') || '지점 선택';
 
@@ -188,10 +192,10 @@ export default function AdminDashboard() {
 
   const getStatusLabel = (status: string) => {
     const s = (status || '').toUpperCase();
-    if (s === 'CHECKED_IN') return '출근 완료';
-    if (s === 'CHECKED_OUT') return '퇴근';
-    if (s === 'ABSENT') return '결근';
-    return '출근 전';
+    if (s === 'CHECKED_IN') return t.statusCheckedIn;
+    if (s === 'CHECKED_OUT') return t.statusCheckedOut;
+    if (s === 'ABSENT') return t.statusAbsent;
+    return t.statusBeforeWork;
   };
 
   const getStatusClass = (status: string) => {
@@ -203,14 +207,14 @@ export default function AdminDashboard() {
   };
 
   const menuItems = [
-    { icon: Home, label: '대시보드', path: `/admin/dashboard/${branchId}`, active: true },
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+    { icon: Home, label: t.menuItems.dashboard, path: `/admin/dashboard/${branchId}`, active: true },
+    { icon: Calendar, label: t.menuItems.scheduleManagement, path: `/admin/schedule/monthly/${branchId}` },
+    { icon: UserPlus, label: t.menuItems.substituteRecruitment, path: `/admin/substitute/${branchId}` },
+    { icon: Users, label: t.menuItems.employeeManagement, path: `/admin/employees/${branchId}` },
+    { icon: Wallet, label: t.menuItems.payrollManagement, path: `/admin/payroll/${branchId}` },
+    { icon: FileText, label: t.menuItems.documentManagement, path: `/admin/documents/${branchId}` },
+    { icon: MessageSquare, label: t.menuItems.board, path: `/admin/board/${branchId}` },
+    { icon: BarChart3, label: t.menuItems.aiAnalytics, path: `/admin/analytics/${branchId}` },
   ];
 
   return (
@@ -256,7 +260,7 @@ export default function AdminDashboard() {
               <Menu className="w-5 h-5" />
             </Button>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">메인 대시보드</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t.mainDashboard}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {new Date().toLocaleDateString('ko-KR', {
                   year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
@@ -276,7 +280,7 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  오늘 근무 인원
+                  {t.todayStaff}
                 </CardTitle>
                 <Users className="w-4 h-4 text-blue-600" />
               </CardHeader>
@@ -285,9 +289,9 @@ export default function AdminDashboard() {
                   <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{todayShifts.length}명</div>
+                    <div className="text-2xl font-bold">{todayShifts.length}</div>
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      출근 완료 {checkedIn}명
+                      {t.checkedInCount(checkedIn)}
                     </p>
                   </>
                 )}
@@ -298,7 +302,7 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  등록 직원 수
+                  {t.registeredStaff}
                 </CardTitle>
                 <TrendingUp className="w-4 h-4 text-green-600" />
               </CardHeader>
@@ -307,8 +311,8 @@ export default function AdminDashboard() {
                   <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{totalEmployees}명</div>
-                    <p className="text-xs text-green-600 mt-1">이 지점 전체 직원</p>
+                    <div className="text-2xl font-bold">{totalEmployees}</div>
+                    <p className="text-xs text-green-600 mt-1">{t.allStaffThisBranch}</p>
                   </>
                 )}
               </CardContent>
@@ -318,7 +322,7 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  대타 모집 중
+                  {t.substituteRecruiting}
                 </CardTitle>
                 <AlertCircle className="w-4 h-4 text-orange-600" />
               </CardHeader>
@@ -328,10 +332,10 @@ export default function AdminDashboard() {
                 ) : (
                   <>
                     <div className={`text-2xl font-bold ${substituteCount > 0 ? 'text-orange-600' : 'text-gray-900'}`}>
-                      {substituteCount}건
+                      {substituteCount}
                     </div>
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      {substituteCount > 0 ? '지원자를 기다리는 중' : '모집 중인 공고 없음'}
+                      {substituteCount > 0 ? t.waitingForApplicants : t.noOpenings}
                     </p>
                   </>
                 )}
@@ -342,7 +346,7 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  오늘 예상 인건비
+                  {t.estimatedLaborCost}
                 </CardTitle>
                 <DollarSign className="w-4 h-4 text-purple-600" />
               </CardHeader>
@@ -355,7 +359,7 @@ export default function AdminDashboard() {
                       ₩{estimatedPay.toLocaleString('ko-KR')}
                     </div>
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      시급제 직원 기준
+                      {t.hourlyBasis}
                     </p>
                   </>
                 )}
@@ -368,8 +372,8 @@ export default function AdminDashboard() {
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  실시간 매장 인원 추이
-                  <span className="text-xs font-normal text-gray-400">(샘플 데이터)</span>
+                  {t.realtimeTrend}
+                  <span className="text-xs font-normal text-gray-400">{t.sampleData}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -380,8 +384,8 @@ export default function AdminDashboard() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="customers" stroke="#3b82f6" name="고객 수" strokeWidth={2} />
-                    <Line type="monotone" dataKey="staff" stroke="#10b981" name="근무 인원" strokeWidth={2} />
+                    <Line type="monotone" dataKey="customers" stroke="#3b82f6" name={t.customers} strokeWidth={2} />
+                    <Line type="monotone" dataKey="staff" stroke="#10b981" name={t.workingStaff} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -390,36 +394,36 @@ export default function AdminDashboard() {
             {/* 오늘의 운영 알림 */}
             <Card>
               <CardHeader>
-                <CardTitle>오늘의 운영 알림</CardTitle>
+                <CardTitle>{t.todayAlerts}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {!loading && substituteCount > 0 && (
                   <div className="p-3 rounded-lg border bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800">
-                    <p className="text-sm font-medium mb-1">대타 모집 중 {substituteCount}건</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">지원자 확인 필요</p>
+                    <p className="text-sm font-medium mb-1">{t.substituteAlert(substituteCount)}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.checkApplicants}</p>
                   </div>
                 )}
                 {!loading && checkedIn < todayShifts.length && todayShifts.length > 0 && (
                   <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
                     <p className="text-sm font-medium mb-1">
-                      미출근 {todayShifts.length - checkedIn}명
+                      {t.absentAlert(todayShifts.length - checkedIn)}
                     </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">출근 확인 필요</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.checkAttendance}</p>
                   </div>
                 )}
                 {!loading && todayShifts.length === 0 && (
                   <div className="p-3 rounded-lg border bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:border-gray-700">
-                    <p className="text-sm font-medium mb-1">오늘 근무 없음</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">근무표를 확인하세요</p>
+                    <p className="text-sm font-medium mb-1">{t.noWorkToday}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.checkSchedule}</p>
                   </div>
                 )}
                 <div className="p-3 rounded-lg border bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800">
-                  <p className="text-sm font-medium mb-1">보건증 만료 예정 확인</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">문서 관리에서 확인</p>
+                  <p className="text-sm font-medium mb-1">{t.healthCertExpiry}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{t.checkDocuments}</p>
                 </div>
                 <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
-                  <p className="text-sm font-medium mb-1">다음 주 근무표 작성</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">근무표 관리에서 작성</p>
+                  <p className="text-sm font-medium mb-1">{t.nextWeekSchedule}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{t.writeInSchedule}</p>
                 </div>
               </CardContent>
             </Card>
@@ -430,7 +434,7 @@ export default function AdminDashboard() {
             {/* 오늘 근무자 목록 (DB 연결) */}
             <Card>
               <CardHeader>
-                <CardTitle>오늘 근무자 목록</CardTitle>
+                <CardTitle>{t.todayWorkerList}</CardTitle>
               </CardHeader>
               <CardContent>
                 {loading ? (
@@ -439,13 +443,13 @@ export default function AdminDashboard() {
                   </div>
                 ) : todayShifts.length === 0 ? (
                   <div className="text-center py-8 text-gray-400 text-sm">
-                    오늘 등록된 근무자가 없습니다.
+                    {t.noWorkersToday}
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {todayShifts.map(shift => {
                       const emp = employeeMap[shift.user_id];
-                      const name = emp?.name || '알 수 없음';
+                      const name = emp?.name || t.unknown;
                       const startTime = fmt(shift.start_at);
                       const endTime = fmt(shift.end_at);
                       return (
@@ -481,36 +485,33 @@ export default function AdminDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-purple-600" />
-                  AI 운영 추천
+                  {t.aiRecommendation}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-purple-200 dark:border-purple-700">
-                  <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">인력 배치 추천</h4>
+                  <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">{t.staffingRecommendation}</h4>
                   <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                    금요일 18:00~20:00 고객 수가 평균보다 35% 높습니다.
-                    해당 시간대 대타 1명 추가 배치를 권장합니다.
+                    {t.staffingBody}
                   </p>
                   <Button
                     size="sm"
                     className="w-full"
                     onClick={() => navigate(`/admin/substitute/${branchId}`)}
                   >
-                    대타 모집하기
+                    {t.recruitSubstitute}
                   </Button>
                 </div>
                 <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-semibold mb-2">메뉴 추천</h4>
+                  <h4 className="font-semibold mb-2">{t.menuRecommendation}</h4>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    14:00~16:00에 20대 고객 방문 비율이 높습니다.
-                    디저트 세트 프로모션을 추천합니다.
+                    {t.menuBody}
                   </p>
                 </div>
                 <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-semibold mb-2">유휴 시간 업무</h4>
+                  <h4 className="font-semibold mb-2">{t.idleTimeTask}</h4>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
-                    월요일 15:00~17:00는 저혼잡 시간대입니다.
-                    재고 정리와 청소 체크리스트 배정을 추천합니다.
+                    {t.idleBody}
                   </p>
                 </div>
               </CardContent>
@@ -525,7 +526,7 @@ export default function AdminDashboard() {
               onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}
             >
               <CalendarDays className="w-6 h-6" />
-              <span>근무표 보기</span>
+              <span>{t.viewSchedule}</span>
             </Button>
             <Button
               variant="outline"
@@ -533,7 +534,7 @@ export default function AdminDashboard() {
               onClick={() => navigate(`/admin/substitute/${branchId}`)}
             >
               <UserPlus className="w-6 h-6" />
-              <span>대타 모집</span>
+              <span>{t.recruitSubNav}</span>
             </Button>
             <Button
               variant="outline"
@@ -541,7 +542,7 @@ export default function AdminDashboard() {
               onClick={() => navigate(`/admin/analytics/${branchId}`)}
             >
               <BarChart3 className="w-6 h-6" />
-              <span>고객 분석</span>
+              <span>{t.customerAnalytics}</span>
             </Button>
             <Button
               variant="outline"
@@ -549,7 +550,7 @@ export default function AdminDashboard() {
               onClick={() => navigate(`/admin/payroll/${branchId}`)}
             >
               <Wallet className="w-6 h-6" />
-              <span>급여 관리</span>
+              <span>{t.payrollManagement}</span>
             </Button>
           </div>
         </main>

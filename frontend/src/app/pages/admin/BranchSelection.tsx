@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Store, Clock, MapPin, LayoutGrid } from 'lucide-react';
@@ -28,6 +30,8 @@ interface PendingEmployee {
 
 export default function BranchSelection() {
   const navigate = useNavigate();
+  const language = useLanguage();
+  const t = translations.branchSelection[language];
   const [stores, setStores] = useState<StoreVo[]>([]);
   const [storesLoading, setStoresLoading] = useState(true);
 
@@ -83,8 +87,8 @@ export default function BranchSelection() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">지점 선택</h1>
-              <p className="mt-1 text-gray-600 dark:text-gray-400">관리할 지점을 선택해주세요</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t.title}</h1>
+              <p className="mt-1 text-gray-600 dark:text-gray-400">{t.subtitle}</p>
             </div>
 
             {/* ProfilePanel 컴포넌트 사용 (알림 + 프로필 통합) */}
@@ -97,13 +101,13 @@ export default function BranchSelection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Button onClick={() => navigate('/admin/multibranch')} variant="outline" className="gap-2 mb-6 w-full">
           <LayoutGrid className="w-4 h-4" />
-          전체 지점 통합 보기
+          {t.viewAllBranches}
         </Button>
 
         {storesLoading ? (
-          <div className="flex items-center justify-center py-20 text-gray-500">불러오는 중...</div>
+          <div className="flex items-center justify-center py-20 text-gray-500">{t.loading}</div>
         ) : stores.length === 0 ? (
-          <div className="text-center text-gray-500 py-20">등록된 매장이 없습니다.</div>
+          <div className="text-center text-gray-500 py-20">{t.noStores}</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {stores.map((store) => (
@@ -125,13 +129,13 @@ export default function BranchSelection() {
                 <CardContent className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Clock className="w-4 h-4" />
-                    <span>운영시간: {store.open_time} ~ {store.close_time}</span>
+                    <span>{t.operatingHours(store.open_time, store.close_time)}</span>
                   </div>
                   <Button
                     className="w-full mt-4"
                     onClick={(e) => { e.stopPropagation(); handleSelectStore(store); }}
                   >
-                    지점 상세 보기
+                    {t.viewDetails}
                   </Button>
                 </CardContent>
               </Card>

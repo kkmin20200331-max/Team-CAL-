@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -92,13 +94,14 @@ const calcHours = (start: string, end: string): number => {
   return Math.round(((eh * 60 + em) - (sh * 60 + sm)) / 60 * 10) / 10;
 };
 
-const getDayLabel = (dateStr: string): string => {
-  const days = ['일', '월', '화', '수', '목', '금', '토'];
+const getDayLabel = (dateStr: string, days: string[]): string => {
   return days[new Date(dateStr).getDay()];
 };
 
 export default function MySchedule() {
   const navigate = useNavigate();
+  const language = useLanguage();
+  const t = translations.mySchedule[language];
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const storeName = localStorage.getItem('store_name') || '';
@@ -215,22 +218,22 @@ export default function MySchedule() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return <Badge className="gap-1 bg-green-500"><CheckCircle2 className="w-3 h-3" />확정</Badge>;
+        return <Badge className="gap-1 bg-green-500"><CheckCircle2 className="w-3 h-3" />{t.statusConfirmed}</Badge>;
       case 'pending':
-        return <Badge variant="outline" className="gap-1 border-yellow-400 text-yellow-600"><AlertCircle className="w-3 h-3" />대기</Badge>;
+        return <Badge variant="outline" className="gap-1 border-yellow-400 text-yellow-600"><AlertCircle className="w-3 h-3" />{t.statusPending}</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" />취소</Badge>;
+        return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" />{t.statusCancelled}</Badge>;
       default:
-        return <Badge className="gap-1 bg-red-500"><XCircle className="w-3 h-3" />대타</Badge>;
+        return <Badge className="gap-1 bg-red-500"><XCircle className="w-3 h-3" />{t.statusSub}</Badge>;
     }
   };
 
   const bottomNavItems = [
-    { icon: Home, label: '홈', path: '/employee/home', active: false },
-    { icon: CalendarIcon, label: '근무표', path: '/employee/schedule', active: true },
-    { icon: QrCode, label: '체크인', path: '/employee/checkin', active: false },
-    { icon: Wallet, label: '급여', path: '/employee/payroll', active: false },
-    { icon: MessageSquare, label: '게시판', path: '/employee/board', active: false }
+    { icon: Home, label: t.home, path: '/employee/home', active: false },
+    { icon: CalendarIcon, label: t.schedule, path: '/employee/schedule', active: true },
+    { icon: QrCode, label: t.checkin, path: '/employee/checkin', active: false },
+    { icon: Wallet, label: t.payroll, path: '/employee/payroll', active: false },
+    { icon: MessageSquare, label: t.board, path: '/employee/board', active: false }
   ];
 
   return (
@@ -239,23 +242,23 @@ export default function MySchedule() {
       {/* Header */}
       <EmployeeHeader>
         <div>
-          <h1 className="text-2xl font-bold">내 근무표</h1>
+          <h1 className="text-2xl font-bold">{t.title}</h1>
           {/* 월간 통계 */}
           <div className="grid grid-cols-4 gap-2 mt-3">
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
-              <p className="text-xs text-blue-100">총 근무</p>
-              <p className="text-lg font-bold mt-1">{activeShifts.length}일</p>
+              <p className="text-xs text-blue-100">{t.totalWork}</p>
+              <p className="text-lg font-bold mt-1">{t.days(activeShifts.length)}</p>
             </div>
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
-              <p className="text-xs text-blue-100">총 시간</p>
+              <p className="text-xs text-blue-100">{t.totalHours}</p>
               <p className="text-lg font-bold mt-1">{totalHours.toFixed(1)}h</p>
             </div>
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
-              <p className="text-xs text-blue-100">완료</p>
+              <p className="text-xs text-blue-100">{t.completed}</p>
               <p className="text-lg font-bold mt-1">{completedShifts}</p>
             </div>
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
-              <p className="text-xs text-blue-100">예정</p>
+              <p className="text-xs text-blue-100">{t.scheduled}</p>
               <p className="text-lg font-bold mt-1">{upcomingShifts}</p>
             </div>
           </div>
@@ -266,8 +269,8 @@ export default function MySchedule() {
         {/* View Toggle */}
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'month' | 'week')} className="mb-4">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="month">월간 보기</TabsTrigger>
-            <TabsTrigger value="week">주간 보기</TabsTrigger>
+            <TabsTrigger value="month">{t.monthView}</TabsTrigger>
+            <TabsTrigger value="week">{t.weekView}</TabsTrigger>
           </TabsList>
 
           {/* 월간 뷰 */}
@@ -275,11 +278,11 @@ export default function MySchedule() {
             {/* 월 이동 */}
             <div className="flex items-center justify-between">
               <Button variant="outline" size="sm" onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}>
-                <ChevronLeft className="w-4 h-4 mr-1" />이전 달
+                <ChevronLeft className="w-4 h-4 mr-1" />{t.prevMonth}
               </Button>
               <h2 className="font-bold">{format(currentMonth, 'yyyy년 M월', { locale: ko })}</h2>
               <Button variant="outline" size="sm" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}>
-                다음 달<ChevronRight className="w-4 h-4 ml-1" />
+                {t.nextMonth}<ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
 
@@ -289,16 +292,16 @@ export default function MySchedule() {
                 {/* 범례 */}
                 <div className="flex gap-4 mb-3 text-xs text-gray-500 justify-center">
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />확정
+                    <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />{t.legendConfirmed}
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />대기
+                    <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />{t.legendPending}
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />대타/취소
+                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />{t.legendCancelledSub}
                   </span>
                   <span className="flex items-center gap-1 text-red-400">
-                    <span className="w-2 h-2 rounded-full bg-red-200 inline-block" />공휴일
+                    <span className="w-2 h-2 rounded-full bg-red-200 inline-block" />{t.legendHoliday}
                   </span>
                 </div>
                 <Calendar
@@ -315,11 +318,11 @@ export default function MySchedule() {
 
             {/* 근무 목록 */}
             <div className="space-y-2">
-              <h3 className="font-bold text-lg px-1">이번 달 근무 일정</h3>
+              <h3 className="font-bold text-lg px-1">{t.thisMonthSchedule}</h3>
               {loading ? (
-                <p className="text-center py-8 text-gray-400">불러오는 중...</p>
+                <p className="text-center py-8 text-gray-400">{t.loading}</p>
               ) : shifts.length === 0 ? (
-                <p className="text-center py-8 text-gray-400">등록된 근무가 없습니다.</p>
+                <p className="text-center py-8 text-gray-400">{t.noShifts}</p>
               ) : (
                 shifts.map((shift) => {
                   const dateStr = getWorkDate(shift);
@@ -330,7 +333,7 @@ export default function MySchedule() {
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3 flex-1">
                             <div className="text-center min-w-[48px]">
-                              <p className="text-xs text-gray-600 dark:text-gray-400">{getDayLabel(dateStr)}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">{getDayLabel(dateStr, t.dayLabels)}</p>
                               <p className="text-2xl font-bold">{dateStr.split('-')[2]}</p>
                             </div>
                             <div className="flex-1">
@@ -339,7 +342,7 @@ export default function MySchedule() {
                                 <span className="font-bold text-lg">
                                   {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
                                 </span>
-                                <Badge variant="secondary" className="text-xs">{hours}시간</Badge>
+                                <Badge variant="secondary" className="text-xs">{t.days(hours)}</Badge>
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                 <MapPin className="w-4 h-4" />
@@ -373,13 +376,13 @@ export default function MySchedule() {
             </div>
 
             {loading ? (
-              <p className="text-center py-8 text-gray-400">불러오는 중...</p>
+              <p className="text-center py-8 text-gray-400">{t.loading}</p>
             ) : (
               weekDates.map((date, index) => {
                 const dateStr = format(date, 'yyyy-MM-dd');
                 const dayShifts = shifts.filter(s => getWorkDate(s) === dateStr);
                 const isToday = isSameDay(date, new Date());
-                const dayLabels = ['월', '화', '수', '목', '금', '토', '일'];
+                const dayLabels = t.dayLabels;
 
                 return (
                   <Card key={index} className={isToday ? 'border-purple-400 border-2' : ''}>
@@ -391,7 +394,7 @@ export default function MySchedule() {
                           </p>
                           <p className={`font-bold ${isToday ? 'text-purple-600' : index === 5 ? 'text-blue-500' : index === 6 ? 'text-red-500' : ''}`}>
                             {dayLabels[index]}
-                            {isToday && <span className="block text-xs text-purple-500">오늘</span>}
+                            {isToday && <span className="block text-xs text-purple-500">{t.todayLabel}</span>}
                           </p>
                         </div>
 
@@ -420,7 +423,7 @@ export default function MySchedule() {
                           </div>
                         ) : (
                           <div className="flex-1 flex items-center justify-center py-4 text-gray-400 dark:text-gray-600">
-                            <p className="text-sm">휴무</p>
+                            <p className="text-sm">{t.dayOff}</p>
                           </div>
                         )}
                       </div>
@@ -435,20 +438,20 @@ export default function MySchedule() {
         {/* 요약 카드 */}
         <Card className="mt-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800">
           <CardHeader>
-            <CardTitle className="text-lg">이번 달 요약</CardTitle>
+            <CardTitle className="text-lg">{t.thisMonthSummary}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">총 근무 시간</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t.totalWorkHours}</p>
                 <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
-                  {totalHours.toFixed(1)}시간
+                  {totalHours.toFixed(1)}h
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">총 근무일</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{t.totalWorkDays}</p>
                 <p className="text-2xl font-bold text-pink-700 dark:text-pink-400">
-                  {activeShifts.length}일
+                  {t.days(activeShifts.length)}
                 </p>
               </div>
             </div>

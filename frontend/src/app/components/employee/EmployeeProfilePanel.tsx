@@ -4,9 +4,13 @@ import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { X, Camera, LogOut, MapPin, User } from 'lucide-react';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 
 export default function EmployeeProfilePanel() {
   const navigate = useNavigate();
+  const language = useLanguage();
+  const t = translations.employeeProfilePanel[language];
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -43,10 +47,10 @@ export default function EmployeeProfilePanel() {
         onClick={() => setOpen(true)}
         className="relative rounded-full hover:opacity-80 transition-opacity flex-shrink-0"
       >
-        <Avatar className="w-10 h-10 border-2 border-white/60 bg-white">
+        <Avatar className="w-14 h-14 border-[3px] border-[#07790F] bg-[#80D180]">
           <AvatarImage src={profileImage} className="object-cover" />
-          <AvatarFallback className="bg-purple-400 text-white font-bold text-sm">
-            {currentUser?.name?.[0] ?? <User className="w-4 h-4" />}
+          <AvatarFallback className="bg-[#80D180] text-white font-bold text-base">
+            {currentUser?.name?.[0] ?? <User className="w-5 h-5" />}
           </AvatarFallback>
         </Avatar>
       </button>
@@ -67,7 +71,7 @@ export default function EmployeeProfilePanel() {
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between p-4 border-b">
-          <span className="font-bold text-base">내 프로필</span>
+          <span className="font-bold text-base">{t.myProfile}</span>
           <button
             onClick={() => setOpen(false)}
             className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -100,12 +104,12 @@ export default function EmployeeProfilePanel() {
             className="hidden"
             onChange={handleImageChange}
           />
-          <p className="text-xs text-gray-400">사진을 클릭해서 변경하세요</p>
+          <p className="text-xs text-gray-400">{t.changePhoto}</p>
 
           {/* 이름 & 뱃지 */}
           <div className="text-center">
-            <p className="text-lg font-bold">{currentUser?.name || '직원'}</p>
-            <Badge className="mt-1 bg-purple-100 text-purple-700 hover:bg-purple-100">직원</Badge>
+            <p className="text-lg font-bold">{currentUser?.name || t.employee}</p>
+            <Badge className="mt-1 bg-purple-100 text-purple-700 hover:bg-purple-100">{t.employee}</Badge>
           </div>
 
           <div className="w-full border-t my-1" />
@@ -127,7 +131,7 @@ export default function EmployeeProfilePanel() {
             onClick={handleLogout}
           >
             <LogOut className="w-4 h-4" />
-            로그아웃
+            {t.logout}
           </Button>
         </div>
       </div>

@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '../../components/ui/label';
 import { Input } from '../../components/ui/input';
 
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
+
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
 interface UserVo {
@@ -21,7 +24,7 @@ interface StoreMemberVo {
   approval_status: string; pay_type: string | null; pay_amount: number | null;
 }
 
-const LEVEL_LABEL: Record<string, string> = {
+const LEVEL_LABEL_KO: Record<string, string> = {
   NEWBIE: '신입', REGULAR: '일반', CLOSER: '마감가능', MANAGER: '매니저',
 };
 const LEVEL_COLOR: Record<string, string> = {
@@ -32,8 +35,10 @@ const LEVEL_COLOR: Record<string, string> = {
 export default function EmployeeManagement() {
   const navigate = useNavigate();
   const { branchId } = useParams();
+  const language = useLanguage();
+  const t = translations.employeeManagement[language];
   const storeId = branchId || localStorage.getItem('store_id') || '';
-  const storeName = localStorage.getItem('store_name') || '매장';
+  const storeName = localStorage.getItem('store_name') || t.store;
 
   const [employees, setEmployees] = useState<UserVo[]>([]);
   const [memberMap, setMemberMap] = useState<Record<string, StoreMemberVo>>({});
@@ -93,16 +98,16 @@ export default function EmployeeManagement() {
         } as StoreMemberVo,
       }));
       setEditTarget(null);
-    } catch { alert('저장 중 오류가 발생했습니다.'); }
+    } catch { alert(t.errSave); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (emp: UserVo) => {
-    if (!confirm(`${emp.name}님을 매장에서 제거하시겠습니까?`)) return;
+    if (!confirm(t.deleteConfirm(emp.name))) return;
     try {
       await API.delete('/store_member', { params: { store_id: storeId, user_id: emp.id } });
       setEmployees(prev => prev.filter(e => e.id !== emp.id));
-    } catch { alert('삭제 중 오류가 발생했습니다.'); }
+    } catch { alert(t.errDelete); }
   };
 
   const filtered = employees.filter(e =>
@@ -114,21 +119,21 @@ export default function EmployeeManagement() {
   const unsetCount    = employees.filter(e => !memberMap[e.id]?.pay_amount).length;
 
   const getPayDisplay = (info?: StoreMemberVo) => {
-    if (!info?.pay_amount) return <span className="text-orange-400 text-xs">미설정</span>;
+    if (!info?.pay_amount) return <span className="text-orange-400 text-xs">{t.payNotSetLabel}</span>;
     return info.pay_type === 'HOURLY'
-      ? <span className="text-blue-600 text-xs">{info.pay_amount.toLocaleString()}원/시</span>
-      : <span className="text-purple-600 text-xs">{(info.pay_amount / 10000).toFixed(1)}만원/월</span>;
+      ? <span className="text-blue-600 text-xs">{t.hourlyPerHour(info.pay_amount)}</span>
+      : <span className="text-purple-600 text-xs">{t.monthlyPerMonth(info.pay_amount)}</span>;
   };
 
   const getStatusBadge = (status?: string) => {
     if (status === 'APPROVED') return (
       <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-        <CheckCircle className="w-3 h-3" />승인됨
+        <CheckCircle className="w-3 h-3" />{t.statusApproved}
       </span>
     );
     if (status === 'PENDING') return (
       <span className="inline-flex items-center gap-1 text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">
-        <Clock className="w-3 h-3" />대기중
+        <Clock className="w-3 h-3" />{t.statusPending}
       </span>
     );
     return <span className="text-xs text-gray-400">-</span>;
@@ -144,7 +149,7 @@ export default function EmployeeManagement() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">직원 관리</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t.title}</h1>
             <p className="text-sm text-gray-500">{storeName}</p>
           </div>
         </div>
@@ -154,8 +159,8 @@ export default function EmployeeManagement() {
           <Card><CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">전체 직원</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{employees.length}명</p>
+                <p className="text-xs text-gray-500">{t.totalEmployees}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{t.count(employees.length)}</p>
               </div>
               <Users className="w-7 h-7 text-blue-400" />
             </div>
@@ -164,8 +169,8 @@ export default function EmployeeManagement() {
           <Card><CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">재직중</p>
-                <p className="text-2xl font-bold text-green-600">{approvedCount}명</p>
+                <p className="text-xs text-gray-500">{t.active}</p>
+                <p className="text-2xl font-bold text-green-600">{t.count(approvedCount)}</p>
               </div>
               <UserCheck className="w-7 h-7 text-green-400" />
             </div>
@@ -174,8 +179,8 @@ export default function EmployeeManagement() {
           <Card><CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">승인 대기</p>
-                <p className={`text-2xl font-bold ${pendingCount > 0 ? 'text-yellow-500' : 'text-gray-400'}`}>{pendingCount}명</p>
+                <p className="text-xs text-gray-500">{t.pendingApproval}</p>
+                <p className={`text-2xl font-bold ${pendingCount > 0 ? 'text-yellow-500' : 'text-gray-400'}`}>{t.count(pendingCount)}</p>
               </div>
               <Clock className={`w-7 h-7 ${pendingCount > 0 ? 'text-yellow-400' : 'text-gray-300'}`} />
             </div>
@@ -184,8 +189,8 @@ export default function EmployeeManagement() {
           <Card><CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">급여 미설정</p>
-                <p className={`text-2xl font-bold ${unsetCount > 0 ? 'text-orange-500' : 'text-green-500'}`}>{unsetCount}명</p>
+                <p className="text-xs text-gray-500">{t.payNotSet}</p>
+                <p className={`text-2xl font-bold ${unsetCount > 0 ? 'text-orange-500' : 'text-green-500'}`}>{t.count(unsetCount)}</p>
               </div>
               <DollarSign className={`w-7 h-7 ${unsetCount > 0 ? 'text-orange-400' : 'text-green-400'}`} />
             </div>
@@ -199,7 +204,7 @@ export default function EmployeeManagement() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="이름 또는 전화번호로 검색..."
+                placeholder={t.searchPlaceholder}
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -211,26 +216,26 @@ export default function EmployeeManagement() {
         {/* 테이블 */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">직원 목록 ({filtered.length}명)</CardTitle>
+            <CardTitle className="text-base">{t.staffList(filtered.length)}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-center py-10 text-sm text-gray-400">불러오는 중...</p>
+              <p className="text-center py-10 text-sm text-gray-400">{t.loading}</p>
             ) : filtered.length === 0 ? (
               <p className="text-center py-10 text-sm text-gray-400">
-                {employees.length === 0 ? '등록된 직원이 없습니다' : '검색 결과가 없습니다'}
+                {employees.length === 0 ? t.noEmployees : t.noSearchResult}
               </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">직원</th>
-                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">연락처</th>
-                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">레벨</th>
-                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">급여</th>
-                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">상태</th>
-                      <th className="text-right py-2.5 px-3 text-xs font-medium text-gray-500">작업</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">{t.tableEmployee}</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">{t.tableContact}</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">{t.tableLevel}</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">{t.tablePay}</th>
+                      <th className="text-left py-2.5 px-3 text-xs font-medium text-gray-500">{t.tableStatus}</th>
+                      <th className="text-right py-2.5 px-3 text-xs font-medium text-gray-500">{t.tableActions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -253,7 +258,7 @@ export default function EmployeeManagement() {
                           <td className="py-3 px-3">
                             {info?.user_level
                               ? <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LEVEL_COLOR[info.user_level] || 'bg-gray-100 text-gray-600'}`}>
-                                  {LEVEL_LABEL[info.user_level] || info.user_level}
+                                  {(t as any)[`level${info.user_level.charAt(0) + info.user_level.slice(1).toLowerCase()}`] || LEVEL_LABEL_KO[info.user_level] || info.user_level}
                                 </span>
                               : <span className="text-xs text-gray-400">-</span>}
                           </td>
@@ -292,50 +297,50 @@ export default function EmployeeManagement() {
       <Dialog open={!!editTarget} onOpenChange={open => !open && setEditTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editTarget?.name}님 급여 설정</DialogTitle>
+            <DialogTitle>{editTarget ? t.payDialogTitle(editTarget.name) : ''}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label>급여 유형</Label>
+              <Label>{t.payType}</Label>
               <div className="flex gap-3">
                 <button
                   onClick={() => setPayType('HOURLY')}
                   className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors ${
                     payType === 'HOURLY' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'
                   }`}
-                >시급</button>
+                >{t.hourly}</button>
                 <button
                   onClick={() => setPayType('MONTHLY')}
                   className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors ${
                     payType === 'MONTHLY' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'
                   }`}
-                >월급</button>
+                >{t.monthly}</button>
               </div>
             </div>
             <div className="space-y-2">
-              <Label>{payType === 'HOURLY' ? '시급 (원)' : '월급 (원)'}</Label>
+              <Label>{payType === 'HOURLY' ? t.hourlyAmount : t.monthlyAmount}</Label>
               <Input
                 type="number" value={payAmount}
                 onChange={e => setPayAmount(e.target.value)}
-                placeholder={payType === 'HOURLY' ? '예: 10030' : '예: 2500000'}
+                placeholder={payType === 'HOURLY' ? t.hourlyPlaceholder : t.monthlyPlaceholder}
               />
               {payAmount && Number(payAmount) > 0 && (
                 <p className="text-xs text-gray-500">
                   {payType === 'HOURLY'
-                    ? `시간당 ${Number(payAmount).toLocaleString()}원`
-                    : `월 ${(Number(payAmount) / 10000).toFixed(1)}만원`}
+                    ? t.hourlyPerHour(Number(payAmount))
+                    : t.monthlyPerMonth(Number(payAmount))}
                 </p>
               )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditTarget(null)}>취소</Button>
+            <Button variant="outline" onClick={() => setEditTarget(null)}>{t.cancelBtn}</Button>
             <Button
               onClick={handleSavePay}
               disabled={!payAmount || Number(payAmount) <= 0 || saving}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {saving ? '저장 중...' : '저장'}
+              {saving ? t.saving : t.saveBtn}
             </Button>
           </DialogFooter>
         </DialogContent>

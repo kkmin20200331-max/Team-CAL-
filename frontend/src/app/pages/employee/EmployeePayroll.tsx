@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 import EmployeeHeader from '../../components/employee/EmployeeHeader';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -41,8 +43,7 @@ const getTimePart = (s: string) => {
   const t = s.includes('T') ? s.split('T')[1] : s.split(' ')[1];
   return t ? t.substring(0, 5) : '';
 };
-const DAY = ['일','월','화','수','목','금','토'];
-const getDayName = (d: string) => { const [y,m,dd] = d.split('-').map(Number); return DAY[new Date(y,m-1,dd).getDay()]; };
+const getDayName = (d: string, days: string[]) => { const [y,m,dd] = d.split('-').map(Number); return days[new Date(y,m-1,dd).getDay()]; };
 const calcHours = (start: string, end: string) => {
   const getMin = (s: string) => { const t = s.includes('T') ? s.split('T')[1] : s.split(' ')[1]; if (!t) return 0; const [h,m] = t.split(':').map(Number); return h*60+(m||0); };
   return Math.max(0, (getMin(end)-getMin(start))/60);
@@ -63,6 +64,8 @@ const getIsoMonday = (dateStr: string): string => {
 
 export default function EmployeePayroll() {
   const navigate = useNavigate();
+  const language = useLanguage();
+  const t = translations.employeePayroll[language];
   const user = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
 
   const [storeId, setStoreId] = useState(localStorage.getItem('store_id') || '');
@@ -172,7 +175,7 @@ export default function EmployeePayroll() {
     setRequesting(true);
     // TODO: DB 연동 - POST /api/weekly_pay_request { user_id, store_id, request_amount: thisWeekPay }
     await new Promise(r => setTimeout(r, 600));
-    alert(`주급 신청이 완료되었습니다.\n신청 금액: ${fmtW(thisWeekPay)}\n\n(TODO: DB 연동 필요)`);
+    alert(`${t.weeklyAdvanceRequest}\n${fmtW(thisWeekPay)}`);
     setRequesting(false);
   };
 
@@ -222,14 +225,14 @@ export default function EmployeePayroll() {
 
   const renderShiftRows = (list: ShiftVO[]) => {
     const valid = list.filter(s => s.status !== 'VACANT' && s.status !== 'CANCELLED');
-    if (!valid.length) return <p className="text-xs text-gray-400 py-1">근무 일정 없음</p>;
+    if (!valid.length) return <p className="text-xs text-gray-400 py-1">{t.noShifts}</p>;
     return valid.map((s, i) => {
       const d = getDatePart(s.work_date);
       const done = d < today;
       return (
         <div key={i} className={`flex justify-between items-center text-xs py-1.5 px-2 rounded ${done ? 'bg-white/60 dark:bg-gray-700/50' : 'bg-white/20 dark:bg-gray-800/30'}`}>
           <span className={done ? 'text-gray-700 dark:text-gray-200' : 'text-gray-400'}>
-            {d.slice(5).replace('-','/')} ({getDayName(d)})&nbsp;{getTimePart(s.start_at)}~{getTimePart(s.end_at)}
+            {d.slice(5).replace('-','/')} ({getDayName(d, translations.employeeHome[language].days)})&nbsp;{getTimePart(s.start_at)}~{getTimePart(s.end_at)}
           </span>
           <span className={`font-medium tabular-nums ${done ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400'}`}>
             {calcHours(s.start_at, s.end_at).toFixed(1)}h
@@ -252,24 +255,24 @@ export default function EmployeePayroll() {
       {/* 수당 상세 */}
       <div className="border-t border-pink-200 dark:border-pink-800 pt-3 space-y-1.5">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">기본급</span>
+          <span className="text-gray-600 dark:text-gray-400">{t.basePay}</span>
           <span className="font-medium">{fmtW(data.basePay)}</span>
         </div>
         {data.overtimePay > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">연장수당</span>
+            <span className="text-gray-600 dark:text-gray-400">{t.overtimePay}</span>
             <span className="font-medium text-green-600">+{fmtW(data.overtimePay)}</span>
           </div>
         )}
         {data.nightPay > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">야간수당</span>
+            <span className="text-gray-600 dark:text-gray-400">{t.nightPay}</span>
             <span className="font-medium text-green-600">+{fmtW(data.nightPay)}</span>
           </div>
         )}
         {/* 주휴수당: 항상 표시 */}
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">주휴수당</span>
+          <span className="text-gray-600 dark:text-gray-400">{t.weeklyPay}</span>
           <span className={data.weeklyPay > 0 ? 'font-medium text-green-600' : 'text-gray-400'}>
             {data.weeklyPay > 0 ? `+${fmtW(data.weeklyPay)}` : '-'}
           </span>
@@ -277,26 +280,26 @@ export default function EmployeePayroll() {
       </div>
       {/* 총 급여 볼드 */}
       <div className="border-t border-pink-300 dark:border-pink-700 pt-3 text-center">
-        <p className="text-xs text-gray-500 mb-1">총 급여</p>
+        <p className="text-xs text-gray-500 mb-1">{t.totalPay}</p>
         <p className="text-3xl font-bold text-pink-700 dark:text-pink-400">{fmtW(data.totalPay)}</p>
       </div>
     </div>
   );
 
   const bottomNavItems = [
-    { icon: Home, label: '홈', path: '/employee/home' },
-    { icon: Calendar, label: '근무표', path: '/employee/schedule' },
-    { icon: QrCode, label: '체크인', path: '/employee/checkin' },
-    { icon: Wallet, label: '급여', path: '/employee/payroll', active: true },
-    { icon: MessageSquare, label: '게시판', path: '/employee/board' },
+    { icon: Home, label: t.home, path: '/employee/home' },
+    { icon: Calendar, label: t.schedule, path: '/employee/schedule' },
+    { icon: QrCode, label: t.checkin, path: '/employee/checkin' },
+    { icon: Wallet, label: t.payrollNav, path: '/employee/payroll', active: true },
+    { icon: MessageSquare, label: t.board, path: '/employee/board' },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       <EmployeeHeader>
         <div>
-          <h1 className="text-2xl font-bold">급여 조회</h1>
-          <p className="text-blue-100 text-sm mt-1">급여 내역을 확인하세요</p>
+          <h1 className="text-2xl font-bold">{t.title}</h1>
+          <p className="text-blue-100 text-sm mt-1">{t.subtitle}</p>
         </div>
       </EmployeeHeader>
 
@@ -317,7 +320,7 @@ export default function EmployeePayroll() {
                   {format(selectedMonth, 'yyyy년 M월', { locale: ko })}
                 </span>
                 <span className="text-xs text-gray-500 ml-2">
-                  {isCurrentMonth ? '이번 달 예상 급여' : '급여 계산 결과'}
+                  {isCurrentMonth ? t.currentMonthExpected : t.payrollResult}
                 </span>
               </div>
               <Button variant="ghost" size="icon" className="h-7 w-7"
@@ -328,9 +331,9 @@ export default function EmployeePayroll() {
             </div>
 
             {loadingPayroll ? (
-              <p className="text-center py-8 text-gray-400 text-sm">계산 중...</p>
+              <p className="text-center py-8 text-gray-400 text-sm">{t.calculating}</p>
             ) : !payroll ? (
-              <p className="text-center py-8 text-gray-400 text-sm">급여 정보를 불러올 수 없습니다</p>
+              <p className="text-center py-8 text-gray-400 text-sm">{t.cannotLoad}</p>
             ) : (
               <PayDetail data={payroll} shiftList={assignedShifts} />
             )}
@@ -345,7 +348,7 @@ export default function EmployeePayroll() {
                 <div className="flex items-center gap-2">
                   <Banknote className="w-4 h-4 text-amber-600" />
                   <div>
-                    <p className="text-xs text-gray-500">이번 주 예상 급여</p>
+                    <p className="text-xs text-gray-500">{t.thisWeekExpected}</p>
                     <p className="text-xl font-bold text-amber-700 dark:text-amber-400">
                       {fmtW(thisWeekPay)}
                     </p>
@@ -357,11 +360,11 @@ export default function EmployeePayroll() {
                   onClick={handleWeeklyRequest}
                   disabled={requesting || thisWeekPay === 0}
                 >
-                  {requesting ? '신청 중...' : '💸 주급(가불) 신청하기'}
+                  {requesting ? t.requesting : t.weeklyAdvanceRequest}
                 </Button>
               </div>
               <p className="text-xs text-gray-400 mt-2">
-                * 이번 주 확정 근무 기준 계산 · 점주 승인 후 지급
+                {t.weeklyNote}
                 {/* TODO: DB 연동 후 신청 상태(대기/승인/거절) 표시 */}
               </p>
             </CardContent>
@@ -371,8 +374,8 @@ export default function EmployeePayroll() {
         {/* ── 탭 ── */}
         <Tabs defaultValue="history">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="history">급여 내역</TabsTrigger>
-            <TabsTrigger value="trends">통계</TabsTrigger>
+            <TabsTrigger value="history">{t.tabHistory}</TabsTrigger>
+            <TabsTrigger value="trends">{t.tabTrends}</TabsTrigger>
           </TabsList>
 
           {/* 급여 내역 탭 */}
@@ -404,19 +407,19 @@ export default function EmployeePayroll() {
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {v === 'monthly' ? '월별' : v === 'weekly' ? '주별' : '일별'}
+                  {v === 'monthly' ? t.monthly : v === 'weekly' ? t.weekly : t.daily}
                 </button>
               ))}
             </div>
 
             {loadingHistory ? (
-              <p className="text-center py-8 text-sm text-gray-400">불러오는 중...</p>
+              <p className="text-center py-8 text-sm text-gray-400">{t.loadingHistory}</p>
             ) : (
               <>
                 {/* 월별 뷰 */}
                 {historyView === 'monthly' && (
                   history.length === 0 ? (
-                    <p className="text-center py-8 text-sm text-gray-400">내역이 없습니다</p>
+                    <p className="text-center py-8 text-sm text-gray-400">{t.noHistory}</p>
                   ) : (
                     <div className="space-y-3">
                       {history.map((item, idx) => (
@@ -424,7 +427,7 @@ export default function EmployeePayroll() {
                           <CardContent className="p-4">
                             <div className="flex items-center justify-between mb-3">
                               <h3 className="font-bold">{item.label}</h3>
-                              <Badge className="bg-blue-500 text-xs">계산 완료</Badge>
+                              <Badge className="bg-blue-500 text-xs">{t.calcDone}</Badge>
                             </div>
                             <PayDetail data={item.data} shiftList={item.shifts} />
                           </CardContent>
@@ -437,7 +440,7 @@ export default function EmployeePayroll() {
                 {/* 주별 뷰 */}
                 {historyView === 'weekly' && (
                   weeklyHistory.length === 0 ? (
-                    <p className="text-center py-8 text-sm text-gray-400">내역이 없습니다</p>
+                    <p className="text-center py-8 text-sm text-gray-400">{t.noHistory}</p>
                   ) : (
                     <div className="space-y-3">
                       {weeklyHistory.map((w, idx) => (
@@ -464,7 +467,7 @@ export default function EmployeePayroll() {
                 {/* 일별 뷰 */}
                 {historyView === 'daily' && (
                   dailyHistory.length === 0 ? (
-                    <p className="text-center py-8 text-sm text-gray-400">내역이 없습니다</p>
+                    <p className="text-center py-8 text-sm text-gray-400">{t.noHistory}</p>
                   ) : (
                     <div className="space-y-2">
                       {dailyHistory.map((s, idx) => {
@@ -476,7 +479,7 @@ export default function EmployeePayroll() {
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                   <div className="text-center min-w-[36px]">
-                                    <p className="text-xs text-gray-400">{getDayName(d)}</p>
+                                    <p className="text-xs text-gray-400">{getDayName(d, translations.employeeHome[language].days)}</p>
                                     <p className="text-base font-bold">{d.slice(8)}</p>
                                     <p className="text-xs text-gray-400">{d.slice(0,7).replace('-','.')}</p>
                                   </div>
@@ -484,7 +487,7 @@ export default function EmployeePayroll() {
                                     <p className="text-sm text-gray-700 dark:text-gray-200">
                                       {getTimePart(s.start_at)} ~ {getTimePart(s.end_at)}
                                     </p>
-                                    <p className="text-xs text-gray-400">{hours.toFixed(1)}시간</p>
+                                    <p className="text-xs text-gray-400">{hours.toFixed(1)}h</p>
                                     {/* TODO: DB 연동 - GET /api/substitute/history?user_id= 로 대타 여부 판별 후 뱃지 표시 */}
                                   </div>
                                 </div>
@@ -508,10 +511,10 @@ export default function EmployeePayroll() {
             <Card>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-2 mb-3 text-sm font-semibold">
-                  <TrendingUp className="w-4 h-4" />월별 급여 추이
+                  <TrendingUp className="w-4 h-4" />{t.monthlyTrend}
                 </div>
                 {loadingHistory ? (
-                  <p className="text-center py-8 text-sm text-gray-400">불러오는 중...</p>
+                  <p className="text-center py-8 text-sm text-gray-400">{t.loadingHistory}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={200}>
                     <LineChart data={chartData}>
@@ -530,24 +533,24 @@ export default function EmployeePayroll() {
               <Card className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 border-pink-200 dark:border-pink-800">
                 <CardContent className="pt-4">
                   <div className="flex items-center gap-2 mb-4 text-sm font-semibold">
-                    <BarChart3 className="w-4 h-4" />급여 통계 ({history.length}개월)
+                    <BarChart3 className="w-4 h-4" />{t.payStats(history.length)}
                   </div>
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <p className="text-xs text-gray-500">월 평균 급여</p>
+                      <p className="text-xs text-gray-500">{t.avgMonthlyPay}</p>
                       <p className="text-2xl font-bold text-pink-700 dark:text-pink-400">
                         {fmtM(history.reduce((s,h) => s+h.data.totalPay, 0) / history.length)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">최고 급여</p>
+                      <p className="text-xs text-gray-500">{t.maxPay}</p>
                       <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
                         {fmtM(Math.max(...history.map(h => h.data.totalPay)))}
                       </p>
                     </div>
                   </div>
                   <div className="border-t border-pink-200 dark:border-pink-800 pt-3">
-                    <p className="text-xs text-gray-500 mb-1">{history.length}개월 총 수입</p>
+                    <p className="text-xs text-gray-500 mb-1">{t.totalIncome(history.length)}</p>
                     <p className="text-3xl font-bold text-pink-700 dark:text-pink-400">
                       {fmtM(history.reduce((s,h) => s+h.data.totalPay, 0))}
                     </p>
