@@ -1,19 +1,19 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router';
-import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { X, Camera, LogOut, MapPin, User } from 'lucide-react';
+import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { X, Camera, LogOut, MapPin, User } from "lucide-react";
 
 export default function EmployeeProfilePanel() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const storeName = localStorage.getItem('store_name') || '';
+  const currentUser = JSON.parse(sessionStorage.getItem("user") || "{}");
+  const storeName = sessionStorage.getItem("store_name") || "";
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => localStorage.getItem('employee_profile_image') || ''
+    () => sessionStorage.getItem("employee_profile_image") || "",
   );
   const [open, setOpen] = useState(false);
 
@@ -23,17 +23,17 @@ export default function EmployeeProfilePanel() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const base64 = ev.target?.result as string;
-      localStorage.setItem('employee_profile_image', base64);
+      sessionStorage.setItem("employee_profile_image", base64);
       setProfileImage(base64);
     };
     reader.readAsDataURL(file);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('store_id');
-    localStorage.removeItem('store_name');
-    navigate('/');
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("store_id");
+    sessionStorage.removeItem("store_name");
+    navigate("/");
   };
 
   return (
@@ -62,7 +62,7 @@ export default function EmployeeProfilePanel() {
       {/* 슬라이딩 패널 */}
       <div
         className={`fixed top-0 right-0 h-full w-72 bg-white dark:bg-gray-800 shadow-2xl z-50 transform transition-transform duration-300 flex flex-col ${
-          open ? 'translate-x-0' : 'translate-x-full'
+          open ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* 헤더 */}
@@ -104,8 +104,10 @@ export default function EmployeeProfilePanel() {
 
           {/* 이름 & 뱃지 */}
           <div className="text-center">
-            <p className="text-lg font-bold">{currentUser?.name || '직원'}</p>
-            <Badge className="mt-1 bg-purple-100 text-purple-700 hover:bg-purple-100">직원</Badge>
+            <p className="text-lg font-bold">{currentUser?.name || "직원"}</p>
+            <Badge className="mt-1 bg-purple-100 text-purple-700 hover:bg-purple-100">
+              직원
+            </Badge>
           </div>
 
           <div className="w-full border-t my-1" />
@@ -114,7 +116,9 @@ export default function EmployeeProfilePanel() {
           {storeName && (
             <div className="w-full flex items-center gap-3 px-2">
               <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">{storeName}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {storeName}
+              </span>
             </div>
           )}
         </div>
