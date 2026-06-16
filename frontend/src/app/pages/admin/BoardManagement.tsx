@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import React, { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Plus,
@@ -17,18 +17,23 @@ import {
   Bell,
   FileText,
   Image,
-  Paperclip
-} from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import ProfilePanel from '../../components/admin/ProfilePanel';
+  Paperclip,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import ProfilePanel from "../../components/admin/ProfilePanel";
 
 interface BoardPost {
   id: string;
   title: string;
   content: string;
-  category: 'notice' | 'event' | 'update' | 'urgent' | 'general';
+  category: "notice" | "event" | "update" | "urgent" | "general";
   author: string;
   authorId: string;
   createdAt: string;
@@ -36,10 +41,10 @@ interface BoardPost {
   isPinned: boolean;
   views: number;
   comments: number;
-  targetAudience: 'all' | 'employees' | 'managers' | 'specific_location';
+  targetAudience: "all" | "employees" | "managers" | "specific_location";
   location?: string;
   attachments?: string[];
-  status: 'published' | 'draft' | 'archived';
+  status: "published" | "draft" | "archived";
 }
 
 interface Comment {
@@ -54,9 +59,9 @@ interface Comment {
 const BoardManagement: React.FC = () => {
   const navigate = useNavigate();
   const { branchId } = useParams();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('published');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("published");
   const [selectedPost, setSelectedPost] = useState<BoardPost | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -64,121 +69,128 @@ const BoardManagement: React.FC = () => {
   // Mock data - 게시글 목록
   const [posts, setPosts] = useState<BoardPost[]>([
     {
-      id: 'POST001',
-      title: '3월 급여 지급 안내',
-      content: '3월 급여는 3월 31일에 지급될 예정입니다. 주급 요청은 28일까지 가능합니다.',
-      category: 'notice',
-      author: '관리자',
-      authorId: 'ADMIN001',
-      createdAt: '2024-03-15 10:00',
+      id: "POST001",
+      title: "3월 급여 지급 안내",
+      content:
+        "3월 급여는 3월 31일에 지급될 예정입니다. 주급 요청은 28일까지 가능합니다.",
+      category: "notice",
+      author: "관리자",
+      authorId: "ADMIN001",
+      createdAt: "2024-03-15 10:00",
       isPinned: true,
       views: 156,
       comments: 8,
-      targetAudience: 'all',
-      status: 'published'
+      targetAudience: "all",
+      status: "published",
     },
     {
-      id: 'POST002',
-      title: '[긴급] 강남점 주말 근무 인원 모집',
-      content: '3월 23-24일 주말 근무 가능한 분을 긴급 모집합니다. 시급 +20% 추가 지급됩니다.',
-      category: 'urgent',
-      author: '김민수',
-      authorId: 'EMP001',
-      createdAt: '2024-03-20 14:30',
+      id: "POST002",
+      title: "[긴급] 강남점 주말 근무 인원 모집",
+      content:
+        "3월 23-24일 주말 근무 가능한 분을 긴급 모집합니다. 시급 +20% 추가 지급됩니다.",
+      category: "urgent",
+      author: "김민수",
+      authorId: "EMP001",
+      createdAt: "2024-03-20 14:30",
       isPinned: true,
       views: 89,
       comments: 15,
-      targetAudience: 'specific_location',
-      location: '강남점',
-      status: 'published'
+      targetAudience: "specific_location",
+      location: "강남점",
+      status: "published",
     },
     {
-      id: 'POST003',
-      title: '위생교육 일정 안내',
-      content: '2024년 상반기 위생교육이 4월 5일에 진행됩니다. 전 직원 필수 참석입니다.',
-      category: 'event',
-      author: '관리자',
-      authorId: 'ADMIN001',
-      createdAt: '2024-03-18 09:00',
+      id: "POST003",
+      title: "위생교육 일정 안내",
+      content:
+        "2024년 상반기 위생교육이 4월 5일에 진행됩니다. 전 직원 필수 참석입니다.",
+      category: "event",
+      author: "관리자",
+      authorId: "ADMIN001",
+      createdAt: "2024-03-18 09:00",
       isPinned: false,
       views: 124,
       comments: 3,
-      targetAudience: 'all',
-      attachments: ['교육자료.pdf'],
-      status: 'published'
+      targetAudience: "all",
+      attachments: ["교육자료.pdf"],
+      status: "published",
     },
     {
-      id: 'POST004',
-      title: '새로운 메뉴 출시 안내',
-      content: '다음 주부터 봄 시즌 신메뉴가 출시됩니다. 조리법 교육은 월요일에 진행됩니다.',
-      category: 'update',
-      author: '박철수',
-      authorId: 'EMP003',
-      createdAt: '2024-03-19 16:20',
+      id: "POST004",
+      title: "새로운 메뉴 출시 안내",
+      content:
+        "다음 주부터 봄 시즌 신메뉴가 출시됩니다. 조리법 교육은 월요일에 진행됩니다.",
+      category: "update",
+      author: "박철수",
+      authorId: "EMP003",
+      createdAt: "2024-03-19 16:20",
       isPinned: false,
       views: 67,
       comments: 12,
-      targetAudience: 'employees',
-      status: 'published'
+      targetAudience: "employees",
+      status: "published",
     },
     {
-      id: 'POST005',
-      title: '직원 복지 개선 사항',
-      content: '직원 식사 제공 시간이 변경되었습니다. 자세한 내용은 본문을 확인해주세요.',
-      category: 'notice',
-      author: '관리자',
-      authorId: 'ADMIN001',
-      createdAt: '2024-03-17 11:00',
+      id: "POST005",
+      title: "직원 복지 개선 사항",
+      content:
+        "직원 식사 제공 시간이 변경되었습니다. 자세한 내용은 본문을 확인해주세요.",
+      category: "notice",
+      author: "관리자",
+      authorId: "ADMIN001",
+      createdAt: "2024-03-17 11:00",
       isPinned: false,
       views: 203,
       comments: 25,
-      targetAudience: 'all',
-      status: 'published'
+      targetAudience: "all",
+      status: "published",
     },
     {
-      id: 'POST006',
-      title: '임시 저장 - 4월 이벤트',
-      content: '4월 프로모션 이벤트 준비 중...',
-      category: 'event',
-      author: '관리자',
-      authorId: 'ADMIN001',
-      createdAt: '2024-03-21 15:00',
+      id: "POST006",
+      title: "임시 저장 - 4월 이벤트",
+      content: "4월 프로모션 이벤트 준비 중...",
+      category: "event",
+      author: "관리자",
+      authorId: "ADMIN001",
+      createdAt: "2024-03-21 15:00",
       isPinned: false,
       views: 0,
       comments: 0,
-      targetAudience: 'all',
-      status: 'draft'
-    }
+      targetAudience: "all",
+      status: "draft",
+    },
   ]);
 
   const categories = [
-    { value: 'all', label: '전체', color: 'gray' },
-    { value: 'notice', label: '공지사항', color: 'blue' },
-    { value: 'event', label: '이벤트', color: 'green' },
-    { value: 'update', label: '업데이트', color: 'purple' },
-    { value: 'urgent', label: '긴급', color: 'red' },
-    { value: 'general', label: '일반', color: 'gray' }
+    { value: "all", label: "전체", color: "gray" },
+    { value: "notice", label: "공지사항", color: "blue" },
+    { value: "event", label: "이벤트", color: "green" },
+    { value: "update", label: "업데이트", color: "purple" },
+    { value: "urgent", label: "긴급", color: "red" },
+    { value: "general", label: "일반", color: "gray" },
   ];
 
-  const filteredPosts = posts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.content.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === 'all' || post.category === filterCategory;
+  const filteredPosts = posts.filter((post) => {
+    const matchesSearch =
+      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.content.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      filterCategory === "all" || post.category === filterCategory;
     const matchesStatus = post.status === filterStatus;
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
   const getCategoryBadge = (category: string) => {
-    const cat = categories.find(c => c.value === category);
+    const cat = categories.find((c) => c.value === category);
     const colorMap: { [key: string]: string } = {
-      blue: 'bg-blue-100 text-blue-700',
-      green: 'bg-green-100 text-green-700',
-      purple: 'bg-purple-100 text-purple-700',
-      red: 'bg-red-100 text-red-700',
-      gray: 'bg-gray-100 text-gray-700'
+      blue: "bg-blue-100 text-blue-700",
+      green: "bg-green-100 text-green-700",
+      purple: "bg-purple-100 text-purple-700",
+      red: "bg-red-100 text-red-700",
+      gray: "bg-gray-100 text-gray-700",
     };
     return (
-      <Badge className={colorMap[cat?.color || 'gray']} variant="outline">
+      <Badge className={colorMap[cat?.color || "gray"]} variant="outline">
         {cat?.label || category}
       </Badge>
     );
@@ -186,18 +198,20 @@ const BoardManagement: React.FC = () => {
 
   const getTargetAudienceBadge = (audience: string, location?: string) => {
     const labels: { [key: string]: string } = {
-      all: '전체',
-      employees: '직원',
-      managers: '매니저',
-      specific_location: location || '특정 매장'
+      all: "전체",
+      employees: "직원",
+      managers: "매니저",
+      specific_location: location || "특정 매장",
     };
     return <Badge variant="outline">{labels[audience]}</Badge>;
   };
 
   const calculateStats = () => {
-    const total = posts.filter(p => p.status === 'published').length;
-    const pinned = posts.filter(p => p.isPinned && p.status === 'published').length;
-    const drafts = posts.filter(p => p.status === 'draft').length;
+    const total = posts.filter((p) => p.status === "published").length;
+    const pinned = posts.filter(
+      (p) => p.isPinned && p.status === "published",
+    ).length;
+    const drafts = posts.filter((p) => p.status === "draft").length;
     const totalViews = posts.reduce((sum, p) => sum + p.views, 0);
     const totalComments = posts.reduce((sum, p) => sum + p.comments, 0);
 
@@ -219,9 +233,11 @@ const BoardManagement: React.FC = () => {
   };
 
   const togglePin = (postId: string) => {
-    setPosts(posts.map(post =>
-      post.id === postId ? { ...post, isPinned: !post.isPinned } : post
-    ));
+    setPosts(
+      posts.map((post) =>
+        post.id === postId ? { ...post, isPinned: !post.isPinned } : post,
+      ),
+    );
   };
 
   return (
@@ -266,7 +282,9 @@ const BoardManagement: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">전체 게시글</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stats.total}
+                  </p>
                 </div>
                 <FileText className="w-8 h-8 text-gray-400" />
               </div>
@@ -278,7 +296,9 @@ const BoardManagement: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">고정 게시글</p>
-                  <p className="text-3xl font-bold text-blue-600">{stats.pinned}</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {stats.pinned}
+                  </p>
                 </div>
                 <Pin className="w-8 h-8 text-blue-400" />
               </div>
@@ -290,7 +310,9 @@ const BoardManagement: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">임시 저장</p>
-                  <p className="text-3xl font-bold text-yellow-600">{stats.drafts}</p>
+                  <p className="text-3xl font-bold text-yellow-600">
+                    {stats.drafts}
+                  </p>
                 </div>
                 <Edit className="w-8 h-8 text-yellow-400" />
               </div>
@@ -302,7 +324,9 @@ const BoardManagement: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">총 조회수</p>
-                  <p className="text-3xl font-bold text-green-600">{stats.totalViews}</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {stats.totalViews}
+                  </p>
                 </div>
                 <Eye className="w-8 h-8 text-green-400" />
               </div>
@@ -314,7 +338,9 @@ const BoardManagement: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">총 댓글</p>
-                  <p className="text-3xl font-bold text-purple-600">{stats.totalComments}</p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {stats.totalComments}
+                  </p>
                 </div>
                 <MessageSquare className="w-8 h-8 text-purple-400" />
               </div>
@@ -325,20 +351,20 @@ const BoardManagement: React.FC = () => {
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           <Button
-            variant={filterStatus === 'published' ? 'default' : 'outline'}
-            onClick={() => setFilterStatus('published')}
+            variant={filterStatus === "published" ? "default" : "outline"}
+            onClick={() => setFilterStatus("published")}
           >
             게시됨
           </Button>
           <Button
-            variant={filterStatus === 'draft' ? 'default' : 'outline'}
-            onClick={() => setFilterStatus('draft')}
+            variant={filterStatus === "draft" ? "default" : "outline"}
+            onClick={() => setFilterStatus("draft")}
           >
             임시 저장
           </Button>
           <Button
-            variant={filterStatus === 'archived' ? 'default' : 'outline'}
-            onClick={() => setFilterStatus('archived')}
+            variant={filterStatus === "archived" ? "default" : "outline"}
+            onClick={() => setFilterStatus("archived")}
           >
             보관함
           </Button>
@@ -364,8 +390,10 @@ const BoardManagement: React.FC = () => {
                 onChange={(e) => setFilterCategory(e.target.value)}
                 className="border rounded-lg px-3 py-2"
               >
-                {categories.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
+                {categories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
                 ))}
               </select>
 
@@ -379,19 +407,29 @@ const BoardManagement: React.FC = () => {
 
         {/* Posts List */}
         <div className="space-y-4">
-          {filteredPosts.map(post => (
-            <Card key={post.id} className={`hover:shadow-lg transition-shadow ${post.isPinned ? 'border-blue-500 border-2' : ''}`}>
+          {filteredPosts.map((post) => (
+            <Card
+              key={post.id}
+              className={`hover:shadow-lg transition-shadow ${post.isPinned ? "border-blue-500 border-2" : ""}`}
+            >
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      {post.isPinned && <Pin className="w-4 h-4 text-blue-500" />}
+                      {post.isPinned && (
+                        <Pin className="w-4 h-4 text-blue-500" />
+                      )}
                       {getCategoryBadge(post.category)}
-                      {getTargetAudienceBadge(post.targetAudience, post.location)}
+                      {getTargetAudienceBadge(
+                        post.targetAudience,
+                        post.location,
+                      )}
                     </div>
 
                     <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{post.content}</p>
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      {post.content}
+                    </p>
 
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
@@ -425,7 +463,9 @@ const BoardManagement: React.FC = () => {
                       variant="outline"
                       onClick={() => togglePin(post.id)}
                     >
-                      <Pin className={`w-4 h-4 ${post.isPinned ? 'fill-current' : ''}`} />
+                      <Pin
+                        className={`w-4 h-4 ${post.isPinned ? "fill-current" : ""}`}
+                      />
                     </Button>
                     <Button
                       size="sm"
@@ -453,8 +493,13 @@ const BoardManagement: React.FC = () => {
             <Card className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>{isCreating ? '새 게시글 작성' : '게시글 수정'}</CardTitle>
-                  <Button variant="ghost" onClick={() => setShowPostModal(false)}>
+                  <CardTitle>
+                    {isCreating ? "새 게시글 작성" : "게시글 수정"}
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowPostModal(false)}
+                  >
                     <AlertCircle className="w-5 h-5" />
                   </Button>
                 </div>
@@ -462,7 +507,9 @@ const BoardManagement: React.FC = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">제목</label>
+                    <label className="block text-sm font-medium mb-2">
+                      제목
+                    </label>
                     <input
                       type="text"
                       placeholder="게시글 제목을 입력하세요"
@@ -473,7 +520,9 @@ const BoardManagement: React.FC = () => {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">카테고리</label>
+                      <label className="block text-sm font-medium mb-2">
+                        카테고리
+                      </label>
                       <select
                         className="w-full border rounded-lg px-3 py-2"
                         defaultValue={selectedPost?.category}
@@ -487,7 +536,9 @@ const BoardManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">대상</label>
+                      <label className="block text-sm font-medium mb-2">
+                        대상
+                      </label>
                       <select
                         className="w-full border rounded-lg px-3 py-2"
                         defaultValue={selectedPost?.targetAudience}
@@ -500,7 +551,9 @@ const BoardManagement: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-2">매장</label>
+                      <label className="block text-sm font-medium mb-2">
+                        매장
+                      </label>
                       <select
                         className="w-full border rounded-lg px-3 py-2"
                         defaultValue={selectedPost?.location}
@@ -514,7 +567,9 @@ const BoardManagement: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">내용</label>
+                    <label className="block text-sm font-medium mb-2">
+                      내용
+                    </label>
                     <textarea
                       rows={10}
                       placeholder="게시글 내용을 입력하세요"
@@ -524,10 +579,14 @@ const BoardManagement: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">첨부파일</label>
+                    <label className="block text-sm font-medium mb-2">
+                      첨부파일
+                    </label>
                     <div className="border-2 border-dashed rounded-lg p-4 text-center">
                       <Paperclip className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600">파일을 드래그하거나 클릭하여 업로드</p>
+                      <p className="text-sm text-gray-600">
+                        파일을 드래그하거나 클릭하여 업로드
+                      </p>
                       <Button size="sm" variant="outline" className="mt-2">
                         파일 선택
                       </Button>
@@ -555,7 +614,10 @@ const BoardManagement: React.FC = () => {
                       <Edit className="w-4 h-4 mr-2" />
                       임시 저장
                     </Button>
-                    <Button variant="outline" onClick={() => setShowPostModal(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowPostModal(false)}
+                    >
                       취소
                     </Button>
                   </div>

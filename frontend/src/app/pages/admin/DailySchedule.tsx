@@ -1,17 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import {
-  ArrowLeft, Calendar, Clock, User,
-  AlertCircle, CheckCircle, XCircle,
-  Plus, Phone, Trash2, X
-} from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import ProfilePanel from '../../components/admin/ProfilePanel';
+  ArrowLeft,
+  Calendar,
+  Clock,
+  User,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Plus,
+  Phone,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import ProfilePanel from "../../components/admin/ProfilePanel";
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface ShiftVO {
   id: string;
@@ -34,20 +47,22 @@ const DailySchedule: React.FC = () => {
   const navigate = useNavigate();
   const { branchId, date } = useParams<{ branchId: string; date: string }>();
 
-  const [selectedDate, setSelectedDate] = useState(date || new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(
+    date || new Date().toISOString().split("T")[0],
+  );
   const [shifts, setShifts] = useState<ShiftVO[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
 
   // 모달 상태
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [editingShift, setEditingShift] = useState<ShiftVO | null>(null);
   const [form, setForm] = useState({
-    user_id: '',
-    start_time: '09:00',
-    end_time: '18:00',
-    status: 'confirmed',
+    user_id: "",
+    start_time: "09:00",
+    end_time: "18:00",
+    status: "confirmed",
   });
 
   useEffect(() => {
@@ -60,12 +75,16 @@ const DailySchedule: React.FC = () => {
   const fetchShifts = async () => {
     try {
       setLoading(true);
-      const res = await API.get('/shift', {
-        params: { store_id: branchId, start_date: selectedDate, end_date: selectedDate }
+      const res = await API.get("/shift", {
+        params: {
+          store_id: branchId,
+          start_date: selectedDate,
+          end_date: selectedDate,
+        },
       });
       setShifts(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('근무 조회 실패:', err);
+      console.error("근무 조회 실패:", err);
     } finally {
       setLoading(false);
     }
@@ -73,38 +92,38 @@ const DailySchedule: React.FC = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await API.get('/users', { params: { store_id: branchId } });
+      const res = await API.get("/users", { params: { store_id: branchId } });
       setEmployees(Array.isArray(res.data) ? res.data : []);
     } catch {}
   };
 
   const getEmployeeName = (user_id: string) =>
-    employees.find(e => e.id === user_id)?.name ?? '알 수 없음';
+    employees.find((e) => e.id === user_id)?.name ?? "알 수 없음";
 
   const getEmployeePhone = (user_id: string) =>
-    employees.find(e => e.id === user_id)?.phone ?? '';
+    employees.find((e) => e.id === user_id)?.phone ?? "";
 
   const formatTime = (isoStr: string) => {
-    if (!isoStr) return '';
-    if (isoStr.includes('T')) return isoStr.split('T')[1].substring(0, 5);
-    if (isoStr.includes(' ')) return isoStr.split(' ')[1].substring(0, 5);
+    if (!isoStr) return "";
+    if (isoStr.includes("T")) return isoStr.split("T")[1].substring(0, 5);
+    if (isoStr.includes(" ")) return isoStr.split(" ")[1].substring(0, 5);
     return isoStr.substring(0, 5);
   };
 
   const openAddModal = () => {
-    setModalMode('add');
+    setModalMode("add");
     setEditingShift(null);
     setForm({
-      user_id: employees[0]?.id ?? '',
-      start_time: '09:00',
-      end_time: '18:00',
-      status: 'confirmed',
+      user_id: employees[0]?.id ?? "",
+      start_time: "09:00",
+      end_time: "18:00",
+      status: "confirmed",
     });
     setModalOpen(true);
   };
 
   const openEditModal = (shift: ShiftVO) => {
-    setModalMode('edit');
+    setModalMode("edit");
     setEditingShift(shift);
     setForm({
       user_id: shift.user_id,
@@ -116,11 +135,14 @@ const DailySchedule: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!form.user_id) { alert('직원을 선택해주세요.'); return; }
+    if (!form.user_id) {
+      alert("직원을 선택해주세요.");
+      return;
+    }
     try {
-      if (modalMode === 'add') {
-        await API.post('/shift', {
-          id: 'SFT_' + Date.now(),
+      if (modalMode === "add") {
+        await API.post("/shift", {
+          id: "SFT_" + Date.now(),
           store_id: branchId,
           user_id: form.user_id,
           work_date: selectedDate,
@@ -128,48 +150,48 @@ const DailySchedule: React.FC = () => {
           end_at: `${selectedDate} ${form.end_time}:00`,
           status: form.status,
         });
-        alert('근무가 추가되었습니다.');
+        alert("근무가 추가되었습니다.");
       } else if (editingShift) {
-        await API.put('/shift', {
+        await API.put("/shift", {
           ...editingShift,
           user_id: form.user_id,
           start_at: `${selectedDate} ${form.start_time}:00`,
           end_at: `${selectedDate} ${form.end_time}:00`,
           status: form.status,
         });
-        alert('근무가 수정되었습니다.');
+        alert("근무가 수정되었습니다.");
       }
       setModalOpen(false);
       fetchShifts();
     } catch {
-      alert('처리 중 오류가 발생했습니다.');
+      alert("처리 중 오류가 발생했습니다.");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('이 근무를 삭제하시겠습니까?')) return;
+    if (!confirm("이 근무를 삭제하시겠습니까?")) return;
     try {
-      await API.delete('/shift', { params: { id } });
+      await API.delete("/shift", { params: { id } });
       fetchShifts();
     } catch {
-      alert('삭제 중 오류가 발생했습니다.');
+      alert("삭제 중 오류가 발생했습니다.");
     }
   };
 
   const handleContact = (user_id: string) => {
     const phone = getEmployeePhone(user_id);
     if (phone) window.location.href = `tel:${phone}`;
-    else alert('연락처 정보가 없습니다.');
+    else alert("연락처 정보가 없습니다.");
   };
 
   // 시간별 그룹화
   const groupByHour = () => {
     const hours: { [key: string]: ShiftVO[] } = {};
     for (let i = 0; i < 24; i++) {
-      const hour = i.toString().padStart(2, '0') + ':00';
-      hours[hour] = shifts.filter(s => {
-        const startHour = parseInt(formatTime(s.start_at).split(':')[0]);
-        const endHour = parseInt(formatTime(s.end_at).split(':')[0]);
+      const hour = i.toString().padStart(2, "0") + ":00";
+      hours[hour] = shifts.filter((s) => {
+        const startHour = parseInt(formatTime(s.start_at).split(":")[0]);
+        const endHour = parseInt(formatTime(s.end_at).split(":")[0]);
         return i >= startHour && i < endHour;
       });
     }
@@ -180,23 +202,44 @@ const DailySchedule: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'confirmed': return <Badge className="bg-green-500 text-white"><CheckCircle className="w-3 h-3 mr-1" />확정</Badge>;
-      case 'pending':   return <Badge className="bg-yellow-500 text-white"><AlertCircle className="w-3 h-3 mr-1" />대기</Badge>;
-      case 'cancelled': return <Badge className="bg-red-500 text-white"><XCircle className="w-3 h-3 mr-1" />취소</Badge>;
-      default: return null;
+      case "confirmed":
+        return (
+          <Badge className="bg-green-500 text-white">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            확정
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge className="bg-yellow-500 text-white">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            대기
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge className="bg-red-500 text-white">
+            <XCircle className="w-3 h-3 mr-1" />
+            취소
+          </Badge>
+        );
+      default:
+        return null;
     }
   };
 
   const stats = {
     total: shifts.length,
-    confirmed: shifts.filter(s => s.status === 'confirmed').length,
-    pending: shifts.filter(s => s.status === 'pending').length,
-    cancelled: shifts.filter(s => s.status === 'cancelled').length,
-    totalHours: shifts.filter(s => s.status !== 'cancelled').reduce((sum, s) => {
-      const [sh, sm] = formatTime(s.start_at).split(':').map(Number);
-      const [eh, em] = formatTime(s.end_at).split(':').map(Number);
-      return sum + (eh * 60 + em - sh * 60 - sm) / 60;
-    }, 0),
+    confirmed: shifts.filter((s) => s.status === "confirmed").length,
+    pending: shifts.filter((s) => s.status === "pending").length,
+    cancelled: shifts.filter((s) => s.status === "cancelled").length,
+    totalHours: shifts
+      .filter((s) => s.status !== "cancelled")
+      .reduce((sum, s) => {
+        const [sh, sm] = formatTime(s.start_at).split(":").map(Number);
+        const [eh, em] = formatTime(s.end_at).split(":").map(Number);
+        return sum + (eh * 60 + em - sh * 60 - sm) / 60;
+      }, 0),
   };
 
   return (
@@ -210,13 +253,18 @@ const DailySchedule: React.FC = () => {
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">일일 근무 스케줄</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">상세 시간별 근무 현황</p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  일일 근무 스케줄
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  상세 시간별 근무 현황
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <Button onClick={openAddModal}>
-                <Plus className="w-4 h-4 mr-2" />근무 추가
+                <Plus className="w-4 h-4 mr-2" />
+                근무 추가
               </Button>
               <ProfilePanel />
             </div>
@@ -240,28 +288,72 @@ const DailySchedule: React.FC = () => {
 
         {/* 뷰 전환 버튼 */}
         <div className="flex gap-3 mb-6">
-          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}>
-            <Calendar className="w-4 h-4 mr-2" />월간 근무표 보기
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            월간 근무표 보기
           </Button>
-          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}>
-            <Calendar className="w-4 h-4 mr-2" />주간 근무표 보기
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            주간 근무표 보기
           </Button>
         </div>
 
         {/* 통계 */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">총 근무자</p><p className="text-3xl font-bold text-gray-900">{stats.total}</p></CardContent></Card>
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">확정</p><p className="text-3xl font-bold text-green-600">{stats.confirmed}</p></CardContent></Card>
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">대기</p><p className="text-3xl font-bold text-yellow-600">{stats.pending}</p></CardContent></Card>
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">취소</p><p className="text-3xl font-bold text-red-600">{stats.cancelled}</p></CardContent></Card>
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">총 근무시간</p><p className="text-3xl font-bold text-blue-600">{stats.totalHours.toFixed(1)}h</p></CardContent></Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-sm text-gray-600">총 근무자</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-sm text-gray-600">확정</p>
+              <p className="text-3xl font-bold text-green-600">
+                {stats.confirmed}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-sm text-gray-600">대기</p>
+              <p className="text-3xl font-bold text-yellow-600">
+                {stats.pending}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-sm text-gray-600">취소</p>
+              <p className="text-3xl font-bold text-red-600">
+                {stats.cancelled}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-sm text-gray-600">총 근무시간</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {stats.totalHours.toFixed(1)}h
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* 시간별 타임라인 */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />시간별 근무 현황
+              <Clock className="w-5 h-5" />
+              시간별 근무 현황
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -280,32 +372,60 @@ const DailySchedule: React.FC = () => {
                 {Object.entries(hourlySchedule).map(([hour, assignments]) => {
                   if (assignments.length === 0) return null;
                   return (
-                    <div key={hour} className="border-l-4 border-blue-500 pl-4 py-2">
+                    <div
+                      key={hour}
+                      className="border-l-4 border-blue-500 pl-4 py-2"
+                    >
                       <h3 className="font-semibold text-lg mb-3">{hour}</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {assignments.map(shift => (
-                          <div key={shift.id} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors">
+                        {assignments.map((shift) => (
+                          <div
+                            key={shift.id}
+                            className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
+                          >
                             <div className="flex items-start justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 <User className="w-4 h-4 text-gray-500" />
-                                <span className="font-semibold">{getEmployeeName(shift.user_id)}</span>
+                                <span className="font-semibold">
+                                  {getEmployeeName(shift.user_id)}
+                                </span>
                               </div>
                               {getStatusBadge(shift.status)}
                             </div>
                             <div className="space-y-1 text-sm text-gray-600">
                               <div className="flex items-center gap-2">
                                 <Clock className="w-3 h-3" />
-                                {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                                {formatTime(shift.start_at)} -{" "}
+                                {formatTime(shift.end_at)}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Phone className="w-3 h-3" />
-                                {getEmployeePhone(shift.user_id) || '-'}
+                                {getEmployeePhone(shift.user_id) || "-"}
                               </div>
                             </div>
                             <div className="mt-3 flex gap-2">
-                              <Button size="sm" variant="outline" className="flex-1" onClick={() => openEditModal(shift)}>수정</Button>
-                              <Button size="sm" variant="outline" className="flex-1" onClick={() => handleContact(shift.user_id)}>연락</Button>
-                              <Button size="sm" variant="outline" className="px-2 text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(shift.id)}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => openEditModal(shift)}
+                              >
+                                수정
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => handleContact(shift.user_id)}
+                              >
+                                연락
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="px-2 text-red-500 border-red-200 hover:bg-red-50"
+                                onClick={() => handleDelete(shift.id)}
+                              >
                                 <Trash2 className="w-3 h-3" />
                               </Button>
                             </div>
@@ -334,66 +454,92 @@ const DailySchedule: React.FC = () => {
       {/* 근무 추가 / 수정 모달 */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setModalOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setModalOpen(false)}
+          />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">{modalMode === 'add' ? '근무 추가' : '근무 수정'}</h2>
-              <button onClick={() => setModalOpen(false)} className="p-1 rounded-full hover:bg-gray-100">
+              <h2 className="text-xl font-bold">
+                {modalMode === "add" ? "근무 추가" : "근무 수정"}
+              </h2>
+              <button
+                onClick={() => setModalOpen(false)}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">직원</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  직원
+                </label>
                 <select
                   value={form.user_id}
-                  onChange={e => setForm({ ...form, user_id: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, user_id: e.target.value })
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">직원 선택</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">날짜</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  날짜
+                </label>
                 <input
                   type="date"
                   value={selectedDate}
-                  onChange={e => setSelectedDate(e.target.value)}
+                  onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">시작 시간</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    시작 시간
+                  </label>
                   <input
                     type="time"
                     value={form.start_time}
-                    onChange={e => setForm({ ...form, start_time: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, start_time: e.target.value })
+                    }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">종료 시간</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    종료 시간
+                  </label>
                   <input
                     type="time"
                     value={form.end_time}
-                    onChange={e => setForm({ ...form, end_time: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, end_time: e.target.value })
+                    }
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">상태</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  상태
+                </label>
                 <select
                   value={form.status}
-                  onChange={e => setForm({ ...form, status: e.target.value })}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="confirmed">확정</option>
@@ -404,18 +550,28 @@ const DailySchedule: React.FC = () => {
             </div>
 
             <div className="flex gap-3 mt-6">
-              {modalMode === 'edit' && (
+              {modalMode === "edit" && (
                 <Button
                   variant="outline"
                   className="text-red-500 border-red-300 hover:bg-red-50"
-                  onClick={() => { handleDelete(editingShift!.id); setModalOpen(false); }}
+                  onClick={() => {
+                    handleDelete(editingShift!.id);
+                    setModalOpen(false);
+                  }}
                 >
-                  <Trash2 className="w-4 h-4 mr-1" />삭제
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  삭제
                 </Button>
               )}
-              <Button variant="outline" className="flex-1" onClick={() => setModalOpen(false)}>취소</Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setModalOpen(false)}
+              >
+                취소
+              </Button>
               <Button className="flex-1" onClick={handleSubmit}>
-                {modalMode === 'add' ? '추가' : '저장'}
+                {modalMode === "add" ? "추가" : "저장"}
               </Button>
             </div>
           </div>
