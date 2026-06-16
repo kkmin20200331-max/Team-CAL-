@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -15,7 +15,7 @@ import PendingScreen from './src/screens/auth/PendingScreen';
 import BranchSelectScreen from './src/screens/main/BranchSelectScreen';
 import MyPageScreen from './src/screens/mypage/MyPageScreen';
 import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
-import ScheduleScreen from './src/screens/schedule/ScheduleScreen'; // 1. ScheduleScreen으로 변경
+import ScheduleScreen from './src/screens/schedule/ScheduleScreen';
 import AdminDailyScheduleScreen from './src/screens/admin/AdminDailyScheduleScreen';
 import EmployeeManagementScreen from './src/screens/admin/EmployeeManagementScreen';
 import ShiftEditorScreen from './src/screens/admin/ShiftEditorScreen';
@@ -61,7 +61,23 @@ const toastConfig = {
       text2Style={{ fontSize: 14 }}
     />
   ),
+  // ✅ [수정] info 타입에 대한 커스텀 스타일 추가
+  info: (props: any) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: '#3B82F6', height: 65, width: '90%' }} // 파란색으로 설정
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: 16,
+        fontWeight: 'bold',
+      }}
+      text2Style={{
+        fontSize: 14,
+      }}
+    />
+  ),
 };
+
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -92,6 +108,7 @@ async function registerForPushNotificationsAsync() {
     return;
   }
 }
+
 
 const AuthStack = createStackNavigator();
 const MainStack = createStackNavigator();

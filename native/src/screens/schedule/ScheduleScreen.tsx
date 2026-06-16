@@ -388,7 +388,7 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: { width: `${100/7}%`, aspectRatio: 1, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   dayNumber: { fontSize: 15, color: colors.text },
-  dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: 8 },
+  dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: -5 },
   dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
 });
 
