@@ -466,7 +466,8 @@ export default function CustomerAnalytics() {
       });
 
       if (!response.ok) {
-        throw new Error('OpenAI 인사이트 분석 요청에 실패했습니다.');
+        const errorText = await response.text();
+        throw new Error(`OpenAI 인사이트 분석 요청에 실패했습니다. (${response.status}) ${errorText}`);
       }
 
       setAiResult(await response.json());
