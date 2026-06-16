@@ -9,6 +9,7 @@ import {
   HomeNavIcon, CalendarNavIcon, QrNavIcon, PayrollNavIcon, BoardNavIcon,
   QrCardIcon, CalendarCardIcon, LeaveCardIcon, SubCardIcon, PayrollCardIcon, BoardCardIcon,
 } from './figma/FigmaIcons';
+import { Clock, MapPin } from 'lucide-react';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
@@ -243,8 +244,8 @@ export default function EmployeeHome() {
           )}
 
           <div style={{ textAlign: 'right', marginRight: -20 }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: DARK_GREEN }}>{currentUser?.name ?? ''}</div>
-            <div style={{ fontSize: 15, fontWeight: 300, color: DARK_GREEN }}>{currentUser?.role ?? ''}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>{currentUser?.name ?? ''}</div>
+            <div style={{ fontSize: 14, fontWeight: 300, color: DARK_GREEN }}>{currentUser?.role ?? ''}</div>
           </div>
 
           <div style={{ position: 'relative' }}>
@@ -280,8 +281,8 @@ export default function EmployeeHome() {
               display: 'flex', flexDirection: 'column',
               justifyContent: 'space-between', padding: '12px 30px',
             }}>
-              <div style={{ fontSize: 20, fontWeight: 400, color: 'rgba(24,160,34,0.7)' }}>{stat.label}</div>
-              <div style={{ fontSize: 35, fontWeight: 800, color: GREEN, textAlign: 'right' }}>{stat.value}</div>
+              <div style={{ fontSize: 16, fontWeight: 400, color: 'rgba(24,160,34,0.7)' }}>{stat.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: GREEN, textAlign: 'right' }}>{stat.value}</div>
             </div>
           ))}
         </div>
@@ -291,7 +292,7 @@ export default function EmployeeHome() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 40 }}>
             <SectionPill label={t.todayWork} />
             {todayShift && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 16, fontWeight: 500, color: DARK_GREEN }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 15, fontWeight: 500, color: DARK_GREEN }}>
                 <CalendarCardIcon size={16} color={DARK_GREEN} />
                 {todayLabel}
               </div>
@@ -301,7 +302,7 @@ export default function EmployeeHome() {
                 marginLeft: 'auto',
                 background: 'rgba(245,253,232,0.5)', border: `1px solid ${BORDER_GREEN}`,
                 borderRadius: 54, padding: '3px 25px',
-                fontSize: 17, fontWeight: 500, color: GREEN,
+                fontSize: 15, fontWeight: 500, color: GREEN,
                 boxShadow: '3px 4px 12.6px rgba(255,255,255,0.25)',
               }}>
                 {getStatusLabel(todayShift.status)}
@@ -310,11 +311,11 @@ export default function EmployeeHome() {
           </div>
 
           {todayShift ? (
-            <div style={{ textAlign: 'center', fontSize: 90, fontWeight: 900, color: DARK_GREEN, letterSpacing: 2 }}>
+            <div style={{ textAlign: 'center', fontSize: 60, fontWeight: 900, color: DARK_GREEN, letterSpacing: 2 }}>
               {formatTime(todayShift.start_at)} - {formatTime(todayShift.end_at)}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', fontSize: 32, fontWeight: 800, color: GREEN, padding: '8px 0' }}>
+            <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: GREEN, padding: '8px 0' }}>
               {t.noWorkToday}
             </div>
           )}
@@ -333,7 +334,7 @@ export default function EmployeeHome() {
           onMouseOut={e => (e.currentTarget.style.opacity = '1')}
         >
           <QrNavIcon size={22} color="#fff" />
-          <span style={{ fontSize: 23, fontWeight: 800, color: '#fff' }}>{t.qrCheckInLabel}</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{t.qrCheckInLabel}</span>
         </div>
 
         {/* ── クイックメニュー SECTION ── */}
@@ -370,7 +371,7 @@ export default function EmployeeHome() {
               style={{
                 background: 'rgba(245,253,232,0.5)', border: `1px solid ${BORDER_GREEN}`,
                 borderRadius: 54, padding: '3px 25px', color: GREEN, fontFamily: font,
-                fontSize: 17, fontWeight: 500, cursor: 'pointer',
+                fontSize: 15, fontWeight: 500, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6,
                 boxShadow: '3px 4px 12.6px rgba(255,255,255,0.25)',
               }}
@@ -381,38 +382,50 @@ export default function EmployeeHome() {
 
           <div style={{ ...cardWhite, padding: '28px 40px', minHeight: 140 }}>
             {upcomingShifts.length === 0 ? (
-              <div style={{ textAlign: 'center', fontSize: 36, fontWeight: 800, color: GREEN, padding: '20px 0' }}>
+              <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: GREEN, padding: '20px 0' }}>
                 {t.noUpcoming}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {upcomingShifts.map((shift, i) => {
                   const datePart = getDatePart(shift.work_date);
-                  const dateNum = Number(datePart.split('-')[2]);
+                  const dateNum = datePart.split('-')[2];
+                  const hours = Math.round(calcHours(shift.start_at, shift.end_at) * 10) / 10;
+                  const statusColor = shift.status === 'confirmed' ? GREEN : shift.status === 'cancelled' ? '#dc2626' : '#d97706';
+                  const statusBg = shift.status === 'confirmed' ? 'rgba(24,160,34,0.12)' : shift.status === 'cancelled' ? 'rgba(220,38,38,0.1)' : 'rgba(217,119,6,0.1)';
                   return (
                     <div key={i} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '14px 24px', borderRadius: 16,
+                      padding: '14px 18px', borderRadius: 16,
                       background: i % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(24,160,34,0.04)',
                       border: '1px solid rgba(0,162,0,0.12)',
+                      boxShadow: '0px 2px 6px rgba(0,0,0,0.06)',
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                        <div style={{ textAlign: 'center', minWidth: 44 }}>
-                          <div style={{ fontSize: 13, color: DARK_GREEN, fontWeight: 500 }}>{getDayOfWeek(shift.work_date)}</div>
-                          <div style={{ fontSize: 26, fontWeight: 800, color: DARK_GREEN }}>{dateNum}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ textAlign: 'center', minWidth: 48 }}>
+                          <div style={{ fontSize: 13, color: '#8BA68D' }}>{getDayOfWeek(shift.work_date)}</div>
+                          <div style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>{dateNum}</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: DARK_GREEN }}>
-                            {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <Clock size={16} color={DARK_GREEN} />
+                            <span style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>
+                              {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                            </span>
+                            <span style={{ fontSize: 13, color: '#8BA68D' }}>{hours}h</span>
                           </div>
-                          <div style={{
-                            fontSize: 13, fontWeight: 500, marginTop: 2,
-                            color: shift.status === 'confirmed' ? GREEN : shift.status === 'cancelled' ? '#dc2626' : '#d97706',
-                          }}>
-                            {getStatusLabel(shift.status)}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#8BA68D', fontSize: 13 }}>
+                            <MapPin size={14} />
+                            <span>{storeName}</span>
                           </div>
                         </div>
                       </div>
+                      <span style={{
+                        fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 20,
+                        background: statusBg, color: statusColor, whiteSpace: 'nowrap',
+                      }}>
+                        {getStatusLabel(shift.status)}
+                      </span>
                     </div>
                   );
                 })}

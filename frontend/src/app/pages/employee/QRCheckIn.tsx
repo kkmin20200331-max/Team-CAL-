@@ -4,10 +4,6 @@ import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
-import { Alert, AlertDescription } from '../../components/ui/alert';
 import {
   Camera,
   CheckCircle2,
@@ -68,6 +64,59 @@ const DAY_NAMES: Record<string, string[]> = {
 const getDayName = (d: string, lang: string) => {
   const [y, m, dd] = d.split('-').map(Number);
   return (DAY_NAMES[lang] ?? DAY_NAMES.ko)[new Date(y, m - 1, dd).getDay()];
+};
+
+const cardStyle: React.CSSProperties = {
+  background: 'rgba(255,255,255,0.5)',
+  border: '1px solid #00A200',
+  borderRadius: 26,
+  boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
+  marginBottom: 16,
+  overflow: 'hidden',
+};
+
+const pillStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  background: '#07790F',
+  borderRadius: 54.55,
+  height: 36,
+  padding: '0 20px',
+  fontSize: 16,
+  fontWeight: 600,
+  color: '#fff',
+};
+
+const mainBtnStyle: React.CSSProperties = {
+  width: '100%',
+  background: '#07790F',
+  color: '#fff',
+  borderRadius: 54,
+  padding: '14px 40px',
+  fontSize: 18,
+  fontWeight: 600,
+  border: 'none',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+};
+
+const outlineBtnStyle: React.CSSProperties = {
+  width: '100%',
+  background: 'transparent',
+  color: '#07790F',
+  border: '1px solid #07790F',
+  borderRadius: 54,
+  padding: '14px 40px',
+  fontSize: 18,
+  fontWeight: 600,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
 };
 
 export default function QRCheckIn() {
@@ -139,10 +188,10 @@ export default function QRCheckIn() {
 
     const diffMinutes = Math.floor((now.getTime() - scheduled.getTime()) / 60000);
 
-    if (diffMinutes < -10) return { status: 'early', text: t.earlyForWork, color: 'text-gray-600' };
-    if (diffMinutes <= 5) return { status: 'ontime', text: t.onTime, color: 'text-green-600' };
-    if (diffMinutes <= 30) return { status: 'late', text: t.lateMin(diffMinutes), color: 'text-orange-600' };
-    return { status: 'verylate', text: t.lateMin(diffMinutes), color: 'text-red-600' };
+    if (diffMinutes < -10) return { status: 'early', text: t.earlyForWork, color: '#8BA68D' };
+    if (diffMinutes <= 5) return { status: 'ontime', text: t.onTime, color: '#18A022' };
+    if (diffMinutes <= 30) return { status: 'late', text: t.lateMin(diffMinutes), color: '#d97706' };
+    return { status: 'verylate', text: t.lateMin(diffMinutes), color: '#dc2626' };
   };
 
   const timeStatus = getTimeStatus();
@@ -162,253 +211,294 @@ export default function QRCheckIn() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)',
+      paddingBottom: 120,
+    }}>
       <EmployeeHeader>
         <div>
-          <h1 className="text-2xl font-bold">{t.title}</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <Clock className="w-4 h-4 text-green-100" />
-            <span className="text-lg font-mono text-green-100">
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: 0 }}>{t.title}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+            <Clock size={16} color="rgba(255,255,255,0.85)" />
+            <span style={{ fontSize: 17, fontFamily: 'monospace', color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
               {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           </div>
         </div>
       </EmployeeHeader>
 
-      <div className="px-4 py-4">
+      <div style={{ padding: '16px 40px 0' }}>
 
         {/* ── 오늘의 근무 ── */}
-        <Card className="mb-4 border-2 border-blue-200 dark:border-blue-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">{t.todayWork}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <div style={cardStyle}>
+          <div style={{ padding: '18px 20px 14px' }}>
+            <span style={pillStyle}>{t.todayWork}</span>
+          </div>
+          <div style={{ padding: '0 20px 20px' }}>
             {loadingToday ? (
-              <p className="text-sm text-gray-400 text-center py-2">{t.loading}</p>
+              <p style={{ fontSize: 16, color: '#8BA68D', textAlign: 'center', padding: '8px 0' }}>{t.loading}</p>
             ) : !todayShift ? (
-              <div className="flex items-center gap-2 text-gray-500 py-2">
-                <AlertCircle className="w-5 h-5" />
-                <span className="text-sm">{t.noSchedule}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#8BA68D', padding: '8px 0' }}>
+                <AlertCircle size={20} color="#8BA68D" />
+                <span style={{ fontSize: 16 }}>{t.noSchedule}</span>
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-blue-600" />
-                    <span className="text-xl font-bold">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Clock size={20} color="#07790F" />
+                    <span style={{ fontSize: 22, fontWeight: 700, color: '#07790F' }}>
                       {getTimePart(todayShift.start_at)} - {getTimePart(todayShift.end_at)}
                     </span>
                   </div>
-                  <Badge variant="secondary">
+                  <span style={{
+                    background: '#E6F5C8',
+                    color: '#07790F',
+                    borderRadius: 20,
+                    padding: '4px 14px',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}>
                     {calcHours(todayShift.start_at, todayShift.end_at).toFixed(1)}h
-                  </Badge>
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-gray-500" />
-                  <span className="font-medium">{storeName}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <MapPin size={16} color="#8BA68D" />
+                  <span style={{ fontSize: 15, fontWeight: 500, color: '#333' }}>{storeName}</span>
                 </div>
 
                 {timeStatus && (
-                  <div className={`flex items-center gap-2 font-medium ${timeStatus.color}`}>
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{timeStatus.text}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: timeStatus.color }}>
+                    <AlertCircle size={18} color={timeStatus.color} />
+                    <span style={{ fontSize: 15 }}>{timeStatus.text}</span>
                   </div>
                 )}
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* ── 체크인 상태 ── */}
         {checkInStatus === 'idle' && (
-          <Card className="mb-4">
-            <CardContent className="p-6">
-              <div className="relative mb-6">
-                <div className="aspect-square bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl flex items-center justify-center border-4 border-dashed border-blue-300 dark:border-blue-700">
-                  {isScanning ? (
-                    <div className="text-center">
-                      <RefreshCw className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-4" />
-                      <p className="text-blue-600 font-medium">{t.scanQr}</p>
-                    </div>
-                  ) : (
-                    <div className="text-center">
-                      <QrCode className="w-24 h-24 text-blue-600 mx-auto mb-4" />
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {t.qrInstruction}
-                      </p>
-                    </div>
-                  )}
-                </div>
+          <div style={cardStyle}>
+            <div style={{ padding: 24 }}>
+              {/* QR 스캔 영역 */}
+              <div style={{
+                aspectRatio: '1',
+                background: '#E6F5C8',
+                borderRadius: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '3px dashed #00A200',
+                marginBottom: 24,
+              }}>
+                {isScanning ? (
+                  <div style={{ textAlign: 'center' }}>
+                    <RefreshCw size={64} color="#07790F" style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 16px' }} />
+                    <p style={{ color: '#07790F', fontWeight: 500 }}>{t.scanQr}</p>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center' }}>
+                    <QrCode size={96} color="#07790F" style={{ display: 'block', margin: '0 auto 16px' }} />
+                    <p style={{ color: '#8BA68D', fontSize: 14 }}>{t.qrInstruction}</p>
+                  </div>
+                )}
               </div>
-              <div className="space-y-3">
-                <Button
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
-                  size="lg"
-                  onClick={handleScan}
-                  disabled={isScanning}
-                >
-                  <Camera className="w-5 h-5 mr-2" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <button style={mainBtnStyle} onClick={handleScan} disabled={isScanning}>
+                  <Camera size={20} />
                   {t.scanButton}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleManualCheckIn}
-                  disabled={isScanning}
-                >
+                </button>
+                <button style={outlineBtnStyle} onClick={handleManualCheckIn} disabled={isScanning}>
                   {t.manualCheckIn}
-                </Button>
+                </button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {checkInStatus === 'loading' && (
-          <Alert className="mb-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-            <RefreshCw className="w-4 h-4 animate-spin" />
-            <AlertDescription>
-              <p className="font-medium">{t.processingCheckIn}</p>
-            </AlertDescription>
-          </Alert>
+          <div style={{
+            ...cardStyle,
+            background: '#E6F5C8',
+            border: '1px solid #80D180',
+            padding: '18px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}>
+            <RefreshCw size={20} color="#07790F" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+            <p style={{ fontWeight: 600, color: '#07790F', margin: 0 }}>{t.processingCheckIn}</p>
+          </div>
         )}
 
         {checkInStatus === 'success' && (
-          <Card className="mb-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-500">
-            <CardContent className="p-6">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-green-500 rounded-full mb-4">
-                  <CheckCircle2 className="w-12 h-12 text-white" />
+          <div style={{ ...cardStyle, background: 'rgba(230,245,200,0.6)', border: '2px solid #18A022' }}>
+            <div style={{ padding: 24 }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 80,
+                  height: 80,
+                  background: '#18A022',
+                  borderRadius: '50%',
+                  marginBottom: 16,
+                }}>
+                  <CheckCircle2 size={48} color="#fff" />
                 </div>
-                <h3 className="text-2xl font-bold text-green-700 dark:text-green-400 mb-2">
+                <h3 style={{ fontSize: 26, fontWeight: 800, color: '#07790F', marginBottom: 8 }}>
                   {t.checkInSuccess}
                 </h3>
-                <p className="text-green-600 dark:text-green-500 mb-4">
+                <p style={{ color: '#18A022', marginBottom: 20, fontSize: 16 }}>
                   {t.checkedInAt(currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))}
                 </p>
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.scheduledTime}</p>
-                    <p className="text-lg font-bold">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+                  <div style={{ background: 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
+                    <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 4 }}>{t.scheduledTime}</p>
+                    <p style={{ fontSize: 20, fontWeight: 700, color: '#07790F', margin: 0 }}>
                       {todayShift ? getTimePart(todayShift.start_at) : '-'}
                     </p>
                   </div>
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-3">
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.actualTime}</p>
-                    <p className="text-lg font-bold text-green-600">
+                  <div style={{ background: 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
+                    <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 4 }}>{t.actualTime}</p>
+                    <p style={{ fontSize: 20, fontWeight: 700, color: '#18A022', margin: 0 }}>
                       {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Button
-                    className="w-full bg-green-600 hover:bg-green-700"
-                    onClick={() => navigate('/employee/home')}
-                  >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <button style={mainBtnStyle} onClick={() => navigate('/employee/home')}>
                     {t.goHome}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setCheckInStatus('idle')}
-                  >
+                  </button>
+                  <button style={outlineBtnStyle} onClick={() => setCheckInStatus('idle')}>
                     {t.retryCheckIn}
-                  </Button>
+                  </button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {checkInStatus === 'error' && (
-          <Alert className="mb-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-            <XCircle className="w-5 h-5 text-red-600" />
-            <AlertDescription>
-              <p className="font-medium text-red-700 dark:text-red-400">{t.checkInFailed}</p>
-              <p className="text-sm text-red-600 dark:text-red-500 mt-1">
-                {t.qrNotRecognized}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3"
-                onClick={() => setCheckInStatus('idle')}
-              >
-                {t.retry}
-              </Button>
-            </AlertDescription>
-          </Alert>
+          <div style={{
+            ...cardStyle,
+            background: 'rgba(254,242,242,0.8)',
+            border: '1px solid #dc2626',
+            padding: '18px 20px',
+          }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <XCircle size={22} color="#dc2626" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <p style={{ fontWeight: 600, color: '#dc2626', margin: '0 0 4px' }}>{t.checkInFailed}</p>
+                <p style={{ fontSize: 13, color: '#dc2626', margin: '0 0 12px' }}>{t.qrNotRecognized}</p>
+                <button
+                  style={{ ...outlineBtnStyle, width: 'auto', padding: '8px 24px', fontSize: 14, borderColor: '#07790F', color: '#07790F' }}
+                  onClick={() => setCheckInStatus('idle')}
+                >
+                  {t.retry}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* ── 체크인 안내 ── */}
-        <Card className="mb-4">
-          <CardHeader>
-            <CardTitle className="text-lg">{t.howToCheckIn}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+        <div style={cardStyle}>
+          <div style={{ padding: '18px 20px 14px' }}>
+            <span style={pillStyle}>{t.howToCheckIn}</span>
+          </div>
+          <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
               { n: 1, title: t.step1Title, desc: t.step1Desc },
               { n: 2, title: t.step2Title, desc: t.step2Desc },
               { n: 3, title: t.step3Title, desc: t.step3Desc },
             ].map(({ n, title, desc }) => (
-              <div key={n} className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-blue-600 font-bold text-xs">{n}</span>
+              <div key={n} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{
+                  width: 28,
+                  height: 28,
+                  background: '#E6F5C8',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: 2,
+                }}>
+                  <span style={{ color: '#07790F', fontWeight: 700, fontSize: 13 }}>{n}</span>
                 </div>
                 <div>
-                  <p className="font-medium">{title}</p>
-                  <p className="text-gray-600 dark:text-gray-400 text-xs mt-1">{desc}</p>
+                  <p style={{ fontWeight: 600, fontSize: 16, color: '#222', margin: '0 0 2px' }}>{title}</p>
+                  <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{desc}</p>
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* ── 최근 근무 기록 ── */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <History className="w-5 h-5" />
-              <CardTitle className="text-lg">{t.recentWorkHistory}</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
+        <div style={cardStyle}>
+          <div style={{ padding: '18px 20px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <History size={18} color="#07790F" />
+            <span style={pillStyle}>{t.recentWorkHistory}</span>
+          </div>
+          <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {recentShifts.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">{t.noRecentHistory}</p>
+              <p style={{ fontSize: 16, color: '#8BA68D', textAlign: 'center', padding: '16px 0' }}>{t.noRecentHistory}</p>
             ) : (
               recentShifts.map((shift, index) => {
                 const d = getDatePart(shift.work_date);
                 const hours = calcHours(shift.start_at, shift.end_at);
                 const startTime = getTimePart(shift.start_at);
                 const endTime = getTimePart(shift.end_at);
+                const rowBg = index % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(24,160,34,0.04)';
                 return (
-                  <div key={index} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="text-center min-w-[32px]">
-                          <p className="text-xs text-gray-500">{getDayName(d, language)}</p>
-                          <p className="font-bold">{d.split('-')[2]}</p>
-                        </div>
-                        <div className="h-8 w-px bg-gray-300 dark:bg-gray-600" />
-                        <div>
-                          <p className="text-sm font-medium">
-                            {startTime} - {endTime}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {d.slice(0, 7).replace('-', '.')} · {storeName}
-                          </p>
-                        </div>
+                  <div key={index} style={{
+                    background: rowBg,
+                    border: '1px solid rgba(0,162,0,0.12)',
+                    borderRadius: 16,
+                    padding: '14px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ textAlign: 'center', minWidth: 36 }}>
+                        <p style={{ fontSize: 13, color: '#8BA68D', margin: '0 0 2px' }}>{getDayName(d, language)}</p>
+                        <p style={{ fontSize: 28, fontWeight: 800, color: '#07790F', margin: 0 }}>{d.split('-')[2]}</p>
                       </div>
-                      <Badge variant="secondary" className="text-xs">
-                        {hours.toFixed(1)}h
-                      </Badge>
+                      <div style={{ width: 1, height: 36, background: 'rgba(0,162,0,0.2)' }} />
+                      <div>
+                        <p style={{ fontSize: 18, fontWeight: 700, color: '#07790F', margin: '0 0 3px' }}>
+                          {startTime} - {endTime}
+                        </p>
+                        <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>
+                          {d.slice(0, 7).replace('-', '.')} · {storeName}
+                        </p>
+                      </div>
                     </div>
+                    <span style={{
+                      background: '#E6F5C8',
+                      color: '#07790F',
+                      borderRadius: 20,
+                      padding: '4px 14px',
+                      fontSize: 14,
+                      fontWeight: 600,
+                    }}>
+                      {hours.toFixed(1)}h
+                    </span>
                   </div>
                 );
               })
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
       </div>
 
       <EmployeeBottomNav />

@@ -1,13 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router';
+import Holidays from 'date-holidays';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Calendar } from '../../components/ui/calendar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
   Clock,
   MapPin,
@@ -27,37 +25,19 @@ import { ko } from 'date-fns/locale';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
-// 한국 공휴일 (2025~2026)
-const HOLIDAYS: { [key: string]: string } = {
-  '2025-01-01': '신정',
-  '2025-01-28': '설 연휴',
-  '2025-01-29': '설날',
-  '2025-01-30': '설 연휴',
-  '2025-03-01': '삼일절',
-  '2025-05-05': '어린이날',
-  '2025-06-06': '현충일',
-  '2025-08-15': '광복절',
-  '2025-10-03': '개천절',
-  '2025-10-05': '추석 연휴',
-  '2025-10-06': '추석',
-  '2025-10-07': '추석 연휴',
-  '2025-10-09': '한글날',
-  '2025-12-25': '크리스마스',
-  '2026-01-01': '신정',
-  '2026-01-27': '설 연휴',
-  '2026-01-28': '설날',
-  '2026-01-29': '설 연휴',
-  '2026-03-01': '삼일절',
-  '2026-05-05': '어린이날',
-  '2026-05-24': '부처님오신날',
-  '2026-06-06': '현충일',
-  '2026-08-15': '광복절',
-  '2026-09-24': '추석 연휴',
-  '2026-09-25': '추석',
-  '2026-09-26': '추석 연휴',
-  '2026-10-03': '개천절',
-  '2026-10-09': '한글날',
-  '2026-12-25': '크리스마스',
+// date-holidays로 한국 공휴일 동적 조회
+const hd = new Holidays('KR');
+const getHolidayName = (dateStr: string): string | null => {
+  const year = Number(dateStr.split('-')[0]);
+  const holidays = hd.getHolidays(year);
+  const match = holidays.find(h => {
+    const d = new Date(h.date);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}` === dateStr;
+  });
+  return match ? match.name : null;
 };
 
 interface ShiftVO {
@@ -178,32 +158,41 @@ export default function MySchedule() {
   const CustomDayContent = useCallback(({ date }: { date: Date }) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const statuses = shiftsByDate[dateStr];
-    const isHoliday = !!HOLIDAYS[dateStr];
+    const isHoliday = !!getHolidayName(dateStr);
     const isSunday = date.getDay() === 0;
-    const isRed = isHoliday || isSunday;
+    const isSaturday = date.getDay() === 6;
+    const isRed = isHoliday || isSunday || isSaturday;
+    const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
     return (
-      <div className="flex flex-col items-center justify-center py-0.5">
-        <span className={`text-sm leading-none ${isRed ? 'text-red-500' : ''}`}>
-          {date.getDate()}
-        </span>
-        {isHoliday && (
-          <span className="text-[8px] text-red-400 leading-none mt-0.5 truncate max-w-[30px] text-center">
-            {HOLIDAYS[dateStr]}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%',
+        background: isToday ? '#80D180' : undefined,
+        borderRadius: isToday ? 8 : undefined,
+        padding: isToday ? '2px 0' : undefined,
+      }}>
+        {/* 날짜 영역 - 항상 고정 높이 */}
+        <div style={{ height: 22, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 14, lineHeight: 1, fontWeight: isToday ? 700 : 400, color: isRed ? '#c00000' : undefined }}>
+            {date.getDate()}
           </span>
-        )}
-        {statuses && statuses.size > 0 && (
-          <div className="flex gap-0.5 mt-0.5">
-            {statuses.has('confirmed') && (
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-            )}
-            {statuses.has('pending') && (
-              <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block" />
-            )}
-            {[...statuses].some(s => s !== 'confirmed' && s !== 'pending') && (
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
-            )}
-          </div>
-        )}
+          {isHoliday && (
+            <span style={{ fontSize: 7, color: '#FFA6A6', lineHeight: 1, marginTop: 1, maxWidth: 28, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {getHolidayName(dateStr)}
+            </span>
+          )}
+        </div>
+        {/* 점 영역 - 항상 고정 높이로 자리 차지 */}
+        <div style={{ height: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+          {statuses?.has('confirmed') && (
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#18A022', display: 'inline-block' }} />
+          )}
+          {statuses?.has('pending') && (
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FFE75D', display: 'inline-block' }} />
+          )}
+          {statuses && [...statuses].some(s => s !== 'confirmed' && s !== 'pending') && (
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#A20000', display: 'inline-block' }} />
+          )}
+        </div>
       </div>
     );
   }, [shiftsByDate]);
@@ -225,73 +214,145 @@ export default function MySchedule() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+    <div style={{ minHeight: '130vh', background: 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', paddingBottom: 120 }}>
 
       {/* Header */}
       <EmployeeHeader>
         <div>
-          <h1 className="text-2xl font-bold">{t.title}</h1>
-          {/* 월간 통계 */}
-          <div className="grid grid-cols-4 gap-2 mt-3">
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
-              <p className="text-xs text-blue-100">{t.totalWork}</p>
-              <p className="text-lg font-bold mt-1">{t.days(activeShifts.length)}</p>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
-              <p className="text-xs text-blue-100">{t.totalHours}</p>
-              <p className="text-lg font-bold mt-1">{totalHours.toFixed(1)}h</p>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
-              <p className="text-xs text-blue-100">{t.completed}</p>
-              <p className="text-lg font-bold mt-1">{completedShifts}</p>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2 text-center">
-              <p className="text-xs text-blue-100">{t.scheduled}</p>
-              <p className="text-lg font-bold mt-1">{upcomingShifts}</p>
-            </div>
+          <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB', textAlign: 'center' }}>{t.title}</h1>
+          {/* 월간 통계 4칸 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 30, marginBottom: 25 }}>
+            {[
+              { label: t.totalWork,  value: `${activeShifts.length}日` },
+              { label: t.totalHours, value: `${totalHours.toFixed(1)} h` },
+              { label: t.completed,  value: `${completedShifts} 件` },
+              { label: t.scheduled,  value: `${upcomingShifts} 件` },
+            ].map(({ label, value }) => (
+              <div key={label} style={{
+                background: 'rgba(255,255,255,0.45)',
+                border: '1px solid #E6F5C8',
+                boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
+                borderRadius: 26,
+                padding: '12px 4px', textAlign: 'center',
+              }}>
+                <p style={{ fontSize: 20, color: '#fff', fontWeight: 400 }}>{label}</p>
+                <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', marginTop: 15 }}>{value}</p>
+              </div>
+            ))}
           </div>
         </div>
       </EmployeeHeader>
 
-      <div className="px-4 py-4">
+      <div style={{ padding: '20px 20px 0' }}>
         {/* View Toggle */}
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'month' | 'week')} className="mb-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="month">{t.monthView}</TabsTrigger>
-            <TabsTrigger value="week">{t.weekView}</TabsTrigger>
-          </TabsList>
+        <div style={{
+          position: 'relative',
+          display: 'flex', alignItems: 'center',
+          background: '#E6F5C8', borderRadius: 17,
+          padding: '10px 10px',
+          marginBottom: 40,
+          boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25), inset 0px 4px 6px rgba(0,0,0,0.1)',
+          height: 70,
+        }}>
+          {/* 활성 흰색 pill — 활성 탭 위치로 이동 */}
+          <div style={{
+            position: 'absolute',
+            top: 10, bottom: 10,
+            left: viewMode === 'month' ? 10 : 'calc(50% + 5px)',
+            width: 'calc(50% - 15px)',
+            background: '#fff',
+            borderRadius: 11,
+            opacity: 0.52,
+            filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.15))',
+            boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
+            transition: 'left 0.2s ease',
+            pointerEvents: 'none',
+          }} />
+          <button
+            onClick={() => setViewMode('month')}
+            style={{
+              flex: 1, height: '100%', border: 'none', cursor: 'pointer',
+              background: 'transparent',
+              color: viewMode === 'month' ? '#07790F' : '#8BA68D',
+              fontWeight: 600, fontSize: 22,
+              position: 'relative', zIndex: 1,
+            }}
+          >{t.monthView}</button>
+          <button
+            onClick={() => setViewMode('week')}
+            style={{
+              flex: 1, height: '100%', border: 'none', cursor: 'pointer',
+              background: 'transparent',
+              color: viewMode === 'week' ? '#07790F' : '#8BA68D',
+              fontWeight: 600, fontSize: 22,
+              position: 'relative', zIndex: 1,
+            }}
+          >{t.weekView}</button>
+        </div>
 
-          {/* 월간 뷰 */}
-          <TabsContent value="month" className="space-y-4 mt-4">
-            {/* 월 이동 */}
-            <div className="flex items-center justify-between">
-              <Button variant="outline" size="sm" onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}>
-                <ChevronLeft className="w-4 h-4 mr-1" />{t.prevMonth}
-              </Button>
-              <h2 className="font-bold">{format(currentMonth, 'yyyy년 M월', { locale: ko })}</h2>
-              <Button variant="outline" size="sm" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}>
-                {t.nextMonth}<ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
+        {/* 날짜 네비게이션 (토글 바 아래 한 줄) */}
+        {(() => {
+          const weekEnd = addDays(currentWeekStart, 6);
+          const weekLabel =
+            language === 'ja'
+              ? `${format(currentWeekStart, 'M月d日')} - ${format(weekEnd, 'M月d日')}`
+              : language === 'ko'
+              ? `${format(currentWeekStart, 'M월 d일')} - ${format(weekEnd, 'M월 d일')}`
+              : `${format(currentWeekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`;
+
+          const monthLabel =
+            language === 'ja'
+              ? format(currentMonth, 'yyyy年 M月')
+              : language === 'ko'
+              ? format(currentMonth, 'yyyy년 M월')
+              : format(currentMonth, 'MMMM yyyy');
+
+          return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginBottom: 30 }}>
+              <button
+                onClick={() => viewMode === 'month'
+                  ? setCurrentMonth(prev => subMonths(prev, 1))
+                  : setCurrentWeekStart(prev => addDays(prev, -7))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#07790F' }}
+              >
+                <ChevronLeft size={22} />
+              </button>
+              <span style={{ fontWeight: 800, fontSize: 25, color: '#07790F', width: 260, textAlign: 'center', display: 'inline-block' }}>
+                {viewMode === 'month' ? monthLabel : weekLabel}
+              </span>
+              <button
+                onClick={() => viewMode === 'month'
+                  ? setCurrentMonth(prev => addMonths(prev, 1))
+                  : setCurrentWeekStart(prev => addDays(prev, 7))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#07790F' }}
+              >
+                <ChevronRight size={22} />
+              </button>
             </div>
+          );
+        })()}
 
-            {/* 달력 - 컬러 점 표시 */}
-            <Card>
-              <CardContent className="p-4">
-                {/* 범례 */}
-                <div className="flex gap-4 mb-3 text-xs text-gray-500 justify-center">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />{t.legendConfirmed}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />{t.legendPending}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />{t.legendCancelledSub}
-                  </span>
-                  <span className="flex items-center gap-1 text-red-400">
-                    <span className="w-2 h-2 rounded-full bg-red-200 inline-block" />{t.legendHoliday}
-                  </span>
-                </div>
+        {/* 범례 */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 16, flexWrap: 'wrap' }}>
+          {[
+            { color: '#18A022', label: t.legendConfirmed },
+            { color: '#FFE75D', label: t.legendPending },
+            { color: '#A20000', label: t.legendCancelledSub },
+            { color: '#FFA6A6', label: t.legendHoliday },
+          ].map(({ color, label }) => (
+            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#8BA68D' }}>
+              <span style={{ width: 14, height: 14, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* 월간 뷰 */}
+        {viewMode === 'month' && (
+          <>
+            {/* 달력 */}
+            <div style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid #00A200', borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: '20px 20px 0 20px', marginBottom: 20 }}>
+              <div style={{ display: 'inline-block', transform: 'scale(1.2)', transformOrigin: 'top left', marginBottom: 80 }}>
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -299,152 +360,115 @@ export default function MySchedule() {
                   month={currentMonth}
                   onMonthChange={setCurrentMonth}
                   className="rounded-md"
+                  classNames={{ day_today: '' }}
                   components={{ DayContent: CustomDayContent }}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            {/* 근무 목록 */}
-            <div className="space-y-2">
-              <h3 className="font-bold text-lg px-1">{t.thisMonthSchedule}</h3>
+            {/* 今月のシフト一覧 버튼 - SectionPill 스타일 */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: '#07790F', borderRadius: 54.55,
+                boxShadow: '3px 4px 12.6px rgba(255,255,255,0.25)',
+                height: 36, minWidth: 168, padding: '0 20px',
+                fontSize: 16, fontWeight: 600, color: '#fff',
+              }}>
+                {t.thisMonthSchedule}
+              </div>
+            </div>
+
+            {/* 근무 목록 컨테이너 */}
+            <div style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid #00A200', borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: 20, marginBottom: 20 }}>
               {loading ? (
-                <p className="text-center py-8 text-gray-400">{t.loading}</p>
+                <p style={{ textAlign: 'center', padding: '32px 0', color: '#8BA68D', fontSize: 18 }}>{t.loading}</p>
               ) : shifts.length === 0 ? (
-                <p className="text-center py-8 text-gray-400">{t.noShifts}</p>
+                <p style={{ textAlign: 'center', padding: '32px 0', color: '#18A022', fontSize: 32, fontWeight: 800 }}>{t.noShifts}</p>
               ) : (
-                shifts.map((shift) => {
-                  const dateStr = getWorkDate(shift);
-                  const hours = calcHours(shift.start_at, shift.end_at);
-                  return (
-                    <Card key={shift.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3 flex-1">
-                            <div className="text-center min-w-[48px]">
-                              <p className="text-xs text-gray-600 dark:text-gray-400">{getDayLabel(dateStr, t.dayLabels)}</p>
-                              <p className="text-2xl font-bold">{dateStr.split('-')[2]}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {shifts.map((shift) => {
+                    const dateStr = getWorkDate(shift);
+                    const hours = calcHours(shift.start_at, shift.end_at);
+                    return (
+                      <div key={shift.id} style={{ background: '#fff', borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <div style={{ textAlign: 'center', minWidth: 48 }}>
+                            <p style={{ fontSize: 13, color: '#8BA68D' }}>{getDayLabel(dateStr, t.dayLabels)}</p>
+                            <p style={{ fontSize: 28, fontWeight: 800, color: '#07790F' }}>{dateStr.split('-')[2]}</p>
+                          </div>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              <Clock size={16} color="#07790F" />
+                              <span style={{ fontWeight: 700, fontSize: 18, color: '#07790F' }}>
+                                {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                              </span>
+                              <span style={{ fontSize: 13, color: '#8BA68D' }}>{hours}h</span>
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Clock className="w-4 h-4 text-blue-600" />
-                                <span className="font-bold text-lg">
-                                  {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
-                                </span>
-                                <Badge variant="secondary" className="text-xs">{t.days(hours)}</Badge>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                <MapPin className="w-4 h-4" />
-                                <span>{storeName}</span>
-                              </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#8BA68D', fontSize: 13 }}>
+                              <MapPin size={14} />
+                              <span>{storeName}</span>
                             </div>
                           </div>
-                          <div>{getStatusBadge(shift.status)}</div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })
+                        <div>{getStatusBadge(shift.status)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
-          </TabsContent>
+          </>
+        )}
 
-          {/* 주간 뷰 */}
-          <TabsContent value="week" className="space-y-2 mt-4">
-            {/* 주 이동 */}
-            <div className="flex items-center justify-between mb-2">
-              <Button variant="outline" size="sm" onClick={() => setCurrentWeekStart(prev => addDays(prev, -7))}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <h3 className="font-bold text-sm">
-                {format(currentWeekStart, 'M월 d일', { locale: ko })} - {format(addDays(currentWeekStart, 6), 'M월 d일', { locale: ko })}
-              </h3>
-              <Button variant="outline" size="sm" onClick={() => setCurrentWeekStart(prev => addDays(prev, 7))}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-
+        {/* 주간 뷰 */}
+        {viewMode === 'week' && (
+          <div style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid #00A200', borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: 20, marginBottom: 20 }}>
             {loading ? (
-              <p className="text-center py-8 text-gray-400">{t.loading}</p>
+              <p style={{ textAlign: 'center', padding: '32px 0', color: '#8BA68D', fontSize: 18 }}>{t.loading}</p>
             ) : (
-              weekDates.map((date, index) => {
-                const dateStr = format(date, 'yyyy-MM-dd');
-                const dayShifts = shifts.filter(s => getWorkDate(s) === dateStr);
-                const isToday = isSameDay(date, new Date());
-                const dayLabels = t.dayLabels;
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {weekDates.flatMap((date) => {
+                  const dateStr = format(date, 'yyyy-MM-dd');
+                  const dayShifts = shifts.filter(s => getWorkDate(s) === dateStr);
+                  const isHoliday = !!getHolidayName(dateStr);
+                  const isSunday = date.getDay() === 0;
+                  const dayColor = isHoliday || isSunday ? '#A20000' : '#07790F';
 
-                return (
-                  <Card key={index} className={isToday ? 'border-purple-400 border-2' : ''}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-4">
-                        <div className="text-center min-w-[60px]">
-                          <p className={`text-xs ${index === 5 ? 'text-blue-500' : index === 6 ? 'text-red-500' : 'text-gray-600 dark:text-gray-400'}`}>
-                            {format(date, 'M/d')}
-                          </p>
-                          <p className={`font-bold ${isToday ? 'text-purple-600' : index === 5 ? 'text-blue-500' : index === 6 ? 'text-red-500' : ''}`}>
-                            {dayLabels[index]}
-                            {isToday && <span className="block text-xs text-purple-500">{t.todayLabel}</span>}
-                          </p>
+                  if (dayShifts.length === 0) return [];
+
+                  return dayShifts.map((shift) => {
+                    const hours = calcHours(shift.start_at, shift.end_at);
+                    return (
+                      <div key={shift.id} style={{ background: '#fff', borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <div style={{ textAlign: 'center', minWidth: 48 }}>
+                            <p style={{ fontSize: 13, color: dayColor === '#A20000' ? dayColor : '#8BA68D' }}>{t.dayLabels[date.getDay()]}</p>
+                            <p style={{ fontSize: 28, fontWeight: 800, color: dayColor }}>{String(date.getDate()).padStart(2, '0')}</p>
+                          </div>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              <Clock size={16} color="#07790F" />
+                              <span style={{ fontWeight: 700, fontSize: 18, color: '#07790F' }}>
+                                {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                              </span>
+                              <span style={{ fontSize: 13, color: '#8BA68D' }}>{hours}h</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#8BA68D', fontSize: 13 }}>
+                              <MapPin size={14} />
+                              <span>{storeName}</span>
+                            </div>
+                          </div>
                         </div>
-
-                        {dayShifts.length > 0 ? (
-                          <div className="flex-1 space-y-2">
-                            {dayShifts.map((shift) => (
-                              <div
-                                key={shift.id}
-                                className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3"
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-blue-600" />
-                                    <span className="font-bold">
-                                      {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
-                                    </span>
-                                  </div>
-                                  {getStatusBadge(shift.status)}
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                  <MapPin className="w-4 h-4" />
-                                  <span>{storeName}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="flex-1 flex items-center justify-center py-4 text-gray-400 dark:text-gray-600">
-                            <p className="text-sm">{t.dayOff}</p>
-                          </div>
-                        )}
+                        <div>{getStatusBadge(shift.status)}</div>
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
+                    );
+                  });
+                })}
+              </div>
             )}
-          </TabsContent>
-        </Tabs>
-
-        {/* 요약 카드 */}
-        <Card className="mt-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800">
-          <CardHeader>
-            <CardTitle className="text-lg">{t.thisMonthSummary}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t.totalWorkHours}</p>
-                <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
-                  {totalHours.toFixed(1)}h
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{t.totalWorkDays}</p>
-                <p className="text-2xl font-bold text-pink-700 dark:text-pink-400">
-                  {t.days(activeShifts.length)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
       </div>
 
       <EmployeeBottomNav />
