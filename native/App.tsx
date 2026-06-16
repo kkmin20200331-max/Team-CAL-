@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, Text, StyleSheet } from 'react-native'; // 1. View, Text, StyleSheet 임포트
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Toast from 'react-native-toast-message';
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message'; // 2. BaseToast, ErrorToast 임포트
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Notifications from 'expo-notifications';
 
@@ -41,7 +41,40 @@ import { NotificationProvider } from './src/contexts/NotificationContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { BoardProvider } from './src/contexts/BoardContext';
-import { ScheduleProvider } from './src/contexts/ScheduleContext'; // 1. ScheduleProvider 임포트
+import { ScheduleProvider } from './src/contexts/ScheduleContext';
+
+// 3. 커스텀 토스트 메시지 UI 설정
+const toastConfig = {
+  success: (props: any) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: '#69C779', height: 65, width: '90%' }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: 16,
+        fontWeight: 'bold',
+      }}
+      text2Style={{
+        fontSize: 14,
+      }}
+    />
+  ),
+  error: (props: any) => (
+    <ErrorToast
+      {...props}
+      style={{ borderLeftColor: '#FE6301', height: 65, width: '90%' }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: 16,
+        fontWeight: 'bold',
+      }}
+      text2Style={{
+        fontSize: 14,
+      }}
+    />
+  ),
+};
+
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -178,14 +211,14 @@ export default function App() {
           <AppProvider>
             <NotificationProvider>
               <BoardProvider>
-                {/* 2. ScheduleProvider로 감싸기 */}
                 <ScheduleProvider>
                   <NavigationContainer>
                     <AppContent />
                   </NavigationContainer>
                 </ScheduleProvider>
               </BoardProvider>
-              <Toast />
+              {/* 4. Toast 컴포넌트에 config 전달 */}
+              <Toast config={toastConfig} />
             </NotificationProvider>
           </AppProvider>
         </LanguageProvider>
