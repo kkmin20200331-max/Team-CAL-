@@ -32,7 +32,7 @@ import ContractScreen from './src/screens/mypage/ContractScreen';
 import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
 import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
 import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
-import SubstituteScreen from './src/screens/schedule/SubstituteScreen';
+import SubstituteMatchingScreen from './src/screens/schedule/SubstituteMatchingScreen'; // 1. 이름 변경
 
 // Contexts
 import { AppProvider, useApp } from './src/contexts/AppContext';
@@ -61,11 +61,10 @@ const toastConfig = {
       text2Style={{ fontSize: 14 }}
     />
   ),
-  // ✅ [수정] info 타입에 대한 커스텀 스타일 추가
   info: (props: any) => (
     <BaseToast
       {...props}
-      style={{ borderLeftColor: '#3B82F6', height: 65, width: '90%' }} // 파란색으로 설정
+      style={{ borderLeftColor: '#3B82F6', height: 65, width: '90%' }}
       contentContainerStyle={{ paddingHorizontal: 15 }}
       text1Style={{
         fontSize: 16,
@@ -178,7 +177,7 @@ function MainNavigator() {
       <MainStack.Screen name="Contract" component={ContractScreen} />
       <MainStack.Screen name="HealthCert" component={HealthCertScreen} />
       <MainStack.Screen name="QRCheckIn" component={QRCheckInScreen} />
-      <MainStack.Screen name="Substitute" component={SubstituteScreen} />
+      <MainStack.Screen name="SubstituteMatching" component={SubstituteMatchingScreen} />
     </MainStack.Navigator>
   );
 }

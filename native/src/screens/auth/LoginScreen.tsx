@@ -5,6 +5,7 @@ import { loginAPI } from '../../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../../types/User';
 import { useApp } from '../../contexts/AppContext';
+import { supabase } from '../../lib/supabase';
 
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
 
@@ -32,25 +33,39 @@ export default function LoginScreen({ navigation }: Props) {
       const response = await loginAPI(username, password);
       const data = response.data;
 
-      const serverRole = data.role ? data.role.toUpperCase() : null;
-      
-      if (serverRole && serverRole !== loginRole) {
+      const { error: supabaseError } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
+      });
+
+      if (supabaseError) {
+        console.error('Supabase login failed:', supabaseError.message);
+        Alert.alert("참고", "Supabase 세션 연결에 실패했습니다. 일부 기능(파일 업로드 등)이 제한될 수 있습니다.");
+      }
+
+      const serverRole = data.role ? data.role.toUpperCase() : 'GUEST';
+      const serverStatus = data.status || 'PENDING'; // ✅ [수정] status가 없으면 PENDING으로 간주
+
+      const isRoleMismatch = 
+        (loginRole === 'ADMIN' && serverRole !== 'ADMIN') || 
+        (loginRole === 'STAFF' && serverRole === 'ADMIN');
+
+      if (isRoleMismatch) {
         Alert.alert("로그인 실패", "선택하신 로그인 유형과 계정의 실제 권한이 일치하지 않습니다.");
         return;
       }
 
-      const finalRole = serverRole || loginRole;
-      let finalUserInfo: any = { ...data, role: finalRole };
+      const finalRole = serverRole;
+      // ✅ [수정] finalUserInfo에 serverStatus를 명시적으로 포함
+      let finalUserInfo: any = { ...data, role: finalRole, status: serverStatus };
       let hasBranch = false;
 
       if (finalRole === 'ADMIN') {
         hasBranch = true;
-        // 1. 서버 응답에 지점 정보가 있는지 먼저 확인
         if (data.branches && data.branches.length > 0) {
           finalUserInfo.branches = data.branches;
           finalUserInfo.activeBranchId = data.branches[0].id;
         } else {
-          // 2. 서버 응답에 지점 정보가 없으면, AsyncStorage에서 불러오기 시도
           const storedBranchInfo = await AsyncStorage.getItem(`admin_branch_info_${username}`);
           if (storedBranchInfo) {
             const branches = JSON.parse(storedBranchInfo);
@@ -59,8 +74,6 @@ export default function LoginScreen({ navigation }: Props) {
           }
         }
       } else {
-        // 직원 로그인 로직 (주석 유지)
-        // TODO: [미래 구현] ...
         hasBranch = false;
       }
 
@@ -101,13 +114,15 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
         <TextInput
             style={styles.input}
-            placeholder="아이디를 입력하세요"
+            placeholder="아이디 (이메일 형식)"
             value={username}
             onChangeText={(text) => handleInputChange('username', text)}
+            autoCapitalize="none"
+            keyboardType="email-address"
         />
         <TextInput
             style={styles.input}
-            placeholder="비밀번호를 입력하세요"
+            placeholder="비밀번호"
             value={password}
             onChangeText={(text) => handleInputChange('password', text)}
             secureTextEntry={true}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'; // useMemo 임포트
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
@@ -22,14 +22,11 @@ const MyPageScreen = ({ navigation }: Props) => {
   const name = userInfo?.name || '사용자';
   const role = userInfo?.role || 'STAFF';
 
-  // ✅ [수정] 활성 지점 정보를 동적으로 찾도록 수정
   const activeBranch = useMemo(() => {
     if (!userInfo) return null;
-    // 관리자인 경우
     if (userInfo.role === 'ADMIN' && userInfo.branches && userInfo.activeBranchId) {
       return userInfo.branches.find(b => b.id === userInfo.activeBranchId);
     }
-    // 직원인 경우 (또는 관리자인데 지점 정보가 없는 예외 케이스)
     return {
       brandName: userInfo.brandName || '브랜드',
       branchName: userInfo.branchName || '지점',
@@ -112,6 +109,7 @@ const MyPageScreen = ({ navigation }: Props) => {
           {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo }))}
           {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
           {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
+          {renderMenuItem('🤝', '나의 대타 내역', () => navigation.navigate('SubstituteMatching', { initialTab: 'history' }))}
         </View>
 
         <View style={styles.menuSection}>
@@ -310,7 +308,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   modalContent: {
     width: '80%',
-    backgroundColor: colors.modalBg,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
   },
@@ -334,7 +332,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   modalOptionTextSelected: {
-    color: '#007BFF',
+    color: colors.primary,
     fontWeight: 'bold',
   },
 });

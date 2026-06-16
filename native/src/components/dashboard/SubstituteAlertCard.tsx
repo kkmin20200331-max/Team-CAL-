@@ -19,7 +19,7 @@ const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitut
   }
 
   return (
-    <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('Substitute')} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('SubstituteMatching')} activeOpacity={0.8}>
       <View style={styles.alertHeader}> 
         <Text style={styles.alertIcon}>🚨</Text>
         <Text style={styles.alertTitle}>{t('subReqAlertTitle')} 〉</Text>

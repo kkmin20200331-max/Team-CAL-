@@ -24,7 +24,7 @@ const generateWeekDates = (base: Date) => {
 };
 
 const getRealTimeItem = (item: Shift): Shift => {
-  if (item.status === 'OFF' || item.status === 'SUBSTITUTE_REQ' || !item.time || !item.time.includes(' - ')) {
+  if (item.status === 'OFF' || item.status === 'SUBSTITUTE_REQ' || item.status === 'LEAVE_REQ' || !item.time || !item.time.includes(' - ')) {
     return item;
   }
   const now = new Date();
@@ -128,6 +128,7 @@ const ScheduleScreen = ({ navigation }: { navigation: any }) => {
       IN_PROGRESS: { style: styles.badgeInProgress, textStyle: styles.badgeTextInProgress, label: '근무중' },
       COMPLETED: { style: styles.badgeCompleted, textStyle: styles.badgeTextCompleted, label: '근무 완료' },
       SUBSTITUTE_REQ: { style: styles.badgeSubstitute, textStyle: styles.badgeTextSubstitute, label: '대타 요청중' },
+      LEAVE_REQ: { style: styles.badgeLeaveReq, textStyle: styles.badgeTextLeaveReq, label: '휴무 신청 대기중' },
       OFF: { style: styles.badgeOff, textStyle: styles.badgeTextOff, label: '휴무' },
     };
     const currentStatus = statusMap[status as keyof typeof statusMap];
@@ -147,9 +148,9 @@ const ScheduleScreen = ({ navigation }: { navigation: any }) => {
       Toast.show({ type: 'error', text1: '알림', text2: '사유를 입력해주세요.' });
       return;
     }
-    const newStatus = modalType === 'SUBSTITUTE' ? 'SUBSTITUTE_REQ' : 'OFF';
+    const newStatus = modalType === 'SUBSTITUTE' ? 'SUBSTITUTE_REQ' : 'LEAVE_REQ';
     setScheduleData(prev => prev.map(shift => 
-      shift.id === selectedShift!.id ? { ...shift, status: newStatus, time: modalType === 'LEAVE' ? '휴무' : shift.time } : shift
+      shift.id === selectedShift!.id ? { ...shift, status: newStatus } : shift
     ));
     Toast.show({ type: 'success', text1: '신청 완료', text2: '점주에게 요청이 전송되었습니다.' });
     setReqModalVisible(false);
@@ -355,6 +356,8 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   badgeTextCompleted: { color: isDarkMode ? '#D1D5DB' : '#4B5563', fontSize: 12, fontWeight: '600' },
   badgeSubstitute: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7' },
   badgeTextSubstitute: { color: isDarkMode ? '#FDE68A' : '#D97706', fontSize: 12, fontWeight: '600' },
+  badgeLeaveReq: { backgroundColor: isDarkMode ? '#9A3412' : '#FFEDD5' },
+  badgeTextLeaveReq: { color: isDarkMode ? '#FB923C' : '#F97316', fontSize: 12, fontWeight: '600' },
   badgeOff: { backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2' },
   badgeTextOff: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 12, fontWeight: '600' },
   cardBody: { marginBottom: 12 },
@@ -388,7 +391,7 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: { width: `${100/7}%`, aspectRatio: 1, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   dayNumber: { fontSize: 15, color: colors.text },
-  dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: -5 },
+  dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: 8 },
   dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
 });
 

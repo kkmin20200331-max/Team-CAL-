@@ -9,6 +9,7 @@ import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
 import { useApp } from '../../contexts/AppContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../../lib/supabase';
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -81,15 +82,30 @@ export default function SignupScreen({ navigation, route }: Props) {
     }
 
     try {
-      const userId = `U_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`.slice(0, 21);
+      const { data: { user: supabaseUser }, error: supabaseError } = await supabase.auth.signUp({
+        email: id,
+        password: password,
+        options: {
+          data: {
+            full_name: name,
+            phone: phone,
+            role: role,
+          }
+        }
+      });
+
+      if (supabaseError) throw new Error(`Supabase 회원가입 실패: ${supabaseError.message}`);
+      if (!supabaseUser) throw new Error("Supabase 사용자가 생성되지 않았습니다.");
+
+      // ✅ [수정] 역할에 따라 status를 다르게 설정
       const signupData: any = {
-        id: userId,
+        id: supabaseUser.id,
         username: id,
         password,
         name,
         phone,
         role,
-        status: "ACTIVE",
+        status: role === 'ADMIN' ? 'ACTIVE' : 'PENDING', // 관리자는 즉시 활성, 직원은 승인 대기
       };
 
       if (role === 'ADMIN') {
@@ -110,25 +126,22 @@ export default function SignupScreen({ navigation, route }: Props) {
         text2: `${name}님 환영합니다!`,
       });
 
+      const userInfoForLogin = { ...signupData, id: supabaseUser.id };
       if (role === 'ADMIN') {
         const branches = [{ id: 'branch_1', brandName, branchName }];
         await AsyncStorage.setItem(`admin_branch_info_${id}`, JSON.stringify(branches));
-
-        const userInfoForLogin = {
-          ...signupData,
-          branches: branches,
-          activeBranchId: 'branch_1',
-        };
-        login(userInfoForLogin, true);
+        login({ ...userInfoForLogin, branches, activeBranchId: 'branch_1' }, true);
       } else {
-        login(signupData, false);
+        // 직원은 가입 후, 지점 선택을 하지 않은 상태로 로그인
+        login(userInfoForLogin, false);
       }
 
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
+      console.error('회원가입 에러:', error);
+      if (error instanceof Error) {
+        Alert.alert("가입 실패", error.message);
+      } else if (axios.isAxiosError(error) && error.response) {
         Alert.alert("가입 실패", `서버 오류: ${error.response.status}`);
-      } else if (axios.isAxiosError(error) && error.request) {
-        Alert.alert("가입 실패", "백엔드 서버에 연결할 수 없습니다.");
       } else {
         Alert.alert("가입 실패", "알 수 없는 오류가 발생했습니다.");
       }
@@ -156,7 +169,7 @@ export default function SignupScreen({ navigation, route }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.sectionTitle}>기본 정보</Text>
-          <TextInput style={styles.input} placeholder="아이디" value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} />
+          <TextInput style={styles.input} placeholder="아이디 (이메일 형식)" value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} autoCapitalize="none" keyboardType="email-address" />
           <TextInput style={styles.input} placeholder="비밀번호" value={inputs.password} onChangeText={(text) => handleInputChange('password', text)} secureTextEntry={true} />
           <TextInput style={styles.input} placeholder="비밀번호 확인" value={inputs.passwordCheck} onChangeText={(text) => handleInputChange('passwordCheck', text)} secureTextEntry={true} />
           <TextInput style={styles.input} placeholder="이름 (예: 김선민)" value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />

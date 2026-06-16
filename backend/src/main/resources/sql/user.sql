@@ -1,6 +1,6 @@
 create table users (
    id         varchar2(21 char) primary key,
-   username   varchar2(20 char) not null,
+   username   varchar2(40 char) not null,
    password   varchar2(20 char) not null,
    name       varchar2(20 char) not null,
    phone      varchar2(20 char) not null unique,
@@ -78,8 +78,10 @@ insert into users (
 
 select * from users;
 
-DELETE FROM users WHERE username = '1234';
+DELETE FROM users WHERE username = 'cbcb1221@naver.com';
 
 COMMIT;
 
 UPDATE users SET password = '123' WHERE username = 'admin01';
+
+ALTER TABLE users MODIFY (username VARCHAR2(40));

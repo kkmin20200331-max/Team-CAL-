@@ -7,8 +7,8 @@ export interface Shift {
   time: string;     // 예: "14:00 - 22:00" 또는 "휴무"
   storeName: string;
 
-  // 근무 상태: 예정, 진행중, 완료, 대타요청, 또는 휴무
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'SUBSTITUTE_REQ' | 'OFF';
+  // 근무 상태: 예정, 진행중, 완료, 대타요청, 휴무요청, 또는 휴무
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'SUBSTITUTE_REQ' | 'LEAVE_REQ' | 'OFF';
 
   // [선택] 실제 출근 시간 (예: "13:59")
   checkInTime?: string | null;
