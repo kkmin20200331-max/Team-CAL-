@@ -6,7 +6,7 @@ import { translations } from '../../i18n/translations';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Store, Clock, MapPin, LayoutGrid } from 'lucide-react';
-import ProfilePanel from '../../components/admin/ProfilePanel';
+import ProfilePanel from './ProfilePanel';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 

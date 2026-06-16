@@ -27,7 +27,7 @@ import {
   Store,
   Loader2
 } from 'lucide-react';
-import ProfilePanel from '../../components/admin/ProfilePanel';
+import ProfilePanel from './ProfilePanel';
 import {
   LineChart,
   Line,

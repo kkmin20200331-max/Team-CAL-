@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import EmployeeProfilePanel from '../../components/employee/EmployeeProfilePanel';
+import EmployeeProfilePanel from './EmployeeProfilePanel';
+import EmployeeBottomNav from './EmployeeBottomNav';
 import {
   HomeNavIcon, CalendarNavIcon, QrNavIcon, PayrollNavIcon, BoardNavIcon,
   QrCardIcon, CalendarCardIcon, LeaveCardIcon, SubCardIcon, PayrollCardIcon, BoardCardIcon,
-} from '../../components/employee/FigmaIcons';
+} from './figma/FigmaIcons';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
@@ -204,14 +205,6 @@ export default function EmployeeHome() {
     return `${y}-${m}-${day}, ${t.days[d.getDay()]}`;
   })();
 
-  const navItems = [
-    { label: t.home, path: '/employee/home', active: true, NavIcon: HomeNavIcon },
-    { label: t.schedule, path: '/employee/schedule', active: false, NavIcon: CalendarNavIcon },
-    { label: t.checkin, path: '/employee/checkin', active: false, NavIcon: QrNavIcon },
-    { label: t.payrollNav, path: '/employee/payroll', active: false, NavIcon: PayrollNavIcon },
-    { label: t.boardNav, path: '/employee/board', active: false, NavIcon: BoardNavIcon },
-  ];
-
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F5EB', fontFamily: font }}>
@@ -238,14 +231,14 @@ export default function EmployeeHome() {
           {storeName && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 12,
-              height: 48, flexShrink: 0, padding: '0 30px 0 16px',
+              height: 48, flexShrink: 0, padding: '0 24px', width: 320,
               background: `linear-gradient(to right, ${LIGHT_GREEN} 0%, ${LIGHT_GREEN} 10%, ${GREEN} 30%, ${DARK_GREEN} 100%)`,
               borderRadius: 999,
             }}>
               <svg width="25" height="26" viewBox="1004 49 30 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path fillRule="evenodd" clipRule="evenodd" d="M1007.23 49.4509H1030.31L1033.35 57.7411V60.3872C1033.35 61.6049 1032.89 62.7307 1032.14 63.5736V77.3991H1005.4V63.5736C1004.64 62.7307 1004.19 61.6049 1004.19 60.3872V57.7411L1007.23 49.4509ZM1028.79 65.0742C1029.11 65.0742 1029.41 65.0421 1029.7 64.9812V74.9688H1023.63V67.678H1013.91V74.9688H1007.83V64.9812C1008.13 65.0421 1008.43 65.0742 1008.74 65.0742C1010.08 65.0742 1011.26 64.4917 1012.09 63.5736C1012.91 64.4917 1014.09 65.0742 1015.43 65.0742C1016.76 65.0742 1017.94 64.4917 1018.77 63.5736C1019.59 64.4917 1020.78 65.0742 1022.11 65.0742C1023.44 65.0742 1024.63 64.4917 1025.45 63.5736C1026.28 64.4917 1027.46 65.0742 1028.79 65.0742ZM1016.34 74.9688H1021.2V70.1082H1016.34V74.9688ZM1030.92 59.172V60.3872C1030.92 61.6776 1029.92 62.6439 1028.79 62.6439C1027.66 62.6439 1026.67 61.6776 1026.67 60.3872V59.172H1030.92ZM1030.4 56.7417L1028.61 51.8812H1008.92L1007.14 56.7417H1030.4ZM1006.62 59.172V60.3872C1006.62 61.6776 1007.61 62.6439 1008.74 62.6439C1009.87 62.6439 1010.87 61.6776 1010.87 60.3872V59.172H1006.62ZM1013.3 59.172V60.3872C1013.3 61.6776 1014.3 62.6439 1015.43 62.6439C1016.56 62.6439 1017.55 61.6776 1017.55 60.3872V59.172H1013.3ZM1019.98 59.172V60.3872C1019.98 61.6776 1020.98 62.6439 1022.11 62.6439C1023.24 62.6439 1024.24 61.6776 1024.24 60.3872V59.172H1019.98Z" fill="white"/>
               </svg>
-              <span style={{ fontSize: 18, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>{storeName}</span>
+              <span style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap' }}>{storeName}</span>
             </div>
           )}
 
@@ -429,31 +422,7 @@ export default function EmployeeHome() {
         </div>
       </main>
 
-      {/* ── BOTTOM NAV (fixed, white, 114px) ─────────────────────────────── */}
-      <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: 114, background: '#fff',
-        display: 'flex',
-        boxShadow: '0 -2px 8px rgba(0,0,0,0.06)',
-      }}>
-        {navItems.map(({ label, path, active, NavIcon }) => (
-          <button
-            key={path}
-            onClick={() => navigate(path)}
-            style={{
-              flex: 1, border: 'none', cursor: 'pointer',
-              background: active ? DARK_GREEN : '#fff',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'flex-end',
-              paddingBottom: 18, gap: 5,
-              fontFamily: font,
-            }}
-          >
-            <NavIcon size={28} />
-            <span style={{ fontSize: 18, fontWeight: 600, color: active ? '#fff' : GREEN }}>{label}</span>
-          </button>
-        ))}
-      </nav>
+      <EmployeeBottomNav />
     </div>
   );
 }

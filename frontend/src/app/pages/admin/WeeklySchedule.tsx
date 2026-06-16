@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import ProfilePanel from '../../components/admin/ProfilePanel';
+import ProfilePanel from './ProfilePanel';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 

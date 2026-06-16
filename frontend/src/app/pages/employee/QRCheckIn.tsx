@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import EmployeeHeader from '../../components/employee/EmployeeHeader';
+import EmployeeHeader from './EmployeeHeader';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -9,11 +9,6 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import {
-  Home,
-  Calendar,
-  QrCode,
-  Wallet,
-  MessageSquare,
   Camera,
   CheckCircle2,
   XCircle,
@@ -21,8 +16,10 @@ import {
   MapPin,
   AlertCircle,
   RefreshCw,
-  History
+  History,
+  QrCode
 } from 'lucide-react';
+import EmployeeBottomNav from './EmployeeBottomNav';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
@@ -62,9 +59,15 @@ const calcHours = (start: string, end: string) => {
   return Math.max(0, (getMin(end) - getMin(start)) / 60);
 };
 
-const getDayName = (d: string, days: string[]) => {
+const DAY_NAMES: Record<string, string[]> = {
+  ko: ['일', '월', '화', '수', '목', '금', '토'],
+  en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  ja: ['日', '月', '火', '水', '木', '金', '土'],
+};
+
+const getDayName = (d: string, lang: string) => {
   const [y, m, dd] = d.split('-').map(Number);
-  return days[new Date(y, m - 1, dd).getDay()];
+  return (DAY_NAMES[lang] ?? DAY_NAMES.ko)[new Date(y, m - 1, dd).getDay()];
 };
 
 export default function QRCheckIn() {
@@ -158,22 +161,14 @@ export default function QRCheckIn() {
     setTimeout(() => setCheckInStatus('success'), 1000);
   };
 
-  const bottomNavItems = [
-    { icon: Home, label: t.home, path: '/employee/home', active: false },
-    { icon: Calendar, label: t.schedule, path: '/employee/schedule', active: false },
-    { icon: QrCode, label: t.checkin, path: '/employee/checkin', active: true },
-    { icon: Wallet, label: t.payroll, path: '/employee/payroll', active: false },
-    { icon: MessageSquare, label: t.board, path: '/employee/board', active: false }
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       <EmployeeHeader>
         <div>
           <h1 className="text-2xl font-bold">{t.title}</h1>
           <div className="flex items-center gap-2 mt-1">
-            <Clock className="w-4 h-4 text-blue-100" />
-            <span className="text-lg font-mono text-blue-100">
+            <Clock className="w-4 h-4 text-green-100" />
+            <span className="text-lg font-mono text-green-100">
               {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           </div>
@@ -391,7 +386,7 @@ export default function QRCheckIn() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="text-center min-w-[32px]">
-                          <p className="text-xs text-gray-500">{getDayName(d, t.days)}</p>
+                          <p className="text-xs text-gray-500">{getDayName(d, language)}</p>
                           <p className="font-bold">{d.split('-')[2]}</p>
                         </div>
                         <div className="h-8 w-px bg-gray-300 dark:bg-gray-600" />
@@ -416,25 +411,7 @@ export default function QRCheckIn() {
         </Card>
       </div>
 
-      {/* ── 하단 네비 ── */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-around px-2 py-2">
-          {bottomNavItems.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                item.active
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <EmployeeBottomNav />
     </div>
   );
 }

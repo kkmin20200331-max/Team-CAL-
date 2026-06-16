@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import EmployeeHeader from '../../components/employee/EmployeeHeader';
+import EmployeeHeader from './EmployeeHeader';
 import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import {
-  Home, Calendar, QrCode, Wallet, MessageSquare, ChevronLeft, ChevronRight, Clock
+  ChevronLeft, ChevronRight, Clock
 } from 'lucide-react';
+import EmployeeBottomNav from './EmployeeBottomNav';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
@@ -134,14 +135,6 @@ export default function EmployeeBoard() {
     setSelectedPostId(null);
   };
 
-  const bottomNavItems = [
-    { icon: Home,          label: t.home,     path: '/employee/home' },
-    { icon: Calendar,      label: t.schedule, path: '/employee/schedule' },
-    { icon: QrCode,        label: t.checkin,  path: '/employee/checkin' },
-    { icon: Wallet,        label: t.payroll,  path: '/employee/payroll' },
-    { icon: MessageSquare, label: t.board,    path: '/employee/board', active: true },
-  ];
-
   // 카테고리 칩 목록 (전체 + DB board 이름들)
   const categoryChips = [t.allCategory, ...boards.map(b => b.name)];
 
@@ -152,7 +145,7 @@ export default function EmployeeBoard() {
       <EmployeeHeader>
         <div>
           <h1 className="text-2xl font-bold">{t.title}</h1>
-          <p className="text-blue-100 text-sm mt-1">{t.subtitle}</p>
+          <p className="text-green-100 text-sm mt-1">{t.subtitle}</p>
         </div>
       </EmployeeHeader>
 
@@ -288,25 +281,7 @@ export default function EmployeeBoard() {
         </div>
       )}
 
-      {/* ── 하단 네비 ── */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-around px-2 py-2">
-          {bottomNavItems.map((item, i) => (
-            <button
-              key={i}
-              onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                (item as any).active
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <EmployeeBottomNav />
     </div>
   );
 }

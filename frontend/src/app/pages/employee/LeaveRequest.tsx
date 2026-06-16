@@ -10,13 +10,13 @@ import { Textarea } from '../../components/ui/textarea';
 import { Label } from '../../components/ui/label';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import {
-  Home, Calendar, QrCode, Wallet, MessageSquare,
   FileText, Clock, CheckCircle2, XCircle, AlertCircle,
   Send, Trash2, ChevronLeft, ChevronRight, MapPin
 } from 'lucide-react';
+import EmployeeBottomNav from './EmployeeBottomNav';
 import { format, addMonths, subMonths } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import EmployeeHeader from '../../components/employee/EmployeeHeader';
+import EmployeeHeader from './EmployeeHeader';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
@@ -201,21 +201,13 @@ export default function LeaveRequest() {
     }
   };
 
-  const bottomNavItems = [
-    { icon: Home, label: t.home, path: '/employee/home', active: false },
-    { icon: Calendar, label: t.schedule, path: '/employee/schedule', active: false },
-    { icon: QrCode, label: t.checkin, path: '/employee/checkin', active: false },
-    { icon: Wallet, label: t.payroll, path: '/employee/payroll', active: false },
-    { icon: MessageSquare, label: t.board, path: '/employee/board', active: false },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       {/* 공통 헤더 */}
       <EmployeeHeader>
         <div>
           <h1 className="text-2xl font-bold">{t.title}</h1>
-          <p className="text-blue-100 text-sm mt-1">{t.subtitle}</p>
+          <p className="text-green-100 text-sm mt-1">{t.subtitle}</p>
         </div>
       </EmployeeHeader>
 
@@ -436,25 +428,7 @@ export default function LeaveRequest() {
 
       </div>
 
-      {/* 하단 네비게이션 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-around px-2 py-2">
-          {bottomNavItems.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                item.active
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <EmployeeBottomNav />
     </div>
   );
 }

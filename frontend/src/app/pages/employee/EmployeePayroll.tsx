@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import EmployeeHeader from '../../components/employee/EmployeeHeader';
+import EmployeeHeader from './EmployeeHeader';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
-  Home, Calendar, QrCode, Wallet, MessageSquare,
   TrendingUp, ChevronLeft, ChevronRight, BarChart3, Clock, Banknote
 } from 'lucide-react';
+import EmployeeBottomNav from './EmployeeBottomNav';
 import {
   LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -286,20 +286,12 @@ export default function EmployeePayroll() {
     </div>
   );
 
-  const bottomNavItems = [
-    { icon: Home, label: t.home, path: '/employee/home' },
-    { icon: Calendar, label: t.schedule, path: '/employee/schedule' },
-    { icon: QrCode, label: t.checkin, path: '/employee/checkin' },
-    { icon: Wallet, label: t.payrollNav, path: '/employee/payroll', active: true },
-    { icon: MessageSquare, label: t.board, path: '/employee/board' },
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
       <EmployeeHeader>
         <div>
           <h1 className="text-2xl font-bold">{t.title}</h1>
-          <p className="text-blue-100 text-sm mt-1">{t.subtitle}</p>
+          <p className="text-green-100 text-sm mt-1">{t.subtitle}</p>
         </div>
       </EmployeeHeader>
 
@@ -562,22 +554,7 @@ export default function EmployeePayroll() {
         </Tabs>
       </div>
 
-      {/* 하단 네비 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-around px-2 py-2">
-          {bottomNavItems.map((item, i) => (
-            <button key={i} onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                (item as any).active
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}>
-              <item.icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <EmployeeBottomNav />
     </div>
   );
 }

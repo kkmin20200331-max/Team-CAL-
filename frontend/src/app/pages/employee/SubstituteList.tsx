@@ -13,7 +13,7 @@ import {
   Search, MapPin, Clock, DollarSign,
   AlertCircle, Check, Save,
 } from 'lucide-react';
-import EmployeeProfilePanel from '../../components/employee/EmployeeProfilePanel';
+import EmployeeProfilePanel from './EmployeeProfilePanel';
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 

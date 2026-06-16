@@ -9,11 +9,6 @@ import { Badge } from '../../components/ui/badge';
 import { Calendar } from '../../components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
-  Home,
-  Calendar as CalendarIcon,
-  QrCode,
-  Wallet,
-  MessageSquare,
   Clock,
   MapPin,
   ChevronLeft,
@@ -22,7 +17,8 @@ import {
   XCircle,
   AlertCircle,
 } from 'lucide-react';
-import EmployeeHeader from '../../components/employee/EmployeeHeader';
+import EmployeeBottomNav from './EmployeeBottomNav';
+import EmployeeHeader from './EmployeeHeader';
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
   startOfWeek, addDays, isSameDay
@@ -227,14 +223,6 @@ export default function MySchedule() {
         return <Badge className="gap-1 bg-red-500"><XCircle className="w-3 h-3" />{t.statusSub}</Badge>;
     }
   };
-
-  const bottomNavItems = [
-    { icon: Home, label: t.home, path: '/employee/home', active: false },
-    { icon: CalendarIcon, label: t.schedule, path: '/employee/schedule', active: true },
-    { icon: QrCode, label: t.checkin, path: '/employee/checkin', active: false },
-    { icon: Wallet, label: t.payroll, path: '/employee/payroll', active: false },
-    { icon: MessageSquare, label: t.board, path: '/employee/board', active: false }
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
@@ -459,25 +447,7 @@ export default function MySchedule() {
         </Card>
       </div>
 
-      {/* 하단 네비게이션 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-around px-2 py-2">
-          {bottomNavItems.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                item.active
-                  ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <EmployeeBottomNav />
     </div>
   );
 }

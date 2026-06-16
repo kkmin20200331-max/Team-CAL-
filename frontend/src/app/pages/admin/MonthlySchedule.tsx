@@ -9,7 +9,7 @@ import {
   startOfWeek, addDays, isSameMonth, isSameDay
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import ProfilePanel from '../../components/admin/ProfilePanel';
+import ProfilePanel from './ProfilePanel';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 
