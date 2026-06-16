@@ -1,31 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-// TypeScript: 이 화면에서 사용할 네비게이션 타입을 정의합니다.
 type PendingScreenNavigationProp = StackNavigationProp<any, 'Pending'>;
 
+// ✅ [개선 21] 부모(App.tsx)로부터 받는 handleLogout 함수의 타입을 명확하게 정의합니다.
 type Props = {
   navigation: PendingScreenNavigationProp;
-  setIsLoggedIn: (value: boolean) => void;
+  handleLogout: () => void;
 };
 
-const PendingScreen = ({ navigation, setIsLoggedIn }: Props) => {
-  // 상태 새로고침 (실제로는 API 재호출 로직이 들어갑니다)
+const PendingScreen = ({ navigation, handleLogout }: Props) => {
   const handleRefresh = () => {
     // 메모: 승인 상태 조회 API가 연결되면 여기에서 재호출합니다.
   };
 
-  // 👇 [수정] goBack 대신 상태를 로그아웃(false)으로 변경합니다.
-  const handleLogout = () => {
-    setIsLoggedIn(false); 
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
-
-{/* 상단 헤더 영역 (뒤로 가기 버튼 포함) */}
       <View style={styles.header}>
+        {/* ✅ [개선 22] App.tsx에서 전달받은 완전한 로그아웃 함수(handleLogout)를 사용합니다. */}
         <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
@@ -34,7 +28,6 @@ const PendingScreen = ({ navigation, setIsLoggedIn }: Props) => {
       </View>
 
       <View style={styles.container}>
-        {/* 아이콘이나 로고가 들어갈 자리 */}
         <View style={styles.iconPlaceholder}>
           <Text style={styles.iconText}>⏳</Text>
         </View>
@@ -66,7 +59,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  // 상단 커스텀 헤더 스타일
   header: {
     height: 56,
     flexDirection: 'row',
@@ -90,14 +82,14 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   headerRightPlaceholder: {
-    width: 40, // 좌측 버튼과 균형을 맞추기 위한 빈 공간
+    width: 40,
   },
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
-    marginTop: -56, // 헤더 높이만큼 컨텐츠를 위로 올려 완벽한 수직 중앙 정렬 구현
+    marginTop: -56,
   },
   iconPlaceholder: {
     width: 80,

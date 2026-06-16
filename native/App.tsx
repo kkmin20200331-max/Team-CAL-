@@ -1,240 +1,228 @@
-import React, { useState, useContext } from 'react';
+import React, { useEffect } from 'react';
+import { Platform, View, Text, StyleSheet } from 'react-native'; // 1. View, Text, StyleSheet 임포트
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-// ✅ [추가 1] 하단 탭 네비게이션을 위해 필요한 라이브러리 임포트
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message'; // 2. BaseToast, ErrorToast 임포트
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as Notifications from 'expo-notifications';
 
-// 화면 불러오기
-import LoginScreen from './src/screens/LoginScreen';
-import SignupScreen from './src/screens/SignupScreen';
-import DashboardScreen from './src/screens/DashboardScreen';
-import PendingScreen from './src/screens/PendingScreen';
-import BranchSelectScreen from './src/screens/BranchSelectScreen';
-import QRCheckInScreen from './src/screens/QRCheckInScreen';
-import MyPageScreen from './src/screens/MyPageScreen';
-import NotificationScreen from './src/screens/NotificationScreen';
-import ScheduleScreen from './src/screens/ScheduleScreen';
-import ProfileEditScreen from './src/screens/ProfileEditScreen';
-import BoardScreen from './src/screens/BoardScreen'; // ✅ [추가] 게시판 화면 불러오기
+// Screens
+import LoginScreen from './src/screens/auth/LoginScreen';
+import SignupScreen from './src/screens/auth/SignupScreen';
+import SignupChoiceScreen from './src/screens/auth/SignupChoiceScreen';
+import PendingScreen from './src/screens/auth/PendingScreen';
+import BranchSelectScreen from './src/screens/main/BranchSelectScreen';
+import MyPageScreen from './src/screens/mypage/MyPageScreen';
+import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
+import AdminScheduleScreen from './src/screens/admin/AdminScheduleScreen';
+import AdminDailyScheduleScreen from './src/screens/admin/AdminDailyScheduleScreen';
+import EmployeeManagementScreen from './src/screens/admin/EmployeeManagementScreen';
+import ShiftEditorScreen from './src/screens/admin/ShiftEditorScreen';
+import EmployeeDetailScreen from './src/screens/admin/EmployeeDetailScreen';
+import SubstituteManagementScreen from './src/screens/admin/SubstituteManagementScreen';
+import AddBranchScreen from './src/screens/admin/AddBranchScreen';
+import StaffDashboardScreen from './src/screens/main/DashboardScreen';
+import StaffScheduleScreen from './src/screens/schedule/ScheduleScreen';
+import NotificationScreen from './src/screens/board/NotificationScreen';
+import BoardScreen from './src/screens/board/BoardScreen';
+import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
+import BoardWriteScreen from './src/screens/board/BoardWriteScreen';
+import PayrollScreen from './src/screens/main/PayrollScreen';
+import ContractScreen from './src/screens/mypage/ContractScreen';
+import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
+import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
+import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
+import SubstituteScreen from './src/screens/schedule/SubstituteScreen';
 
-// ✅ [추가] 알림 전역 상태 관리를 위한 Context 불러오기
-import { NotificationProvider, NotificationContext } from './src/contexts/NotificationContext';
-// ✅ [추가] 다국어 전역 상태 관리를 위한 Context 불러오기
+// Contexts
+import { AppProvider, useApp } from './src/contexts/AppContext';
+import { NotificationProvider } from './src/contexts/NotificationContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
+import { ThemeProvider } from './src/contexts/ThemeContext';
+import { BoardProvider } from './src/contexts/BoardContext';
+import { ScheduleProvider } from './src/contexts/ScheduleContext';
 
-// ✅ [정리] 중복 선언된 Stack은 하나만 남기고, Tab 네비게이터를 생성합니다.
-const Stack = createStackNavigator();
-const Tab = createBottomTabNavigator();
-
-// ---------------------------------------------------------
-// ✅ [직원용] 하단 탭 네비게이터
-// ---------------------------------------------------------
-function StaffTabNavigator({ route }: any) {
-  // App에서 넘겨받은 전역 상태 변경 함수를 가져옵니다.
-  // ✅ setUserInfo를 추가로 받아옵니다.
-  const { setIsLoggedIn, userInfo, setUserInfo } = route.params;
-
-  // ✅ 안 읽은 알림 개수 가져오기
-  const { unreadCount } = useContext(NotificationContext);
-
-  return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: '#2563EB',   // 활성화된 탭 아이콘 색상
-        tabBarInactiveTintColor: '#9CA3AF', // 비활성화된 탭 아이콘 색상
-        headerShown: false,                 // 탭 화면들에서 상단 타이틀 바 숨김
+// 3. 커스텀 토스트 메시지 UI 설정
+const toastConfig = {
+  success: (props: any) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: '#69C779', height: 65, width: '90%' }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: 16,
+        fontWeight: 'bold',
       }}
-    >
-      {/* 1. 홈 탭 (기존 대시보드) */}
-      <Tab.Screen 
-        name="Home" 
-        options={{ title: '홈', tabBarIcon: () => <Text>🏠</Text> }}
-      >
-        {(props) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
-      </Tab.Screen>
+      text2Style={{
+        fontSize: 14,
+      }}
+    />
+  ),
+  error: (props: any) => (
+    <ErrorToast
+      {...props}
+      style={{ borderLeftColor: '#FE6301', height: 65, width: '90%' }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: 16,
+        fontWeight: 'bold',
+      }}
+      text2Style={{
+        fontSize: 14,
+      }}
+    />
+  ),
+};
 
-      {/* 2. 내 스케줄 탭 */}
-      <Tab.Screen 
-        name="Schedule" 
-        component={ScheduleScreen} 
-        initialParams={{ userInfo }} // ✅ API 통신을 위해 유저 정보 전달
-        options={{ title: '내 스케줄', tabBarIcon: () => <Text>📅</Text> }} 
-      />
 
-      {/* 3. 알림 탭 (숫자 배지 추가 가능) */}
-      <Tab.Screen 
-        name="Notifications" 
-        component={NotificationScreen} 
-        // 💡 unreadCount가 0보다 클 때만 숫자를 보여주고, 0이면 배지를 숨깁니다(undefined)
-        options={{ title: '알림', tabBarIcon: () => <Text>🔔</Text>, tabBarBadge: unreadCount > 0 ? unreadCount : undefined }} 
-      />
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
-      {/* 4. 마이페이지 탭 */}
-      <Tab.Screen 
-        name="MyPage" 
-        component={MyPageScreen} 
-        initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} // 정보 업데이트 함수까지 전달
-        options={{ title: '마이페이지', tabBarIcon: () => <Text>👤</Text> }} 
-      />
-    </Tab.Navigator>
+async function registerForPushNotificationsAsync() {
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+    });
+  }
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+  if (existingStatus !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+  if (finalStatus !== 'granted') {
+    alert('푸시 알림을 받으려면 알림 권한을 허용해주세요!');
+    return;
+  }
+}
+
+
+const AuthStack = createStackNavigator();
+const MainStack = createStackNavigator();
+const AdminTab = createBottomTabNavigator();
+const StaffTab = createBottomTabNavigator();
+const BoardStack = createStackNavigator();
+
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="SignupChoice" component={SignupChoiceScreen} />
+      <AuthStack.Screen name="Signup" component={SignupScreen} />
+    </AuthStack.Navigator>
   );
 }
 
-// ---------------------------------------------------------
-// ✅ [관리자용] 하단 탭 네비게이터
-// ---------------------------------------------------------
-function AdminTabNavigator({ route }: any) {
-  const { setIsLoggedIn, userInfo, setUserInfo } = route.params;
-
+function AdminTabNavigator() {
   return (
-    <Tab.Navigator
-      screenOptions={{
-        // 관리자는 탭 색상을 다르게(예: 주황/빨강) 주어 시각적으로 확실히 구분되게 합니다.
-        tabBarActiveTintColor: '#FF5A5F',   
-        tabBarInactiveTintColor: '#9CA3AF',
-        headerShown: false,                 
-      }}
-    >
-      {/* 관리자 1. 매장 관리 홈 (임시로 기존 대시보드 연결, 추후 AdminDashboardScreen으로 교체) */}
-      <Tab.Screen 
-        name="AdminHome" 
-        options={{ title: '매장 관리', tabBarIcon: () => <Text>🏪</Text> }}
-      >
-        {(props) => <DashboardScreen {...props} setIsLoggedIn={setIsLoggedIn} userInfo={userInfo} />}
-      </Tab.Screen>
-
-      {/* ✅ [추가] 관리자 2. 스케줄 관리 탭 */}
-      <Tab.Screen
-        name="AdminSchedule"
-        component={ScheduleScreen}
-        initialParams={{ userInfo }} // API 통신을 위해 유저 정보 전달
-        options={{ title: '스케줄 관리', tabBarIcon: () => <Text>📅</Text> }}
-      />
-
-      {/* 관리자 3. 설정 (마이페이지 공통 사용) */}
-      <Tab.Screen 
-        name="AdminSettings" 
-        component={MyPageScreen} 
-        initialParams={{ setIsLoggedIn, userInfo, setUserInfo }} 
-        options={{ title: '설정', tabBarIcon: () => <Text>⚙️</Text> }} 
-      />
-    </Tab.Navigator>
+    <AdminTab.Navigator screenOptions={{ headerShown: false }}>
+      <AdminTab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: '대시보드' }} />
+      <AdminTab.Screen name="EmployeeManagement" component={EmployeeManagementScreen} options={{ title: '직원관리' }} />
+      <AdminTab.Screen name="AdminMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
+    </AdminTab.Navigator>
   );
+}
+
+function BoardNavigator() {
+  return (
+    <BoardStack.Navigator screenOptions={{ headerShown: false }}>
+      <BoardStack.Screen name="Board" component={BoardScreen} />
+      <BoardStack.Screen name="BoardDetail" component={BoardDetailScreen} />
+      <BoardStack.Screen name="BoardWrite" component={BoardWriteScreen} />
+    </BoardStack.Navigator>
+  );
+}
+
+function StaffTabNavigator() {
+  return (
+    <StaffTab.Navigator screenOptions={{ headerShown: false }}>
+      <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '홈' }} />
+      <StaffTab.Screen name="StaffSchedule" component={StaffScheduleScreen} options={{ title: '스케줄' }} />
+      <StaffTab.Screen name="Notifications" component={NotificationScreen} options={{ title: '알림' }} />
+      <StaffTab.Screen name="StaffMyPage" component={MyPageScreen} options={{ title: '마이페이지' }} />
+    </StaffTab.Navigator>
+  );
+}
+
+function MainNavigator() {
+  const { userInfo } = useApp();
+  return (
+    <MainStack.Navigator screenOptions={{ headerShown: false }}>
+      {userInfo?.role === 'ADMIN' ? (
+        <MainStack.Screen name="AdminRoot" component={AdminTabNavigator} />
+      ) : (
+        <MainStack.Screen name="StaffRoot" component={StaffTabNavigator} />
+      )}
+      <MainStack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
+      <MainStack.Screen name="AdminDailySchedule" component={AdminDailyScheduleScreen} />
+      <MainStack.Screen name="ShiftEditor" component={ShiftEditorScreen} />
+      <MainStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
+      <MainStack.Screen name="SubstituteManagement" component={SubstituteManagementScreen} />
+      <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
+      <MainStack.Screen name="BoardNavigator" component={BoardNavigator} />
+      <MainStack.Screen name="Payroll" component={PayrollScreen} />
+      <MainStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+      <MainStack.Screen name="Contract" component={ContractScreen} />
+      <MainStack.Screen name="HealthCert" component={HealthCertScreen} />
+      <MainStack.Screen name="QRCheckIn" component={QRCheckInScreen} />
+      <MainStack.Screen name="Substitute" component={SubstituteScreen} />
+    </MainStack.Navigator>
+  );
+}
+
+function AppContent() {
+  const { userInfo, userStatus, hasSelectedBranch, logout } = useApp();
+  const isLoggedIn = !!userInfo;
+
+  if (!isLoggedIn) {
+    return <AuthNavigator />;
+  }
+
+  if (!hasSelectedBranch) {
+    return <BranchSelectScreen />;
+  }
+
+  if (userStatus !== 'ACTIVE') {
+    return <PendingScreen handleLogout={logout} />;
+  }
+
+  return <MainNavigator />;
 }
 
 export default function App() {
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // 로그인 상태 관리
-  const [userStatus, setUserStatus] = useState('pending'); // 사용자 상태 관리
-  // 👇 2. 지점 선택 여부를 관리하는 상태 추가 (초기값: false)
-  const [hasSelectedBranch, setHasSelectedBranch] = useState(false); // 지점 선택 관리
-  // 👇 3. 로그인한 유저의 정보를 통째로 저장하는 상태 추가
-  const [userInfo, setUserInfo] = useState<any>(null);
-
-return (
-  <LanguageProvider>
-    <NotificationProvider>
-    <NavigationContainer>
-        {/* 조건부 렌더링 시 initialRouteName은 생략해도 됩니다. */}
-        <Stack.Navigator>
-          
-          {/* ▼ 여기에 조건부 로직이 들어갑니다 ▼ */}
-          {!isLoggedIn ? (
-            // [상태 1] 로그인이 안 된 경우
-            <>
-              <Stack.Screen name="Login" options={{ headerShown: false }}>
-                {(props) => (
-                  <LoginScreen 
-                    {...props} 
-                    // 👇 화살표 함수로 감싸서 값만 전달하도록 명확히 수정합니다.
-                    setIsLoggedIn={setIsLoggedIn}
-                    setUserStatus={setUserStatus}
-                    // 👇 로그아웃 후 다시 로그인할 때를 위해 함수를 넘겨줍니다.
-                    setHasSelectedBranch={setHasSelectedBranch}
-                    // 👇 로그인 성공 시 백엔드에서 받은 유저 정보를 저장할 함수
-                    setUserInfo={setUserInfo}
-                  />
-                )}
-              </Stack.Screen>
-              <Stack.Screen 
-                name="Signup" 
-                component={SignupScreen} 
-                options={{ title: '회원가입' }} 
-              />
-            </>
-          ) : !hasSelectedBranch ? (
-            // 👇 [상태 1.5] 로그인은 했지만 지점 선택을 안 한 경우 (새로 추가됨!)
-            <Stack.Screen name="BranchSelect" options={{ headerShown: false }}>
-              {({ navigation }) => (
-                <BranchSelectScreen 
-                  navigation={navigation} 
-                  setHasSelectedBranch={setHasSelectedBranch} 
-                  userInfo={userInfo}
-                  setUserInfo={setUserInfo}
-                />
-              )}
-            </Stack.Screen>
-            ): userStatus === 'active' ? (
-              // <> </> 한 화면 안에 두 개가 있으면 빈 태그로 감싸줘야 합니다.
-              <> 
-              {/* [상태 2] 승인 완료 (메인 서비스 영역) */}
-              
-              {/* ✅ [권한별 분기] 로그인한 유저의 role을 확인하여 다른 화면을 보여줍니다. */}
-              {userInfo?.role === 'ADMIN' ? (
-                <Stack.Screen 
-                  name="AdminTab" 
-                  component={AdminTabNavigator} 
-                  initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
-                  options={{ headerShown: false }} 
-                />
-              ) : (
-                <Stack.Screen 
-                  name="StaffTab" 
-                  component={StaffTabNavigator} 
-                  initialParams={{ setIsLoggedIn, userInfo, setUserInfo }}
-                  options={{ headerShown: false }} 
-                />
-              )}
-  
-            {/* 👇 대시보드와 형제 위치에 QR 화면을 추가합니다. */}
-              <Stack.Screen 
-                name="QRCheckIn" 
-                component={QRCheckInScreen} 
-                options={{ headerShown: false }} 
-              />
-  
-            {/* 👇 개인정보 수정 화면 추가 (탭 바를 덮도록 Stack에 추가) */}
-              <Stack.Screen 
-                name="ProfileEdit" 
-                component={ProfileEditScreen} 
-                options={{ headerShown: false }} 
-              />
-  
-            {/* 👇 게시판 전체 보기 화면 추가 (탭 바를 덮도록 Stack에 추가) */}
-              <Stack.Screen 
-                name="Board" 
-                component={BoardScreen} 
-                options={{ headerShown: false }} 
-              />
-          </>
-          ) : (
-            // [상태 3] 로그인 + 승인 대기
-            <Stack.Screen name="Pending" options={{ headerShown: false }}>
-              {/* 여기도 동일하게 수정합니다 */}
-              {({ navigation }) => (
-                <PendingScreen 
-                  navigation={navigation} 
-                  setIsLoggedIn={setIsLoggedIn}  
-                />
-              )}
-            </Stack.Screen>
-          )}
-          {/* ▲ 조건부 로직 끝 ▲ */}
-          
-        </Stack.Navigator>
-    </NavigationContainer>
-    </NotificationProvider>
-  </LanguageProvider>
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AppProvider>
+            <NotificationProvider>
+              <BoardProvider>
+                <ScheduleProvider>
+                  <NavigationContainer>
+                    <AppContent />
+                  </NavigationContainer>
+                </ScheduleProvider>
+              </BoardProvider>
+              {/* 4. Toast 컴포넌트에 config 전달 */}
+              <Toast config={toastConfig} />
+            </NotificationProvider>
+          </AppProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
