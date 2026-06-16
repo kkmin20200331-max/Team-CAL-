@@ -1,12 +1,18 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
-import axios from 'axios';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
-import { Store, Clock, MapPin, LayoutGrid } from 'lucide-react';
-import ProfilePanel from '../../components/admin/ProfilePanel';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "../../components/ui/card";
+import { Store, Clock, MapPin, LayoutGrid } from "lucide-react";
+import ProfilePanel from "../../components/admin/ProfilePanel";
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface StoreVo {
   id: string;
@@ -35,8 +41,8 @@ export default function BranchSelection() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const res = await API.get('/store', { params: { user_id: user.id } });
+        const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+        const res = await API.get("/store", { params: { user_id: user.id } });
         const storeList: StoreVo[] = Array.isArray(res.data) ? res.data : [];
         setStores(storeList);
 
@@ -44,8 +50,8 @@ export default function BranchSelection() {
         const pending: PendingEmployee[] = [];
         for (const store of storeList) {
           try {
-            const guestRes = await API.get('/users/guest', {
-              params: { store_id: store.id, role: 'ADMIN' }
+            const guestRes = await API.get("/users/guest", {
+              params: { store_id: store.id, role: "ADMIN" },
             });
             const guests = Array.isArray(guestRes.data) ? guestRes.data : [];
             guests.forEach((g: any) => {
@@ -60,9 +66,9 @@ export default function BranchSelection() {
             });
           } catch {}
         }
-        sessionStorage.setItem('pendingList', JSON.stringify(pending));
+        sessionStorage.setItem("pendingList", JSON.stringify(pending));
       } catch (err) {
-        console.error('매장 조회 실패:', err);
+        console.error("매장 조회 실패:", err);
       } finally {
         setStoresLoading(false);
       }
@@ -71,8 +77,8 @@ export default function BranchSelection() {
   }, []);
 
   const handleSelectStore = (store: StoreVo) => {
-    localStorage.setItem('store_id', store.id);
-    localStorage.setItem('store_name', store.name);
+    sessionStorage.setItem("store_id", store.id);
+    sessionStorage.setItem("store_name", store.name);
     navigate(`/admin/dashboard/${store.id}`);
   };
 
@@ -83,8 +89,12 @@ export default function BranchSelection() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">지점 선택</h1>
-              <p className="mt-1 text-gray-600 dark:text-gray-400">관리할 지점을 선택해주세요</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                지점 선택
+              </h1>
+              <p className="mt-1 text-gray-600 dark:text-gray-400">
+                관리할 지점을 선택해주세요
+              </p>
             </div>
 
             {/* ProfilePanel 컴포넌트 사용 (알림 + 프로필 통합) */}
@@ -95,15 +105,23 @@ export default function BranchSelection() {
 
       {/* Store Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Button onClick={() => navigate('/admin/multibranch')} variant="outline" className="gap-2 mb-6 w-full">
+        <Button
+          onClick={() => navigate("/admin/multibranch")}
+          variant="outline"
+          className="gap-2 mb-6 w-full"
+        >
           <LayoutGrid className="w-4 h-4" />
           전체 지점 통합 보기
         </Button>
 
         {storesLoading ? (
-          <div className="flex items-center justify-center py-20 text-gray-500">불러오는 중...</div>
+          <div className="flex items-center justify-center py-20 text-gray-500">
+            불러오는 중...
+          </div>
         ) : stores.length === 0 ? (
-          <div className="text-center text-gray-500 py-20">등록된 매장이 없습니다.</div>
+          <div className="text-center text-gray-500 py-20">
+            등록된 매장이 없습니다.
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {stores.map((store) => (
@@ -125,11 +143,16 @@ export default function BranchSelection() {
                 <CardContent className="space-y-2">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Clock className="w-4 h-4" />
-                    <span>운영시간: {store.open_time} ~ {store.close_time}</span>
+                    <span>
+                      운영시간: {store.open_time} ~ {store.close_time}
+                    </span>
                   </div>
                   <Button
                     className="w-full mt-4"
-                    onClick={(e) => { e.stopPropagation(); handleSelectStore(store); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectStore(store);
+                    }}
                   >
                     지점 상세 보기
                   </Button>
