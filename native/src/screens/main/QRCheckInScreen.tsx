@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 // Expo Camera 최신 API
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import Toast from 'react-native-toast-message';
 
 type QRCheckInScreenNavigationProp = StackNavigationProp<any, 'QRCheckIn'>;
 
@@ -38,19 +40,14 @@ const QRCheckInScreen = ({ navigation }: Props) => {
     setScanned(true); // 중복 스캔 방지
     
     // TODO: 여기서 백엔드로 스캔한 QR 데이터(data)를 보내는 로직(Axios)이 들어갑니다.
-    Alert.alert(
-      "QR 인식 성공!",
-      `스캔된 데이터: ${data}\n(나중에 이 데이터를 서버로 전송합니다)`,
-      [
-        { 
-          text: "확인", 
-          onPress: () => {
-            setScanned(false); // 다시 스캔할 수 있게 초기화하거나
-            navigation.goBack(); // 대시보드로 돌아가게 만듭니다.
-          } 
-        }
-      ]
-    );
+    Toast.show({
+      type: 'success',
+      text1: 'QR 인식 성공!',
+      text2: `스캔된 데이터: ${data}`,
+    });
+    
+    // 스캔 직후 바로 대시보드로 돌아가기
+    navigation.goBack();
   };
 
   return (

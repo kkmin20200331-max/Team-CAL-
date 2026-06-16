@@ -1,30 +1,45 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Modal, Pressable, Switch } from 'react-native';
-import { useLanguage, Language } from '../contexts/LanguageContext';
+import React, { useState, useMemo } from 'react'; // useMemo 임포트
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage, Language } from '../../contexts/LanguageContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useApp } from '../../contexts/AppContext';
+import Toast from 'react-native-toast-message';
 
-// ✅ navigation 객체를 받아오도록 파라미터 추가
-const MyPageScreen = ({ route, navigation }: any) => {
-  // ✅ setUserInfo까지 꺼내옵니다.
-  const { setIsLoggedIn, userInfo, setUserInfo } = route.params || {};
-  
-  // ✅ 화면 모드(라이트/다크) 상태 관리
+type Props = {
+  navigation: any;
+};
+
+const MyPageScreen = ({ navigation }: Props) => {
+  const { userInfo, logout } = useApp(); 
+
+  const { themeMode, setThemeMode, colors } = useTheme();
   const [themeModalVisible, setThemeModalVisible] = useState(false);
-  const [themeMode, setThemeMode] = useState('시스템 설정'); // 기본값
-
-  // ✅ 전역 언어 설정 가져오기
   const { language, setLanguage, t } = useLanguage();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
-
-  // ✅ 알림 설정 상태 관리 (기본값: 켜짐)
   const [isPushEnabled, setIsPushEnabled] = useState(true);
 
-  // 백엔드에서 데이터가 아직 전달되지 않았을 경우를 대비한 안전장치(Fallback)
   const name = userInfo?.name || '사용자';
   const role = userInfo?.role || 'STAFF';
-  // 현재 백엔드 UserVo에 매장 이름(store_id 등)이 명확히 담겨오지 않을 수 있어 임시로 지정합니다.
-  const branch = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
 
-  // 메뉴 항목을 간편하게 그리기 위한 함수
+  // ✅ [수정] 활성 지점 정보를 동적으로 찾도록 수정
+  const activeBranch = useMemo(() => {
+    if (!userInfo) return null;
+    // 관리자인 경우
+    if (userInfo.role === 'ADMIN' && userInfo.branches && userInfo.activeBranchId) {
+      return userInfo.branches.find(b => b.id === userInfo.activeBranchId);
+    }
+    // 직원인 경우 (또는 관리자인데 지점 정보가 없는 예외 케이스)
+    return {
+      brandName: userInfo.brandName || '브랜드',
+      branchName: userInfo.branchName || '지점',
+    };
+  }, [userInfo]);
+
+  const branchDisplayName = activeBranch ? `${activeBranch.brandName} ${activeBranch.branchName}` : '지점 정보 없음';
+
+  const styles = getThemedStyles(colors);
+
   const renderMenuItem = (icon: string, title: string, onPress: () => void) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.menuLeft}>
@@ -35,7 +50,6 @@ const MyPageScreen = ({ route, navigation }: any) => {
     </TouchableOpacity>
   );
 
-  // 스위치(토글)가 있는 메뉴 항목을 그리기 위한 함수
   const renderSwitchItem = (icon: string, title: string, value: boolean, onValueChange: (val: boolean) => void) => (
     <View style={styles.menuItem}>
       <View style={styles.menuLeft}>
@@ -43,7 +57,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
         <Text style={styles.menuTitle}>{title}</Text>
       </View>
       <Switch
-        trackColor={{ false: '#D1D5DB', true: '#34C759' }} // 꺼졌을 때 회색, 켜졌을 때 초록색
+        trackColor={{ false: '#D1D5DB', true: '#34C759' }}
         thumbColor={'#FFFFFF'}
         ios_backgroundColor="#D1D5DB"
         onValueChange={onValueChange}
@@ -52,52 +66,74 @@ const MyPageScreen = ({ route, navigation }: any) => {
     </View>
   );
 
+  const handleWithdraw = () => {
+    Alert.alert(
+      t('withdrawConfirmTitle'),
+      t('withdrawConfirmMsg'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('confirm'),
+          onPress: () => {
+            logout();
+            Toast.show({
+              type: 'success',
+              text1: t('withdrawSuccessTitle'),
+              text2: t('withdrawSuccessMsg'),
+            });
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
-        {/* 프로필 섹션 */}
         <View style={styles.profileSection}>
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>{name.substring(0, 1)}</Text>
-          </View>
+          {userInfo?.profileImage ? (
+            <Image source={{ uri: userInfo.profileImage }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>{name.substring(0, 1)}</Text>
+            </View>
+          )}
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{name} 님</Text>
             <Text style={styles.userRole}>
-              {branch} | {role === 'STAFF' ? t('staff') : t('admin')}
+              {branchDisplayName} | {role === 'ADMIN' ? t('admin') : t('staff')}
             </Text>
           </View>
         </View>
 
-        {/* 문서 및 정보 관리 섹션 */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
-          {/* ✅ 이동 시 userInfo와 함께 데이터를 덮어씌울 setUserInfo 함수도 전달합니다. */}
-          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo, setUserInfo }))}
-          {renderMenuItem('📄', t('contract'), () => {})}
-          {renderMenuItem('🏥', t('healthCert'), () => {})}
+          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo }))}
+          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
+          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
         </View>
 
-        {/* 앱 설정 섹션 */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
-          {/* ✅ 클릭 시 모달창을 띄우고, 선택된 모드를 버튼 이름에 보여줍니다. */}
           {renderMenuItem('🌙', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
-          {/* ✅ 언어 설정도 모달창 연결 */}
           {renderMenuItem('🌐', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
-          {/* ✅ 알림 설정은 스위치 UI로 연결 */}
           {renderSwitchItem('🔔', t('pushAlert'), isPushEnabled, setIsPushEnabled)}
         </View>
 
-        {/* 로그아웃 버튼 */}
         <TouchableOpacity 
           style={styles.logoutButton}
-          onPress={() => setIsLoggedIn && setIsLoggedIn(false)}
+          onPress={logout}
         >
           <Text style={styles.logoutButtonText}>{t('logout')}</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}>
+          <Text style={styles.withdrawText}>{t('withdrawBtn')}</Text>
+        </TouchableOpacity>
+
       </ScrollView>
 
-      {/* ✅ 화면 모드 선택용 팝업(Modal) */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -106,13 +142,13 @@ const MyPageScreen = ({ route, navigation }: any) => {
       >
         <Pressable style={styles.modalOverlay} onPress={() => setThemeModalVisible(false)}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>화면 모드 설정</Text>
+            <Text style={styles.modalTitle}>{t('themeSettings')}</Text>
             {['라이트 모드', '다크 모드', '시스템 설정'].map((mode) => (
               <TouchableOpacity
                 key={mode}
                 style={[styles.modalOption, themeMode === mode && styles.modalOptionSelected]}
                 onPress={() => {
-                  setThemeMode(mode);
+                  setThemeMode(mode as any);
                   setThemeModalVisible(false);
                 }}
               >
@@ -123,7 +159,6 @@ const MyPageScreen = ({ route, navigation }: any) => {
         </Pressable>
       </Modal>
 
-      {/* ✅ 언어 설정용 팝업(Modal) */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -132,7 +167,7 @@ const MyPageScreen = ({ route, navigation }: any) => {
       >
         <Pressable style={styles.modalOverlay} onPress={() => setLanguageModalVisible(false)}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>언어 설정</Text>
+            <Text style={styles.modalTitle}>{t('langSettings')}</Text>
             {['한국어', 'English', '日本語'].map((lang) => (
               <TouchableOpacity
                 key={lang}
@@ -152,10 +187,10 @@ const MyPageScreen = ({ route, navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8F9FA', // 앱 배경색 통일
+    backgroundColor: colors.background,
   },
   container: {
     flex: 1,
@@ -163,24 +198,31 @@ const styles = StyleSheet.create({
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     padding: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: colors.border,
   },
   avatarPlaceholder: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#E8F0FE', // Primary color 연한 버전
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
+  avatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+    backgroundColor: colors.primaryLight,
+  },
   avatarText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007BFF', // Primary color
+    color: '#007BFF',
   },
   profileInfo: {
     flex: 1,
@@ -188,25 +230,25 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
+    color: colors.text,
     marginBottom: 4,
   },
   userRole: {
     fontSize: 14,
-    color: '#666666',
+    color: colors.subText,
   },
   menuSection: {
     marginTop: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingVertical: 8,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#EEEEEE',
+    borderColor: colors.border,
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: 'bold',
-    color: '#888888',
+    color: colors.subText,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 8,
@@ -225,21 +267,21 @@ const styles = StyleSheet.create({
   menuIcon: {
     fontSize: 18,
     marginRight: 12,
+    color: colors.text,
   },
   menuTitle: {
     fontSize: 16,
-    color: '#333333',
+    color: colors.text,
   },
   menuArrow: {
     fontSize: 20,
-    color: '#CCCCCC',
+    color: colors.subText,
   },
   logoutButton: {
     marginTop: 30,
-    marginBottom: 40,
     marginHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#FF3B30',
@@ -250,6 +292,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  withdrawButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 40,
+  },
+  withdrawText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    textDecorationLine: 'underline',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -258,7 +310,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '80%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.modalBg,
     borderRadius: 12,
     padding: 20,
   },
@@ -267,6 +319,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
+    color: colors.text,
   },
   modalOption: {
     paddingVertical: 14,
@@ -274,14 +327,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   modalOptionSelected: {
-    backgroundColor: '#E8F0FE', // 선택된 항목의 배경색
+    backgroundColor: colors.primaryLight,
   },
   modalOptionText: {
     fontSize: 16,
-    color: '#333333',
+    color: colors.text,
   },
   modalOptionTextSelected: {
-    color: '#007BFF', // 선택된 항목의 글자색
+    color: '#007BFF',
     fontWeight: 'bold',
   },
 });
