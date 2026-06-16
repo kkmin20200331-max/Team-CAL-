@@ -3,7 +3,7 @@ import { format, getDaysInMonth } from 'date-fns';
 import { Shift } from '../types/Schedule';
 import { User } from '../types/User';
 import { useApp } from './AppContext';
-import { getMyScheduleAPI } from '../../api/auth'; // ✅ [오류 수정] 경로 ../../로 변경
+import { getMyScheduleAPI } from '../../api/auth';
 
 const dummyEmployees: (User & { color: string, payType: 'HOURLY' | 'SALARY', payRate: number })[] = [
   { id: 'user_0', username: 'admin', name: '관리자', role: 'ADMIN', color: '#FF5A5F', payType: 'SALARY' as const, payRate: 4000000, status: 'ACTIVE' },
@@ -15,6 +15,33 @@ const dummyEmployees: (User & { color: string, payType: 'HOURLY' | 'SALARY', pay
   { id: 'user_6', username: 'yjhwang', name: '황예지', role: '파트타임', color: '#FF7A00', payType: 'HOURLY' as const, payRate: 9860, status: 'PENDING' },
   { id: 'user_7', username: 'ryushin', name: '신류진', role: '파트타임', color: '#00C4FF', payType: 'HOURLY' as const, payRate: 9860, status: 'PENDING' },
 ];
+
+const generateDummyShifts = (month: Date): Shift[] => {
+  const shifts: any[] = [];
+  const daysInMonth = getDaysInMonth(month);
+  const monthStr = format(month, 'yyyy-MM');
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${monthStr}-${String(day).padStart(2, '0')}`;
+    const dayOfWeek = new Date(dateStr).getDay();
+
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      if (day % 2 !== 0) {
+        shifts.push({ id: `s_${day}_1`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '09:00-17:00', status: 'CONFIRMED', reason: '' });
+        shifts.push({ id: `s_${day}_2`, userId: dummyEmployees[(day + 1) % 5].id, date: dateStr, time: '15:00-23:00', status: 'CONFIRMED', reason: '' });
+      } else if (day % 4 === 0) {
+        shifts.push({ id: `s_${day}_3`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '08:00-16:00', status: 'CONFIRMED', reason: '' });
+        shifts.push({ id: `s_${day}_4`, userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '12:00-20:00', status: 'SUBSTITUTE_REQ', reason: '병원 진료' });
+        shifts.push({ id: `s_${day}_5`, userId: dummyEmployees[(day + 3) % 5].id, date: dateStr, time: '16:00-23:00', status: 'CONFIRMED', reason: '' });
+      }
+    } else if (dayOfWeek === 6) {
+      shifts.push({ id: `s_${day}_6`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '10:00-18:00', status: 'CONFIRMED', reason: '' });
+      shifts.push({ id: `s_${day}_7`, userId: dummyEmployees[(day + 1) % 5].id, date: dateStr, time: '12:00-20:00', status: 'CONFIRMED', reason: '' });
+      shifts.push({ id: `s_${day}_8`, userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '14:00-22:00', status: 'SUBSTITUTE_REQ', reason: '가족 행사' });
+    }
+  }
+  return shifts;
+};
 
 interface ScheduleContextType {
   employees: (User & { color: string, payType: 'HOURLY' | 'SALARY', payRate: number })[];
@@ -44,7 +71,8 @@ interface ScheduleProviderProps {
 
 export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
   const { userInfo } = useApp();
-  const [shifts, setShifts] = useState<Shift[]>([]);
+  // ✅ [수정] shifts 상태를 더미데이터로 다시 초기화
+  const [shifts, setShifts] = useState<Shift[]>(generateDummyShifts(new Date()));
   const [employees, setEmployees] = useState(dummyEmployees);
 
   const fetchSchedules = async () => {
@@ -71,7 +99,8 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
         setEmployees(prev => [...prev, userWithDefaults]);
       }
     }
-    fetchSchedules();
+    // ✅ [수정] 실제 API 호출을 주석 처리하여 UI 개발 중에는 더미데이터만 사용하도록 함
+    // fetchSchedules();
   }, [userInfo]);
 
   const updateEmployeeStatus = (employeeId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING') => {
