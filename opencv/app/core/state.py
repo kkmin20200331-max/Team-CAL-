@@ -13,6 +13,8 @@ class InferenceState:
         self.running = False
         self.store_id: Optional[int] = None
         self.camera_id: Optional[str] = None
+        self.source: Optional[str] = None
+        self.source_type: Optional[str] = None
         self.last_customer_count: Optional[int] = None
         self.last_confidence_avg: Optional[float] = None
         self.last_measured_at: Optional[datetime] = None
@@ -38,6 +40,8 @@ class InferenceState:
         store_id: int,
         camera_id: str,
         worker: Thread,
+        source: str | None = None,
+        source_type: str | None = None,
         model_name: str | None = None,
         image_size: int | None = None,
         confidence_threshold: float | None = None,
@@ -49,6 +53,8 @@ class InferenceState:
             self.running = True
             self.store_id = store_id
             self.camera_id = camera_id
+            self.source = source
+            self.source_type = source_type
             self.model_name = model_name
             self.image_size = image_size
             self.confidence_threshold = confidence_threshold

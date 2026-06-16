@@ -1,7 +1,8 @@
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from datetime import datetime
-from threading import Thread, local
+from threading import Lock, Thread, local
+from time import sleep
 
 from app.core.config import settings
 from app.core.logger import get_logger
@@ -77,6 +78,8 @@ class InferenceService:
     def __init__(self) -> None:
         self.detector = PersonDetector()
         self._worker_local = local()
+        self._active_source: VideoSource | None = None
+        self._source_lock = Lock()
 
     def start(self, request: CameraStartRequest) -> CameraStartResponse:
         if inference_state.snapshot().running:
@@ -87,6 +90,8 @@ class InferenceService:
             request.storeId,
             request.cameraId,
             worker,
+            source=request.source,
+            source_type=request.sourceType.value,
             model_name=request.modelName,
             image_size=request.imageSize,
             confidence_threshold=request.confidence,
@@ -119,6 +124,16 @@ class InferenceService:
             metrics.senderQueuePending = spring_client.pending_count()
             metrics.senderQueueFailed = spring_client.failed_count()
         return metrics
+
+    def preview_stream(self):
+        snapshot = inference_state.snapshot()
+        if not snapshot.running:
+            raise RuntimeError("camera is not running")
+
+        source_type = inference_state.source_type
+        if source_type == SourceType.VIDEO_FILE.value:
+            return self._file_preview_stream(inference_state.source or "")
+        return self._live_preview_stream()
 
     def infer_image_bytes(
         self,
@@ -177,6 +192,8 @@ class InferenceService:
 
         try:
             video_source.open()
+            with self._source_lock:
+                self._active_source = video_source
             self.detector.load(request.modelName)
             logger.info("[CAMERA] source connected: %s", request.source)
             stop_message = "stopped"
@@ -224,8 +241,46 @@ class InferenceService:
             inference_state.mark_error(str(exc))
             logger.error("[ERROR] inference loop failed: %s", exc)
         finally:
+            with self._source_lock:
+                if self._active_source is video_source:
+                    self._active_source = None
             video_source.close()
             inference_state.mark_stopped(stop_message if "stop_message" in locals() else "stopped")
+
+    def _live_preview_stream(self):
+        frame_delay = 1 / max(1, settings.preview_stream_fps)
+        while inference_state.snapshot().running and not inference_state.stop_event.is_set():
+            with self._source_lock:
+                source = self._active_source
+            frame = source.latest_frame() if hasattr(source, "latest_frame") else None
+            if frame is None:
+                sleep(frame_delay)
+                continue
+            yield self._encode_mjpeg_frame(frame)
+            sleep(frame_delay)
+
+    def _file_preview_stream(self, source: str):
+        try:
+            import cv2
+        except ImportError as exc:
+            raise RuntimeError("opencv-python is required for preview streaming") from exc
+
+        capture = cv2.VideoCapture(source)
+        if not capture.isOpened():
+            raise RuntimeError(f"video file could not be opened: {source}")
+
+        try:
+            fps = capture.get(cv2.CAP_PROP_FPS) or settings.preview_stream_fps
+            frame_delay = 1 / max(1, min(settings.preview_stream_fps, int(fps) or settings.preview_stream_fps))
+            while inference_state.snapshot().running and not inference_state.stop_event.is_set():
+                ok, frame = capture.read()
+                if not ok:
+                    capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    continue
+                yield self._encode_mjpeg_frame(frame)
+                sleep(frame_delay)
+        finally:
+            capture.release()
 
     def _should_sample_next(self, request: CameraStartRequest, sampler: FrameSampler) -> bool:
         if inference_state.stop_event.is_set():
@@ -385,6 +440,27 @@ class InferenceService:
         if not ok:
             raise RuntimeError("annotated image could not be encoded")
         return "data:image/jpeg;base64," + base64.b64encode(encoded_image).decode("ascii")
+
+    def _encode_mjpeg_frame(self, frame) -> bytes:
+        try:
+            import cv2
+        except ImportError as exc:
+            raise RuntimeError("opencv-python is required for preview streaming") from exc
+
+        ok, encoded = cv2.imencode(
+            ".jpg",
+            frame,
+            [int(cv2.IMWRITE_JPEG_QUALITY), int(settings.preview_jpeg_quality)],
+        )
+        if not ok:
+            raise RuntimeError("preview frame could not be encoded")
+        return (
+            b"--frame\r\n"
+            b"Content-Type: image/jpeg\r\n"
+            b"Cache-Control: no-cache\r\n\r\n"
+            + encoded.tobytes()
+            + b"\r\n"
+        )
 
 
 inference_service = InferenceService()
