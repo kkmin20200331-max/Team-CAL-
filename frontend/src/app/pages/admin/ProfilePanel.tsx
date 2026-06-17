@@ -1,24 +1,14 @@
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import axios from 'axios';
+import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
 import {
-  X,
-  Bell,
-  CheckCircle,
-  XCircle,
-  Store,
-  User,
-  LogOut,
-  Camera,
-  Clock,
-  FileText,
-  UserCheck,
-} from "lucide-react";
+  X, Bell, CheckCircle, XCircle, Store, User, LogOut, Camera, Clock, FileText, UserCheck
+} from 'lucide-react';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
+const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
 interface PendingEmployee {
   id: string;
@@ -67,19 +57,19 @@ interface SubstitutePendingApp {
 }
 
 const getDatePart = (s: string) => {
-  if (!s) return "";
-  return s.includes("T") ? s.split("T")[0] : s.split(" ")[0];
+  if (!s) return '';
+  return s.includes('T') ? s.split('T')[0] : s.split(' ')[0];
 };
 
 const formatTimePart = (s: string) => {
-  if (!s) return "";
-  const t = s.includes("T") ? s.split("T")[1] : s.split(" ")[1];
-  return t ? t.substring(0, 5) : "";
+  if (!s) return '';
+  const t = s.includes('T') ? s.split('T')[1] : s.split(' ')[1];
+  return t ? t.substring(0, 5) : '';
 };
 
 const getDayLabel = (dateStr: string) => {
-  const days = ["일", "월", "화", "수", "목", "금", "토"];
-  const p = getDatePart(dateStr).split("-");
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const p = getDatePart(dateStr).split('-');
   return days[new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getDay()];
 };
 
@@ -88,10 +78,10 @@ export default function ProfilePanel() {
   const [open, setOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentUser = JSON.parse(sessionStorage.getItem("user") || "{}");
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => sessionStorage.getItem("admin_profile_image") || "",
+    () => localStorage.getItem('admin_profile_image') || ''
   );
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +90,7 @@ export default function ProfilePanel() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const base64 = ev.target?.result as string;
-      sessionStorage.setItem("admin_profile_image", base64);
+      localStorage.setItem('admin_profile_image', base64);
       setProfileImage(base64);
     };
     reader.readAsDataURL(file);
@@ -109,7 +99,7 @@ export default function ProfilePanel() {
   // ── 직원 가입 승인 대기 ──
   const [pendingList, setPendingList] = useState<PendingEmployee[]>(() => {
     try {
-      const cached = sessionStorage.getItem("pendingList");
+      const cached = sessionStorage.getItem('pendingList');
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
@@ -122,101 +112,91 @@ export default function ProfilePanel() {
   const [userNameMap, setUserNameMap] = useState<Record<string, string>>({});
 
   // ── 대타 지원 알림 ──
-  const [substituteApps, setSubstituteApps] = useState<SubstitutePendingApp[]>(
-    [],
-  );
+  const [substituteApps, setSubstituteApps] = useState<SubstitutePendingApp[]>([]);
 
   // 패널 열릴 때 → 모든 관리 매장의 알림 fetch
   useEffect(() => {
     if (!open || !currentUser.id) return;
 
-    API.get("/store", { params: { user_id: currentUser.id } })
-      .then(async (res) => {
+    API.get('/store', { params: { user_id: currentUser.id } })
+      .then(async res => {
         const stores: StoreVO[] = Array.isArray(res.data) ? res.data : [];
 
         // 각 매장의 휴무 신청 + 직원 목록 병렬 조회
         const [leaveResults, userResults] = await Promise.all([
           Promise.allSettled(
-            stores.map((store) =>
-              API.get("/leave_request", {
-                params: { store_id: store.id },
-              }).then((r) =>
-                (Array.isArray(r.data) ? r.data : []).map((lr: any) => ({
-                  ...lr,
-                  store_id: store.id,
-                  store_name: store.name,
-                })),
-              ),
-            ),
+            stores.map(store =>
+              API.get('/leave_request', { params: { store_id: store.id } })
+                .then(r =>
+                  (Array.isArray(r.data) ? r.data : []).map((lr: any) => ({
+                    ...lr,
+                    store_id: store.id,
+                    store_name: store.name,
+                  }))
+                )
+            )
           ),
           Promise.allSettled(
-            stores.map((store) =>
-              API.get("/users", { params: { store_id: store.id } }),
-            ),
+            stores.map(store =>
+              API.get('/users', { params: { store_id: store.id } })
+            )
           ),
         ]);
 
         // 휴무 신청 합치기
         const allLeaves: LeaveRequestVO[] = [];
-        leaveResults.forEach((r) => {
-          if (r.status === "fulfilled") allLeaves.push(...r.value);
+        leaveResults.forEach(r => {
+          if (r.status === 'fulfilled') allLeaves.push(...r.value);
         });
         setLeaveRequests(allLeaves);
 
         // 직원 이름 맵
         const nameMap: Record<string, string> = {};
-        userResults.forEach((r) => {
-          if (r.status === "fulfilled") {
-            (Array.isArray(r.value.data) ? r.value.data : []).forEach(
-              (u: any) => {
-                nameMap[u.id] = u.name;
-              },
-            );
+        userResults.forEach(r => {
+          if (r.status === 'fulfilled') {
+            (Array.isArray(r.value.data) ? r.value.data : []).forEach((u: any) => {
+              nameMap[u.id] = u.name;
+            });
           }
         });
         setUserNameMap(nameMap);
 
         // unique shift_id 별 근무 정보 조회
-        const uniqueShiftIds = [...new Set(allLeaves.map((lr) => lr.shift_id))];
+        const uniqueShiftIds = [...new Set(allLeaves.map(lr => lr.shift_id))];
         if (uniqueShiftIds.length > 0) {
           const shiftResults = await Promise.allSettled(
-            uniqueShiftIds.map((sid) => API.get(`/shift/${sid}`)),
+            uniqueShiftIds.map(sid => API.get(`/shift/${sid}`))
           );
           const newShiftMap: Record<string, ShiftVO> = {};
           shiftResults.forEach((r, i) => {
-            if (r.status === "fulfilled")
-              newShiftMap[uniqueShiftIds[i]] = r.value.data;
+            if (r.status === 'fulfilled') newShiftMap[uniqueShiftIds[i]] = r.value.data;
           });
           setShiftMap(newShiftMap);
         }
 
         // ── 대타 지원 알림 조회 ──
         const subPostResults = await Promise.allSettled(
-          stores.map((store) =>
-            API.get("/substitute", { params: { store_id: store.id } }).then(
-              (r) => ({ store, posts: Array.isArray(r.data) ? r.data : [] }),
-            ),
-          ),
+          stores.map(store =>
+            API.get('/substitute', { params: { store_id: store.id } })
+              .then(r => ({ store, posts: Array.isArray(r.data) ? r.data : [] }))
+          )
         );
 
         const allPendingApps: SubstitutePendingApp[] = [];
         const appFetches: Promise<void>[] = [];
 
-        subPostResults.forEach((r) => {
-          if (r.status !== "fulfilled") return;
+        subPostResults.forEach(r => {
+          if (r.status !== 'fulfilled') return;
           const { store, posts } = r.value;
           posts
-            .filter((p: any) => (p.status || "").toLowerCase() === "open")
+            .filter((p: any) => (p.status || '').toLowerCase() === 'open')
             .forEach((post: any) => {
               appFetches.push(
-                API.get("/substitute/manager", { params: { post_id: post.id } })
-                  .then((r2) => {
+                API.get('/substitute/manager', { params: { post_id: post.id } })
+                  .then(r2 => {
                     const apps = Array.isArray(r2.data) ? r2.data : [];
                     apps
-                      .filter(
-                        (a: any) =>
-                          (a.status || "").toLowerCase() === "pending",
-                      )
+                      .filter((a: any) => (a.status || '').toLowerCase() === 'pending')
                       .forEach((app: any) => {
                         allPendingApps.push({
                           app_id: app.id,
@@ -224,13 +204,13 @@ export default function ProfilePanel() {
                           store_id: store.id,
                           store_name: store.name,
                           applicant_user_id: app.applicant_user_id,
-                          message: app.message || "",
+                          message: app.message || '',
                           applied_at: app.applied_at,
-                          reason: post.reason || "",
+                          reason: post.reason || '',
                         });
                       });
                   })
-                  .catch(() => {}),
+                  .catch(() => {})
               );
             });
         });
@@ -238,109 +218,99 @@ export default function ProfilePanel() {
         await Promise.allSettled(appFetches);
         setSubstituteApps(allPendingApps);
       })
-      .catch((err) => console.error("[ProfilePanel] 알림 조회 실패:", err));
+      .catch(err => console.error('[ProfilePanel] 알림 조회 실패:', err));
   }, [open]);
 
   const handleApproveLeave = async (leave: LeaveRequestVO) => {
     try {
-      await API.put(`/leave_request/${leave.id}`, null, {
-        params: { status: "APPROVED" },
-      });
-      setLeaveRequests((prev) => prev.filter((l) => l.id !== leave.id));
+      await API.put(`/leave_request/${leave.id}`, null, { params: { status: 'APPROVED' } });
+      setLeaveRequests(prev => prev.filter(l => l.id !== leave.id));
     } catch {
-      alert("처리 중 오류가 발생했습니다.");
+      alert('처리 중 오류가 발생했습니다.');
     }
   };
 
   const handleRejectLeave = async (leave: LeaveRequestVO) => {
-    const name = userNameMap[leave.user_id] || "직원";
+    const name = userNameMap[leave.user_id] || '직원';
     if (!confirm(`${name}님의 휴무 신청을 거절하시겠습니까?`)) return;
     try {
-      await API.put(`/leave_request/${leave.id}`, null, {
-        params: { status: "REJECTED" },
-      });
-      setLeaveRequests((prev) => prev.filter((l) => l.id !== leave.id));
+      await API.put(`/leave_request/${leave.id}`, null, { params: { status: 'REJECTED' } });
+      setLeaveRequests(prev => prev.filter(l => l.id !== leave.id));
     } catch {
-      alert("처리 중 오류가 발생했습니다.");
+      alert('처리 중 오류가 발생했습니다.');
     }
   };
 
   // ── 대타 지원 승인/거절 ──
   const handleApproveSubstitute = async (app: SubstitutePendingApp) => {
     try {
-      await API.put("/substitute/manager", null, {
-        params: { application_id: app.app_id, status: "APPROVED" },
-      });
-      setSubstituteApps((prev) => prev.filter((a) => a.app_id !== app.app_id));
+      await API.put('/substitute/manager', null, { params: { application_id: app.app_id, status: 'APPROVED' } });
+      setSubstituteApps(prev => prev.filter(a => a.app_id !== app.app_id));
     } catch {
-      alert("처리 중 오류가 발생했습니다.");
+      alert('처리 중 오류가 발생했습니다.');
     }
   };
 
   const handleRejectSubstitute = async (app: SubstitutePendingApp) => {
-    const name = userNameMap[app.applicant_user_id] || "직원";
+    const name = userNameMap[app.applicant_user_id] || '직원';
     if (!confirm(`${name}님의 대타 지원을 거절하시겠습니까?`)) return;
     try {
-      await API.delete("/substitute/staff", { params: { id: app.app_id } });
-      setSubstituteApps((prev) => prev.filter((a) => a.app_id !== app.app_id));
+      await API.delete('/substitute/staff', { params: { id: app.app_id } });
+      setSubstituteApps(prev => prev.filter(a => a.app_id !== app.app_id));
     } catch {
-      alert("처리 중 오류가 발생했습니다.");
+      alert('처리 중 오류가 발생했습니다.');
     }
   };
 
   // ── 직원 가입 승인/거절 ──
   const handleApprove = async (emp: PendingEmployee) => {
     try {
-      await API.put("/users/approve", null, { params: { id: emp.id } });
-      await API.put("/store_member", null, {
-        params: { user_id: emp.id, store_id: emp.store_id },
-      });
-      setPendingList((prev) => {
-        const updated = prev.filter((p) => p.id !== emp.id);
-        sessionStorage.setItem("pendingList", JSON.stringify(updated));
+      await API.put('/users/approve', null, { params: { id: emp.id } });
+      await API.put('/store_member', null, { params: { user_id: emp.id, store_id: emp.store_id } });
+      setPendingList(prev => {
+        const updated = prev.filter(p => p.id !== emp.id);
+        sessionStorage.setItem('pendingList', JSON.stringify(updated));
         return updated;
       });
       alert(`${emp.name}님이 승인되었습니다.`);
     } catch {
-      alert("승인 처리 중 오류가 발생했습니다.");
+      alert('승인 처리 중 오류가 발생했습니다.');
     }
   };
 
   const handleReject = async (emp: PendingEmployee) => {
     if (!confirm(`${emp.name}님의 가입 요청을 거절하시겠습니까?`)) return;
     try {
-      await API.delete("/users", { params: { id: emp.id } });
-      setPendingList((prev) => {
-        const updated = prev.filter((p) => p.id !== emp.id);
-        sessionStorage.setItem("pendingList", JSON.stringify(updated));
+      await API.delete('/users', { params: { id: emp.id } });
+      setPendingList(prev => {
+        const updated = prev.filter(p => p.id !== emp.id);
+        sessionStorage.setItem('pendingList', JSON.stringify(updated));
         return updated;
       });
     } catch {
-      alert("거절 처리 중 오류가 발생했습니다.");
+      alert('거절 처리 중 오류가 발생했습니다.');
     }
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("user");
-    sessionStorage.removeItem("store_id");
-    sessionStorage.removeItem("store_name");
-    sessionStorage.removeItem("pendingList");
-    navigate("/auth/login");
+    localStorage.removeItem('user');
+    localStorage.removeItem('store_id');
+    localStorage.removeItem('store_name');
+    sessionStorage.removeItem('pendingList');
+    navigate('/auth/login');
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm("정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다."))
-      return;
+    if (!confirm('정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
     try {
-      await API.delete("/users", { params: { id: currentUser.id } });
+      await API.delete('/users', { params: { id: currentUser.id } });
       handleLogout();
     } catch {
-      alert("탈퇴 처리 중 오류가 발생했습니다.");
+      alert('탈퇴 처리 중 오류가 발생했습니다.');
     }
   };
 
-  const totalBadge =
-    pendingList.length + leaveRequests.length + substituteApps.length;
+  const totalBadge = pendingList.length + leaveRequests.length + substituteApps.length;
 
   return (
     <>
@@ -352,7 +322,7 @@ export default function ProfilePanel() {
         <Avatar className="w-10 h-10 border-2 border-blue-200 bg-white">
           <AvatarImage src={profileImage} className="object-cover" />
           <AvatarFallback className="bg-blue-600 text-white font-bold text-sm">
-            {currentUser?.name?.[0] ?? "?"}
+            {currentUser?.name?.[0] ?? '?'}
           </AvatarFallback>
         </Avatar>
         {totalBadge > 0 && (
@@ -365,6 +335,7 @@ export default function ProfilePanel() {
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0" onClick={() => setOpen(false)} />
           <div className="relative z-50 w-full max-w-sm bg-white dark:bg-gray-800 h-full shadow-2xl flex flex-col">
+
             {/* 닫기 */}
             <div className="flex justify-end px-4 pt-4">
               <button
@@ -384,7 +355,7 @@ export default function ProfilePanel() {
                 <Avatar className="w-20 h-20 border-4 border-blue-100 bg-white">
                   <AvatarImage src={profileImage} className="object-cover" />
                   <AvatarFallback className="bg-blue-600 text-white font-bold text-3xl">
-                    {currentUser?.name?.[0] ?? "?"}
+                    {currentUser?.name?.[0] ?? '?'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -399,12 +370,8 @@ export default function ProfilePanel() {
                 onChange={handleImageChange}
               />
               <p className="text-xs text-gray-400 mb-2">사진을 클릭하여 변경</p>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                {currentUser?.name ?? ""}
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                {currentUser?.username ?? ""}
-              </p>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{currentUser?.name ?? ''}</h2>
+              <p className="text-sm text-gray-500 mt-1">{currentUser?.username ?? ''}</p>
               <span className="mt-2 px-3 py-1 bg-blue-100 text-blue-600 text-xs font-semibold rounded-full">
                 관리자
               </span>
@@ -416,13 +383,9 @@ export default function ProfilePanel() {
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <div className="flex items-center gap-2 mb-3">
                 <Bell className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                <h3 className="font-semibold text-sm text-gray-900 dark:text-white">
-                  알림
-                </h3>
+                <h3 className="font-semibold text-sm text-gray-900 dark:text-white">알림</h3>
                 {totalBadge > 0 && (
-                  <Badge className="bg-red-500 text-white text-xs">
-                    {totalBadge}
-                  </Badge>
+                  <Badge className="bg-red-500 text-white text-xs">{totalBadge}</Badge>
                 )}
               </div>
 
@@ -435,38 +398,32 @@ export default function ProfilePanel() {
                 )}
 
                 {/* ── 직원 가입 승인 요청 ── */}
-                {pendingList.map((emp) => (
+                {pendingList.map(emp => (
                   <div
                     key={emp.id}
                     className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 space-y-2 bg-gray-50 dark:bg-gray-900"
                   >
                     {/* 지점명 */}
                     <div className="flex items-center gap-1 text-xs text-blue-600 font-semibold">
-                      <Store className="w-3 h-3" />
-                      {emp.store_name}
+                      <Store className="w-3 h-3" />{emp.store_name}
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0">
                         <User className="w-4 h-4 text-blue-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-xs text-gray-900 dark:text-white">
-                          {emp.name}
-                        </p>
+                        <p className="font-semibold text-xs text-gray-900 dark:text-white">{emp.name}</p>
                         <p className="text-xs text-gray-500">{emp.phone}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      직원 승인 요청이 있습니다.
-                    </p>
+                    <p className="text-xs text-gray-500">직원 승인 요청이 있습니다.</p>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-1 text-xs h-7"
                         onClick={() => handleApprove(emp)}
                       >
-                        <CheckCircle className="w-3 h-3" />
-                        승인
+                        <CheckCircle className="w-3 h-3" />승인
                       </Button>
                       <Button
                         size="sm"
@@ -474,40 +431,31 @@ export default function ProfilePanel() {
                         className="flex-1 text-red-500 border-red-300 hover:bg-red-50 gap-1 text-xs h-7"
                         onClick={() => handleReject(emp)}
                       >
-                        <XCircle className="w-3 h-3" />
-                        거절
+                        <XCircle className="w-3 h-3" />거절
                       </Button>
                     </div>
                   </div>
                 ))}
 
                 {/* ── 대타 지원 알림 ── */}
-                {substituteApps.map((app) => {
-                  const applicantName =
-                    userNameMap[app.applicant_user_id] || "직원";
+                {substituteApps.map(app => {
+                  const applicantName = userNameMap[app.applicant_user_id] || '직원';
                   return (
                     <div
                       key={app.app_id}
                       className="border border-orange-200 dark:border-orange-800 rounded-xl p-3 space-y-2 bg-orange-50 dark:bg-orange-900/20"
                     >
                       <div className="flex items-center gap-1 text-xs text-orange-700 font-semibold">
-                        <Store className="w-3 h-3" />
-                        {app.store_name}
-                        <span className="ml-1 text-orange-500 font-normal">
-                          · 대타 지원
-                        </span>
+                        <Store className="w-3 h-3" />{app.store_name}
+                        <span className="ml-1 text-orange-500 font-normal">· 대타 지원</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center shrink-0">
                           <UserCheck className="w-4 h-4 text-orange-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-xs text-gray-900 dark:text-white">
-                            {applicantName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            대타 지원 신청이 있습니다.
-                          </p>
+                          <p className="font-semibold text-xs text-gray-900 dark:text-white">{applicantName}</p>
+                          <p className="text-xs text-gray-500">대타 지원 신청이 있습니다.</p>
                         </div>
                       </div>
                       {app.message && (
@@ -521,8 +469,7 @@ export default function ProfilePanel() {
                           className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1 text-xs h-7"
                           onClick={() => handleApproveSubstitute(app)}
                         >
-                          <CheckCircle className="w-3 h-3" />
-                          승인
+                          <CheckCircle className="w-3 h-3" />승인
                         </Button>
                         <Button
                           size="sm"
@@ -530,8 +477,7 @@ export default function ProfilePanel() {
                           className="flex-1 text-red-500 border-red-300 hover:bg-red-50 gap-1 text-xs h-7"
                           onClick={() => handleRejectSubstitute(app)}
                         >
-                          <XCircle className="w-3 h-3" />
-                          거절
+                          <XCircle className="w-3 h-3" />거절
                         </Button>
                       </div>
                     </div>
@@ -539,10 +485,10 @@ export default function ProfilePanel() {
                 })}
 
                 {/* ── 휴무 신청 ── */}
-                {leaveRequests.map((leave) => {
+                {leaveRequests.map(leave => {
                   const shift = shiftMap[leave.shift_id];
-                  const empName = userNameMap[leave.user_id] || "직원";
-                  const datePart = shift ? getDatePart(shift.work_date) : "";
+                  const empName = userNameMap[leave.user_id] || '직원';
+                  const datePart = shift ? getDatePart(shift.work_date) : '';
                   return (
                     <div
                       key={leave.id}
@@ -550,31 +496,22 @@ export default function ProfilePanel() {
                     >
                       {/* 지점명 */}
                       <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
-                        <Store className="w-3 h-3" />
-                        {leave.store_name}
-                        <span className="ml-1 text-green-400 font-normal">
-                          · 휴무 신청
-                        </span>
+                        <Store className="w-3 h-3" />{leave.store_name}
+                        <span className="ml-1 text-green-400 font-normal">· 휴무 신청</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center shrink-0">
                           <User className="w-4 h-4 text-green-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-xs text-gray-900 dark:text-white">
-                            {empName}
-                          </p>
+                          <p className="font-semibold text-xs text-gray-900 dark:text-white">{empName}</p>
                           {shift ? (
                             <div className="flex items-center gap-1 text-xs text-gray-500">
                               <Clock className="w-3 h-3" />
-                              {datePart} ({getDayLabel(shift.work_date)}){" "}
-                              {formatTimePart(shift.start_at)}~
-                              {formatTimePart(shift.end_at)}
+                              {datePart} ({getDayLabel(shift.work_date)}) {formatTimePart(shift.start_at)}~{formatTimePart(shift.end_at)}
                             </div>
                           ) : (
-                            <p className="text-xs text-gray-400">
-                              근무 정보 불러오는 중...
-                            </p>
+                            <p className="text-xs text-gray-400">근무 정보 불러오는 중...</p>
                           )}
                         </div>
                       </div>
@@ -587,8 +524,7 @@ export default function ProfilePanel() {
                           className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1 text-xs h-7"
                           onClick={() => handleApproveLeave(leave)}
                         >
-                          <CheckCircle className="w-3 h-3" />
-                          승인
+                          <CheckCircle className="w-3 h-3" />승인
                         </Button>
                         <Button
                           size="sm"
@@ -596,8 +532,7 @@ export default function ProfilePanel() {
                           className="flex-1 text-red-500 border-red-300 hover:bg-red-50 gap-1 text-xs h-7"
                           onClick={() => handleRejectLeave(leave)}
                         >
-                          <XCircle className="w-3 h-3" />
-                          거절
+                          <XCircle className="w-3 h-3" />거절
                         </Button>
                       </div>
                     </div>
@@ -615,8 +550,7 @@ export default function ProfilePanel() {
                 className="w-full gap-2 text-gray-700 dark:text-gray-300"
                 onClick={handleLogout}
               >
-                <LogOut className="w-4 h-4" />
-                로그아웃
+                <LogOut className="w-4 h-4" />로그아웃
               </Button>
               <div className="text-center pt-1">
                 <button
@@ -627,6 +561,7 @@ export default function ProfilePanel() {
                 </button>
               </div>
             </div>
+
           </div>
         </div>
       )}

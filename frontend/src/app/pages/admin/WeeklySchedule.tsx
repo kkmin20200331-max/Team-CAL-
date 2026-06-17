@@ -1,14 +1,18 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import { Card, CardContent } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Badge } from "../../components/ui/badge";
-import { ChevronLeft, ChevronRight, Search, Calendar } from "lucide-react";
-import { format, addDays, startOfWeek } from "date-fns";
-import { ko } from "date-fns/locale";
-import ProfilePanel from "../../components/admin/ProfilePanel";
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import axios from 'axios';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
+import { Card, CardContent } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Badge } from '../../components/ui/badge';
+import {
+  ChevronLeft, ChevronRight, Search, Calendar
+} from 'lucide-react';
+import { format, addDays, startOfWeek } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import ProfilePanel from './ProfilePanel';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -95,6 +99,8 @@ const getStatusColor = (status: string) => {
 export default function WeeklySchedule() {
   const navigate = useNavigate();
   const { branchId } = useParams();
+  const language = useLanguage();
+  const t = translations.weeklySchedule[language];
 
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -170,9 +176,7 @@ export default function WeeklySchedule() {
                 <ChevronLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  주간 근무표
-                </h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t.title}</h1>
                 <p className="mt-1 text-gray-600 dark:text-gray-400">
                   {format(weekDates[0], "yyyy년 M월 d일", { locale: ko })} -{" "}
                   {format(weekDates[6], "M월 d일", { locale: ko })}
@@ -187,19 +191,19 @@ export default function WeeklySchedule() {
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-blue-100 border-2 border-blue-300 rounded" />
-                <span>확정</span>
+                <span>{t.legendConfirmed}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-yellow-100 border-2 border-yellow-300 rounded" />
-                <span>대기</span>
+                <span>{t.legendPending}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-red-100 border-2 border-dashed border-red-300 rounded" />
-                <span>취소</span>
+                <span>{t.legendCancelled}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full" />
-                <span className="text-red-600 font-medium">공휴일</span>
+                <span className="text-red-600 font-medium">{t.legendHoliday}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -210,17 +214,8 @@ export default function WeeklySchedule() {
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setCurrentWeek(new Date())}
-              >
-                오늘
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setCurrentWeek((prev) => addDays(prev, 7))}
-              >
+              <Button variant="outline" onClick={() => setCurrentWeek(new Date())}>{t.today}</Button>
+              <Button variant="outline" size="icon" onClick={() => setCurrentWeek(prev => addDays(prev, 7))}>
                 <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
@@ -232,7 +227,7 @@ export default function WeeklySchedule() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 type="text"
-                placeholder="직원 검색..."
+                placeholder={t.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -246,25 +241,11 @@ export default function WeeklySchedule() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* 뷰 전환 버튼 */}
         <div className="flex gap-3 mb-4">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            월간 근무표 보기
+          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}>
+            <Calendar className="w-4 h-4 mr-2" />{t.monthlyView}
           </Button>
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() =>
-              navigate(
-                `/admin/schedule/daily/${branchId}/${format(new Date(), "yyyy-MM-dd")}`,
-              )
-            }
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            일간 근무표 보기
+          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/daily/${branchId}/${format(new Date(), 'yyyy-MM-dd')}`)}>
+            <Calendar className="w-4 h-4 mr-2" />{t.dailyView}
           </Button>
         </div>
 
@@ -275,7 +256,7 @@ export default function WeeklySchedule() {
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-800">
                     <th className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-800 p-4 text-left border-b border-r border-gray-200 dark:border-gray-700 min-w-[150px]">
-                      직원명
+                      {t.employeeName}
                     </th>
                     {weekDates.map((date, index) => {
                       const dateStr = format(date, "yyyy-MM-dd");
@@ -324,21 +305,11 @@ export default function WeeklySchedule() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td
-                        colSpan={8}
-                        className="text-center py-12 text-gray-500"
-                      >
-                        불러오는 중...
-                      </td>
+                      <td colSpan={8} className="text-center py-12 text-gray-500">{t.loading}</td>
                     </tr>
                   ) : filteredEmployees.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={8}
-                        className="text-center py-12 text-gray-400"
-                      >
-                        등록된 직원이 없습니다.
-                      </td>
+                      <td colSpan={8} className="text-center py-12 text-gray-400">{t.noEmployees}</td>
                     </tr>
                   ) : (
                     filteredEmployees.map((employee) => (
@@ -406,19 +377,11 @@ export default function WeeklySchedule() {
                                         )
                                       }
                                     >
-                                      <div className="font-semibold">
-                                        {formatTime(shift.start_at)}
-                                      </div>
-                                      <div className="font-semibold">
-                                        {formatTime(shift.end_at)}
-                                      </div>
-                                      {shift.status !== "confirmed" && (
-                                        <Badge
-                                          className={`text-xs mt-0.5 px-1 py-0 h-4 ${shift.status === "pending" ? "bg-yellow-500" : "bg-red-500"} text-white`}
-                                        >
-                                          {shift.status === "pending"
-                                            ? "대기"
-                                            : "취소"}
+                                      <div className="font-semibold">{formatTime(shift.start_at)}</div>
+                                      <div className="font-semibold">{formatTime(shift.end_at)}</div>
+                                      {shift.status !== 'confirmed' && (
+                                        <Badge className={`text-xs mt-0.5 px-1 py-0 h-4 ${shift.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'} text-white`}>
+                                          {shift.status === 'pending' ? t.statusPending : t.statusCancelled}
                                         </Badge>
                                       )}
                                     </div>

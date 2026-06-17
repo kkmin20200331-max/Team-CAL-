@@ -27,7 +27,7 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import ProfilePanel from "../../components/admin/ProfilePanel";
+import ProfilePanel from "./ProfilePanel";
 
 interface Document {
   id: string;
