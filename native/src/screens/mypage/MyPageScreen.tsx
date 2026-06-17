@@ -63,6 +63,10 @@ const MyPageScreen = ({ navigation }: Props) => {
     </View>
   );
 
+  const handleLineConnect = () => {
+    Alert.alert("준비 중인 기능", "LINE 연동 기능은 현재 준비 중입니다.");
+  };
+
   const handleWithdraw = () => {
     Alert.alert(
       t('withdrawConfirmTitle'),
@@ -117,6 +121,13 @@ const MyPageScreen = ({ navigation }: Props) => {
           {renderMenuItem('🌙', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
           {renderMenuItem('🌐', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
           {renderSwitchItem('🔔', t('pushAlert'), isPushEnabled, setIsPushEnabled)}
+        </View>
+
+        <View style={styles.connectSection}>
+          <TouchableOpacity style={styles.lineButton} onPress={handleLineConnect}>
+            <Image source={require('../../../assets/img/line-icon-144.png')} style={styles.lineLogo} />
+            <Text style={styles.lineButtonText}>LINE 연동하기</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity 
@@ -186,155 +197,56 @@ const MyPageScreen = ({ navigation }: Props) => {
 };
 
 const getThemedStyles = (colors: any) => StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-  },
-  profileSection: {
-    flexDirection: 'row',
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1 },
+  profileSection: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 24, borderBottomWidth: 1, borderBottomColor: colors.border },
+  avatarPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  avatarImage: { width: 60, height: 60, borderRadius: 30, marginRight: 16, backgroundColor: colors.primaryLight },
+  avatarText: { fontSize: 24, fontWeight: 'bold', color: '#007BFF' },
+  profileInfo: { flex: 1 },
+  userName: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 4 },
+  userRole: { fontSize: 14, color: colors.subText },
+  menuSection: { marginTop: 20, backgroundColor: colors.card, paddingVertical: 8, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border },
+  sectionTitle: { fontSize: 13, fontWeight: 'bold', color: colors.subText, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 20 },
+  menuLeft: { flexDirection: 'row', alignItems: 'center' },
+  menuIcon: { fontSize: 18, marginRight: 12, color: colors.text },
+  menuTitle: { fontSize: 16, color: colors.text },
+  menuArrow: { fontSize: 20, color: colors.subText },
+  
+  connectSection: { marginTop: 20, paddingHorizontal: 20 },
+  lineButton: { 
+    backgroundColor: '#00C300',
+    paddingVertical: 10, // 버튼 세로 크기 줄임
+    borderRadius: 8, 
     alignItems: 'center',
-    backgroundColor: colors.card,
-    padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  avatarPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: colors.primaryLight,
+    flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
+    gap: 12,
   },
-  avatarImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 16,
-    backgroundColor: colors.primaryLight,
+  lineLogo: {
+    width: 40, // 아이콘 크기 키움
+    height: 40,
+    resizeMode: 'contain',
   },
-  avatarText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#007BFF',
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  userRole: {
-    fontSize: 14,
-    color: colors.subText,
-  },
-  menuSection: {
-    marginTop: 20,
-    backgroundColor: colors.card,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: colors.subText,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
-  menuLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuIcon: {
-    fontSize: 18,
-    marginRight: 12,
-    color: colors.text,
-  },
-  menuTitle: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  menuArrow: {
-    fontSize: 20,
-    color: colors.subText,
-  },
-  logoutButton: {
-    marginTop: 30,
-    marginHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: '#FF3B30',
-    fontSize: 16,
+  lineButtonText: { 
+    color: '#FFFFFF',
+    fontSize: 16, 
     fontWeight: 'bold',
   },
-  withdrawButton: {
-    alignItems: 'center',
-    paddingVertical: 10,
-    marginBottom: 40,
-  },
-  withdrawText: {
-    color: '#9CA3AF',
-    fontSize: 13,
-    textDecorationLine: 'underline',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-    color: colors.text,
-  },
-  modalOption: {
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  modalOptionSelected: {
-    backgroundColor: colors.primaryLight,
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  modalOptionTextSelected: {
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
+
+  logoutButton: { marginTop: 30, marginHorizontal: 20, paddingVertical: 14, backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: '#FF3B30', alignItems: 'center' },
+  logoutButtonText: { color: '#FF3B30', fontSize: 16, fontWeight: 'bold' },
+  withdrawButton: { alignItems: 'center', paddingVertical: 10, marginBottom: 40 },
+  withdrawText: { color: '#9CA3AF', fontSize: 13, textDecorationLine: 'underline' },
+  
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '80%', backgroundColor: colors.modalBg, borderRadius: 12, padding: 20 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: colors.text },
+  modalOption: { paddingVertical: 14, alignItems: 'center', borderRadius: 8 },
+  modalOptionSelected: { backgroundColor: colors.primaryLight },
+  modalOptionText: { fontSize: 16, color: colors.text },
+  modalOptionTextSelected: { color: colors.primary, fontWeight: 'bold' },
 });
 
 export default MyPageScreen;
