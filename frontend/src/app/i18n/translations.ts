@@ -529,6 +529,7 @@ const substituteList = {
     checkin: '체크인',
     payroll: '급여',
     board: '게시판',
+    employee: '직원',
   },
   en: {
     title: 'Find Substitute',
@@ -568,6 +569,7 @@ const substituteList = {
     checkin: 'Check-in',
     payroll: 'Payroll',
     board: 'Board',
+    employee: 'Employee',
   },
   ja: {
     title: '代替者を探す',
@@ -607,6 +609,7 @@ const substituteList = {
     checkin: 'チェックイン',
     payroll: '給与',
     board: '掲示板',
+    employee: '従業員',
   },
 };
 
@@ -1006,6 +1009,7 @@ const branchSelection = {
     noStores: '등록된 매장이 없습니다.',
     operatingHours: (open: string, close: string) => `운영시간: ${open} ~ ${close}`,
     viewDetails: '지점 상세 보기',
+    viewAllBranches: '전체 지점 보기',
   },
   en: {
     title: 'Select Branch',
@@ -1015,6 +1019,7 @@ const branchSelection = {
     noStores: 'No registered stores.',
     operatingHours: (open: string, close: string) => `Hours: ${open} ~ ${close}`,
     viewDetails: 'View Details',
+    viewAllBranches: 'View All Branches',
   },
   ja: {
     title: '店舗選択',
@@ -1024,6 +1029,7 @@ const branchSelection = {
     noStores: '登録された店舗がありません。',
     operatingHours: (open: string, close: string) => `営業時間: ${open} ~ ${close}`,
     viewDetails: '店舗詳細を見る',
+    viewAllBranches: '全店舗を見る',
   },
 };
 
@@ -1124,6 +1130,7 @@ const dailySchedule = {
     noPhone: '연락처 정보가 없습니다.',
     editBtn: '수정',
     contactBtn: '연락',
+    unknown: '알 수 없음',
   },
   en: {
     title: 'Daily Schedule',
@@ -1165,6 +1172,7 @@ const dailySchedule = {
     noPhone: 'No contact info.',
     editBtn: 'Edit',
     contactBtn: 'Contact',
+    unknown: 'Unknown',
   },
   ja: {
     title: '日次シフトスケジュール',
@@ -1206,6 +1214,7 @@ const dailySchedule = {
     noPhone: '連絡先情報がありません。',
     editBtn: '編集',
     contactBtn: '連絡',
+    unknown: '不明',
   },
 };
 
