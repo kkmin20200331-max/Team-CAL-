@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react';
 
 export function useLanguage() {
   const [language, setLanguage] = useState<'ko' | 'en' | 'ja'>(
-    () => (localStorage.getItem('app-language') as 'ko' | 'en' | 'ja') || 'ko'
+    () => (sessionStorage.getItem('app-language') as 'ko' | 'en' | 'ja') || 'ko'
   );
+
   useEffect(() => {
-    const handler = () => {
-      setLanguage((localStorage.getItem('app-language') as 'ko' | 'en' | 'ja') || 'ko');
+    const handler = (e: CustomEvent) => {
+      setLanguage((e.detail as 'ko' | 'en' | 'ja') || 'ko');
     };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener('app-language-change', handler as EventListener);
+    return () => window.removeEventListener('app-language-change', handler as EventListener);
   }, []);
+
   return language;
 }

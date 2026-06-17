@@ -111,6 +111,7 @@ export default function Login() {
   const handleLanguageChange = (val: string) => {
     setLanguage(val);
     sessionStorage.setItem("app-language", val);
+    window.dispatchEvent(new CustomEvent("app-language-change", { detail: val }));
   };
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -131,9 +132,9 @@ export default function Login() {
       sessionStorage.setItem("user", JSON.stringify(loginUser));
 
       if (loginUser.role === "ADMIN") {
-        navigate("/admin/home");
+        navigate("/admin/branch-selection");
       } else {
-        navigate("/branch-selection");
+        navigate("/employee/home");
       }
     } catch (err: any) {
       if (err.response?.status === 403) {
