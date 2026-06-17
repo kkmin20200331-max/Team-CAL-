@@ -3,79 +3,85 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSchedule } from '../../contexts/ScheduleContext';
-import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { useApp } from '../../contexts/AppContext';
+import { format, startOfWeek, endOfWeek, parseISO, isWithinInterval } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
-const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
-  const { employeeId, month } = route.params;
+const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
+  const { weekStartDate } = route.params;
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   const { employees, shifts } = useSchedule();
+  const { userInfo } = useApp();
 
-  const payrollDetails = useMemo(() => {
-    if (!employees || !shifts) return null; // 데이터 로딩 중 방어
+  const weeklyDetails = useMemo(() => {
+    if (!userInfo || !shifts || !employees) return null;
 
-    const employee = employees.find(e => e.id === employeeId);
+    const employee = employees.find(e => e.id === userInfo.id);
     if (!employee) return null;
 
-    const selectedMonth = new Date(month);
-    const monthStart = startOfMonth(selectedMonth);
-    const monthEnd = endOfMonth(selectedMonth);
+    const weekStart = startOfWeek(new Date(weekStartDate), { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(new Date(weekStartDate), { weekStartsOn: 1 });
 
-    const employeeShiftsInMonth = shifts.filter(shift => 
+    const employeeShiftsInWeek = shifts.filter(shift => 
       shift.userId === employee.id &&
-      new Date(shift.date) >= monthStart &&
-      new Date(shift.date) <= monthEnd &&
-      (shift.status === 'CONFIRMED' || shift.status === 'COMPLETED')
+      isWithinInterval(new Date(shift.date), { start: weekStart, end: weekEnd }) &&
+      (shift.status === 'CONFIRMED' || shift.status === 'COMPLETED' || shift.status === 'IN_PROGRESS')
     );
 
     let totalMinutes = 0;
-    if (employee.payType === 'HOURLY') {
-      employeeShiftsInMonth.forEach(shift => {
-        if (!shift.time || !shift.time.includes(' - ')) return;
+    const dailyBreakdown = employeeShiftsInWeek.map(shift => {
+      let dailyMinutes = 0;
+      if (shift.time && shift.time.includes(' - ')) {
         const [startStr, endStr] = shift.time.split(' - ');
         const startTime = parseISO(`2000-01-01T${startStr}:00`);
         const endTime = parseISO(`2000-01-01T${endStr}:00`);
-        const diff = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
-        totalMinutes += diff;
-      });
-    }
+        dailyMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+        totalMinutes += dailyMinutes;
+      }
+      return {
+        ...shift,
+        dailyHours: (dailyMinutes / 60).toFixed(1),
+        dailyPay: Math.round((dailyMinutes / 60) * employee.payRate),
+      };
+    });
 
     const totalHours = totalMinutes / 60;
-    const totalPay = employee.payType === 'SALARY' 
-      ? employee.payRate 
-      : Math.round(totalHours * employee.payRate);
+    const totalPay = Math.round(totalHours * employee.payRate);
 
     return {
       employee,
-      shifts: employeeShiftsInMonth,
-      totalDays: employeeShiftsInMonth.length,
+      dailyBreakdown,
+      totalDays: dailyBreakdown.length,
       totalHours: totalHours.toFixed(1),
       totalPay,
+      weekStart,
+      weekEnd,
     };
-  }, [employeeId, month, employees, shifts]);
+  }, [weekStartDate, userInfo, employees, shifts]);
 
-  if (!payrollDetails) {
+  if (!weeklyDetails) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.backButton}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>급여 명세서</Text>
+          <Text style={styles.headerTitle}>주간 근무 상세</Text>
           <View style={{ width: 40 }} />
         </View>
-        <Text style={styles.errorText}>직원 정보를 찾을 수 없습니다.</Text>
+        <Text style={styles.errorText}>상세 내역을 불러올 수 없습니다.</Text>
       </SafeAreaView>
     );
   }
 
-  const { employee, shifts: workHistory, totalDays, totalHours, totalPay } = payrollDetails;
+  const { employee, dailyBreakdown, totalDays, totalHours, totalPay, weekStart, weekEnd } = weeklyDetails;
 
   const renderWorkHistoryItem = ({ item }: { item: any }) => (
     <View style={styles.historyItem}>
-      <Text style={styles.historyDate}>{format(new Date(item.date), 'M월 d일 (eee)', { locale: ko })}</Text>
+      <Text style={styles.historyDate}>{format(new Date(item.date), 'M/d (eee)', { locale: ko })}</Text>
       <Text style={styles.historyTime}>{item.time}</Text>
+      <Text style={styles.historyPay}>{item.dailyPay.toLocaleString()}원</Text>
     </View>
   );
 
@@ -85,46 +91,44 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{format(new Date(month), 'yyyy년 M월 급여 명세서', { locale: ko })}</Text>
+        <Text style={styles.headerTitle}>주간 근무 상세</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.summaryCard}>
-          <Text style={styles.employeeName}>{employee.name} 님</Text>
-          <Text style={styles.totalPayLabel}>정산 급여 (세전)</Text>
+          <Text style={styles.weekRangeText}>
+            {format(weekStart, 'M월 d일')} ~ {format(weekEnd, 'M월 d일')}
+          </Text>
+          <Text style={styles.totalPayLabel}>이번 주 예상 급여 (세전)</Text>
           <Text style={styles.totalPayAmount}>{totalPay.toLocaleString()}원</Text>
           
           <View style={styles.divider} />
 
           <View style={styles.detailsGrid}>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>총 근무일</Text>
+              <Text style={styles.detailLabel}>근무일</Text>
               <Text style={styles.detailValue}>{totalDays}일</Text>
             </View>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>총 근무시간</Text>
-              <Text style={styles.detailValue}>{employee.payType === 'HOURLY' ? `${totalHours}시간` : 'N/A'}</Text>
+              <Text style={styles.detailLabel}>총 시간</Text>
+              <Text style={styles.detailValue}>{totalHours}시간</Text>
             </View>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>급여 형태</Text>
-              <Text style={styles.detailValue}>{employee.payType === 'HOURLY' ? `시급` : '월급'}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>적용 시급/월급</Text>
+              <Text style={styles.detailLabel}>적용 시급</Text>
               <Text style={styles.detailValue}>{employee.payRate.toLocaleString()}원</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>상세 근무 내역</Text>
+          <Text style={styles.sectionTitle}>일별 근무 내역</Text>
           <FlatList
-            data={workHistory}
+            data={dailyBreakdown}
             renderItem={renderWorkHistoryItem}
             keyExtractor={(item) => item.id}
             scrollEnabled={false}
-            ListEmptyComponent={<Text style={styles.emptyHistory}>해당 월의 근무 기록이 없습니다.</Text>}
+            ListEmptyComponent={<Text style={styles.emptyHistory}>이번 주 근무 기록이 없습니다.</Text>}
           />
         </View>
       </ScrollView>
@@ -141,22 +145,23 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   errorText: { textAlign: 'center', marginTop: 50, color: colors.subText },
   
   summaryCard: { backgroundColor: colors.card, borderRadius: 16, padding: 24, alignItems: 'center' },
-  employeeName: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 16 },
+  weekRangeText: { fontSize: 14, color: colors.subText, marginBottom: 16 },
   totalPayLabel: { fontSize: 14, color: colors.subText },
   totalPayAmount: { fontSize: 36, fontWeight: 'bold', color: colors.primary, marginTop: 4, marginBottom: 20 },
   divider: { width: '100%', height: 1, backgroundColor: colors.border, marginBottom: 20 },
   
-  detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  detailItem: { width: '48%', alignItems: 'center', marginBottom: 16 },
+  detailsGrid: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
+  detailItem: { alignItems: 'center' },
   detailLabel: { fontSize: 13, color: colors.subText, marginBottom: 4 },
   detailValue: { fontSize: 16, fontWeight: '600', color: colors.text },
   
   historySection: { marginTop: 24 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 12, paddingHorizontal: 8 },
-  historyItem: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.card, padding: 16, borderRadius: 8, marginBottom: 8 },
-  historyDate: { fontSize: 15, color: colors.text, fontWeight: '500' },
-  historyTime: { fontSize: 15, color: colors.subText },
+  historyItem: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.card, padding: 16, borderRadius: 8, marginBottom: 8, alignItems: 'center' },
+  historyDate: { flex: 2, fontSize: 15, color: colors.text, fontWeight: '500' },
+  historyTime: { flex: 3, fontSize: 15, color: colors.subText, textAlign: 'center' },
+  historyPay: { flex: 2, fontSize: 15, color: colors.primary, fontWeight: '600', textAlign: 'right' },
   emptyHistory: { textAlign: 'center', color: colors.subText, padding: 20 },
 });
 
-export default PayrollDetailScreen;
+export default WeeklyPayrollDetailScreen;

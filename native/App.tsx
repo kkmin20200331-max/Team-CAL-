@@ -28,7 +28,8 @@ import BoardScreen from './src/screens/board/BoardScreen';
 import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
 import BoardWriteScreen from './src/screens/board/BoardWriteScreen';
 import PayrollScreen from './src/screens/main/PayrollScreen';
-import PayrollDetailScreen from './src/screens/admin/PayrollDetailScreen'; // 1. 새 화면 임포트
+import PayrollDetailScreen from './src/screens/admin/PayrollDetailScreen';
+import WeeklyPayrollDetailScreen from './src/screens/mypage/WeeklyPayrollDetailScreen'; // 1. 새 화면 임포트
 import ContractScreen from './src/screens/mypage/ContractScreen';
 import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
 import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
@@ -175,6 +176,7 @@ function MainNavigator() {
       <MainStack.Screen name="BoardNavigator" component={BoardNavigator} />
       <MainStack.Screen name="Payroll" component={PayrollScreen} />
       <MainStack.Screen name="PayrollDetail" component={PayrollDetailScreen} />
+      <MainStack.Screen name="WeeklyPayrollDetail" component={WeeklyPayrollDetailScreen} />
       <MainStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
       <MainStack.Screen name="Contract" component={ContractScreen} />
       <MainStack.Screen name="HealthCert" component={HealthCertScreen} />

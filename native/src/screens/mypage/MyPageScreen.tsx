@@ -67,6 +67,14 @@ const MyPageScreen = ({ navigation }: Props) => {
     Alert.alert("준비 중인 기능", "LINE 연동 기능은 현재 준비 중입니다.");
   };
 
+  const handleNavigateToMonthlyDetail = () => {
+    if (!userInfo) return;
+    navigation.navigate('PayrollDetail', {
+      employeeId: userInfo.id,
+      month: new Date().toISOString(),
+    });
+  };
+
   const handleWithdraw = () => {
     Alert.alert(
       t('withdrawConfirmTitle'),
@@ -110,9 +118,10 @@ const MyPageScreen = ({ navigation }: Props) => {
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
-          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo }))}
-          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
-          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
+          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit'))}
+          {renderMenuItem('💰', '나의 급여 명세서', handleNavigateToMonthlyDetail)}
+          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract'))}
+          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert'))}
           {renderMenuItem('🤝', '나의 대타 내역', () => navigation.navigate('SubstituteMatching', { initialTab: 'history' }))}
         </View>
 
@@ -217,7 +226,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   connectSection: { marginTop: 20, paddingHorizontal: 20 },
   lineButton: { 
     backgroundColor: '#00C300',
-    paddingVertical: 10, // 버튼 세로 크기 줄임
+    paddingVertical: 10,
     borderRadius: 8, 
     alignItems: 'center',
     flexDirection: 'row',
@@ -225,7 +234,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   lineLogo: {
-    width: 40, // 아이콘 크기 키움
+    width: 40,
     height: 40,
     resizeMode: 'contain',
   },
