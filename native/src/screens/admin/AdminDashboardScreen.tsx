@@ -17,7 +17,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const { shifts, employees } = useSchedule();
 
   const [currentlyWorking, setCurrentlyWorking] = useState(0);
-  const [substituteRequests, setSubstituteRequests] = useState(0);
+  const [pendingRequestCount, setPendingRequestCount] = useState(0); // 1. 요청 건수 상태
   const [todaySchedule, setTodaySchedule] = useState({ morning: [], afternoon: [], closing: [] });
   const [todayShifts, setTodayShifts] = useState<any[]>([]);
   const [isBranchModalVisible, setBranchModalVisible] = useState(false);
@@ -40,11 +40,9 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
       
       setTodayShifts(processedTodayShifts);
 
-      const scheduleByTime = { morning: [], afternoon: [], closing: [] };
+      const scheduleByTime: any = { morning: [], afternoon: [], closing: [] };
       processedTodayShifts.forEach(shift => {
-        if (!shift.time || !shift.time.includes('-')) return;
-        
-        // ✅ [오류 수정] 시간 파싱 로직을 더 안전하게 변경
+        if (!shift.time || !shift.time.includes(' - ')) return;
         const startTime = shift.time.split(' - ')[0];
         const startHourNum = parseInt(startTime.split(':')[0], 10);
 
@@ -59,26 +57,33 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
       setTodaySchedule(scheduleByTime);
 
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
       const workingNowCount = processedTodayShifts.filter(shift => {
-        if (!shift.time || !shift.time.includes('-')) return false;
-        const [startStr, endStr] = shift.time.split('-');
-        const [startH, startM] = startStr.split(':').map(Number);
-        const [endH, endM] = endStr.split(':').map(Number);
+        if (!shift.time || !shift.time.includes(' - ')) return false;
+        const timeParts = shift.time.split(' - ');
+        if (timeParts.length < 2) return false;
+        const [startStr, endStr] = timeParts;
+        const startParts = startStr.split(':');
+        const endParts = endStr.split(':');
+        if (startParts.length < 2 || endParts.length < 2) return false;
+        const [startH, startM] = startParts.map(Number);
+        const [endH, endM] = endParts.map(Number);
+        if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return false;
         const startMinutes = startH * 60 + startM;
         const endMinutes = endH * 60 + endM;
         return currentMinutes >= startMinutes && currentMinutes < endMinutes;
       }).length;
       setCurrentlyWorking(workingNowCount);
 
-      const subCount = shifts.filter(s => s.status === 'SUBSTITUTE_REQ').length;
-      setSubstituteRequests(subCount);
+      const requestCount = shifts.filter(s => s.status === 'SUBSTITUTE_REQ' || s.status === 'LEAVE_REQ').length;
+      setPendingRequestCount(requestCount);
     }
   }, [isFocused, shifts, employees]);
 
   const handleNavigateToDailySchedule = () => {
     navigation.navigate('AdminDailySchedule', {
       date: format(new Date(), 'yyyy-MM-dd'),
-      shifts: todayShifts,
+      shifts: todayShifts, 
       employees: employees,
     });
   };
@@ -107,9 +112,10 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
             <Text style={styles.summaryValue}>{currentlyWorking}명</Text>
             <Text style={styles.summaryLabel}>현재 근무중</Text>
           </TouchableOpacity>
+          {/* 2. onPress 이벤트를 네비게이션으로 변경 */}
           <TouchableOpacity style={styles.summaryBox} onPress={() => navigation.navigate('SubstituteManagement')}>
-            <Text style={styles.summaryValue}>{substituteRequests}건</Text>
-            <Text style={styles.summaryLabel}>대타 요청</Text>
+            <Text style={styles.summaryValue}>{pendingRequestCount}건</Text>
+            <Text style={styles.summaryLabel}>요청 처리</Text>
           </TouchableOpacity>
         </View>
         
