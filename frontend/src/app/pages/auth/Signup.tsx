@@ -236,7 +236,7 @@ export default function Signup() {
     setErrorMsg("");
     setNicknameChecking(true);
     try {
-      await axios.get("http://localhost:8080/api/user/check-nickname", {
+      await axios.get("http://localhost:8080/api/users/check-nickname", {
         params: { nickname },
       });
       setNicknameStatus("ok");
