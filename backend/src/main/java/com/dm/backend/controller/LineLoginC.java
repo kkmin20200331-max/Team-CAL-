@@ -1,51 +1,134 @@
 package com.dm.backend.controller;
 
+import com.dm.backend.service.LineLoginService;
+import com.dm.backend.service.UserLineService;
+import com.dm.backend.vo.LineProfileVO;
+import com.dm.backend.vo.UserLineVO;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 @RequestMapping("/api/line")
 public class LineLoginC {
 
-    private final String CLIENT_ID = "YOUR_CHANNEL_ID";
-    private final String REDIRECT_URI = "http://localhost:8080/api/line/callback";
+    @Value("${line.login.channel-id}")
+    private String clientId;
 
-    // 1. LINE 로그인 시작 URL 반환
+    @Value("${line.login.redirect-uri}")
+    private String redirectUri;
+
+    @Autowired
+    private LineLoginService lineLoginService;
+
+    @Autowired
+    private UserLineService userLineService;
+
+    // =========================
+    // LINE 로그인 시작
+    // =========================
+
     @GetMapping("/login")
-    public String linelogin(@RequestParam String role) {
-
-        String state = role; // ADMIN or STAFF
-
-        String url = "https://access.line.me/oauth2/v2.1/authorize"
-                + "?response_type=code"
-                + "&client_id=" + CLIENT_ID
-                + "&redirect_uri=" + REDIRECT_URI
-                + "&state=" + state
-                + "&scope=profile%20openid";
-
-        return "redirect:" + url;
-    }
-    @GetMapping("/callback")
-    public String callback (
-            @RequestParam String code,
-            @RequestParam String state
+    public RedirectView lineLogin(
+            @RequestParam String userId,
+            HttpSession session
     ) {
 
-        // 1. code -> access token 요청
-        // 2. token -> LINE profile 조회
-        // 3. userId 확보
+        session.setAttribute(
+                "line_link_user_id",
+                userId
+        );
 
-        // 4. state 기반 redirect
-        if ("ADMIN".equals(state)) {
-            return "redirect:http://localhost:5173/admin/branch-selection";
+
+        String url =
+                "https://access.line.me/oauth2/v2.1/authorize"
+                        + "?response_type=code"
+                        + "&client_id=" + clientId
+                        + "&redirect_uri=" + redirectUri
+                        + "&scope=profile%20openid";
+
+        return new RedirectView(url);
+    }
+
+    // =========================
+    // LINE Callback
+    // =========================
+
+    @GetMapping("/callback")
+    public RedirectView callback(
+            @RequestParam String code,
+            HttpSession session
+    ) {
+
+        // =========================
+        // 현재 로그인 사용자
+        // =========================
+
+        String userId =
+                (String) session.getAttribute(
+                        "line_link_user_id"
+                );
+
+        if(userId == null){
+
+            return new RedirectView(
+                    "http://localhost:5173/auth/login"
+            );
         }
 
-        if ("STAFF".equals(state)) {
-            return "redirect:http://localhost:5173/employee/home";
-        }
+        // =========================
+        // 1. Access Token 발급
+        // =========================
 
-        return "redirect:http://localhost:5173";
+        String accessToken =
+                lineLoginService.getAccessToken(
+                        code
+                );
+
+        // =========================
+        // 2. Profile 조회
+        // =========================
+
+        LineProfileVO profile =
+                lineLoginService.getProfile(
+                        accessToken
+                );
+
+        System.out.println(
+                "LINE USER ID = "
+                        + profile.getUserId()
+        );
+
+        // =========================
+        // 3. USER_LINE 저장
+        // =========================
+
+        UserLineVO vo =
+                new UserLineVO();
+
+        vo.setUser_id(
+                userId
+        );
+
+        vo.setLine_user_id(
+                profile.getUserId()
+        );
+
+        userLineService.register(
+                vo
+        );
+
+        // =========================
+        // 친구추가 페이지 이동
+        // =========================
+
+        return new RedirectView(
+                "http://localhost:5173/line/friend-add"
+        );
     }
 }
