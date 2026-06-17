@@ -6,17 +6,22 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface UserLineMapper {
 
+    // =========================
     // LINE 연동 등록
+    // =========================
+
     @Insert("""
         INSERT INTO USER_LINE
         (
             USER_ID,
-            LINE_USER_ID
+            LINE_USER_ID,
+            FOLLOW_YN
         )
         VALUES
         (
             #{user_id},
-            #{line_user_id}
+            #{line_user_id},
+            'N'
         )
     """)
     void register(
@@ -25,7 +30,10 @@ public interface UserLineMapper {
 
 
 
+    // =========================
     // LINE 연동 조회
+    // =========================
+
     @Select("""
         SELECT *
         FROM USER_LINE
@@ -37,11 +45,15 @@ public interface UserLineMapper {
 
 
 
-    // LINE USER ID 조회
+    // =========================
+    // 알림 가능 LINE USER ID 조회
+    // =========================
+
     @Select("""
         SELECT LINE_USER_ID
         FROM USER_LINE
         WHERE USER_ID = #{user_id}
+        AND FOLLOW_YN = 'Y'
     """)
     String getLineUserId(
             String user_id
@@ -49,7 +61,10 @@ public interface UserLineMapper {
 
 
 
+    // =========================
     // LINE 연동 수정
+    // =========================
+
     @Update("""
         UPDATE USER_LINE
         SET LINE_USER_ID = #{line_user_id}
@@ -61,7 +76,40 @@ public interface UserLineMapper {
 
 
 
+    // =========================
+    // 친구추가
+    // =========================
+
+    @Update("""
+        UPDATE USER_LINE
+        SET FOLLOW_YN = 'Y'
+        WHERE LINE_USER_ID = #{line_user_id}
+    """)
+    void follow(
+            String line_user_id
+    );
+
+
+
+    // =========================
+    // 친구삭제
+    // =========================
+
+    @Update("""
+        UPDATE USER_LINE
+        SET FOLLOW_YN = 'N'
+        WHERE LINE_USER_ID = #{line_user_id}
+    """)
+    void unfollow(
+            String line_user_id
+    );
+
+
+
+    // =========================
     // LINE 연동 삭제
+    // =========================
+
     @Delete("""
         DELETE FROM USER_LINE
         WHERE USER_ID = #{user_id}
@@ -69,5 +117,4 @@ public interface UserLineMapper {
     void delete(
             String user_id
     );
-
 }

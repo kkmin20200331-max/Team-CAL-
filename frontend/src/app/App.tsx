@@ -12,6 +12,7 @@ import axios from "axios";
 // Auth pages
 import Login from "./pages/auth/Login";
 import SignUp from "./pages/auth/Signup";
+import LineFriendAdd from "./pages/auth/LineFriendAdd";
 
 // LoginCheck and AdminCheck
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/signup" element={<SignUp />} />
+          <Route path="/line/friend-add" element={<LineFriendAdd />} />
 
           {/* Admin routes */}
           <Route
