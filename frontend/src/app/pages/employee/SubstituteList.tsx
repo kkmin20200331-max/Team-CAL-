@@ -1,37 +1,19 @@
-import { useState, useEffect, useMemo } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
-import { Input } from "../../components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "../../components/ui/dialog";
-import {
-  Home,
-  Calendar,
-  QrCode,
-  Wallet,
-  MessageSquare,
-  Search,
-  MapPin,
-  Clock,
-  DollarSign,
-  AlertCircle,
-  Check,
-  Save,
-} from "lucide-react";
-import EmployeeProfilePanel from "../../components/employee/EmployeeProfilePanel";
+  Home, Calendar, QrCode, Wallet, MessageSquare,
+  Search, MapPin, Clock, DollarSign,
+  AlertCircle, Check, Save,
+} from 'lucide-react';
+import EmployeeProfilePanel from './EmployeeProfilePanel';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -75,30 +57,19 @@ interface AvailabilitySetting {
   end: string; // "18:00"
 }
 
-const DAY_OPTIONS: {
-  key: AvailabilitySetting["days"][number];
-  label: string;
-}[] = [
-  { key: "mon", label: "월" },
-  { key: "tue", label: "화" },
-  { key: "wed", label: "수" },
-  { key: "thu", label: "목" },
-  { key: "fri", label: "금" },
+const DAY_OPTIONS_STATIC: { key: AvailabilitySetting['days'][number] }[] = [
+  { key: 'mon' },
+  { key: 'tue' },
+  { key: 'wed' },
+  { key: 'thu' },
+  { key: 'fri' },
 ];
 
 /* ─── 유틸 ─────────────────────────────────────────── */
-const DAY_NAMES = ["일", "월", "화", "수", "목", "금", "토"];
-const getDayName = (d: string) => {
-  const dt = new Date(d);
-  return isNaN(dt.getTime()) ? "" : DAY_NAMES[dt.getDay()] + "요일";
-};
-const getDayNum = (d: string) => (d ? (d.split("-")[2] ?? "--") : "--");
-const getTimePart = (s: string) => {
-  if (!s) return "--:--";
-  const p = s.split(" ");
-  return p.length >= 2 ? p[1].slice(0, 5) : s.slice(11, 16);
-};
-const calcHours = (s: string, e: string) => {
+const getDayName  = (d: string, days: string[]) => { const dt = new Date(d); return isNaN(dt.getTime()) ? '' : days[dt.getDay()]; };
+const getDayNum   = (d: string) => d ? (d.split('-')[2] ?? '--') : '--';
+const getTimePart = (s: string) => { if (!s) return '--:--'; const p = s.split(' '); return p.length >= 2 ? p[1].slice(0,5) : s.slice(11,16); };
+const calcHours   = (s: string, e: string) => {
   if (!s || !e) return 0;
   const toMin = (x: string) => {
     const t = x.includes(" ") ? x.split(" ")[1] : x.slice(11);
@@ -118,6 +89,8 @@ const getUrgency = (d: string): "high" | "medium" | "low" => {
 /* ─── 컴포넌트 ──────────────────────────────────────── */
 export default function SubstituteList() {
   const navigate = useNavigate();
+  const language = useLanguage();
+  const t = translations.substituteList[language];
 
   const user = useMemo(() => {
     try {
@@ -242,27 +215,15 @@ export default function SubstituteList() {
         setApplyDialogOpen(false);
         setSelectedPost(null);
       })
-      .catch(() => alert("지원 중 오류가 발생했습니다."))
+      .catch(() => alert(t.errApply))
       .finally(() => setApplying(false));
   };
 
   /* ── 긴급도 배지 ─────────────────────────────────── */
-  const urgencyBadge = (u: "high" | "medium" | "low") => {
-    if (u === "high")
-      return (
-        <Badge variant="destructive" className="gap-1">
-          <AlertCircle className="w-3 h-3" />
-          급구
-        </Badge>
-      );
-    if (u === "medium")
-      return (
-        <Badge className="gap-1 bg-yellow-500">
-          <Clock className="w-3 h-3" />
-          보통
-        </Badge>
-      );
-    return <Badge variant="secondary">여유</Badge>;
+  const urgencyBadge = (u: 'high'|'medium'|'low') => {
+    if (u === 'high')   return <Badge variant="destructive" className="gap-1"><AlertCircle className="w-3 h-3"/>{t.urgencyHigh}</Badge>;
+    if (u === 'medium') return <Badge className="gap-1 bg-yellow-500"><Clock className="w-3 h-3"/>{t.urgencyMedium}</Badge>;
+    return <Badge variant="secondary">{t.urgencyLow}</Badge>;
   };
 
   const filteredPosts = posts.filter((p) => {
@@ -276,11 +237,11 @@ export default function SubstituteList() {
   });
 
   const bottomNavItems = [
-    { icon: Home, label: "홈", path: "/employee/home" },
-    { icon: Calendar, label: "근무표", path: "/employee/schedule" },
-    { icon: QrCode, label: "체크인", path: "/employee/checkin" },
-    { icon: Wallet, label: "급여", path: "/employee/payroll" },
-    { icon: MessageSquare, label: "게시판", path: "/employee/board" },
+    { icon: Home,         label: t.home,     path: '/employee/home' },
+    { icon: Calendar,     label: t.schedule, path: '/employee/schedule' },
+    { icon: QrCode,       label: t.checkin,  path: '/employee/checkin' },
+    { icon: Wallet,       label: t.payroll,  path: '/employee/payroll' },
+    { icon: MessageSquare,label: t.board,    path: '/employee/board' },
   ];
 
   /* ── 렌더링 ─────────────────────────────────────── */
@@ -295,32 +256,29 @@ export default function SubstituteList() {
           </span>
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <p className="text-base font-bold leading-tight">
-                {user?.name || "직원"}
-              </p>
-              <p className="text-xs text-orange-100">{user?.role || "STAFF"}</p>
+              <p className="text-base font-bold leading-tight">{user?.name || t.employee}</p>
+              <p className="text-xs text-orange-100">{user?.role || 'STAFF'}</p>
             </div>
             <EmployeeProfilePanel />
           </div>
         </div>
-        <h1 className="text-2xl font-bold mb-0.5">대타 구하기</h1>
-        <p className="text-orange-100 text-sm">추가 근무 기회를 찾아보세요</p>
+        <h1 className="text-2xl font-bold mb-0.5">{t.title}</h1>
+        <p className="text-orange-100 text-sm">{t.subtitle}</p>
       </div>
 
       <div className="px-4 py-4 space-y-4">
         {/* ─ 가능 시간 설정 카드 ──────────────────────── */}
         <Card className="border-orange-100">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base text-gray-800">
-              근무 가능 시간 설정
-            </CardTitle>
+            <CardTitle className="text-base text-gray-800">{t.availabilitySettings}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* 요일 버튼 */}
             <div>
-              <p className="text-xs text-gray-500 mb-2">가능 요일</p>
+              <p className="text-xs text-gray-500 mb-2">{t.availableDays}</p>
               <div className="flex gap-2">
-                {DAY_OPTIONS.map(({ key, label }) => {
+                {DAY_OPTIONS_STATIC.map(({ key }, i) => {
+                  const label = t.dayOptions[i]?.label ?? key;
                   const active = availability.days.includes(key);
                   return (
                     <button
@@ -342,7 +300,7 @@ export default function SubstituteList() {
 
             {/* 시간 범위 */}
             <div>
-              <p className="text-xs text-gray-500 mb-2">가능 시간</p>
+              <p className="text-xs text-gray-500 mb-2">{t.availableTime}</p>
               <div className="flex items-center gap-3">
                 <input
                   type="time"
@@ -373,17 +331,9 @@ export default function SubstituteList() {
               }`}
               onClick={handleSave}
             >
-              {savedFlash ? (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  저장됨
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  저장하기
-                </>
-              )}
+              {savedFlash
+                ? <><Check className="w-4 h-4 mr-2"/>{t.saved}</>
+                : <><Save className="w-4 h-4 mr-2"/>{t.save}</>}
             </Button>
           </CardContent>
         </Card>
@@ -394,8 +344,8 @@ export default function SubstituteList() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="지점, 날짜 검색..."
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder={t.searchPlaceholder}
               className="pl-10"
             />
           </div>
@@ -404,20 +354,13 @@ export default function SubstituteList() {
         {/* ─ 모집중 목록 ──────────────────────────────── */}
         <div>
           <p className="text-sm font-semibold text-gray-700 mb-3">
-            모집중{" "}
-            <span className="text-orange-500">
-              {loadingPosts ? "" : filteredPosts.length}
-            </span>
+            {t.recruiting} <span className="text-orange-500">{loadingPosts ? '' : filteredPosts.length}</span>
           </p>
 
           {loadingPosts ? (
-            <div className="text-center py-12 text-gray-400">
-              불러오는 중...
-            </div>
+            <div className="text-center py-12 text-gray-400">{t.loading}</div>
           ) : filteredPosts.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              현재 모집중인 대타가 없습니다.
-            </div>
+            <div className="text-center py-12 text-gray-400">{t.noOpenings}</div>
           ) : (
             <div className="space-y-3">
               {filteredPosts.map((post) => {
@@ -448,25 +391,15 @@ export default function SubstituteList() {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <div className="text-center min-w-[44px]">
-                            <p className="text-xs text-gray-500">
-                              {getDayName(workDate)}
-                            </p>
-                            <p className="text-2xl font-bold">
-                              {getDayNum(workDate)}
-                            </p>
+                            <p className="text-xs text-gray-500">{getDayName(workDate, translations.employeeHome[language].days)}</p>
+                            <p className="text-2xl font-bold">{getDayNum(workDate)}</p>
                           </div>
                           <div className="w-px h-10 bg-gray-200" />
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <Clock className="w-4 h-4 text-orange-500" />
-                              <span className="font-bold text-sm">
-                                {startTime}-{endTime}
-                              </span>
-                              {hours > 0 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {hours}시간
-                                </Badge>
-                              )}
+                              <Clock className="w-4 h-4 text-orange-500"/>
+                              <span className="font-bold text-sm">{startTime}-{endTime}</span>
+                              {hours > 0 && <Badge variant="secondary" className="text-xs">{hours}h</Badge>}
                             </div>
                             <div className="flex items-center gap-1 text-xs text-gray-500">
                               <MapPin className="w-3 h-3" />
@@ -483,20 +416,14 @@ export default function SubstituteList() {
                           <div className="flex items-center gap-2">
                             <DollarSign className="w-4 h-4 text-green-600" />
                             <div>
-                              <p className="text-xs text-gray-500">급여</p>
-                              <p className="font-bold">
-                                {totalPay != null
-                                  ? `${totalPay.toLocaleString()}원`
-                                  : "-"}
-                              </p>
+                              <p className="text-xs text-gray-500">{t.pay}</p>
+                              <p className="font-bold">{totalPay != null ? `${totalPay.toLocaleString()}` : '-'}</p>
                             </div>
                           </div>
                           {memberInfo?.pay_amount && (
                             <div className="text-right">
-                              <p className="text-xs text-gray-500">시급</p>
-                              <p className="text-sm font-medium">
-                                {memberInfo.pay_amount.toLocaleString()}원
-                              </p>
+                              <p className="text-xs text-gray-500">{t.hourlyRate}</p>
+                              <p className="text-sm font-medium">{memberInfo.pay_amount.toLocaleString()}원</p>
                             </div>
                           )}
                         </div>
@@ -522,7 +449,7 @@ export default function SubstituteList() {
                               : "bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
                           }
                         >
-                          {done ? "지원 완료" : "지원하기"}
+                          {done ? t.applied : t.apply}
                         </Button>
                       </div>
                     </CardContent>
@@ -537,33 +464,27 @@ export default function SubstituteList() {
       {/* ─ 지원 확인 다이얼로그 ─────────────────────── */}
       <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>대타 근무 지원</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{t.dialogTitle}</DialogTitle></DialogHeader>
           {selectedPost && (
             <div className="space-y-4">
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="text-center">
-                    <p className="text-xs text-gray-500">
-                      {getDayName(selectedPost.shift?.work_date ?? "")}
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {getDayNum(selectedPost.shift?.work_date ?? "")}
-                    </p>
+                    <p className="text-xs text-gray-500">{getDayName(selectedPost.shift?.work_date ?? '', translations.employeeHome[language].days)}</p>
+                    <p className="text-2xl font-bold">{getDayNum(selectedPost.shift?.work_date ?? '')}</p>
                   </div>
                   <div>
                     <p className="font-bold">
                       {selectedPost.shift
                         ? `${getTimePart(selectedPost.shift.start_at)} - ${getTimePart(selectedPost.shift.end_at)}`
-                        : "시간 미정"}
+                        : t.timeUnknown}
                     </p>
                     <p className="text-sm text-gray-500">{storeName}</p>
                   </div>
                 </div>
                 {memberInfo?.pay_amount && selectedPost.shift && (
                   <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                    <span className="text-sm text-gray-500">예상 급여</span>
+                    <span className="text-sm text-gray-500">{t.expectedPay}</span>
                     <span className="text-lg font-bold text-green-600">
                       {(
                         calcHours(
@@ -576,25 +497,17 @@ export default function SubstituteList() {
                   </div>
                 )}
               </div>
-              <p className="text-sm text-gray-500">
-                이 근무에 지원하시겠습니까? 승인 여부는 알림으로 안내됩니다.
-              </p>
+              <p className="text-sm text-gray-500">{t.confirmApply}</p>
             </div>
           )}
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setApplyDialogOpen(false)}
-              disabled={applying}
-            >
-              취소
-            </Button>
+            <Button variant="outline" onClick={() => setApplyDialogOpen(false)} disabled={applying}>{t.cancelBtn}</Button>
             <Button
               onClick={confirmApply}
               disabled={applying}
               className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
             >
-              {applying ? "지원 중..." : "지원하기"}
+              {applying ? t.applying : t.apply}
             </Button>
           </DialogFooter>
         </DialogContent>

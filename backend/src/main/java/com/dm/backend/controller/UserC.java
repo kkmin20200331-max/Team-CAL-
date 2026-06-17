@@ -41,6 +41,24 @@ public class UserC {
         return ResponseEntity.ok(result);
     }
 
+    // 경민 수정 6/11 12:00
+    // 닉네임 중복 확인
+    @GetMapping("/check-nickname")
+    public ResponseEntity<?> checkNickname(@RequestParam String nickname) {
+        boolean exists = userservice.checkNickname(nickname);
+        if (exists) return ResponseEntity.status(409).body("이미 사용 중인 닉네임입니다.");
+        return ResponseEntity.ok().build();
+    }
+
+    // 경민 수정 6/11 12:00
+    // 아이디 중복 확인
+    @GetMapping("/check-username")
+    public ResponseEntity<?> checkUsername(@RequestParam String username) {
+        boolean exists = userservice.checkUsername(username);
+        if (exists) return ResponseEntity.status(409).body("이미 사용 중인 아이디입니다.");
+        return ResponseEntity.ok().build();
+    }
+
     // 개인정보 수정
     @PutMapping
     public void approveStaff(@RequestBody UserVo userVo) {
