@@ -5,7 +5,7 @@ import { User } from '../types/User';
 import { useApp } from './AppContext';
 import { getMyScheduleAPI, updateUserStatusAPI } from '../../api/auth';
 
-const dummyEmployeesData: (User & { color: string, payType: 'HOURLY' | 'SALARY', payRate: number })[] = [
+const dummyEmployees: (User & { color: string, payType: 'HOURLY' | 'SALARY', payRate: number })[] = [
   { id: 'user_0', username: 'admin', name: '관리자', role: 'ADMIN', color: '#FF5A5F', payType: 'SALARY' as const, payRate: 4000000, status: 'ACTIVE' },
   { id: 'user_1', username: 'mjkim', name: '김민준', role: '매니저', color: '#4A90E2', payType: 'SALARY' as const, payRate: 3000000, status: 'ACTIVE' },
   { id: 'user_2', username: 'sylee', name: '이서연', role: '파트타임', color: '#50E3C2', payType: 'HOURLY' as const, payRate: 10000, status: 'ACTIVE' },
@@ -27,19 +27,19 @@ const generateDummyShifts = (month: Date): Shift[] => {
 
     if (dayOfWeek !== 0 && dayOfWeek !== 6) {
       if (day % 5 === 1) {
-        shifts.push({ id: `s_${day}_1`, userId: dummyEmployeesData[day % 5].id, date: dateStr, time: '09:00-17:00', status: 'LEAVE_REQ', reason: '병원 방문' });
-        shifts.push({ id: `s_${day}_2`, userId: dummyEmployeesData[(day + 1) % 5].id, date: dateStr, time: '15:00-23:00', status: 'CONFIRMED', reason: '' });
+        shifts.push({ id: `s_${day}_1`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '09:00-17:00', status: 'LEAVE_REQ', reason: '병원 방문' });
+        shifts.push({ id: `s_${day}_2`, userId: dummyEmployees[(day + 1) % 5].id, date: dateStr, time: '15:00-23:00', status: 'CONFIRMED', reason: '' });
       } else if (day % 4 === 0) {
-        shifts.push({ id: `s_${day}_3`, userId: dummyEmployeesData[day % 5].id, date: dateStr, time: '08:00-16:00', status: 'CONFIRMED', reason: '' });
-        shifts.push({ id: `s_${day}_4`, userId: dummyEmployeesData[(day + 2) % 5].id, date: dateStr, time: '12:00-20:00', status: 'SUBSTITUTE_REQ', reason: '병원 진료' });
-        shifts.push({ id: `s_${day}_5`, userId: dummyEmployeesData[(day + 3) % 5].id, date: dateStr, time: '16:00-23:00', status: 'CONFIRMED', reason: '' });
+        shifts.push({ id: `s_${day}_3`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '08:00-16:00', status: 'CONFIRMED', reason: '' });
+        shifts.push({ id: `s_${day}_4`, userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '12:00-20:00', status: 'SUBSTITUTE_REQ', reason: '병원 진료' });
+        shifts.push({ id: `s_${day}_5`, userId: dummyEmployees[(day + 3) % 5].id, date: dateStr, time: '16:00-23:00', status: 'CONFIRMED', reason: '' });
       } else {
-        shifts.push({ id: `s_${day}_generic`, userId: dummyEmployeesData[day % 5].id, date: dateStr, time: '10:00-18:00', status: 'CONFIRMED', reason: '' });
+        shifts.push({ id: `s_${day}_generic`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '10:00-18:00', status: 'CONFIRMED', reason: '' });
       }
     } else if (dayOfWeek === 6) {
-      shifts.push({ id: `s_${day}_6`, userId: dummyEmployeesData[day % 5].id, date: dateStr, time: '10:00-18:00', status: 'CONFIRMED', reason: '' });
-      shifts.push({ id: `s_${day}_7`, userId: dummyEmployeesData[(day + 1) % 5].id, date: dateStr, time: '12:00-20:00', status: 'CONFIRMED', reason: '' });
-      shifts.push({ id: `s_${day}_8`, userId: dummyEmployeesData[(day + 2) % 5].id, date: dateStr, time: '14:00-22:00', status: 'SUBSTITUTE_REQ', reason: '가족 행사' });
+      shifts.push({ id: `s_${day}_6`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '10:00-18:00', status: 'CONFIRMED', reason: '' });
+      shifts.push({ id: `s_${day}_7`, userId: dummyEmployees[(day + 1) % 5].id, date: dateStr, time: '12:00-20:00', status: 'CONFIRMED', reason: '' });
+      shifts.push({ id: `s_${day}_8`, userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '14:00-22:00', status: 'SUBSTITUTE_REQ', reason: '가족 행사' });
     }
   }
   return shifts;
@@ -73,15 +73,13 @@ interface ScheduleProviderProps {
 
 export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
   const { userInfo } = useApp();
-  // ✅ [수정] 초기 상태를 빈 배열로 설정
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [employees, setEmployees] = useState<(User & { color: string, payType: 'HOURLY' | 'SALARY', payRate: number })[]>([]);
+  const [shifts, setShifts] = useState<Shift[]>(() => generateDummyShifts(new Date()));
+  const [employees, setEmployees] = useState(() => dummyEmployees);
 
   useEffect(() => {
-    // ✅ [수정] 컴포넌트 마운트 후 더미데이터 생성 및 로그인 사용자 정보 결합
-    const initialEmployees = [...dummyEmployeesData];
+    // This effect can be used to add the logged-in user to the dummy list if not present
     if (userInfo) {
-      const userExists = initialEmployees.some(emp => emp.id === userInfo.id);
+      const userExists = employees.some(emp => emp.id === userInfo.id);
       if (!userExists) {
         const userWithDefaults = {
           ...userInfo,
@@ -89,13 +87,9 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
           payType: 'HOURLY' as const,
           payRate: userInfo.payRate || 10000,
         };
-        initialEmployees.push(userWithDefaults);
+        setEmployees(prev => [...prev, userWithDefaults]);
       }
     }
-    setEmployees(initialEmployees);
-    setShifts(generateDummyShifts(new Date()));
-    
-    // fetchSchedules();
   }, [userInfo]);
 
   const fetchSchedules = async () => {

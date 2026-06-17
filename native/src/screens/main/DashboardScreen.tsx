@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert, RefreshControl, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, RefreshControl, Animated, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { NotificationContext } from '../../contexts/NotificationContext';
@@ -10,7 +10,6 @@ import { startOfWeek, endOfWeek, parseISO, format, isWithinInterval } from 'date
 import { ko } from 'date-fns/locale';
 
 import { Post } from '../../types/Post';
-
 import TodayShiftCard from '../../components/dashboard/TodayShiftCard';
 import WeeklyStatsCard from '../../components/dashboard/WeeklyStatsCard';
 import SubstituteAlertCard from '../../components/dashboard/SubstituteAlertCard';
@@ -39,7 +38,7 @@ const DashboardScreen = ({ navigation }: Props) => {
   const { unreadCount } = useContext(NotificationContext);
 
   const [todayShift, setTodayShift] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [weeklyStats, setWeeklyStats] = useState({ totalHours: 0, expectedSalary: 0 });
   const [isAlertVisible, setIsAlertVisible] = useState(true);
 
@@ -84,6 +83,7 @@ const DashboardScreen = ({ navigation }: Props) => {
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    // 데이터는 Context 변경 시 자동으로 업데이트되므로, 여기서는 로딩 효과만 줌
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
@@ -132,12 +132,13 @@ const DashboardScreen = ({ navigation }: Props) => {
 
       setLoading(false);
     }
-  }, [userInfo, shifts, employees, isDarkMode]);
+  }, [userInfo, shifts, employees]);
 
   const handleNotification = () => navigation.navigate('Notifications');
   const handleQRCheckIn = () => navigation.navigate('QRCheckIn');
   
   const handleNavigateToWeeklyDetail = () => {
+    if (!userInfo) return;
     navigation.navigate('WeeklyPayrollDetail', {
       weekStartDate: new Date().toISOString(),
     });
