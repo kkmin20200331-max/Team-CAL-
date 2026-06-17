@@ -28,11 +28,12 @@ import BoardScreen from './src/screens/board/BoardScreen';
 import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
 import BoardWriteScreen from './src/screens/board/BoardWriteScreen';
 import PayrollScreen from './src/screens/main/PayrollScreen';
+import PayrollDetailScreen from './src/screens/admin/PayrollDetailScreen'; // 1. 새 화면 임포트
 import ContractScreen from './src/screens/mypage/ContractScreen';
 import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
 import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
 import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
-import SubstituteMatchingScreen from './src/screens/schedule/SubstituteMatchingScreen'; // 1. 이름 변경
+import SubstituteMatchingScreen from './src/screens/schedule/SubstituteMatchingScreen';
 
 // Contexts
 import { AppProvider, useApp } from './src/contexts/AppContext';
@@ -173,6 +174,7 @@ function MainNavigator() {
       <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
       <MainStack.Screen name="BoardNavigator" component={BoardNavigator} />
       <MainStack.Screen name="Payroll" component={PayrollScreen} />
+      <MainStack.Screen name="PayrollDetail" component={PayrollDetailScreen} />
       <MainStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
       <MainStack.Screen name="Contract" component={ContractScreen} />
       <MainStack.Screen name="HealthCert" component={HealthCertScreen} />
