@@ -11,7 +11,7 @@ import {
 } from './figma/FigmaIcons';
 import { Clock, MapPin } from 'lucide-react';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
@@ -67,9 +67,9 @@ const formatTime = (s: string) => {
 };
 
 const calcHours = (start: string, end: string) => {
-  const [sh, sm] = formatTime(start).split(':').map(Number);
-  const [eh, em] = formatTime(end).split(':').map(Number);
-  return ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+  const [sh, sm] = formatTime(start).split(":").map(Number);
+  const [eh, em] = formatTime(end).split(":").map(Number);
+  return (eh * 60 + em - (sh * 60 + sm)) / 60;
 };
 
 interface ShiftVO {
@@ -131,15 +131,15 @@ export default function EmployeeHome() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
+    const userStr = sessionStorage.getItem('user');
     if (!userStr) { navigate('/auth/login'); return; }
     const user: UserInfo = JSON.parse(userStr);
     setCurrentUser(user);
 
     API.get('/store/my', { params: { user_id: user.id } })
       .then(res => {
-        if (res.data?.name) { setStoreName(res.data.name); localStorage.setItem('store_name', res.data.name); }
-        if (res.data?.id) localStorage.setItem('store_id', res.data.id);
+        if (res.data?.name) { setStoreName(res.data.name); sessionStorage.setItem('store_name', res.data.name); }
+        if (res.data?.id) sessionStorage.setItem('store_id', res.data.id);
       }).catch(() => {});
 
     const today = new Date();
@@ -180,7 +180,7 @@ export default function EmployeeHome() {
     thisWeekShifts.filter(s => s.status !== 'cancelled').reduce((sum, s) => sum + calcHours(s.start_at, s.end_at), 0)
   );
   const completedShifts = thisWeekShifts.filter(
-    s => getDatePart(s.work_date) < todayStr && s.status !== 'cancelled'
+    (s) => getDatePart(s.work_date) < todayStr && s.status !== "cancelled",
   ).length;
 
   const getStatusLabel = (status: string) => {

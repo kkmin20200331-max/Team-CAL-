@@ -46,3 +46,66 @@ VALUES (
 
 -- 데이터 삽입 후 바로 전체 리스트 조회
 SELECT * FROM shift ORDER BY work_date, start_at;
+
+-- AI schedule recommendation sample shifts.
+-- Matches PEOPLE_LOG weekly sample dates: 2026-06-15(Mon) ~ 2026-06-21(Sun).
+-- Store uses the real STORE PK, while PEOPLE_LOG sample uses STORE_ID = '1'.
+MERGE INTO shift target
+USING (
+    SELECT
+        'SHF_AI_' || TO_CHAR(work_day, 'YYYYMMDD') || '_01' AS id,
+        'V1StGXR8_Z5jdHi6B-myT' AS store_id,
+        'U2xY8pQ3_a1BcDeFgH1j2' AS user_id,
+        TRUNC(work_day) AS work_date,
+        work_day + NUMTODSINTERVAL(9, 'HOUR') AS start_at,
+        work_day + NUMTODSINTERVAL(17, 'HOUR') AS end_at,
+        'SCHEDULED' AS status
+    FROM (
+        SELECT DATE '2026-06-15' + LEVEL - 1 AS work_day
+        FROM DUAL
+        CONNECT BY LEVEL <= 7
+    )
+    UNION ALL
+    SELECT
+        'SHF_AI_' || TO_CHAR(work_day, 'YYYYMMDD') || '_02' AS id,
+        'V1StGXR8_Z5jdHi6B-myT' AS store_id,
+        'U9L0mN1o_P2qR3sT4uV53' AS user_id,
+        TRUNC(work_day) AS work_date,
+        work_day + NUMTODSINTERVAL(11, 'HOUR') AS start_at,
+        work_day + NUMTODSINTERVAL(15, 'HOUR') AS end_at,
+        'SCHEDULED' AS status
+    FROM (
+        SELECT DATE '2026-06-15' + LEVEL - 1 AS work_day
+        FROM DUAL
+        CONNECT BY LEVEL <= 7
+    )
+    UNION ALL
+    SELECT
+        'SHF_AI_' || TO_CHAR(work_day, 'YYYYMMDD') || '_03' AS id,
+        'V1StGXR8_Z5jdHi6B-myT' AS store_id,
+        'U9L0mN1o_P2qR3sT4uV53' AS user_id,
+        TRUNC(work_day) AS work_date,
+        work_day + NUMTODSINTERVAL(18, 'HOUR') AS start_at,
+        work_day + NUMTODSINTERVAL(20, 'HOUR') AS end_at,
+        'SCHEDULED' AS status
+    FROM (
+        SELECT DATE '2026-06-15' + LEVEL - 1 AS work_day
+        FROM DUAL
+        CONNECT BY LEVEL <= 7
+    )
+    WHERE TO_CHAR(work_day, 'DY', 'NLS_DATE_LANGUAGE=ENGLISH') IN ('SAT', 'SUN')
+) source
+ON (target.id = source.id)
+WHEN MATCHED THEN
+    UPDATE SET
+        target.store_id = source.store_id,
+        target.user_id = source.user_id,
+        target.work_date = source.work_date,
+        target.start_at = source.start_at,
+        target.end_at = source.end_at,
+        target.status = source.status
+WHEN NOT MATCHED THEN
+    INSERT (id, store_id, user_id, work_date, start_at, end_at, status)
+    VALUES (source.id, source.store_id, source.user_id, source.work_date, source.start_at, source.end_at, source.status);
+
+COMMIT;

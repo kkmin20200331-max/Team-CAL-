@@ -12,7 +12,7 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface BoardVO {
   id: string;
@@ -49,9 +49,9 @@ const CHIP_COLORS = [
 ];
 
 const formatDate = (s: string) => {
-  if (!s) return '';
+  if (!s) return "";
   const d = new Date(s);
-  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 };
 
 const checkIsNew = (s: string) => {
@@ -63,7 +63,7 @@ export default function EmployeeBoard() {
   const navigate = useNavigate();
   const language = useLanguage();
   const t = translations.employeeBoard[language];
-  const storeId = localStorage.getItem('store_id') || '';
+  const storeId = sessionStorage.getItem('store_id') || '';
 
   const [boards, setBoards] = useState<BoardVO[]>([]);
   const [posts, setPosts] = useState<PostItem[]>([]);
@@ -79,18 +79,18 @@ export default function EmployeeBoard() {
         const boardList: BoardVO[] = Array.isArray(res.data) ? res.data : [];
         setBoards(boardList);
         return Promise.all(
-          boardList.map(board =>
-            API.get('/board_post', { params: { board_id: board.id } })
-              .then(r => {
+          boardList.map((board) =>
+            API.get("/board_post", { params: { board_id: board.id } })
+              .then((r) => {
                 const list: BoardPostVO[] = Array.isArray(r.data) ? r.data : [];
-                return list.map(p => ({
+                return list.map((p) => ({
                   ...p,
                   categoryName: board.name,
                   isNew: checkIsNew(p.created_at),
                 }));
               })
-              .catch(() => [] as PostItem[])
-          )
+              .catch(() => [] as PostItem[]),
+          ),
         );
       })
       .then(results => {

@@ -1,15 +1,33 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import axios from "axios";
 import {
-  ArrowLeft, DollarSign, Users, Edit2, Trash2, Search,
-  CheckCircle, Clock, UserCheck
-} from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
-import { Label } from '../../components/ui/label';
-import { Input } from '../../components/ui/input';
+  ArrowLeft,
+  DollarSign,
+  Users,
+  Edit2,
+  Trash2,
+  Search,
+  CheckCircle,
+  Clock,
+  UserCheck,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../../components/ui/dialog";
+import { Label } from "../../components/ui/label";
+import { Input } from "../../components/ui/input";
 
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
@@ -17,19 +35,31 @@ import { translations } from '../../i18n/translations';
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
 interface UserVo {
-  id: string; name: string; phone: string; username: string; role: string; status: string;
+  id: string;
+  name: string;
+  phone: string;
+  username: string;
+  role: string;
+  status: string;
 }
 interface StoreMemberVo {
-  user_id: string; store_id: string; member_role: string; user_level: string;
-  approval_status: string; pay_type: string | null; pay_amount: number | null;
+  user_id: string;
+  store_id: string;
+  member_role: string;
+  user_level: string;
+  approval_status: string;
+  pay_type: string | null;
+  pay_amount: number | null;
 }
 
 const LEVEL_LABEL_KO: Record<string, string> = {
   NEWBIE: '신입', REGULAR: '일반', CLOSER: '마감가능', MANAGER: '매니저',
 };
 const LEVEL_COLOR: Record<string, string> = {
-  NEWBIE: 'bg-gray-100 text-gray-600', REGULAR: 'bg-blue-100 text-blue-600',
-  CLOSER: 'bg-purple-100 text-purple-600', MANAGER: 'bg-orange-100 text-orange-600',
+  NEWBIE: "bg-gray-100 text-gray-600",
+  REGULAR: "bg-blue-100 text-blue-600",
+  CLOSER: "bg-purple-100 text-purple-600",
+  MANAGER: "bg-orange-100 text-orange-600",
 };
 
 export default function EmployeeManagement() {
@@ -43,58 +73,69 @@ export default function EmployeeManagement() {
   const [employees, setEmployees] = useState<UserVo[]>([]);
   const [memberMap, setMemberMap] = useState<Record<string, StoreMemberVo>>({});
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [editTarget, setEditTarget] = useState<UserVo | null>(null);
-  const [payType, setPayType] = useState<'HOURLY' | 'MONTHLY'>('HOURLY');
-  const [payAmount, setPayAmount] = useState('');
+  const [payType, setPayType] = useState<"HOURLY" | "MONTHLY">("HOURLY");
+  const [payAmount, setPayAmount] = useState("");
   const [saving, setSaving] = useState(false);
 
   const fetchAll = async () => {
     if (!storeId) return;
     setLoading(true);
     try {
-      const res = await API.get('/users', { params: { store_id: storeId } });
+      const res = await API.get("/users", { params: { store_id: storeId } });
       const list: UserVo[] = Array.isArray(res.data) ? res.data : [];
       setEmployees(list);
       const results = await Promise.allSettled(
-        list.map(u => API.get('/store_member/pay', { params: { user_id: u.id, store_id: storeId } }))
+        list.map((u) =>
+          API.get("/store_member/pay", {
+            params: { user_id: u.id, store_id: storeId },
+          }),
+        ),
       );
       const map: Record<string, StoreMemberVo> = {};
       results.forEach((r, i) => {
-        if (r.status === 'fulfilled' && r.value.data) map[list[i].id] = r.value.data;
+        if (r.status === "fulfilled" && r.value.data)
+          map[list[i].id] = r.value.data;
       });
       setMemberMap(map);
     } catch (err) {
-      console.error('직원 조회 실패:', err);
+      console.error("직원 조회 실패:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchAll(); }, [storeId]);
+  useEffect(() => {
+    fetchAll();
+  }, [storeId]);
 
   const openEdit = (emp: UserVo) => {
     const info = memberMap[emp.id];
     setEditTarget(emp);
-    setPayType((info?.pay_type as 'HOURLY' | 'MONTHLY') || 'HOURLY');
-    setPayAmount(info?.pay_amount?.toString() || '');
+    setPayType((info?.pay_type as "HOURLY" | "MONTHLY") || "HOURLY");
+    setPayAmount(info?.pay_amount?.toString() || "");
   };
 
   const handleSavePay = async () => {
     if (!editTarget || !payAmount) return;
     setSaving(true);
     try {
-      await API.put('/store_member/pay', {
-        user_id: editTarget.id, store_id: storeId,
-        pay_type: payType, pay_amount: parseInt(payAmount),
+      await API.put("/store_member/pay", {
+        user_id: editTarget.id,
+        store_id: storeId,
+        pay_type: payType,
+        pay_amount: parseInt(payAmount),
       });
-      setMemberMap(prev => ({
+      setMemberMap((prev) => ({
         ...prev,
         [editTarget.id]: {
           ...(prev[editTarget.id] || {}),
-          user_id: editTarget.id, store_id: storeId,
-          pay_type: payType, pay_amount: parseInt(payAmount),
+          user_id: editTarget.id,
+          store_id: storeId,
+          pay_type: payType,
+          pay_amount: parseInt(payAmount),
         } as StoreMemberVo,
       }));
       setEditTarget(null);
@@ -110,13 +151,19 @@ export default function EmployeeManagement() {
     } catch { alert(t.errDelete); }
   };
 
-  const filtered = employees.filter(e =>
-    e.name.includes(searchTerm) || e.phone.includes(searchTerm)
+  const filtered = employees.filter(
+    (e) => e.name.includes(searchTerm) || e.phone.includes(searchTerm),
   );
 
-  const approvedCount = employees.filter(e => memberMap[e.id]?.approval_status === 'APPROVED').length;
-  const pendingCount  = employees.filter(e => memberMap[e.id]?.approval_status === 'PENDING').length;
-  const unsetCount    = employees.filter(e => !memberMap[e.id]?.pay_amount).length;
+  const approvedCount = employees.filter(
+    (e) => memberMap[e.id]?.approval_status === "APPROVED",
+  ).length;
+  const pendingCount = employees.filter(
+    (e) => memberMap[e.id]?.approval_status === "PENDING",
+  ).length;
+  const unsetCount = employees.filter(
+    (e) => !memberMap[e.id]?.pay_amount,
+  ).length;
 
   const getPayDisplay = (info?: StoreMemberVo) => {
     if (!info?.pay_amount) return <span className="text-orange-400 text-xs">{t.payNotSetLabel}</span>;
@@ -142,7 +189,6 @@ export default function EmployeeManagement() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
       <div className="max-w-5xl mx-auto">
-
         {/* 헤더 */}
         <div className="flex items-center gap-3 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -162,9 +208,8 @@ export default function EmployeeManagement() {
                 <p className="text-xs text-gray-500">{t.totalEmployees}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{t.count(employees.length)}</p>
               </div>
-              <Users className="w-7 h-7 text-blue-400" />
-            </div>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
 
           <Card><CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
@@ -172,9 +217,8 @@ export default function EmployeeManagement() {
                 <p className="text-xs text-gray-500">{t.active}</p>
                 <p className="text-2xl font-bold text-green-600">{t.count(approvedCount)}</p>
               </div>
-              <UserCheck className="w-7 h-7 text-green-400" />
-            </div>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
 
           <Card><CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
@@ -182,9 +226,8 @@ export default function EmployeeManagement() {
                 <p className="text-xs text-gray-500">{t.pendingApproval}</p>
                 <p className={`text-2xl font-bold ${pendingCount > 0 ? 'text-yellow-500' : 'text-gray-400'}`}>{t.count(pendingCount)}</p>
               </div>
-              <Clock className={`w-7 h-7 ${pendingCount > 0 ? 'text-yellow-400' : 'text-gray-300'}`} />
-            </div>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
 
           <Card><CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
@@ -192,9 +235,8 @@ export default function EmployeeManagement() {
                 <p className="text-xs text-gray-500">{t.payNotSet}</p>
                 <p className={`text-2xl font-bold ${unsetCount > 0 ? 'text-orange-500' : 'text-green-500'}`}>{t.count(unsetCount)}</p>
               </div>
-              <DollarSign className={`w-7 h-7 ${unsetCount > 0 ? 'text-orange-400' : 'text-green-400'}`} />
-            </div>
-          </CardContent></Card>
+            </CardContent>
+          </Card>
         </div>
 
         {/* 검색바 */}
@@ -206,7 +248,7 @@ export default function EmployeeManagement() {
                 type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -239,22 +281,31 @@ export default function EmployeeManagement() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {filtered.map(emp => {
+                    {filtered.map((emp) => {
                       const info = memberMap[emp.id];
                       return (
-                        <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <tr
+                          key={emp.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                        >
                           <td className="py-3 px-3">
                             <div className="flex items-center gap-2.5">
                               <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold text-xs shrink-0">
                                 {emp.name[0]}
                               </div>
                               <div>
-                                <p className="font-medium text-gray-900 dark:text-white">{emp.name}</p>
-                                <p className="text-xs text-gray-400">{emp.username}</p>
+                                <p className="font-medium text-gray-900 dark:text-white">
+                                  {emp.name}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {emp.username}
+                                </p>
                               </div>
                             </div>
                           </td>
-                          <td className="py-3 px-3 text-gray-600 dark:text-gray-400 text-xs">{emp.phone}</td>
+                          <td className="py-3 px-3 text-gray-600 dark:text-gray-400 text-xs">
+                            {emp.phone}
+                          </td>
                           <td className="py-3 px-3">
                             {info?.user_level
                               ? <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LEVEL_COLOR[info.user_level] || 'bg-gray-100 text-gray-600'}`}>
@@ -263,20 +314,26 @@ export default function EmployeeManagement() {
                               : <span className="text-xs text-gray-400">-</span>}
                           </td>
                           <td className="py-3 px-3">{getPayDisplay(info)}</td>
-                          <td className="py-3 px-3">{getStatusBadge(info?.approval_status)}</td>
+                          <td className="py-3 px-3">
+                            {getStatusBadge(info?.approval_status)}
+                          </td>
                           <td className="py-3 px-3">
                             <div className="flex gap-1 justify-end">
                               <Button
-                                size="sm" variant="ghost"
+                                size="sm"
+                                variant="ghost"
                                 className="h-7 w-7 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                                onClick={() => openEdit(emp)} title="급여 설정"
+                                onClick={() => openEdit(emp)}
+                                title="급여 설정"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
                               </Button>
                               <Button
-                                size="sm" variant="ghost"
+                                size="sm"
+                                variant="ghost"
                                 className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
-                                onClick={() => handleDelete(emp)} title="직원 제거"
+                                onClick={() => handleDelete(emp)}
+                                title="직원 제거"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </Button>
@@ -294,7 +351,10 @@ export default function EmployeeManagement() {
       </div>
 
       {/* 급여 설정 다이얼로그 */}
-      <Dialog open={!!editTarget} onOpenChange={open => !open && setEditTarget(null)}>
+      <Dialog
+        open={!!editTarget}
+        onOpenChange={(open) => !open && setEditTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editTarget ? t.payDialogTitle(editTarget.name) : ''}</DialogTitle>
@@ -304,15 +364,19 @@ export default function EmployeeManagement() {
               <Label>{t.payType}</Label>
               <div className="flex gap-3">
                 <button
-                  onClick={() => setPayType('HOURLY')}
+                  onClick={() => setPayType("HOURLY")}
                   className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors ${
-                    payType === 'HOURLY' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    payType === "HOURLY"
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-200 text-gray-500 hover:border-gray-300"
                   }`}
                 >{t.hourly}</button>
                 <button
-                  onClick={() => setPayType('MONTHLY')}
+                  onClick={() => setPayType("MONTHLY")}
                   className={`flex-1 py-2.5 rounded-lg border-2 text-sm font-medium transition-colors ${
-                    payType === 'MONTHLY' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    payType === "MONTHLY"
+                      ? "border-purple-500 bg-purple-50 text-purple-700"
+                      : "border-gray-200 text-gray-500 hover:border-gray-300"
                   }`}
                 >{t.monthly}</button>
               </div>

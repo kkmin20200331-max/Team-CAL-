@@ -101,14 +101,12 @@ test_assets/images/medium   10장
 test_assets/images/busy     10장
 ```
 
-영상 5개:
+영상 3개:
 
 ```text
 test_assets/videos/cafe_low.mp4
 test_assets/videos/cafe_medium.mp4
 test_assets/videos/cafe_busy.mp4
-test_assets/videos/cafe_counter_queue.mp4
-test_assets/videos/cafe_seat_area.mp4
 ```
 
 메타데이터:
@@ -170,8 +168,8 @@ Confidence: 0.25, 0.3, 0.5
    - 각 단계별 대표 캡처 2-3장 저장
    - box 누락 여부와 confidence 메모
 
-2. 영상 5개 분석 결과 정리
-   - built-in sample로 5개 영상 순서대로 실행
+2. 영상 3개 분석 결과 정리
+   - built-in sample로 3개 영상 순서대로 실행
    - `intervalSec=1`, `imageSize=960`, `confidence=0.3` 기준 사용
    - 로그에서 샘플 개수 확인
    - `lastCustomerCount`, `lastConfidenceAvg`, `lastMeasuredAt` 확인
@@ -191,8 +189,6 @@ Confidence: 0.25, 0.3, 0.5
 cafe_low.mp4               한산             -            -                -
 cafe_medium.mp4            보통             -            -                -
 cafe_busy.mp4              혼잡             -            -                -
-cafe_counter_queue.mp4     카운터 대기열     -            -                -
-cafe_seat_area.mp4         좌석 구역         -            -                -
 ```
 
 4. 발표 문장 확정
@@ -234,7 +230,7 @@ Video Confidence: 0.3
 6. 자동 갱신 또는 `Status` 버튼으로 결과 확인
 7. annotated image, person box 개수, confidence, box 좌표 확인
 8. 충분히 확인하면 `Stop` 클릭
-9. 5개 영상 반복
+9. 3개 영상 반복
 
 ## 발표 문장 초안
 

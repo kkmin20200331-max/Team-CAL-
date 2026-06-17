@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import EmployeeBottomNav from './EmployeeBottomNav';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface ShiftVO {
   id: string;
@@ -31,25 +31,25 @@ interface ShiftVO {
 
 const toDateStr = (d: Date) => {
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 };
 
 const getTimePart = (s: string) => {
-  if (!s) return '';
-  const t = s.includes('T') ? s.split('T')[1] : s.split(' ')[1];
-  return t ? t.substring(0, 5) : '';
+  if (!s) return "";
+  const t = s.includes("T") ? s.split("T")[1] : s.split(" ")[1];
+  return t ? t.substring(0, 5) : "";
 };
 
 const getDatePart = (s: string) =>
-  !s ? '' : s.includes('T') ? s.split('T')[0] : s.split(' ')[0];
+  !s ? "" : s.includes("T") ? s.split("T")[0] : s.split(" ")[0];
 
 const calcHours = (start: string, end: string) => {
   const getMin = (s: string) => {
-    const t = s.includes('T') ? s.split('T')[1] : s.split(' ')[1];
+    const t = s.includes("T") ? s.split("T")[1] : s.split(" ")[1];
     if (!t) return 0;
-    const [h, m] = t.split(':').map(Number);
+    const [h, m] = t.split(":").map(Number);
     return h * 60 + (m || 0);
   };
   return Math.max(0, (getMin(end) - getMin(start)) / 60);
@@ -123,11 +123,13 @@ export default function QRCheckIn() {
   const navigate = useNavigate();
   const language = useLanguage();
   const t = translations.qrCheckIn[language];
-  const user = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
-  const storeName = localStorage.getItem('store_name') || t.store;
+  const user = useMemo(() => JSON.parse(sessionStorage.getItem('user') || '{}'), []);
+  const storeName = sessionStorage.getItem('store_name') || t.store;
 
   const [isScanning, setIsScanning] = useState(false);
-  const [checkInStatus, setCheckInStatus] = useState<'idle' | 'success' | 'error' | 'loading'>('idle');
+  const [checkInStatus, setCheckInStatus] = useState<
+    "idle" | "success" | "error" | "loading"
+  >("idle");
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const [todayShifts, setTodayShifts] = useState<ShiftVO[]>([]);
@@ -144,8 +146,10 @@ export default function QRCheckIn() {
   useEffect(() => {
     if (!user.id) return;
     const today = toDateStr(new Date());
-    API.get('/shift/staff', { params: { user_id: user.id, start_date: today, end_date: today } })
-      .then(res => setTodayShifts(Array.isArray(res.data) ? res.data : []))
+    API.get("/shift/staff", {
+      params: { user_id: user.id, start_date: today, end_date: today },
+    })
+      .then((res) => setTodayShifts(Array.isArray(res.data) ? res.data : []))
       .catch(() => {})
       .finally(() => setLoadingToday(false));
   }, [user.id]);
@@ -158,23 +162,30 @@ export default function QRCheckIn() {
     yesterday.setDate(now.getDate() - 1);
     const twoWeeksAgo = new Date(now);
     twoWeeksAgo.setDate(now.getDate() - 14);
-    API.get('/shift/staff', {
-      params: { user_id: user.id, start_date: toDateStr(twoWeeksAgo), end_date: toDateStr(yesterday) }
+    API.get("/shift/staff", {
+      params: {
+        user_id: user.id,
+        start_date: toDateStr(twoWeeksAgo),
+        end_date: toDateStr(yesterday),
+      },
     })
-      .then(res =>
+      .then((res) =>
         setRecentShifts(
           (Array.isArray(res.data) ? res.data : [])
-            .filter((s: ShiftVO) => s.status !== 'VACANT' && s.status !== 'CANCELLED')
-            .slice(0, 5)
-        )
+            .filter(
+              (s: ShiftVO) => s.status !== "VACANT" && s.status !== "CANCELLED",
+            )
+            .slice(0, 5),
+        ),
       )
       .catch(() => {});
   }, [user.id]);
 
   // 오늘 유효한 근무 (VACANT, CANCELLED 제외)
-  const todayShift = todayShifts.find(
-    s => s.status !== 'VACANT' && s.status !== 'CANCELLED'
-  ) ?? null;
+  const todayShift =
+    todayShifts.find(
+      (s) => s.status !== "VACANT" && s.status !== "CANCELLED",
+    ) ?? null;
 
   const getTimeStatus = () => {
     if (!todayShift) return null;
@@ -183,10 +194,12 @@ export default function QRCheckIn() {
 
     const now = currentTime;
     const scheduled = new Date();
-    const [hours, minutes] = startTime.split(':').map(Number);
+    const [hours, minutes] = startTime.split(":").map(Number);
     scheduled.setHours(hours, minutes, 0);
 
-    const diffMinutes = Math.floor((now.getTime() - scheduled.getTime()) / 60000);
+    const diffMinutes = Math.floor(
+      (now.getTime() - scheduled.getTime()) / 60000,
+    );
 
     if (diffMinutes < -10) return { status: 'early', text: t.earlyForWork, color: '#8BA68D' };
     if (diffMinutes <= 5) return { status: 'ontime', text: t.onTime, color: '#18A022' };
@@ -198,16 +211,16 @@ export default function QRCheckIn() {
 
   const handleScan = () => {
     setIsScanning(true);
-    setCheckInStatus('loading');
+    setCheckInStatus("loading");
     setTimeout(() => {
-      setCheckInStatus('success');
+      setCheckInStatus("success");
       setIsScanning(false);
     }, 2000);
   };
 
   const handleManualCheckIn = () => {
-    setCheckInStatus('loading');
-    setTimeout(() => setCheckInStatus('success'), 1000);
+    setCheckInStatus("loading");
+    setTimeout(() => setCheckInStatus("success"), 1000);
   };
 
   return (

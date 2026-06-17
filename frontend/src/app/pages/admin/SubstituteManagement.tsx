@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
-import { useNavigate, useParams } from 'react-router';
+import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   UserPlus,
@@ -19,7 +19,7 @@ import ProfilePanel from './ProfilePanel';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 /* ─── 타입 ─────────────────────────────────────────── */
 interface UserVo {
@@ -61,12 +61,12 @@ interface ShiftVO {
 const toDateStr = (d: Date) => d.toISOString().slice(0, 10);
 
 const formatDate = (s: string) => {
-  if (!s) return '-';
+  if (!s) return "-";
   const d = new Date(s);
   if (isNaN(d.getTime())) return s.slice(0, 10);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
-    d.getDate()
-  ).padStart(2, '0')}`;
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
 };
 
 /* ─── 컴포넌트 ──────────────────────────────────────── */
@@ -77,21 +77,26 @@ const SubstituteManagement: React.FC = () => {
   const t = translations.substituteManagement[language];
 
   const user = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem('user') || '{}'); }
-    catch { return {}; }
+    try {
+      return JSON.parse(sessionStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
   }, []);
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   /* 직원 목록 + 최근 근무일 */
   const [employees, setEmployees] = useState<UserVo[]>([]);
-  const [lastWorkedByUser, setLastWorkedByUser] = useState<Record<string, string>>({});
+  const [lastWorkedByUser, setLastWorkedByUser] = useState<
+    Record<string, string>
+  >({});
   const [loadingStaff, setLoadingStaff] = useState(true);
 
   /* 대타 요청하기 모달 */
   const [stores, setStores] = useState<StoreVo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalStoreId, setModalStoreId] = useState(branchId ?? '');
+  const [modalStoreId, setModalStoreId] = useState(branchId ?? "");
   const [modalDate, setModalDate] = useState(toDateStr(new Date()));
   const [modalCount, setModalCount] = useState(1);
   const [modalSubmitting, setModalSubmitting] = useState(false);
@@ -105,8 +110,8 @@ const SubstituteManagement: React.FC = () => {
     past90.setDate(today.getDate() - 90);
 
     Promise.all([
-      API.get('/users', { params: { store_id: branchId } }),
-      API.get('/shift', {
+      API.get("/users", { params: { store_id: branchId } }),
+      API.get("/shift", {
         params: {
           store_id: branchId,
           start_date: toDateStr(past90),
@@ -117,10 +122,12 @@ const SubstituteManagement: React.FC = () => {
       .then(([usersRes, shiftsRes]) => {
         setEmployees(Array.isArray(usersRes.data) ? usersRes.data : []);
 
-        const shifts: ShiftVO[] = Array.isArray(shiftsRes.data) ? shiftsRes.data : [];
+        const shifts: ShiftVO[] = Array.isArray(shiftsRes.data)
+          ? shiftsRes.data
+          : [];
         const lastWorked: Record<string, string> = {};
         shifts.forEach((s) => {
-          if (s.status !== 'VACANT' && s.status !== 'CANCELLED' && s.user_id) {
+          if (s.status !== "VACANT" && s.status !== "CANCELLED" && s.user_id) {
             if (!lastWorked[s.user_id] || s.work_date > lastWorked[s.user_id]) {
               lastWorked[s.user_id] = s.work_date;
             }
@@ -135,14 +142,14 @@ const SubstituteManagement: React.FC = () => {
   /* ── admin 관리 지점 목록 (모달 지점 선택용) ───────── */
   useEffect(() => {
     if (!user.id) return;
-    API.get('/store', { params: { user_id: user.id } })
+    API.get("/store", { params: { user_id: user.id } })
       .then((res) => setStores(Array.isArray(res.data) ? res.data : []))
       .catch(() => {});
   }, [user.id]);
 
   /* ── 모달 열기 ──────────────────────────────────────── */
   const openModal = () => {
-    setModalStoreId(branchId ?? stores[0]?.id ?? '');
+    setModalStoreId(branchId ?? stores[0]?.id ?? "");
     setModalDate(toDateStr(new Date()));
     setModalCount(1);
     setIsModalOpen(true);
@@ -154,14 +161,14 @@ const SubstituteManagement: React.FC = () => {
 
     // TODO: 인원수 전용 DB 컬럼 추가 시 reason 대신 별도 필드로 교체
     const payload: Partial<SubstitutePostVO> = {
-      shift_id: '',
+      shift_id: "",
       store_id: modalStoreId,
       requester_user_id: user.id,
       reason: `인원 ${modalCount}명 필요`,
-      status: 'open',
+      status: "open",
     };
 
-    API.post('/substitute/staff', payload)
+    API.post("/substitute/staff", payload)
       .then(() => setIsModalOpen(false))
       .catch(() => alert(t.errCreate))
       .finally(() => setModalSubmitting(false));
@@ -179,13 +186,13 @@ const SubstituteManagement: React.FC = () => {
   const filteredEmployees = employees.filter(
     (emp) =>
       emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.phone?.includes(searchTerm)
+      emp.phone?.includes(searchTerm),
   );
 
   /* ── 상태 뱃지 ──────────────────────────────────────── */
   const getEmployeeStatusBadge = (status: string) => {
-    const s = (status || '').toUpperCase();
-    if (s === 'ACTIVE' || s === 'APPROVED')
+    const s = (status || "").toUpperCase();
+    if (s === "ACTIVE" || s === "APPROVED")
       return (
         <Badge className="bg-green-500 text-white flex items-center gap-1">
           <CheckCircle className="w-3 h-3" />{t.statusActive}
@@ -200,11 +207,13 @@ const SubstituteManagement: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-
         {/* 페이지 헤더 */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" onClick={() => navigate(`/admin/dashboard/${branchId}`)}>
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`/admin/dashboard/${branchId}`)}
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               {t.backToDashboard}
             </Button>
@@ -242,7 +251,7 @@ const SubstituteManagement: React.FC = () => {
                 <div>
                   <p className="text-sm text-gray-600">{t.noWorkToday}</p>
                   <p className="text-3xl font-bold text-yellow-600">
-                    {employees.filter(e => !lastWorkedByUser[e.id]).length}
+                    {employees.filter((e) => !lastWorkedByUser[e.id]).length}
                   </p>
                 </div>
                 <AlertCircle className="w-8 h-8 text-yellow-400" />
@@ -284,11 +293,13 @@ const SubstituteManagement: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
                         <span className="text-blue-600 font-semibold text-lg">
-                          {emp.name?.[0] ?? '?'}
+                          {emp.name?.[0] ?? "?"}
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg leading-tight">{emp.name}</h3>
+                        <h3 className="font-semibold text-lg leading-tight">
+                          {emp.name}
+                        </h3>
                         <p className="text-sm text-gray-400">{emp.username}</p>
                       </div>
                     </div>
@@ -299,7 +310,7 @@ const SubstituteManagement: React.FC = () => {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span>{emp.phone || '-'}</span>
+                      <span>{emp.phone || "-"}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
@@ -350,7 +361,10 @@ const SubstituteManagement: React.FC = () => {
       {/* ── 대타 요청하기 모달 ────────────────────────── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsModalOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsModalOpen(false)}
+          />
 
           <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-6">
@@ -373,7 +387,9 @@ const SubstituteManagement: React.FC = () => {
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                 >
                   {stores.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
                   ))}
                 </select>
               </div>

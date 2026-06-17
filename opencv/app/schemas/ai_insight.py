@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 Severity = Literal["LOW", "MEDIUM", "HIGH"]
@@ -88,14 +88,28 @@ class AiInsightResponse(BaseModel):
 
 
 class AiInsightAnalyzeRequest(BaseModel):
-    storeId: int
-    storeName: str | None = None
-    storeType: str = "OTHER"
-    storeTypeLabel: str | None = None
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
+
+    storeId: int = Field(validation_alias=AliasChoices("storeId", "store_id"))
+    storeName: str | None = Field(default=None, validation_alias=AliasChoices("storeName", "store_name"))
+    storeType: str = Field(default="OTHER", validation_alias=AliasChoices("storeType", "store_type"))
+    storeTypeLabel: str | None = Field(default=None, validation_alias=AliasChoices("storeTypeLabel", "store_type_label"))
     date: str | None = None
-    current: dict[str, Any]
-    cameraAggregates: list[dict[str, Any]]
-    historicalBaseline: dict[str, Any]
-    pos: dict[str, Any]
-    staffSchedule: list[dict[str, Any]] = Field(default_factory=list)
-    externalFactors: dict[str, Any] = Field(default_factory=dict)
+    current: dict[str, Any] = Field(default_factory=dict)
+    cameraAggregates: list[dict[str, Any]] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("cameraAggregates", "camera_aggregates"),
+    )
+    historicalBaseline: dict[str, Any] = Field(
+        default_factory=dict,
+        validation_alias=AliasChoices("historicalBaseline", "historical_baseline"),
+    )
+    pos: dict[str, Any] = Field(default_factory=dict)
+    staffSchedule: list[dict[str, Any]] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("staffSchedule", "staff_schedule"),
+    )
+    externalFactors: dict[str, Any] = Field(
+        default_factory=dict,
+        validation_alias=AliasChoices("externalFactors", "external_factors"),
+    )

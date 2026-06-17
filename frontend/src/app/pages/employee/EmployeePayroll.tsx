@@ -17,39 +17,59 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface PayrollResult {
-  basePay: number; overtimePay: number; nightPay: number;
-  weeklyPay: number; totalPay: number;
+  basePay: number;
+  overtimePay: number;
+  nightPay: number;
+  weeklyPay: number;
+  totalPay: number;
 }
 interface ShiftVO {
-  id: string; work_date: string; start_at: string; end_at: string; status: string;
+  id: string;
+  work_date: string;
+  start_at: string;
+  end_at: string;
+  status: string;
 }
-interface MemberInfo { pay_type: string | null; pay_amount: number | null; }
+interface MemberInfo {
+  pay_type: string | null;
+  pay_amount: number | null;
+}
 interface HistoryItem {
-  label: string; data: PayrollResult; shifts: ShiftVO[];
+  label: string;
+  data: PayrollResult;
+  shifts: ShiftVO[];
 }
 
 const toDateStr = (d: Date) => {
-  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+  const y = d.getFullYear(),
+    m = String(d.getMonth() + 1).padStart(2, "0"),
+    dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 };
-const getDatePart = (s: string) => !s ? '' : s.includes('T') ? s.split('T')[0] : s.split(' ')[0];
+const getDatePart = (s: string) =>
+  !s ? "" : s.includes("T") ? s.split("T")[0] : s.split(" ")[0];
 const getTimePart = (s: string) => {
-  if (!s) return '';
-  const t = s.includes('T') ? s.split('T')[1] : s.split(' ')[1];
-  return t ? t.substring(0, 5) : '';
+  if (!s) return "";
+  const t = s.includes("T") ? s.split("T")[1] : s.split(" ")[1];
+  return t ? t.substring(0, 5) : "";
 };
 const getDayName = (d: string, days: string[]) => { const [y,m,dd] = d.split('-').map(Number); return days[new Date(y,m-1,dd).getDay()]; };
 const calcHours = (start: string, end: string) => {
-  const getMin = (s: string) => { const t = s.includes('T') ? s.split('T')[1] : s.split(' ')[1]; if (!t) return 0; const [h,m] = t.split(':').map(Number); return h*60+(m||0); };
-  return Math.max(0, (getMin(end)-getMin(start))/60);
+  const getMin = (s: string) => {
+    const t = s.includes("T") ? s.split("T")[1] : s.split(" ")[1];
+    if (!t) return 0;
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + (m || 0);
+  };
+  return Math.max(0, (getMin(end) - getMin(start)) / 60);
 };
 // fmtW / fmtM are replaced by t.fmtCurrency / t.fmtCurrencyM at render time
 
 const getIsoMonday = (dateStr: string): string => {
-  const [y, m, d] = dateStr.split('-').map(Number);
+  const [y, m, d] = dateStr.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
   const day = dt.getDay();
   const diff = day === 0 ? -6 : 1 - day;
@@ -62,9 +82,9 @@ export default function EmployeePayroll() {
   const navigate = useNavigate();
   const language = useLanguage();
   const t = translations.employeePayroll[language];
-  const user = useMemo(() => JSON.parse(localStorage.getItem('user') || '{}'), []);
+  const user = useMemo(() => JSON.parse(sessionStorage.getItem('user') || '{}'), []);
 
-  const [storeId, setStoreId] = useState(localStorage.getItem('store_id') || '');
+  const [storeId, setStoreId] = useState(sessionStorage.getItem('store_id') || '');
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [memberInfo, setMemberInfo] = useState<MemberInfo | null>(null);
   const [payroll, setPayroll] = useState<PayrollResult | null>(null);
@@ -73,21 +93,32 @@ export default function EmployeePayroll() {
   const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
-  const [historyView, setHistoryView] = useState<'monthly' | 'weekly' | 'daily'>('monthly');
+  const [historyView, setHistoryView] = useState<
+    "monthly" | "weekly" | "daily"
+  >("monthly");
   const [requesting, setRequesting] = useState(false);
   const [activeTab, setActiveTab] = useState<'history' | 'trends'>('history');
 
   useEffect(() => {
     if (storeId || !user.id) return;
-    API.get('/store/my', { params: { user_id: user.id } })
-      .then(res => { if (res.data?.id) { setStoreId(res.data.id); localStorage.setItem('store_id', res.data.id); } })
+    API.get("/store/my", { params: { user_id: user.id } })
+      .then((res) => {
+        if (res.data?.id) {
+          setStoreId(res.data.id);
+          sessionStorage.setItem("store_id", res.data.id);
+        }
+      })
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!user.id || !storeId) return;
-    API.get('/store_member/pay', { params: { user_id: user.id, store_id: storeId } })
-      .then(res => { if (res.data) setMemberInfo(res.data); })
+    API.get("/store_member/pay", {
+      params: { user_id: user.id, store_id: storeId },
+    })
+      .then((res) => {
+        if (res.data) setMemberInfo(res.data);
+      })
       .catch(() => {});
   }, [storeId]);
 
@@ -97,10 +128,22 @@ export default function EmployeePayroll() {
     const start = toDateStr(startOfMonth(selectedMonth));
     const end = toDateStr(endOfMonth(selectedMonth));
     Promise.all([
-      API.get('/payroll', { params: { user_id: user.id, store_id: storeId, start_date: start, end_date: end } }),
-      API.get('/shift/staff', { params: { user_id: user.id, start_date: start, end_date: end } }),
+      API.get("/payroll", {
+        params: {
+          user_id: user.id,
+          store_id: storeId,
+          start_date: start,
+          end_date: end,
+        },
+      }),
+      API.get("/shift/staff", {
+        params: { user_id: user.id, start_date: start, end_date: end },
+      }),
     ])
-      .then(([p, s]) => { setPayroll(p.data); setShifts(Array.isArray(s.data) ? s.data : []); })
+      .then(([p, s]) => {
+        setPayroll(p.data);
+        setShifts(Array.isArray(s.data) ? s.data : []);
+      })
       .catch(() => {})
       .finally(() => setLoadingPayroll(false));
   }, [storeId, selectedMonth]);
@@ -116,36 +159,50 @@ export default function EmployeePayroll() {
       if (m < thisMonth) months.push(m);
     }
     Promise.all(
-      months.map(m => {
-        const start = toDateStr(startOfMonth(m)), end = toDateStr(endOfMonth(m));
+      months.map((m) => {
+        const start = toDateStr(startOfMonth(m)),
+          end = toDateStr(endOfMonth(m));
         return Promise.all([
-          API.get('/payroll', { params: { user_id: user.id, store_id: storeId, start_date: start, end_date: end } }),
-          API.get('/shift/staff', { params: { user_id: user.id, start_date: start, end_date: end } }),
+          API.get("/payroll", {
+            params: {
+              user_id: user.id,
+              store_id: storeId,
+              start_date: start,
+              end_date: end,
+            },
+          }),
+          API.get("/shift/staff", {
+            params: { user_id: user.id, start_date: start, end_date: end },
+          }),
         ]).then(([p, s]) => ({
           label: t.monthLabel(m.getMonth() + 1),
           data: p.data as PayrollResult,
-          shifts: Array.isArray(s.data) ? s.data as ShiftVO[] : [],
+          shifts: Array.isArray(s.data) ? (s.data as ShiftVO[]) : [],
         }));
-      })
+      }),
     )
-      .then(r => setHistory(r.reverse()))
+      .then((r) => setHistory(r.reverse()))
       .catch(() => {})
       .finally(() => setLoadingHistory(false));
   }, [storeId, historyYear]);
 
   const today = useMemo(() => toDateStr(new Date()), []);
   const assignedShifts = useMemo(
-    () => shifts.filter(s => s.status !== 'VACANT' && s.status !== 'CANCELLED'),
-    [shifts]
+    () =>
+      shifts.filter((s) => s.status !== "VACANT" && s.status !== "CANCELLED"),
+    [shifts],
   );
   const isCurrentMonth = useMemo(() => {
     const now = new Date();
-    return selectedMonth.getFullYear() === now.getFullYear() && selectedMonth.getMonth() === now.getMonth();
+    return (
+      selectedMonth.getFullYear() === now.getFullYear() &&
+      selectedMonth.getMonth() === now.getMonth()
+    );
   }, [selectedMonth]);
   const isCurrentYear = historyYear >= new Date().getFullYear();
 
   const thisWeekPay = useMemo(() => {
-    if (!memberInfo?.pay_amount || memberInfo.pay_type !== 'HOURLY') return 0;
+    if (!memberInfo?.pay_amount || memberInfo.pay_type !== "HOURLY") return 0;
     if (!isCurrentMonth) return 0;
     const now = new Date();
     const dayNum = now.getDay();
@@ -155,8 +212,15 @@ export default function EmployeePayroll() {
     const monStr = toDateStr(mon);
     const sunStr = toDateStr(new Date(mon.getTime() + 6 * 86400000));
     return assignedShifts
-      .filter(s => { const d = getDatePart(s.work_date); return d >= monStr && d <= sunStr; })
-      .reduce((sum, s) => sum + calcHours(s.start_at, s.end_at) * memberInfo.pay_amount!, 0);
+      .filter((s) => {
+        const d = getDatePart(s.work_date);
+        return d >= monStr && d <= sunStr;
+      })
+      .reduce(
+        (sum, s) =>
+          sum + calcHours(s.start_at, s.end_at) * memberInfo.pay_amount!,
+        0,
+      );
   }, [assignedShifts, memberInfo, isCurrentMonth]);
 
   const handleWeeklyRequest = async () => {
@@ -180,14 +244,18 @@ export default function EmployeePayroll() {
   );
 
   const weeklyHistory = useMemo(() => {
-    const map: Record<string, { weekLabel: string; total: number; hours: number; count: number }> = {};
-    dailyHistory.forEach(s => {
+    const map: Record<
+      string,
+      { weekLabel: string; total: number; hours: number; count: number }
+    > = {};
+    dailyHistory.forEach((s) => {
       const dateStr = getDatePart(s.work_date);
       const monStr = getIsoMonday(dateStr);
-      const [y, m, d] = monStr.split('-').map(Number);
+      const [y, m, d] = monStr.split("-").map(Number);
       const sunDt = new Date(y, m - 1, d + 6);
-      const weekLabel = `${monStr.slice(5).replace('-','/')} ~ ${toDateStr(sunDt).slice(5).replace('-','/')}`;
-      if (!map[monStr]) map[monStr] = { weekLabel, total: 0, hours: 0, count: 0 };
+      const weekLabel = `${monStr.slice(5).replace("-", "/")} ~ ${toDateStr(sunDt).slice(5).replace("-", "/")}`;
+      if (!map[monStr])
+        map[monStr] = { weekLabel, total: 0, hours: 0, count: 0 };
       map[monStr].total += s.pay;
       map[monStr].hours += calcHours(s.start_at, s.end_at);
       map[monStr].count += 1;
@@ -197,9 +265,12 @@ export default function EmployeePayroll() {
       .map(([, v]) => v);
   }, [dailyHistory]);
 
-  const chartData = useMemo(() =>
-    [...history].reverse().map(h => ({ month: h.label, 급여: Math.round(h.data.totalPay) })),
-    [history]
+  const chartData = useMemo(
+    () =>
+      [...history]
+        .reverse()
+        .map((h) => ({ month: h.label, 급여: Math.round(h.data.totalPay) })),
+    [history],
   );
 
   const payLabel = memberInfo?.pay_type === 'MONTHLY' && memberInfo.pay_amount != null

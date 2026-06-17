@@ -18,26 +18,26 @@ import { format, addMonths, subMonths } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import EmployeeHeader from './EmployeeHeader';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 const toDateStr = (d: Date) => {
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 };
 
 const getDatePart = (s: string) => {
-  if (!s) return '';
-  if (s.includes('T')) return s.split('T')[0];
-  if (s.includes(' ')) return s.split(' ')[0];
+  if (!s) return "";
+  if (s.includes("T")) return s.split("T")[0];
+  if (s.includes(" ")) return s.split(" ")[0];
   return s;
 };
 
 const formatTimePart = (s: string) => {
-  if (!s) return '';
-  if (s.includes('T')) return s.split('T')[1].substring(0, 5);
-  if (s.includes(' ')) return s.split(' ')[1].substring(0, 5);
+  if (!s) return "";
+  if (s.includes("T")) return s.split("T")[1].substring(0, 5);
+  if (s.includes(" ")) return s.split(" ")[1].substring(0, 5);
   return s.substring(0, 5);
 };
 
@@ -48,8 +48,8 @@ const getDayLabel = (dateStr: string, days: string[]) => {
 };
 
 const formatTimestamp = (val: any) => {
-  if (!val) return '';
-  return new Date(val).toLocaleDateString('ko-KR');
+  if (!val) return "";
+  return new Date(val).toLocaleDateString("ko-KR");
 };
 
 interface ShiftVO {
@@ -83,10 +83,12 @@ export default function LeaveRequest() {
   const [leaveHistory, setLeaveHistory] = useState<LeaveRequestVO[]>([]);
   const [historyMonth, setHistoryMonth] = useState(new Date());
 
-  const [selectedShiftId, setSelectedShiftId] = useState('');
-  const [reason, setReason] = useState('');
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [selectedShiftId, setSelectedShiftId] = useState("");
+  const [reason, setReason] = useState("");
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [errorMsg, setErrorMsg] = useState("");
   const [loadingShifts, setLoadingShifts] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
@@ -96,11 +98,15 @@ export default function LeaveRequest() {
     const today = new Date();
     const later = new Date(today);
     later.setMonth(today.getMonth() + 2);
-    API.get('/shift/staff', {
-      params: { user_id: user.id, start_date: toDateStr(today), end_date: toDateStr(later) }
+    API.get("/shift/staff", {
+      params: {
+        user_id: user.id,
+        start_date: toDateStr(today),
+        end_date: toDateStr(later),
+      },
     })
-      .then(res => setMyShifts(Array.isArray(res.data) ? res.data : []))
-      .catch(err => console.error('근무 조회 실패:', err))
+      .then((res) => setMyShifts(Array.isArray(res.data) ? res.data : []))
+      .catch((err) => console.error("근무 조회 실패:", err))
       .finally(() => setLoadingShifts(false));
   }, []);
 
@@ -113,16 +119,16 @@ export default function LeaveRequest() {
   const fetchHistory = async () => {
     setLoadingHistory(true);
     try {
-      const res = await API.get('/leave_request/staff', {
+      const res = await API.get("/leave_request/staff", {
         params: {
           user_id: user.id,
           year: historyMonth.getFullYear(),
           month: historyMonth.getMonth() + 1,
-        }
+        },
       });
       setLeaveHistory(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('내역 조회 실패:', err);
+      console.error("내역 조회 실패:", err);
     } finally {
       setLoadingHistory(false);
     }
@@ -130,24 +136,31 @@ export default function LeaveRequest() {
 
   // 이미 신청한 shift_id 목록 (중복 신청 방지)
   const pendingShiftIds = useMemo(
-    () => leaveHistory.filter(lr => lr.status === 'PENDING').map(lr => lr.shift_id),
-    [leaveHistory]
+    () =>
+      leaveHistory
+        .filter((lr) => lr.status === "PENDING")
+        .map((lr) => lr.shift_id),
+    [leaveHistory],
   );
 
   // 신청 가능 근무: VACANT/cancelled 제외, 이미 PENDING 제외
   const availableShifts = useMemo(
-    () => myShifts.filter(s =>
-      s.status !== 'VACANT' &&
-      s.status !== 'cancelled' &&
-      !pendingShiftIds.includes(s.id)
-    ),
-    [myShifts, pendingShiftIds]
+    () =>
+      myShifts.filter(
+        (s) =>
+          s.status !== "VACANT" &&
+          s.status !== "cancelled" &&
+          !pendingShiftIds.includes(s.id),
+      ),
+    [myShifts, pendingShiftIds],
   );
 
   // 근무 맵 (내역에서 날짜 표시용)
   const shiftMap = useMemo(() => {
     const m: Record<string, ShiftVO> = {};
-    myShifts.forEach(s => { m[s.id] = s; });
+    myShifts.forEach((s) => {
+      m[s.id] = s;
+    });
     return m;
   }, [myShifts]);
 
@@ -156,20 +169,20 @@ export default function LeaveRequest() {
     if (!selectedShiftId) { setErrorMsg(t.errSelectShift); setSubmitStatus('error'); return; }
     if (!reason.trim()) { setErrorMsg(t.errReason); setSubmitStatus('error'); return; }
 
-    setSubmitStatus('loading');
+    setSubmitStatus("loading");
     try {
-      await API.post('/leave_request', {
+      await API.post("/leave_request", {
         id: crypto.randomUUID(),
         shift_id: selectedShiftId,
         user_id: user.id,
         reason: reason.trim(),
       });
-      setSubmitStatus('success');
-      setSelectedShiftId('');
-      setReason('');
+      setSubmitStatus("success");
+      setSelectedShiftId("");
+      setReason("");
       // 내역 갱신
       fetchHistory();
-      setTimeout(() => setSubmitStatus('idle'), 3000);
+      setTimeout(() => setSubmitStatus("idle"), 3000);
     } catch {
       setErrorMsg(t.errSubmit);
       setSubmitStatus('error');
@@ -179,7 +192,7 @@ export default function LeaveRequest() {
   const handleCancel = async (leaveId: string) => {
     if (!confirm(t.confirmCancel)) return;
     try {
-      await API.delete('/leave_request', { params: { id: leaveId } });
+      await API.delete("/leave_request", { params: { id: leaveId } });
       fetchHistory();
     } catch {
       alert(t.errCancel);
@@ -212,7 +225,6 @@ export default function LeaveRequest() {
       </EmployeeHeader>
 
       <div className="px-4 py-4 space-y-4">
-
         {/* ── 휴무 신청 폼 ───────────────────────────── */}
         <Card>
           <CardHeader className="pb-3">
@@ -223,7 +235,6 @@ export default function LeaveRequest() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-
               {/* 근무 선택 */}
               <div className="space-y-2">
                 <Label>{t.selectShift}</Label>
@@ -235,18 +246,20 @@ export default function LeaveRequest() {
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {availableShifts.map(shift => {
+                    {availableShifts.map((shift) => {
                       const datePart = getDatePart(shift.work_date);
                       const isSelected = selectedShiftId === shift.id;
                       return (
                         <button
                           key={shift.id}
                           type="button"
-                          onClick={() => setSelectedShiftId(isSelected ? '' : shift.id)}
+                          onClick={() =>
+                            setSelectedShiftId(isSelected ? "" : shift.id)
+                          }
                           className={`w-full text-left rounded-lg border-2 p-3 transition-colors ${
                             isSelected
-                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800'
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 bg-white dark:bg-gray-800"
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -257,11 +270,14 @@ export default function LeaveRequest() {
                               </div>
                               <div>
                                 <p className="font-medium text-sm">
-                                  {format(new Date(datePart), 'M월 d일', { locale: ko })}
+                                  {format(new Date(datePart), "M월 d일", {
+                                    locale: ko,
+                                  })}
                                 </p>
                                 <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
                                   <Clock className="w-3 h-3" />
-                                  {formatTimePart(shift.start_at)} - {formatTimePart(shift.end_at)}
+                                  {formatTimePart(shift.start_at)} -{" "}
+                                  {formatTimePart(shift.end_at)}
                                 </div>
                               </div>
                             </div>
@@ -288,7 +304,7 @@ export default function LeaveRequest() {
               </div>
 
               {/* 상태 알림 */}
-              {submitStatus === 'success' && (
+              {submitStatus === "success" && (
                 <Alert className="bg-green-50 dark:bg-green-900/20 border-green-200">
                   <CheckCircle2 className="w-4 h-4 text-green-600" />
                   <AlertDescription className="text-green-700 dark:text-green-400">
@@ -296,7 +312,7 @@ export default function LeaveRequest() {
                   </AlertDescription>
                 </Alert>
               )}
-              {submitStatus === 'error' && (
+              {submitStatus === "error" && (
                 <Alert className="bg-red-50 dark:bg-red-900/20 border-red-200">
                   <XCircle className="w-4 h-4 text-red-600" />
                   <AlertDescription className="text-red-700 dark:text-red-400">
@@ -307,7 +323,11 @@ export default function LeaveRequest() {
 
               <Button
                 type="submit"
-                disabled={submitStatus === 'loading' || !selectedShiftId || !reason.trim()}
+                disabled={
+                  submitStatus === "loading" ||
+                  !selectedShiftId ||
+                  !reason.trim()
+                }
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 size="lg"
               >
@@ -325,15 +345,23 @@ export default function LeaveRequest() {
               <CardTitle className="text-lg">{t.historyTitle}</CardTitle>
               {/* 월 이동 */}
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-7 w-7"
-                  onClick={() => setHistoryMonth(prev => subMonths(prev, 1))}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setHistoryMonth((prev) => subMonths(prev, 1))}
+                >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 <span className="text-sm font-medium w-16 text-center">
-                  {format(historyMonth, 'yyyy.MM')}
+                  {format(historyMonth, "yyyy.MM")}
                 </span>
-                <Button variant="ghost" size="icon" className="h-7 w-7"
-                  onClick={() => setHistoryMonth(prev => addMonths(prev, 1))}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setHistoryMonth((prev) => addMonths(prev, 1))}
+                >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -345,20 +373,20 @@ export default function LeaveRequest() {
             ) : leaveHistory.length === 0 ? (
               <p className="text-center py-6 text-sm text-gray-400">{t.noHistory}</p>
             ) : (
-              leaveHistory.map(leave => {
+              leaveHistory.map((leave) => {
                 const shift = shiftMap[leave.shift_id];
-                const datePart = shift ? getDatePart(shift.work_date) : '';
+                const datePart = shift ? getDatePart(shift.work_date) : "";
                 return (
                   <div
                     key={leave.id}
                     className={`p-4 rounded-lg border-2 ${
-                      leave.status === 'PENDING'
-                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-                        : leave.status === 'APPROVED'
-                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                        : leave.status === 'REJECTED'
-                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                        : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                      leave.status === "PENDING"
+                        ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                        : leave.status === "APPROVED"
+                          ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                          : leave.status === "REJECTED"
+                            ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                            : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                     }`}
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -370,11 +398,14 @@ export default function LeaveRequest() {
                         {shift ? (
                           <div className="space-y-0.5">
                             <p className="font-medium text-sm">
-                              {format(new Date(datePart), 'M월 d일 (eee)', { locale: ko })}
+                              {format(new Date(datePart), "M월 d일 (eee)", {
+                                locale: ko,
+                              })}
                             </p>
                             <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                               <Clock className="w-3 h-3" />
-                              {formatTimePart(shift.start_at)} - {formatTimePart(shift.end_at)}
+                              {formatTimePart(shift.start_at)} -{" "}
+                              {formatTimePart(shift.end_at)}
                             </div>
                             <div className="flex items-center gap-1 text-xs text-gray-500">
                               <MapPin className="w-3 h-3" />
@@ -385,7 +416,7 @@ export default function LeaveRequest() {
                           <p className="text-xs text-gray-400">{t.noShiftInfo}</p>
                         )}
                       </div>
-                      {leave.status === 'PENDING' && (
+                      {leave.status === "PENDING" && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -425,7 +456,6 @@ export default function LeaveRequest() {
             <p>• {t.guide3}</p>
           </CardContent>
         </Card>
-
       </div>
 
       <EmployeeBottomNav />

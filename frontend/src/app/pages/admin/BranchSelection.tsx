@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { Store, Clock, MapPin, LayoutGrid } from 'lucide-react';
 import ProfilePanel from './ProfilePanel';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface StoreVo {
   id: string;
@@ -39,8 +39,8 @@ export default function BranchSelection() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const res = await API.get('/store', { params: { user_id: user.id } });
+        const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+        const res = await API.get("/store", { params: { user_id: user.id } });
         const storeList: StoreVo[] = Array.isArray(res.data) ? res.data : [];
         setStores(storeList);
 
@@ -48,8 +48,8 @@ export default function BranchSelection() {
         const pending: PendingEmployee[] = [];
         for (const store of storeList) {
           try {
-            const guestRes = await API.get('/users/guest', {
-              params: { store_id: store.id, role: 'ADMIN' }
+            const guestRes = await API.get("/users/guest", {
+              params: { store_id: store.id, role: "ADMIN" },
             });
             const guests = Array.isArray(guestRes.data) ? guestRes.data : [];
             guests.forEach((g: any) => {
@@ -64,9 +64,9 @@ export default function BranchSelection() {
             });
           } catch {}
         }
-        sessionStorage.setItem('pendingList', JSON.stringify(pending));
+        sessionStorage.setItem("pendingList", JSON.stringify(pending));
       } catch (err) {
-        console.error('매장 조회 실패:', err);
+        console.error("매장 조회 실패:", err);
       } finally {
         setStoresLoading(false);
       }
@@ -75,8 +75,8 @@ export default function BranchSelection() {
   }, []);
 
   const handleSelectStore = (store: StoreVo) => {
-    localStorage.setItem('store_id', store.id);
-    localStorage.setItem('store_name', store.name);
+    sessionStorage.setItem("store_id", store.id);
+    sessionStorage.setItem("store_name", store.name);
     navigate(`/admin/dashboard/${store.id}`);
   };
 
@@ -99,7 +99,11 @@ export default function BranchSelection() {
 
       {/* Store Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Button onClick={() => navigate('/admin/multibranch')} variant="outline" className="gap-2 mb-6 w-full">
+        <Button
+          onClick={() => navigate("/admin/multibranch")}
+          variant="outline"
+          className="gap-2 mb-6 w-full"
+        >
           <LayoutGrid className="w-4 h-4" />
           {t.viewAllBranches}
         </Button>
@@ -133,7 +137,10 @@ export default function BranchSelection() {
                   </div>
                   <Button
                     className="w-full mt-4"
-                    onClick={(e) => { e.stopPropagation(); handleSelectStore(store); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectStore(store);
+                    }}
                   >
                     {t.viewDetails}
                   </Button>

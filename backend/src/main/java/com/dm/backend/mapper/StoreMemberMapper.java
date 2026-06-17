@@ -41,20 +41,29 @@ public interface StoreMemberMapper {
     // =========================
 
     // 매장 근무 신청
-    @Insert("""
-            insert into store_member
-            values (
-                #{id},
-                #{store_id},
-                #{user_id},
-                #{member_role},
-                #{user_level},
-                #{approval_status},
-                #{pay_type},
-                #{pay_amount}
-            )
-            """)
-    void approveRegister(StoreMemberVo storeMemberVo);
+ @Insert("""
+        INSERT INTO store_member (
+            id,
+            store_id,
+            user_id,
+            member_role,
+            user_level,
+            approval_status,
+            pay_type,
+            pay_amount
+        )
+        VALUES (
+            #{id},
+            #{store_id},
+            #{user_id},
+            #{member_role},
+            #{user_level},
+            #{approval_status},
+            #{pay_type},
+            #{pay_amount}
+        )
+        """)
+void approveRegister(StoreMemberVo storeMemberVo);
 
     // 신청 여부 확인
     @Select("""
@@ -112,7 +121,7 @@ public interface StoreMemberMapper {
             SELECT * FROM store_member
             WHERE store_id = #{store_id}
             """)
-    List<StoreMemberVo> getStoreMembers(String storeId);
+    List<StoreMemberVo> getStoreMembers(@Param("store_id") String storeId);
 
     //직원 근무가능요일 관리자 조회용
     @Select("""

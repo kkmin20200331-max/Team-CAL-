@@ -1,17 +1,42 @@
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Body, File, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 
 from app.core.state import inference_state
-from app.schemas.request import CameraStartRequest
+from app.core.config import settings
+from app.schemas.request import CameraStartRequest, SourceType
 from app.services.inference_service import inference_service
 
 router = APIRouter(prefix="/camera", tags=["camera"])
 
 
 @router.post("/start")
-def start_camera(request: CameraStartRequest):
+def start_camera(
+    request: CameraStartRequest | None = Body(default=None),
+    storeId: int | None = Query(default=None, ge=1),
+    cameraId: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+    sourceType: SourceType = SourceType.WEBCAM,
+    intervalSec: int = Query(default=5, ge=1, le=3600),
+    aggregationIntervalSec: int = Query(default=60, ge=1, le=3600),
+    modelName: str = Query(default_factory=lambda: settings.default_model_name, pattern="^(yolo11s|yolov8[ns])$"),
+    imageSize: int = Query(default=640, ge=320, le=1280),
+    confidence: float = Query(default=0.3, ge=0.01, le=1.0),
+):
+    if request is None:
+        request = CameraStartRequest(
+            storeId=storeId or 1,
+            cameraId=cameraId or "CAM-001",
+            source=source or "0",
+            sourceType=sourceType,
+            intervalSec=intervalSec,
+            aggregationIntervalSec=aggregationIntervalSec,
+            modelName=modelName,
+            imageSize=imageSize,
+            confidence=confidence,
+        )
     try:
         return inference_service.start(request)
     except RuntimeError as exc:
@@ -31,6 +56,22 @@ def camera_status():
 @router.get("/metrics")
 def camera_metrics():
     return inference_service.metrics()
+
+
+@router.get("/stream")
+def camera_stream():
+    try:
+        return StreamingResponse(
+            inference_service.preview_stream(),
+            media_type="multipart/x-mixed-replace; boundary=frame",
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("/aggregate/latest")

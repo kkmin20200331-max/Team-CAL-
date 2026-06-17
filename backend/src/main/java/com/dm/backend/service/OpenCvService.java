@@ -1,9 +1,40 @@
 package com.dm.backend.service;
 
 import com.dm.backend.vo.OpenCvResponseVO;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
-public interface OpenCvService {
+@Service
+public class OpenCvService {
 
-    OpenCvResponseVO analyze();
+    private final RestClient restClient;
 
+    public OpenCvService() {
+
+        this.restClient =
+                RestClient.builder()
+                        .baseUrl("http://localhost:8000")
+                        .build();
+    }
+
+    // =========================
+    // [OpenCV 분석]
+    // =========================
+
+    public OpenCvResponseVO analyze() {
+
+        System.out.println("========== OpenCV 호출 시작 ==========");
+
+        OpenCvResponseVO response =
+                restClient.post()
+                        .uri("/analyze/opencv")
+                        .retrieve()
+                        .body(OpenCvResponseVO.class);
+
+        System.out.println("OpenCV 응답 : " + response);
+
+        System.out.println("========== OpenCV 호출 종료 ==========");
+
+        return response;
+    }
 }

@@ -1,1 +1,36 @@
-import axios from 'axios';const API = axios.create({    baseURL: 'http://localhost:8080/api', // 백엔드 주소로 변경});// 로그인export const loginAPI = (username: string, password: string) =>    API.post('/users/login', { username, password });// 회원가입export const signupAPI = (data: {    username: string;    password: string;    name: string;    phone: string;    role: 'ADMIN' | 'STAFF';    brandName?: string;    branchName?: string | null;    openTime?: string;    closeTime?: string;    maxCapacity?: number;    selectedBrand?: string;    selectedBranch?: string;}) => API.post('/users', data);
+import axios from "axios";
+
+const API = axios.create({
+  baseURL: "http://localhost:8080/api", // 백엔드 주소로 변경
+});
+
+// 로그인
+export const loginAPI = (username: string, password: string) =>
+  API.post("/users/login", { username, password });
+
+//로그인 확인 함수
+export const isLogin = (): boolean => {
+  return sessionStorage.getItem("user") !== null;
+};
+//로그인 정보 가져오기(권한 확인)
+export const getLoginUser = () => {
+  const user = sessionStorage.getItem("user");
+
+  return user ? JSON.parse(user) : null;
+};
+
+// 회원가입
+export const signupAPI = (data: {
+  username: string;
+  password: string;
+  name: string;
+  phone: string;
+  role: "ADMIN" | "STAFF";
+  brandName?: string;
+  branchName?: string | null;
+  openTime?: string;
+  closeTime?: string;
+  maxCapacity?: number;
+  selectedBrand?: string;
+  selectedBranch?: string;
+}) => API.post("/users", data);

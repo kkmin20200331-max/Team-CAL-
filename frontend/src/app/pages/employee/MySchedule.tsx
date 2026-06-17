@@ -18,12 +18,18 @@ import {
 import EmployeeBottomNav from './EmployeeBottomNav';
 import EmployeeHeader from './EmployeeHeader';
 import {
-  format, addMonths, subMonths, startOfMonth, endOfMonth,
-  startOfWeek, addDays, isSameDay
-} from 'date-fns';
-import { ko } from 'date-fns/locale';
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  addDays,
+  isSameDay,
+} from "date-fns";
+import { ko } from "date-fns/locale";
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 // date-holidays로 한국 공휴일 동적 조회
 const hd = new Holidays('KR');
@@ -51,23 +57,23 @@ interface ShiftVO {
 }
 
 const formatTime = (isoStr: string) => {
-  if (!isoStr) return '';
-  if (isoStr.includes('T')) return isoStr.split('T')[1].substring(0, 5);
-  if (isoStr.includes(' ')) return isoStr.split(' ')[1].substring(0, 5);
+  if (!isoStr) return "";
+  if (isoStr.includes("T")) return isoStr.split("T")[1].substring(0, 5);
+  if (isoStr.includes(" ")) return isoStr.split(" ")[1].substring(0, 5);
   return isoStr.substring(0, 5);
 };
 
 const getWorkDate = (shift: ShiftVO): string => {
-  const raw = shift.work_date || '';
-  if (raw.includes('T')) return raw.split('T')[0];
-  if (raw.includes(' ')) return raw.split(' ')[0];
+  const raw = shift.work_date || "";
+  if (raw.includes("T")) return raw.split("T")[0];
+  if (raw.includes(" ")) return raw.split(" ")[0];
   return raw;
 };
 
 const calcHours = (start: string, end: string): number => {
-  const [sh, sm] = formatTime(start).split(':').map(Number);
-  const [eh, em] = formatTime(end).split(':').map(Number);
-  return Math.round(((eh * 60 + em) - (sh * 60 + sm)) / 60 * 10) / 10;
+  const [sh, sm] = formatTime(start).split(":").map(Number);
+  const [eh, em] = formatTime(end).split(":").map(Number);
+  return Math.round(((eh * 60 + em - (sh * 60 + sm)) / 60) * 10) / 10;
 };
 
 const getDayLabel = (dateStr: string, days: string[]): string => {
@@ -79,42 +85,43 @@ export default function MySchedule() {
   const language = useLanguage();
   const t = translations.mySchedule[language];
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const storeName = localStorage.getItem('store_name') || '';
+  const user = JSON.parse(sessionStorage.getItem("user") || "{}");
+  const storeName = sessionStorage.getItem("store_name") || "";
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState(
-    startOfWeek(new Date(), { weekStartsOn: 1 })
+    startOfWeek(new Date(), { weekStartsOn: 1 }),
   );
   const [shifts, setShifts] = useState<ShiftVO[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
-
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date(),
+  );
+  const [viewMode, setViewMode] = useState<"month" | "week">("month");
 
   // 월간 조회
   useEffect(() => {
     if (!user.id) return;
-    if (viewMode === 'month') fetchMonthShifts();
+    if (viewMode === "month") fetchMonthShifts();
   }, [currentMonth, viewMode]);
 
   // 주간 조회
   useEffect(() => {
     if (!user.id) return;
-    if (viewMode === 'week') fetchWeekShifts();
+    if (viewMode === "week") fetchWeekShifts();
   }, [currentWeekStart, viewMode]);
 
   const fetchMonthShifts = async () => {
     setLoading(true);
     try {
-      const start = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-      const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
-      const res = await API.get('/shift/staff', {
-        params: { user_id: user.id, start_date: start, end_date: end }
+      const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+      const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+      const res = await API.get("/shift/staff", {
+        params: { user_id: user.id, start_date: start, end_date: end },
       });
       setShifts(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('근무 조회 실패:', err);
+      console.error("근무 조회 실패:", err);
     } finally {
       setLoading(false);
     }
@@ -123,30 +130,37 @@ export default function MySchedule() {
   const fetchWeekShifts = async () => {
     setLoading(true);
     try {
-      const start = format(currentWeekStart, 'yyyy-MM-dd');
-      const end = format(addDays(currentWeekStart, 6), 'yyyy-MM-dd');
-      const res = await API.get('/shift/staff', {
-        params: { user_id: user.id, start_date: start, end_date: end }
+      const start = format(currentWeekStart, "yyyy-MM-dd");
+      const end = format(addDays(currentWeekStart, 6), "yyyy-MM-dd");
+      const res = await API.get("/shift/staff", {
+        params: { user_id: user.id, start_date: start, end_date: end },
       });
       setShifts(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error('근무 조회 실패:', err);
+      console.error("근무 조회 실패:", err);
     } finally {
       setLoading(false);
     }
   };
 
   // 통계 계산
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const activeShifts = shifts.filter(s => s.status !== 'cancelled');
-  const totalHours = activeShifts.reduce((sum, s) => sum + calcHours(s.start_at, s.end_at), 0);
-  const completedShifts = activeShifts.filter(s => getWorkDate(s) < today).length;
-  const upcomingShifts = activeShifts.filter(s => getWorkDate(s) >= today).length;
+  const today = format(new Date(), "yyyy-MM-dd");
+  const activeShifts = shifts.filter((s) => s.status !== "cancelled");
+  const totalHours = activeShifts.reduce(
+    (sum, s) => sum + calcHours(s.start_at, s.end_at),
+    0,
+  );
+  const completedShifts = activeShifts.filter(
+    (s) => getWorkDate(s) < today,
+  ).length;
+  const upcomingShifts = activeShifts.filter(
+    (s) => getWorkDate(s) >= today,
+  ).length;
 
   // 날짜별 상태 맵 (달력 점 표시용)
   const shiftsByDate = useMemo(() => {
     const map: Record<string, Set<string>> = {};
-    shifts.forEach(s => {
+    shifts.forEach((s) => {
       const date = getWorkDate(s);
       if (!map[date]) map[date] = new Set();
       map[date].add(s.status);
@@ -198,7 +212,9 @@ export default function MySchedule() {
   }, [shiftsByDate]);
 
   // 주간 뷰 7일
-  const weekDates = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
+  const weekDates = Array.from({ length: 7 }, (_, i) =>
+    addDays(currentWeekStart, i),
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {

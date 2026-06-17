@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   MapPin,
@@ -16,11 +16,16 @@ import {
   Download,
   RefreshCw,
   BarChart3,
-  Activity
-} from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
+  Activity,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import {
   BarChart,
   Bar,
@@ -38,14 +43,14 @@ import {
   PolarRadiusAxis,
   Radar,
   ComposedChart,
-  Area
-} from 'recharts';
+  Area,
+} from "recharts";
 
 interface BranchMetrics {
   id: string;
   name: string;
   location: string;
-  status: 'excellent' | 'good' | 'warning' | 'critical';
+  status: "excellent" | "good" | "warning" | "critical";
   revenue: {
     today: number;
     thisWeek: number;
@@ -77,232 +82,267 @@ interface BranchMetrics {
 
 const MultibranchDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedMetric, setSelectedMetric] = useState<'revenue' | 'customers' | 'employees'>('revenue');
-  const [comparisonPeriod, setComparisonPeriod] = useState('thisMonth');
+  const [selectedMetric, setSelectedMetric] = useState<
+    "revenue" | "customers" | "employees"
+  >("revenue");
+  const [comparisonPeriod, setComparisonPeriod] = useState("thisMonth");
 
   // Mock data - 매장별 지표
   const branchMetrics: BranchMetrics[] = [
     {
-      id: 'BR001',
-      name: '강남점',
-      location: '서울시 강남구',
-      status: 'excellent',
+      id: "BR001",
+      name: "강남점",
+      location: "서울시 강남구",
+      status: "excellent",
       revenue: {
         today: 4500000,
         thisWeek: 28000000,
         thisMonth: 115000000,
-        growth: 15.5
+        growth: 15.5,
       },
       customers: {
         today: 245,
         thisWeek: 1580,
-        avgSatisfaction: 4.6
+        avgSatisfaction: 4.6,
       },
       employees: {
         total: 15,
         working: 12,
         onLeave: 1,
-        attendanceRate: 96.5
+        attendanceRate: 96.5,
       },
       operations: {
-        openingTime: '09:00',
-        closingTime: '22:00',
+        openingTime: "09:00",
+        closingTime: "22:00",
         tableOccupancy: 78,
-        avgWaitTime: 12
+        avgWaitTime: 12,
       },
       issues: {
         count: 2,
-        critical: 0
-      }
+        critical: 0,
+      },
     },
     {
-      id: 'BR002',
-      name: '홍대점',
-      location: '서울시 마포구',
-      status: 'good',
+      id: "BR002",
+      name: "홍대점",
+      location: "서울시 마포구",
+      status: "good",
       revenue: {
         today: 3800000,
         thisWeek: 24500000,
         thisMonth: 98000000,
-        growth: 8.3
+        growth: 8.3,
       },
       customers: {
         today: 198,
         thisWeek: 1320,
-        avgSatisfaction: 4.4
+        avgSatisfaction: 4.4,
       },
       employees: {
         total: 12,
         working: 10,
         onLeave: 0,
-        attendanceRate: 94.2
+        attendanceRate: 94.2,
       },
       operations: {
-        openingTime: '10:00',
-        closingTime: '23:00',
+        openingTime: "10:00",
+        closingTime: "23:00",
         tableOccupancy: 65,
-        avgWaitTime: 8
+        avgWaitTime: 8,
       },
       issues: {
         count: 1,
-        critical: 0
-      }
+        critical: 0,
+      },
     },
     {
-      id: 'BR003',
-      name: '신촌점',
-      location: '서울시 서대문구',
-      status: 'warning',
+      id: "BR003",
+      name: "신촌점",
+      location: "서울시 서대문구",
+      status: "warning",
       revenue: {
         today: 2900000,
         thisWeek: 19800000,
         thisMonth: 82000000,
-        growth: -3.2
+        growth: -3.2,
       },
       customers: {
         today: 156,
         thisWeek: 980,
-        avgSatisfaction: 4.1
+        avgSatisfaction: 4.1,
       },
       employees: {
         total: 10,
         working: 7,
         onLeave: 2,
-        attendanceRate: 88.5
+        attendanceRate: 88.5,
       },
       operations: {
-        openingTime: '10:00',
-        closingTime: '22:00',
+        openingTime: "10:00",
+        closingTime: "22:00",
         tableOccupancy: 52,
-        avgWaitTime: 5
+        avgWaitTime: 5,
       },
       issues: {
         count: 5,
-        critical: 2
-      }
+        critical: 2,
+      },
     },
     {
-      id: 'BR004',
-      name: '판교점',
-      location: '경기도 성남시',
-      status: 'excellent',
+      id: "BR004",
+      name: "판교점",
+      location: "경기도 성남시",
+      status: "excellent",
       revenue: {
         today: 5200000,
         thisWeek: 32000000,
         thisMonth: 128000000,
-        growth: 22.7
+        growth: 22.7,
       },
       customers: {
         today: 289,
         thisWeek: 1850,
-        avgSatisfaction: 4.7
+        avgSatisfaction: 4.7,
       },
       employees: {
         total: 18,
         working: 15,
         onLeave: 0,
-        attendanceRate: 98.1
+        attendanceRate: 98.1,
       },
       operations: {
-        openingTime: '08:00',
-        closingTime: '22:00',
+        openingTime: "08:00",
+        closingTime: "22:00",
         tableOccupancy: 85,
-        avgWaitTime: 15
+        avgWaitTime: 15,
       },
       issues: {
         count: 1,
-        critical: 0
-      }
-    }
+        critical: 0,
+      },
+    },
   ];
 
   // Chart data - 매장별 매출 비교
-  const revenueComparisonData = branchMetrics.map(branch => ({
+  const revenueComparisonData = branchMetrics.map((branch) => ({
     name: branch.name,
     thisMonth: branch.revenue.thisMonth / 1000000,
-    growth: branch.revenue.growth
+    growth: branch.revenue.growth,
   }));
 
   // Chart data - 매장별 종합 성과
   const performanceRadarData = [
     {
-      metric: '매출',
+      metric: "매출",
       강남점: 85,
       홍대점: 72,
       신촌점: 58,
-      판교점: 92
+      판교점: 92,
     },
     {
-      metric: '고객만족',
+      metric: "고객만족",
       강남점: 92,
       홍대점: 88,
       신촌점: 82,
-      판교점: 94
+      판교점: 94,
     },
     {
-      metric: '직원출석',
+      metric: "직원출석",
       강남점: 96.5,
       홍대점: 94.2,
       신촌점: 88.5,
-      판교점: 98.1
+      판교점: 98.1,
     },
     {
-      metric: '테이블점유',
+      metric: "테이블점유",
       강남점: 78,
       홍대점: 65,
       신촌점: 52,
-      판교점: 85
+      판교점: 85,
     },
     {
-      metric: '운영효율',
+      metric: "운영효율",
       강남점: 88,
       홍대점: 82,
       신촌점: 68,
-      판교점: 90
-    }
+      판교점: 90,
+    },
   ];
 
   // Chart data - 주간 추이
   const weeklyTrendData = [
-    { day: '월', 강남점: 3800, 홍대점: 3200, 신촌점: 2600, 판교점: 4200 },
-    { day: '화', 강남점: 3500, 홍대점: 3000, 신촌점: 2400, 판교점: 3900 },
-    { day: '수', 강남점: 3900, 홍대점: 3400, 신촌점: 2800, 판교점: 4500 },
-    { day: '목', 강남점: 4200, 홍대점: 3600, 신촌점: 2900, 판교점: 4800 },
-    { day: '금', 강남점: 5100, 홍대점: 4300, 신촌점: 3500, 판교점: 5600 },
-    { day: '토', 강남점: 5800, 홍대점: 4900, 신촌점: 4100, 판교점: 6400 },
-    { day: '일', 강남점: 5200, 홍대점: 4400, 신촌점: 3700, 판교점: 5800 }
+    { day: "월", 강남점: 3800, 홍대점: 3200, 신촌점: 2600, 판교점: 4200 },
+    { day: "화", 강남점: 3500, 홍대점: 3000, 신촌점: 2400, 판교점: 3900 },
+    { day: "수", 강남점: 3900, 홍대점: 3400, 신촌점: 2800, 판교점: 4500 },
+    { day: "목", 강남점: 4200, 홍대점: 3600, 신촌점: 2900, 판교점: 4800 },
+    { day: "금", 강남점: 5100, 홍대점: 4300, 신촌점: 3500, 판교점: 5600 },
+    { day: "토", 강남점: 5800, 홍대점: 4900, 신촌점: 4100, 판교점: 6400 },
+    { day: "일", 강남점: 5200, 홍대점: 4400, 신촌점: 3700, 판교점: 5800 },
   ];
 
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'];
+  const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6"];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'excellent':
-        return <Badge className="bg-green-500"><Award className="w-3 h-3 mr-1" />우수</Badge>;
-      case 'good':
-        return <Badge className="bg-blue-500"><CheckCircle className="w-3 h-3 mr-1" />양호</Badge>;
-      case 'warning':
-        return <Badge className="bg-yellow-500"><AlertCircle className="w-3 h-3 mr-1" />주의</Badge>;
-      case 'critical':
-        return <Badge className="bg-red-500"><AlertCircle className="w-3 h-3 mr-1" />위험</Badge>;
+      case "excellent":
+        return (
+          <Badge className="bg-green-500">
+            <Award className="w-3 h-3 mr-1" />
+            우수
+          </Badge>
+        );
+      case "good":
+        return (
+          <Badge className="bg-blue-500">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            양호
+          </Badge>
+        );
+      case "warning":
+        return (
+          <Badge className="bg-yellow-500">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            주의
+          </Badge>
+        );
+      case "critical":
+        return (
+          <Badge className="bg-red-500">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            위험
+          </Badge>
+        );
       default:
         return null;
     }
   };
 
   const calculateTotalStats = () => {
-    const totalRevenue = branchMetrics.reduce((sum, b) => sum + b.revenue.thisMonth, 0);
-    const totalCustomers = branchMetrics.reduce((sum, b) => sum + b.customers.thisWeek, 0);
-    const avgSatisfaction = branchMetrics.reduce((sum, b) => sum + b.customers.avgSatisfaction, 0) / branchMetrics.length;
-    const totalEmployees = branchMetrics.reduce((sum, b) => sum + b.employees.total, 0);
-    const avgAttendance = branchMetrics.reduce((sum, b) => sum + b.employees.attendanceRate, 0) / branchMetrics.length;
+    const totalRevenue = branchMetrics.reduce(
+      (sum, b) => sum + b.revenue.thisMonth,
+      0,
+    );
+    const totalCustomers = branchMetrics.reduce(
+      (sum, b) => sum + b.customers.thisWeek,
+      0,
+    );
+    const avgSatisfaction =
+      branchMetrics.reduce((sum, b) => sum + b.customers.avgSatisfaction, 0) /
+      branchMetrics.length;
+    const totalEmployees = branchMetrics.reduce(
+      (sum, b) => sum + b.employees.total,
+      0,
+    );
+    const avgAttendance =
+      branchMetrics.reduce((sum, b) => sum + b.employees.attendanceRate, 0) /
+      branchMetrics.length;
 
     return {
       totalRevenue,
       totalCustomers,
       avgSatisfaction,
       totalEmployees,
-      avgAttendance
+      avgAttendance,
     };
   };
 
@@ -315,7 +355,7 @@ const MultibranchDashboard: React.FC = () => {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate('/admin/branch-selection')}
+            onClick={() => navigate("/admin/branch-selection")}
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -350,7 +390,9 @@ const MultibranchDashboard: React.FC = () => {
             <CardContent className="pt-6">
               <div className="text-center">
                 <p className="text-sm text-gray-600">총 매장</p>
-                <p className="text-3xl font-bold text-gray-900">{branchMetrics.length}</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {branchMetrics.length}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -407,7 +449,10 @@ const MultibranchDashboard: React.FC = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" style={{ color: COLORS[index] }} />
+                    <MapPin
+                      className="w-5 h-5"
+                      style={{ color: COLORS[index] }}
+                    />
                     <CardTitle className="text-lg">{branch.name}</CardTitle>
                   </div>
                   {getStatusBadge(branch.status)}
@@ -425,8 +470,11 @@ const MultibranchDashboard: React.FC = () => {
                         ) : (
                           <TrendingDown className="w-3 h-3 text-red-500" />
                         )}
-                        <span className={`text-xs ${branch.revenue.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {branch.revenue.growth > 0 ? '+' : ''}{branch.revenue.growth}%
+                        <span
+                          className={`text-xs ${branch.revenue.growth >= 0 ? "text-green-600" : "text-red-600"}`}
+                        >
+                          {branch.revenue.growth > 0 ? "+" : ""}
+                          {branch.revenue.growth}%
                         </span>
                       </div>
                     </div>
@@ -442,7 +490,9 @@ const MultibranchDashboard: React.FC = () => {
                       <Star className="w-4 h-4 text-yellow-500" />
                     </div>
                     <div className="flex items-center justify-between">
-                      <p className="text-lg font-semibold">{branch.customers.today}명</p>
+                      <p className="text-lg font-semibold">
+                        {branch.customers.today}명
+                      </p>
                       <span className="text-sm text-gray-600">
                         만족도 {branch.customers.avgSatisfaction}
                       </span>
@@ -468,14 +518,18 @@ const MultibranchDashboard: React.FC = () => {
                   {/* Operations */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-600">테이블 점유율</span>
+                      <span className="text-sm text-gray-600">
+                        테이블 점유율
+                      </span>
                       <Activity className="w-4 h-4 text-purple-500" />
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-purple-500 h-2 rounded-full"
-                          style={{ width: `${branch.operations.tableOccupancy}%` }}
+                          style={{
+                            width: `${branch.operations.tableOccupancy}%`,
+                          }}
                         />
                       </div>
                       <span className="text-sm font-semibold">
@@ -488,10 +542,13 @@ const MultibranchDashboard: React.FC = () => {
                   {branch.issues.count > 0 && (
                     <div className="pt-2 border-t">
                       <div className="flex items-center gap-2 text-sm">
-                        <AlertCircle className={`w-4 h-4 ${branch.issues.critical > 0 ? 'text-red-500' : 'text-yellow-500'}`} />
+                        <AlertCircle
+                          className={`w-4 h-4 ${branch.issues.critical > 0 ? "text-red-500" : "text-yellow-500"}`}
+                        />
                         <span className="text-gray-700">
                           이슈 {branch.issues.count}건
-                          {branch.issues.critical > 0 && ` (긴급 ${branch.issues.critical})`}
+                          {branch.issues.critical > 0 &&
+                            ` (긴급 ${branch.issues.critical})`}
                         </span>
                       </div>
                     </div>
@@ -523,7 +580,12 @@ const MultibranchDashboard: React.FC = () => {
                   <YAxis yAxisId="right" orientation="right" />
                   <Tooltip />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="thisMonth" fill="#3B82F6" name="매출 (백만원)" />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="thisMonth"
+                    fill="#3B82F6"
+                    name="매출 (백만원)"
+                  />
                   <Line
                     yAxisId="right"
                     type="monotone"
@@ -548,10 +610,34 @@ const MultibranchDashboard: React.FC = () => {
                   <PolarGrid />
                   <PolarAngleAxis dataKey="metric" />
                   <PolarRadiusAxis domain={[0, 100]} />
-                  <Radar name="강남점" dataKey="강남점" stroke={COLORS[0]} fill={COLORS[0]} fillOpacity={0.3} />
-                  <Radar name="홍대점" dataKey="홍대점" stroke={COLORS[1]} fill={COLORS[1]} fillOpacity={0.3} />
-                  <Radar name="신촌점" dataKey="신촌점" stroke={COLORS[2]} fill={COLORS[2]} fillOpacity={0.3} />
-                  <Radar name="판교점" dataKey="판교점" stroke={COLORS[3]} fill={COLORS[3]} fillOpacity={0.3} />
+                  <Radar
+                    name="강남점"
+                    dataKey="강남점"
+                    stroke={COLORS[0]}
+                    fill={COLORS[0]}
+                    fillOpacity={0.3}
+                  />
+                  <Radar
+                    name="홍대점"
+                    dataKey="홍대점"
+                    stroke={COLORS[1]}
+                    fill={COLORS[1]}
+                    fillOpacity={0.3}
+                  />
+                  <Radar
+                    name="신촌점"
+                    dataKey="신촌점"
+                    stroke={COLORS[2]}
+                    fill={COLORS[2]}
+                    fillOpacity={0.3}
+                  />
+                  <Radar
+                    name="판교점"
+                    dataKey="판교점"
+                    stroke={COLORS[3]}
+                    fill={COLORS[3]}
+                    fillOpacity={0.3}
+                  />
                   <Legend />
                   <Tooltip />
                 </RadarChart>
@@ -573,10 +659,30 @@ const MultibranchDashboard: React.FC = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="강남점" stroke={COLORS[0]} strokeWidth={2} />
-                <Line type="monotone" dataKey="홍대점" stroke={COLORS[1]} strokeWidth={2} />
-                <Line type="monotone" dataKey="신촌점" stroke={COLORS[2]} strokeWidth={2} />
-                <Line type="monotone" dataKey="판교점" stroke={COLORS[3]} strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="강남점"
+                  stroke={COLORS[0]}
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="홍대점"
+                  stroke={COLORS[1]}
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="신촌점"
+                  stroke={COLORS[2]}
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="판교점"
+                  stroke={COLORS[3]}
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -605,13 +711,17 @@ const MultibranchDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {branchMetrics.map(branch => (
+                  {branchMetrics.map((branch) => (
                     <tr key={branch.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4">
                         <div className="font-medium">{branch.name}</div>
-                        <div className="text-sm text-gray-500">{branch.location}</div>
+                        <div className="text-sm text-gray-500">
+                          {branch.location}
+                        </div>
                       </td>
-                      <td className="py-3 px-4">{getStatusBadge(branch.status)}</td>
+                      <td className="py-3 px-4">
+                        {getStatusBadge(branch.status)}
+                      </td>
                       <td className="py-3 px-4">
                         {(branch.revenue.today / 10000).toFixed(0)}만원
                       </td>
@@ -619,8 +729,15 @@ const MultibranchDashboard: React.FC = () => {
                         {(branch.revenue.thisMonth / 10000000).toFixed(1)}천만원
                       </td>
                       <td className="py-3 px-4">
-                        <span className={branch.revenue.growth >= 0 ? 'text-green-600' : 'text-red-600'}>
-                          {branch.revenue.growth > 0 ? '+' : ''}{branch.revenue.growth}%
+                        <span
+                          className={
+                            branch.revenue.growth >= 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {branch.revenue.growth > 0 ? "+" : ""}
+                          {branch.revenue.growth}%
                         </span>
                       </td>
                       <td className="py-3 px-4">{branch.customers.today}명</td>
@@ -630,11 +747,21 @@ const MultibranchDashboard: React.FC = () => {
                           {branch.customers.avgSatisfaction}
                         </div>
                       </td>
-                      <td className="py-3 px-4">{branch.employees.attendanceRate}%</td>
-                      <td className="py-3 px-4">{branch.operations.tableOccupancy}%</td>
+                      <td className="py-3 px-4">
+                        {branch.employees.attendanceRate}%
+                      </td>
+                      <td className="py-3 px-4">
+                        {branch.operations.tableOccupancy}%
+                      </td>
                       <td className="py-3 px-4">
                         {branch.issues.count > 0 ? (
-                          <Badge variant={branch.issues.critical > 0 ? 'destructive' : 'secondary'}>
+                          <Badge
+                            variant={
+                              branch.issues.critical > 0
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
                             {branch.issues.count}건
                           </Badge>
                         ) : (

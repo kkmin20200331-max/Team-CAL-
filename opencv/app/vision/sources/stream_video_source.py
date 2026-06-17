@@ -35,6 +35,9 @@ class StreamVideoSource(VideoSource):
 
     def read_sample(self, sample_index: int, interval_sec: int):
         del sample_index, interval_sec
+        return self.latest_frame()
+
+    def latest_frame(self):
         with self._lock:
             return None if self._latest_frame is None else self._latest_frame.copy()
 

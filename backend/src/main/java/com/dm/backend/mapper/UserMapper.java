@@ -35,7 +35,6 @@ public interface UserMapper {
     @Delete("delete from users where id = #{id}")
     void delUser(String id);
 
-
     // =========================
     // [관리자]
     // =========================
@@ -51,5 +50,4 @@ public interface UserMapper {
     // 직원 승인 (GUEST → STAFF)
     @Update("UPDATE users SET role = 'STAFF' WHERE id = #{id}")
     void approveUser(String id);
-
 }
