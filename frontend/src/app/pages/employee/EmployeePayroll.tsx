@@ -10,8 +10,7 @@ import {
   LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
@@ -47,8 +46,7 @@ const calcHours = (start: string, end: string) => {
   const getMin = (s: string) => { const t = s.includes('T') ? s.split('T')[1] : s.split(' ')[1]; if (!t) return 0; const [h,m] = t.split(':').map(Number); return h*60+(m||0); };
   return Math.max(0, (getMin(end)-getMin(start))/60);
 };
-const fmtW = (n: number) => Math.round(n).toLocaleString() + '원';
-const fmtM = (n: number) => (Math.round(n)/10000).toFixed(1) + '만원';
+// fmtW / fmtM are replaced by t.fmtCurrency / t.fmtCurrencyM at render time
 
 const getIsoMonday = (dateStr: string): string => {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -124,7 +122,7 @@ export default function EmployeePayroll() {
           API.get('/payroll', { params: { user_id: user.id, store_id: storeId, start_date: start, end_date: end } }),
           API.get('/shift/staff', { params: { user_id: user.id, start_date: start, end_date: end } }),
         ]).then(([p, s]) => ({
-          label: format(m, 'M월', { locale: ko }),
+          label: t.monthLabel(m.getMonth() + 1),
           data: p.data as PayrollResult,
           shifts: Array.isArray(s.data) ? s.data as ShiftVO[] : [],
         }));
@@ -164,7 +162,7 @@ export default function EmployeePayroll() {
   const handleWeeklyRequest = async () => {
     setRequesting(true);
     await new Promise(r => setTimeout(r, 600));
-    alert(`${t.weeklyAdvanceRequest}\n${fmtW(thisWeekPay)}`);
+    alert(`${t.weeklyAdvanceRequest}\n${t.fmtCurrency(thisWeekPay)}`);
     setRequesting(false);
   };
 
@@ -204,10 +202,10 @@ export default function EmployeePayroll() {
     [history]
   );
 
-  const payLabel = memberInfo?.pay_type === 'MONTHLY'
-    ? `월급 ${memberInfo.pay_amount?.toLocaleString()}원`
-    : memberInfo?.pay_type === 'HOURLY'
-    ? `시급 ${memberInfo.pay_amount?.toLocaleString()}원/시`
+  const payLabel = memberInfo?.pay_type === 'MONTHLY' && memberInfo.pay_amount != null
+    ? t.payTypeMonthly(memberInfo.pay_amount)
+    : memberInfo?.pay_type === 'HOURLY' && memberInfo.pay_amount != null
+    ? t.payTypeHourly(memberInfo.pay_amount)
     : null;
 
   const renderShiftRows = (list: ShiftVO[]) => {
@@ -249,30 +247,30 @@ export default function EmployeePayroll() {
       <div style={{ borderTop: `1px solid rgba(0,162,0,0.2)`, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16 }}>
           <span style={{ color: '#5a8a5c' }}>{t.basePay}</span>
-          <span style={{ fontWeight: 600, color: DARK_GREEN }}>{fmtW(data.basePay)}</span>
+          <span style={{ fontWeight: 600, color: DARK_GREEN }}>{t.fmtCurrency(data.basePay)}</span>
         </div>
         {data.overtimePay > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16 }}>
             <span style={{ color: '#5a8a5c' }}>{t.overtimePay}</span>
-            <span style={{ fontWeight: 600, color: GREEN }}>+{fmtW(data.overtimePay)}</span>
+            <span style={{ fontWeight: 600, color: GREEN }}>+{t.fmtCurrency(data.overtimePay)}</span>
           </div>
         )}
         {data.nightPay > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16 }}>
             <span style={{ color: '#5a8a5c' }}>{t.nightPay}</span>
-            <span style={{ fontWeight: 600, color: GREEN }}>+{fmtW(data.nightPay)}</span>
+            <span style={{ fontWeight: 600, color: GREEN }}>+{t.fmtCurrency(data.nightPay)}</span>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16 }}>
           <span style={{ color: '#5a8a5c' }}>{t.weeklyPay}</span>
           <span style={{ fontWeight: 600, color: data.weeklyPay > 0 ? GREEN : '#aaa' }}>
-            {data.weeklyPay > 0 ? `+${fmtW(data.weeklyPay)}` : '-'}
+            {data.weeklyPay > 0 ? `+${t.fmtCurrency(data.weeklyPay)}` : '-'}
           </span>
         </div>
       </div>
       <div style={{ borderTop: `1px solid rgba(0,162,0,0.2)`, paddingTop: 12, textAlign: 'center' }}>
         <p style={{ fontSize: 13, color: '#5a8a5c', marginBottom: 4 }}>{t.totalPay}</p>
-        <p style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>{fmtW(data.totalPay)}</p>
+        <p style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(data.totalPay)}</p>
       </div>
     </div>
   );
@@ -320,7 +318,7 @@ export default function EmployeePayroll() {
             </button>
             <div style={{ textAlign: 'center' }}>
               <span style={{ fontSize: 20, fontWeight: 700, color: DARK_GREEN }}>
-                {format(selectedMonth, 'yyyy년 M월', { locale: ko })}
+                {t.yearMonthLabel(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1)}
               </span>
               <span style={{ fontSize: 13, color: '#5a8a5c', marginLeft: 8 }}>
                 {isCurrentMonth ? t.currentMonthExpected : t.payrollResult}
@@ -354,7 +352,7 @@ export default function EmployeePayroll() {
           }}>
             <div>
               <p style={{ fontSize: 13, color: '#5a8a5c', marginBottom: 4 }}>{t.thisWeekExpected}</p>
-              <p style={{ fontSize: 24, fontWeight: 800, color: DARK_GREEN }}>{fmtW(thisWeekPay)}</p>
+              <p style={{ fontSize: 24, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(thisWeekPay)}</p>
               <p style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>{t.weeklyNote}</p>
             </div>
             <button
@@ -408,7 +406,7 @@ export default function EmployeePayroll() {
               <button onClick={() => setHistoryYear(p => p - 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: DARK_GREEN }}>
                 <ChevronLeft size={20} />
               </button>
-              <span style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>{historyYear}년</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>{t.yearLabel(historyYear)}</span>
               <button
                 onClick={() => setHistoryYear(p => p + 1)}
                 disabled={isCurrentYear}
@@ -479,10 +477,10 @@ export default function EmployeePayroll() {
                             <div>
                               <p style={{ fontSize: 13, color: '#5a8a5c' }}>{w.weekLabel}</p>
                               <p style={{ fontSize: 16, fontWeight: 600, color: DARK_GREEN, marginTop: 2 }}>
-                                {w.count}일 · {w.hours.toFixed(1)}h
+                                {t.weekSummary(w.count, w.hours)}
                               </p>
                             </div>
-                            <p style={{ fontSize: 20, fontWeight: 800, color: DARK_GREEN }}>{fmtW(w.total)}</p>
+                            <p style={{ fontSize: 20, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(w.total)}</p>
                           </div>
                         ))}
                       </div>
@@ -513,7 +511,7 @@ export default function EmployeePayroll() {
                                   <p style={{ fontSize: 13, color: '#5a8a5c' }}>{hours.toFixed(1)}h</p>
                                 </div>
                               </div>
-                              <p style={{ fontSize: 18, fontWeight: 800, color: DARK_GREEN }}>{fmtW(s.pay)}</p>
+                              <p style={{ fontSize: 18, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(s.pay)}</p>
                             </div>
                           );
                         })}
@@ -540,7 +538,7 @@ export default function EmployeePayroll() {
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,162,0,0.15)" />
                     <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#5a8a5c' }} />
                     <YAxis tick={{ fontSize: 10, fill: '#5a8a5c' }} tickFormatter={v => (v/10000).toFixed(0)+'만'} />
-                    <Tooltip formatter={(v: number) => fmtW(v)} />
+                    <Tooltip formatter={(v: number) => t.fmtCurrency(v)} />
                     <Line type="monotone" dataKey="급여" stroke={GREEN} strokeWidth={2} dot={{ r: 4, fill: DARK_GREEN }} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -557,20 +555,20 @@ export default function EmployeePayroll() {
                   <div>
                     <p style={{ fontSize: 13, color: '#5a8a5c' }}>{t.avgMonthlyPay}</p>
                     <p style={{ fontSize: 24, fontWeight: 800, color: DARK_GREEN }}>
-                      {fmtM(history.reduce((s,h) => s+h.data.totalPay, 0) / history.length)}
+                      {t.fmtCurrencyM(history.reduce((s,h) => s+h.data.totalPay, 0) / history.length)}
                     </p>
                   </div>
                   <div>
                     <p style={{ fontSize: 13, color: '#5a8a5c' }}>{t.maxPay}</p>
                     <p style={{ fontSize: 24, fontWeight: 800, color: GREEN }}>
-                      {fmtM(Math.max(...history.map(h => h.data.totalPay)))}
+                      {t.fmtCurrencyM(Math.max(...history.map(h => h.data.totalPay)))}
                     </p>
                   </div>
                 </div>
                 <div style={{ borderTop: '1px solid rgba(0,162,0,0.2)', paddingTop: 12 }}>
                   <p style={{ fontSize: 12, color: '#5a8a5c', marginBottom: 4 }}>{t.totalIncome(history.length)}</p>
                   <p style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>
-                    {fmtM(history.reduce((s,h) => s+h.data.totalPay, 0))}
+                    {t.fmtCurrencyM(history.reduce((s,h) => s+h.data.totalPay, 0))}
                   </p>
                 </div>
               </div>
