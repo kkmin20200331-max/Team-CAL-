@@ -56,6 +56,10 @@ export const signupAPI = (data: {
 export const updateProfileAPI = (data: any) => 
   API.put(`/users`, data);
 
+// ✅ [추가] 직원 상태 변경 API
+export const updateUserStatusAPI = (userId: string, status: string) =>
+  API.patch(`/users/${userId}`, { status });
+
 // ✅ [추가] 매장 정보 수정 API
 export const updateStoreInfoAPI = (storeId: string, data: any) =>
   API.put(`/stores/${storeId}`, data);
@@ -67,6 +71,10 @@ export const getMyScheduleAPI = (userId: string, storeId: string) =>
 // ✅ [추가] 휴무 신청 API
 export const requestLeaveAPI = (data: { shift_id: string; user_id: string; reason: string }) => 
   API.post(`/leave-requests`, data);
+
+// ✅ [추가] 출퇴근 기록 조회 API
+export const getAttendanceRecordsAPI = (userId: string, month: string) =>
+  API.get(`/attendance?user_id=${userId}&month=${month}`);
 
 // ---------------------------------------------------------
 // 💡 [예정] 앞으로 연동할 빈 껍데기 API 함수들을 미리 선언해 둡니다.
