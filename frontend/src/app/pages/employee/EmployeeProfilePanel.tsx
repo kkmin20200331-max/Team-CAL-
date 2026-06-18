@@ -189,14 +189,6 @@ export default function EmployeeProfilePanel() {
             </div>
           )}
 
-          {/* 전화번호 */}
-          {currentUser?.phone && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 13, color: '#888' }}>📞</span>
-              <span style={{ fontSize: 14, color: textSub }}>{currentUser.phone}</span>
-            </div>
-          )}
-
           {/* 회원정보 수정 버튼 */}
           <button
             onClick={() => { setOpen(false); navigate('/employee/edit-profile'); }}

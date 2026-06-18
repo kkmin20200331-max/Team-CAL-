@@ -134,6 +134,7 @@ export default function Login() {
         username: res.data.username,
         name: res.data.name,
         role: res.data.role,
+        phone: res.data.phone || '',
       };
       sessionStorage.setItem("user", JSON.stringify(loginUser));
 
