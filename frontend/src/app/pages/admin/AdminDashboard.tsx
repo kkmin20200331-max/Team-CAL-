@@ -3,32 +3,23 @@ import { useNavigate, useParams } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
 import {
   Users,
   TrendingUp,
   AlertCircle,
   Clock,
   DollarSign,
-  FileWarning,
   CalendarDays,
-  Menu,
-  Home,
   Calendar,
   UserPlus,
   Wallet,
   FileText,
   MessageSquare,
   BarChart3,
-  Camera,
-  Settings,
-  ChevronRight,
-  Store,
-  Loader2
+  Loader2,
 } from 'lucide-react';
-import ProfilePanel from './ProfilePanel';
+import AdminHeader from './AdminHeader';
+import { useTheme } from 'next-themes';
 import {
   LineChart,
   Line,
@@ -39,6 +30,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 const AI_INSIGHT_API = "http://localhost:8080/api/ai-insights";
@@ -358,6 +354,8 @@ export default function AdminDashboard() {
   const { branchId } = useParams();
   const language = useLanguage();
   const t = translations.adminDashboard[language];
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const currentBranch = sessionStorage.getItem("store_name") || "지점 선택";
 
@@ -599,19 +597,20 @@ export default function AdminDashboard() {
     return t.statusBeforeWork;
   };
 
-  const getStatusClass = (status: string) => {
+  const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const cardBg = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const textColor = isDark ? '#fff' : '#111';
+  const subTextColor = isDark ? '#aaa' : '#555';
+
+  const getStatusBadgeStyle = (status: string) => {
     const s = (status || "").toUpperCase();
-    if (s === "CHECKED_IN")
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
-    if (s === "ABSENT")
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
-    if (s === "CHECKED_OUT")
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
-    return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+    if (s === "CHECKED_IN") return { background: LIGHT_GREEN, color: DARK_GREEN };
+    if (s === "ABSENT") return { background: '#fee2e2', color: '#ef4444' };
+    if (s === "CHECKED_OUT") return { background: '#dbeafe', color: '#1d4ed8' };
+    return { background: '#f3f4f6', color: '#6b7280' };
   };
 
   const menuItems = [
-    { icon: Home, label: t.menuItems.dashboard, path: `/admin/dashboard/${branchId}`, active: true },
     { icon: Calendar, label: t.menuItems.scheduleManagement, path: `/admin/schedule/monthly/${branchId}` },
     { icon: UserPlus, label: t.menuItems.substituteRecruitment, path: `/admin/substitute/${branchId}` },
     { icon: Users, label: t.menuItems.employeeManagement, path: `/admin/employees/${branchId}` },
@@ -622,357 +621,174 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar */}
-      <div className="hidden md:flex md:w-64 md:flex-col">
-        <div className="flex flex-col flex-grow bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-          <div className="flex items-center h-16 flex-shrink-0 px-4 bg-blue-600">
-            <h1 className="text-xl font-bold text-white">ShiftOps AI</h1>
-          </div>
-          <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
-            <Button
-              variant="outline"
-              className="w-full justify-between"
-              onClick={() => navigate("/admin/branch-selection")}
-            >
-              <span className="truncate">{currentBranch}</span>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
-            {menuItems.map((item) => (
-              <Button
-                key={item.label}
-                variant={item.active ? "secondary" : "ghost"}
-                className="w-full justify-start gap-3"
-                onClick={() => navigate(item.path)}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.label}
-              </Button>
-            ))}
-          </nav>
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader>
+        <div>
+          <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB' }}>{t.mainDashboard}</h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
+            {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
+          </p>
+        </div>
+      </AdminHeader>
+
+      {/* Nav shortcuts */}
+      <div style={{ background: isDark ? '#2c2c2e' : 'rgba(255,255,255,0.7)', borderBottom: `1px solid ${BORDER_GREEN}`, overflowX: 'auto' }}>
+        <div style={{ display: 'flex', gap: 0, maxWidth: 1200, margin: '0 auto', padding: '0 40px' }}>
+          {menuItems.map((item) => (
+            <button key={item.label} onClick={() => navigate(item.path)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: DARK_GREEN, whiteSpace: 'nowrap' }}>
+              <item.icon size={15} />{item.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="md:hidden">
-              <Menu className="w-5 h-5" />
-            </Button>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t.mainDashboard}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {new Date().toLocaleDateString("ko-KR", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  weekday: "long",
-                })}
-              </p>
+      <main style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 40px' }}>
+        {/* Summary Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+          {[
+            { label: t.todayStaff, value: loading ? null : todayShifts.length, sub: loading ? null : t.checkedInCount(checkedIn), icon: <Users size={18} color={GREEN} />, subColor: subTextColor },
+            { label: t.registeredStaff, value: loading ? null : totalEmployees, sub: loading ? null : t.allStaffThisBranch, icon: <TrendingUp size={18} color={GREEN} />, subColor: GREEN },
+            { label: t.substituteRecruiting, value: loading ? null : substituteCount, sub: loading ? null : (substituteCount > 0 ? t.waitingForApplicants : t.noOpenings), icon: <AlertCircle size={18} color={substituteCount > 0 ? '#f59e0b' : GREEN} />, subColor: subTextColor },
+            { label: t.estimatedLaborCost, value: loading ? null : `₩${estimatedPay.toLocaleString("ko-KR")}`, sub: loading ? null : t.hourlyBasis, icon: <DollarSign size={18} color={DARK_GREEN} />, subColor: subTextColor },
+          ].map(({ label, value, sub, icon, subColor }) => (
+            <div key={label} style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, padding: '16px 20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <p style={{ fontSize: 12, color: subTextColor }}>{label}</p>
+                {icon}
+              </div>
+              {value === null ? <Loader2 size={18} style={{ color: subTextColor }} /> : (
+                <>
+                  <p style={{ fontSize: 24, fontWeight: 700, color: textColor }}>{value}</p>
+                  <p style={{ fontSize: 11, color: subColor, marginTop: 4 }}>{sub}</p>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 24 }}>
+          {/* 실시간 추이 */}
+          <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 16, fontWeight: 700, color: textColor }}>
+              {t.realtimeTrend}
+              <span style={{ fontSize: 11, color: subTextColor, fontWeight: 400 }}>{t.sampleData}</span>
+            </div>
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={customerTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#3a3a3c' : '#e5e7eb'} />
+                <XAxis dataKey="time" tick={{ fill: subTextColor, fontSize: 11 }} />
+                <YAxis tick={{ fill: subTextColor, fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="customers" stroke={GREEN} name={t.customers} strokeWidth={2} />
+                <Line type="monotone" dataKey="staff" stroke={DARK_GREEN} name={t.workingStaff} strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 운영 알림 */}
+          <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: textColor, marginBottom: 14 }}>{t.todayAlerts}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {!loading && substituteCount > 0 && (
+                <div style={{ padding: '10px 14px', borderRadius: 12, background: '#fef3c7', border: '1px solid #fcd34d' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 2 }}>{t.substituteAlert(substituteCount)}</p>
+                  <p style={{ fontSize: 11, color: '#b45309' }}>{t.checkApplicants}</p>
+                </div>
+              )}
+              {!loading && checkedIn < todayShifts.length && todayShifts.length > 0 && (
+                <div style={{ padding: '10px 14px', borderRadius: 12, background: LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}` }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, marginBottom: 2 }}>{t.absentAlert(todayShifts.length - checkedIn)}</p>
+                  <p style={{ fontSize: 11, color: DARK_GREEN }}>{t.checkAttendance}</p>
+                </div>
+              )}
+              {!loading && todayShifts.length === 0 && (
+                <div style={{ padding: '10px 14px', borderRadius: 12, background: isDark ? '#3a3a3c' : '#f9fafb', border: `1px solid ${isDark ? '#555' : '#e5e7eb'}` }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: textColor, marginBottom: 2 }}>{t.noWorkToday}</p>
+                  <p style={{ fontSize: 11, color: subTextColor }}>{t.checkSchedule}</p>
+                </div>
+              )}
+              <div style={{ padding: '10px 14px', borderRadius: 12, background: '#fef3c7', border: '1px solid #fcd34d' }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 2 }}>{t.healthCertExpiry}</p>
+                <p style={{ fontSize: 11, color: '#b45309' }}>{t.checkDocuments}</p>
+              </div>
+              <div style={{ padding: '10px 14px', borderRadius: 12, background: LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}` }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, marginBottom: 2 }}>{t.nextWeekSchedule}</p>
+                <p style={{ fontSize: 11, color: DARK_GREEN }}>{t.writeInSchedule}</p>
+              </div>
             </div>
           </div>
-          <ProfilePanel />
-        </header>
+        </div>
 
-        {/* Dashboard Content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          {/* ── Summary Cards ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {/* 오늘 근무 인원 */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {t.todayStaff}
-                </CardTitle>
-                <Users className="w-4 h-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{todayShifts.length}</div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      {t.checkedInCount(checkedIn)}
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* 등록 직원 수 */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {t.registeredStaff}
-                </CardTitle>
-                <TrendingUp className="w-4 h-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">{totalEmployees}</div>
-                    <p className="text-xs text-green-600 mt-1">{t.allStaffThisBranch}</p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* 대타 모집 중 */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {t.substituteRecruiting}
-                </CardTitle>
-                <AlertCircle className="w-4 h-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                ) : (
-                  <>
-                    <div className={`text-2xl font-bold ${substituteCount > 0 ? 'text-orange-600' : 'text-gray-900'}`}>
-                      {substituteCount}
-                    </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      {substituteCount > 0 ? t.waitingForApplicants : t.noOpenings}
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* 오늘 예상 인건비 */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {t.estimatedLaborCost}
-                </CardTitle>
-                <DollarSign className="w-4 h-4 text-purple-600" />
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                ) : (
-                  <>
-                    <div className="text-2xl font-bold">
-                      ₩{estimatedPay.toLocaleString("ko-KR")}
-                    </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      {t.hourlyBasis}
-                    </p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 실시간 매장 인원 추이 (목업 유지 - 고객 DB 미연결) */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {t.realtimeTrend}
-                  <span className="text-xs font-normal text-gray-400">{t.sampleData}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={customerTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="customers" stroke="#3b82f6" name={t.customers} strokeWidth={2} />
-                    <Line type="monotone" dataKey="staff" stroke="#10b981" name={t.workingStaff} strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* 오늘의 운영 알림 */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.todayAlerts}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {!loading && substituteCount > 0 && (
-                  <div className="p-3 rounded-lg border bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800">
-                    <p className="text-sm font-medium mb-1">{t.substituteAlert(substituteCount)}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.checkApplicants}</p>
-                  </div>
-                )}
-                {!loading && checkedIn < todayShifts.length && todayShifts.length > 0 && (
-                  <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
-                    <p className="text-sm font-medium mb-1">
-                      {t.absentAlert(todayShifts.length - checkedIn)}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.checkAttendance}</p>
-                  </div>
-                )}
-                {!loading &&
-                  checkedIn < todayShifts.length &&
-                  todayShifts.length > 0 && (
-                    <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
-                      <p className="text-sm font-medium mb-1">
-                        미출근 {todayShifts.length - checkedIn}명
-                      </p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">
-                        출근 확인 필요
-                      </p>
-                    </div>
-                  )}
-                {!loading && todayShifts.length === 0 && (
-                  <div className="p-3 rounded-lg border bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:border-gray-700">
-                    <p className="text-sm font-medium mb-1">{t.noWorkToday}</p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">{t.checkSchedule}</p>
-                  </div>
-                )}
-                <div className="p-3 rounded-lg border bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800">
-                  <p className="text-sm font-medium mb-1">{t.healthCertExpiry}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">{t.checkDocuments}</p>
-                </div>
-                <div className="p-3 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
-                  <p className="text-sm font-medium mb-1">{t.nextWeekSchedule}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">{t.writeInSchedule}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* ── 오늘 근무자 + AI 추천 ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            {/* 오늘 근무자 목록 (DB 연결) */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.todayWorkerList}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                  </div>
-                ) : todayShifts.length === 0 ? (
-                  <div className="text-center py-8 text-gray-400 text-sm">
-                    {t.noWorkersToday}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {todayShifts.map((shift) => {
-                      const emp = employeeMap[shift.user_id];
-                      const name = emp?.name || t.unknown;
-                      const startTime = fmt(shift.start_at);
-                      const endTime = fmt(shift.end_at);
-                      return (
-                        <div
-                          key={shift.id}
-                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-                              {name[0]}
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm">{name}</p>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {startTime} ~ {endTime}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge className={getStatusClass(shift.status)}>
-                            {getStatusLabel(shift.status)}
-                          </Badge>
+        {/* 오늘 근무자 + AI 추천 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+          <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: textColor, marginBottom: 14 }}>{t.todayWorkerList}</p>
+            {loading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}><Loader2 size={24} style={{ color: subTextColor }} /></div>
+            ) : todayShifts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: subTextColor, fontSize: 13 }}>{t.noWorkersToday}</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {todayShifts.map((shift) => {
+                  const emp = employeeMap[shift.user_id];
+                  const name = emp?.name || t.unknown;
+                  const bs = getStatusBadgeStyle(shift.status);
+                  return (
+                    <div key={shift.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, borderRadius: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{name[0]}</div>
+                        <div>
+                          <p style={{ fontWeight: 600, fontSize: 13, color: textColor }}>{name}</p>
+                          <p style={{ fontSize: 11, color: subTextColor, display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={10} />{fmt(shift.start_at)} ~ {fmt(shift.end_at)}</p>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* AI 운영 추천 */}
-            <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-purple-600" />
-                  {t.aiRecommendation}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-purple-200 dark:border-purple-700">
-                  <h4 className="font-semibold mb-2 text-purple-900 dark:text-purple-200">{t.staffingRecommendation}</h4>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-                    {t.staffingBody}
-                  </p>
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={() => navigate(`/admin/substitute/${branchId}`)}
-                  >
-                    {t.recruitSubstitute}
-                  </Button>
-                </div>
-                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-semibold mb-2">{t.menuRecommendation}</h4>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {t.menuBody}
-                  </p>
-                </div>
-                <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-semibold mb-2">{t.idleTimeTask}</h4>
-                  <p className="text-sm text-gray-700 dark:text-gray-300">
-                    {t.idleBody}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                      </div>
+                      <span style={{ ...bs, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{getStatusLabel(shift.status)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <Button
-              variant="outline"
-              className="h-24 flex-col gap-2"
-              onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}
-            >
-              <CalendarDays className="w-6 h-6" />
-              <span>{t.viewSchedule}</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-24 flex-col gap-2"
-              onClick={() => navigate(`/admin/substitute/${branchId}`)}
-            >
-              <UserPlus className="w-6 h-6" />
-              <span>{t.recruitSubNav}</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-24 flex-col gap-2"
-              onClick={() => navigate(`/admin/analytics/${branchId}`)}
-            >
-              <BarChart3 className="w-6 h-6" />
-              <span>{t.customerAnalytics}</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-24 flex-col gap-2"
-              onClick={() => navigate(`/admin/cctv/${branchId}`)}
-            >
-              <Wallet className="w-6 h-6" />
-              <span>{t.payrollManagement}</span>
-            </Button>
+          {/* AI 운영 추천 */}
+          <div style={{ background: isDark ? '#2c2c2e' : 'rgba(230,245,200,0.5)', border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontSize: 16, fontWeight: 700, color: textColor }}>
+              <BarChart3 size={18} color={DARK_GREEN} />{t.aiRecommendation}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ background: isDark ? '#3a3a3c' : '#fff', borderRadius: 14, padding: '14px', border: `2px solid ${DARK_GREEN}` }}>
+                <h4 style={{ fontWeight: 700, fontSize: 14, color: DARK_GREEN, marginBottom: 6 }}>{t.staffingRecommendation}</h4>
+                <p style={{ fontSize: 12, color: subTextColor, marginBottom: 10 }}>{t.staffingBody}</p>
+                <button onClick={() => navigate(`/admin/substitute/${branchId}`)} style={{ width: '100%', padding: '8px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t.recruitSubstitute}</button>
+              </div>
+              <div style={{ background: isDark ? '#3a3a3c' : '#fff', borderRadius: 14, padding: '14px', border: `1px solid ${BORDER_GREEN}` }}>
+                <h4 style={{ fontWeight: 700, fontSize: 14, color: textColor, marginBottom: 6 }}>{t.menuRecommendation}</h4>
+                <p style={{ fontSize: 12, color: subTextColor }}>{t.menuBody}</p>
+              </div>
+              <div style={{ background: isDark ? '#3a3a3c' : '#fff', borderRadius: 14, padding: '14px', border: `1px solid ${BORDER_GREEN}` }}>
+                <h4 style={{ fontWeight: 700, fontSize: 14, color: textColor, marginBottom: 6 }}>{t.idleTimeTask}</h4>
+                <p style={{ fontSize: 12, color: subTextColor }}>{t.idleBody}</p>
+              </div>
+            </div>
           </div>
-        </main>
-      </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+          {[
+            { icon: CalendarDays, label: t.viewSchedule, path: `/admin/schedule/monthly/${branchId}` },
+            { icon: UserPlus, label: t.recruitSubNav, path: `/admin/substitute/${branchId}` },
+            { icon: BarChart3, label: t.customerAnalytics, path: `/admin/analytics/${branchId}` },
+            { icon: Wallet, label: t.payrollManagement, path: `/admin/cctv/${branchId}` },
+          ].map(({ icon: Icon, label, path }) => (
+            <button key={label} onClick={() => navigate(path)} style={{ height: 96, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: DARK_GREEN, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
+              <Icon size={22} color={GREEN} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }
