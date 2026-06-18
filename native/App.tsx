@@ -22,6 +22,7 @@ import ShiftEditorScreen from './src/screens/admin/ShiftEditorScreen';
 import EmployeeDetailScreen from './src/screens/admin/EmployeeDetailScreen';
 import SubstituteManagementScreen from './src/screens/admin/SubstituteManagementScreen';
 import AddBranchScreen from './src/screens/admin/AddBranchScreen';
+import StoreEditScreen from './src/screens/admin/StoreEditScreen';
 import StaffDashboardScreen from './src/screens/main/DashboardScreen';
 import NotificationScreen from './src/screens/board/NotificationScreen';
 import BoardScreen from './src/screens/board/BoardScreen';
@@ -173,6 +174,7 @@ function MainNavigator() {
       <MainStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
       <MainStack.Screen name="SubstituteManagement" component={SubstituteManagementScreen} />
       <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
+      <MainStack.Screen name="StoreEdit" component={StoreEditScreen} />
       <MainStack.Screen name="BoardNavigator" component={BoardNavigator} />
       <MainStack.Screen name="Payroll" component={PayrollScreen} />
       <MainStack.Screen name="PayrollDetail" component={PayrollDetailScreen} />

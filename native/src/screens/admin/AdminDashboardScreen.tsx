@@ -27,58 +27,72 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   }, [userInfo]);
 
   useEffect(() => {
-    if (isFocused) {
-      const now = new Date();
-      const todayStr = format(now, 'yyyy-MM-dd');
+    // userInfo, shifts, employees 데이터가 모두 로드된 후에만 실행
+    if (!isFocused || !userInfo || !shifts || !employees) return;
 
-      const processedTodayShifts = shifts
-        .filter(s => s.date === todayStr && s.status !== 'OFF')
-        .map(s => {
-          const user = employees.find(e => e.id === s.userId);
-          return { ...s, user: { name: user?.name || 'N/A', color: user?.color || '#A1A1AA' } };
-        });
-      
-      setTodayShifts(processedTodayShifts);
+    const now = new Date();
+    const todayStr = format(now, 'yyyy-MM-dd');
 
-      const scheduleByTime: any = { morning: [], afternoon: [], closing: [] };
-      processedTodayShifts.forEach(shift => {
-        if (!shift.time || !shift.time.includes(' - ')) return;
-        const startTime = shift.time.split(' - ')[0];
-        const startHourNum = parseInt(startTime.split(':')[0], 10);
-
-        if (startHourNum < 12) {
-          scheduleByTime.morning.push(shift);
-        } else if (startHourNum >= 12 && startHourNum < 18) {
-          scheduleByTime.afternoon.push(shift);
-        } else {
-          scheduleByTime.closing.push(shift);
-        }
+    const processedTodayShifts = shifts
+      .filter(s => s.date === todayStr && s.status !== 'OFF')
+      .map(s => {
+        const user = employees.find(e => e.id === s.userId);
+        return { ...s, user: { name: user?.name || 'N/A', color: user?.color || '#A1A1AA' } };
       });
-      setTodaySchedule(scheduleByTime);
+    
+    setTodayShifts(processedTodayShifts);
 
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const scheduleByTime: any = { morning: [], afternoon: [], closing: [] };
+    processedTodayShifts.forEach(shift => {
+      // 방어 코드: shift.time 형식이 유효하지 않으면 계산에서 제외
+      if (!shift.time || !shift.time.includes(' - ')) return;
+      const timeParts = shift.time.split(' - ');
+      if (timeParts.length < 2) return;
       
-      const workingNowCount = processedTodayShifts.filter(shift => {
-        if (!shift.time || !shift.time.includes(' - ')) return false;
-        const timeParts = shift.time.split(' - ');
-        if (timeParts.length < 2) return false;
-        const [startStr, endStr] = timeParts;
-        const startParts = startStr.split(':');
-        const endParts = endStr.split(':');
-        if (startParts.length < 2 || endParts.length < 2) return false;
-        const [startH, startM] = startParts.map(Number);
-        const [endH, endM] = endParts.map(Number);
-        if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return false;
-        const startMinutes = startH * 60 + startM;
-        const endMinutes = endH * 60 + endM;
-        return currentMinutes >= startMinutes && currentMinutes < endMinutes;
-      }).length;
-      setCurrentlyWorking(workingNowCount);
+      const startTime = timeParts[0];
+      if (!startTime || !startTime.includes(':')) return;
+      const startHourNum = parseInt(startTime.split(':')[0], 10);
+      if (isNaN(startHourNum)) return;
 
-      const requestCount = shifts.filter(s => s.status === 'SUBSTITUTE_REQ' || s.status === 'LEAVE_REQ').length;
-      setPendingRequestCount(requestCount);
-    }
-  }, [isFocused, shifts, employees]);
+      if (startHourNum < 12) {
+        scheduleByTime.morning.push(shift);
+      } else if (startHourNum >= 12 && startHourNum < 18) {
+        scheduleByTime.afternoon.push(shift);
+      } else {
+        scheduleByTime.closing.push(shift);
+      }
+    });
+    setTodaySchedule(scheduleByTime);
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    
+    const workingNowCount = processedTodayShifts.filter(shift => {
+      // 방어 코드: shift.time 형식이 유효하지 않으면 계산에서 제외
+      if (!shift.time || !shift.time.includes(' - ')) return false;
+      const timeParts = shift.time.split(' - ');
+      if (timeParts.length < 2) return false;
+
+      const [startStr, endStr] = timeParts;
+      if (!startStr || !endStr || !startStr.includes(':') || !endStr.includes(':')) return false;
+
+      const startParts = startStr.split(':');
+      const endParts = endStr.split(':');
+      if (startParts.length < 2 || endParts.length < 2) return false;
+
+      const [startH, startM] = startParts.map(Number);
+      const [endH, endM] = endParts.map(Number);
+      if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return false;
+
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+      return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+    }).length;
+    setCurrentlyWorking(workingNowCount);
+
+    const requestCount = shifts.filter(s => s.status === 'SUBSTITUTE_REQ' || s.status === 'LEAVE_REQ').length;
+    setPendingRequestCount(requestCount);
+    
+  }, [isFocused, userInfo, shifts, employees]);
 
   const handleNavigateToDailySchedule = () => {
     navigation.navigate('AdminDailySchedule', {

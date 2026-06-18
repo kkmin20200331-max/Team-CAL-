@@ -130,12 +130,18 @@ const MyPageScreen = ({ navigation }: Props) => {
         </View>
 
         {role === 'ADMIN' && (
-          <View style={styles.menuSection}>
-            <Text style={styles.sectionTitle}>직원 관리</Text>
-            {renderMenuItem('📋', '보건증 관리', () => Alert.alert("준비 중", "보건증 관리 화면으로 이동합니다."))}
-            {renderMenuItem('📑', '근로계약서 관리', () => Alert.alert("준비 중", "근로계약서 관리 화면으로 이동합니다."))}
-            {renderMenuItem('🌴', '휴무 신청 관리', () => Alert.alert("준비 중", "휴무 신청 관리 화면으로 이동합니다."))}
-          </View>
+          <>
+            <View style={styles.menuSection}>
+              <Text style={styles.sectionTitle}>매장 관리</Text>
+              {renderMenuItem('🏪', '매장 정보 수정', () => navigation.navigate('StoreEdit'))}
+            </View>
+            <View style={styles.menuSection}>
+              <Text style={styles.sectionTitle}>직원 관리</Text>
+              {renderMenuItem('📋', '보건증 관리', () => Alert.alert("준비 중", "보건증 관리 화면으로 이동합니다."))}
+              {renderMenuItem('📑', '근로계약서 관리', () => Alert.alert("준비 중", "근로계약서 관리 화면으로 이동합니다."))}
+              {renderMenuItem('🌴', '휴무 신청 관리', () => Alert.alert("준비 중", "휴무 신청 관리 화면으로 이동합니다."))}
+            </View>
+          </>
         )}
 
         <View style={styles.menuSection}>

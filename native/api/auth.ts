@@ -56,6 +56,10 @@ export const signupAPI = (data: {
 export const updateProfileAPI = (data: any) => 
   API.put(`/users`, data);
 
+// ✅ [추가] 매장 정보 수정 API
+export const updateStoreInfoAPI = (storeId: string, data: any) =>
+  API.put(`/stores/${storeId}`, data);
+
 // ✅ [추가] 내 스케줄 조회 API (직원용)
 export const getMyScheduleAPI = (userId: string, storeId: string) => 
   API.get(`/shifts/my?user_id=${userId}&store_id=${storeId}`);
