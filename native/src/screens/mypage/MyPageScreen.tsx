@@ -119,11 +119,11 @@ const MyPageScreen = ({ navigation }: Props) => {
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
           {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit'))}
+          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract'))}
+          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert'))}
           {role === 'STAFF' && (
             <>
               {renderMenuItem('💰', '나의 급여 명세서', handleNavigateToMonthlyDetail)}
-              {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract'))}
-              {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert'))}
               {renderMenuItem('🤝', '나의 대타 내역', () => navigation.navigate('SubstituteMatching', { initialTab: 'history' }))}
             </>
           )}
@@ -260,7 +260,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   logoutButton: { marginTop: 30, marginHorizontal: 20, paddingVertical: 14, backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: colors.red, alignItems: 'center' },
   logoutButtonText: { color: colors.red, fontSize: 16, fontWeight: 'bold' },
   withdrawButton: { alignItems: 'center', paddingVertical: 10, marginBottom: 40 },
-  withdrawText: { color: colors.gray, fontSize: 13, textDecorationLine: 'underline' },
+  withdrawText: { color: '#9CA3AF', fontSize: 13, textDecorationLine: 'underline' },
   
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '80%', backgroundColor: colors.modalBg, borderRadius: 12, padding: 20 },
