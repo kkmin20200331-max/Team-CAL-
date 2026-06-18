@@ -69,7 +69,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backButton: { fontSize: 24, color: colors.primary, width: 40 },
+  backButton: { fontSize: 24, color: colors.text, width: 40 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   listContainer: { paddingHorizontal: 16 },
   sectionHeader: {

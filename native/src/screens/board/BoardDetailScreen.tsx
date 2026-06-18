@@ -7,7 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Post } from '../../types/Post';
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext';
-import { useSchedule } from '../../contexts/ScheduleContext'; // 1. useSchedule 훅 임포트
+import { useSchedule } from '../../contexts/ScheduleContext';
 import Toast from "react-native-toast-message";
 
 interface Comment {
@@ -34,10 +34,10 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
   const { postId } = route.params;
   const { userInfo } = useApp();
   const { posts, updatePinStatus, deletePost } = useBoard();
-  const { employees } = useSchedule(); // 2. 전역 employees 목록 가져오기
+  const { employees } = useSchedule();
   const { t } = useLanguage();
-  const { colors, isDarkMode } = useTheme();
-  const styles = getThemedStyles(colors, isDarkMode);
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
 
   const [post, setPost] = useState<Post | null>(null);
   const [viewCount, setViewCount] = useState(123);
@@ -59,7 +59,6 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
     }
   }, [postId, posts]);
 
-  // 3. authorId를 이용해 작성자 이름 찾기
   const authorName = useMemo(() => {
     if (!post?.authorId) return t('unknown');
     const author = employees.find(emp => emp.username === post.authorId);
@@ -135,7 +134,7 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
   if (!post) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}><Text>게시글을 찾을 수 없습니다.</Text></View>
+        <View style={styles.loadingContainer}><Text style={{color: colors.text}}>게시글을 찾을 수 없습니다.</Text></View>
       </SafeAreaView>
     );
   }
@@ -175,7 +174,6 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
           <View style={styles.postContainer}>
             <Text style={styles.postTitle}>{t(post.title)}</Text>
             <View style={styles.postMeta}>
-              {/* 4. 작성자 이름을 표시하도록 수정 */}
               <Text style={styles.postAuthor}>{t('writer')}: {authorName}</Text>
               <Text style={styles.postDate}>{post.date}</Text>
             </View>
@@ -228,7 +226,7 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
@@ -255,7 +253,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     fontWeight: '600',
   },
   deleteButtonText: {
-    color: '#EF4444',
+    color: colors.red,
   },
   
   container: { flex: 1, padding: 20 },
@@ -361,11 +359,11 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 5,
-    backgroundColor: isDarkMode ? '#4B5563' : '#E5E7EB',
+    backgroundColor: colors.gray,
   },
   deleteCommentButtonText: {
     fontSize: 12,
-    color: isDarkMode ? '#D1D5DB' : '#4B5563',
+    color: colors.subText,
   },
 
   commentInputContainer: {
@@ -388,10 +386,10 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     marginRight: 10,
     fontSize: 15,
     color: colors.text,
-    backgroundColor: isDarkMode ? '#1E1E1E' : '#F9FAFB',
+    backgroundColor: colors.background,
   },
   commentSubmitButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.blue,
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 15,
@@ -399,7 +397,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     alignItems: 'center',
   },
   commentSubmitButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontWeight: 'bold',
     fontSize: 15,
   },

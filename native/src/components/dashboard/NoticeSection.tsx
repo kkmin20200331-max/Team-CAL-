@@ -1,25 +1,24 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Post } from '../../types/Post';
-import { useSchedule } from '../../contexts/ScheduleContext'; // 1. useSchedule 훅 임포트
+import { useSchedule } from '../../contexts/ScheduleContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type Props = {
   posts: Post[];
   handleOpenPost: (post: Post) => void;
   navigation: any;
-  colors: any;
-  isDarkMode: boolean;
   t: (key: string) => string;
 };
 
-const NoticeSection = ({ posts, handleOpenPost, navigation, colors, isDarkMode, t }: Props) => {
-  const styles = getThemedStyles(colors, isDarkMode);
-  const { employees } = useSchedule(); // 2. employees 데이터 가져오기
+const NoticeSection = ({ posts, handleOpenPost, navigation, t }: Props) => {
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
+  const { employees } = useSchedule();
 
   const getAuthorName = (authorId: string) => {
-    // 3. employees가 준비되었을 때만 find 사용
     const author = employees?.find(emp => emp.username === authorId);
-    return author?.name || authorId; // 찾지 못하면 authorId 그대로 반환
+    return author?.name || authorId;
   };
 
   const latestNotices = posts.filter(post => post.category === 'NOTICE').slice(0, 3);
@@ -33,8 +32,12 @@ const NoticeSection = ({ posts, handleOpenPost, navigation, colors, isDarkMode, 
         </TouchableOpacity>
       </View>
       {latestNotices.length > 0 ? (
-        latestNotices.map((post) => (
-          <TouchableOpacity key={post.id} style={styles.noticeItem} onPress={() => handleOpenPost(post)}>
+        latestNotices.map((post, index) => (
+          <TouchableOpacity 
+            key={post.id} 
+            style={[styles.noticeItem, index === latestNotices.length - 1 && { borderBottomWidth: 0 }]} 
+            onPress={() => handleOpenPost(post)}
+          >
             <View style={styles.noticeContent}>
               <Text style={styles.noticeTitle}>{t(post.title)}</Text>
               <Text style={styles.noticeMeta}>
@@ -51,7 +54,7 @@ const NoticeSection = ({ posts, handleOpenPost, navigation, colors, isDarkMode, 
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   container: {
     backgroundColor: colors.card,
     borderRadius: 16,
@@ -76,7 +79,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   },
   viewAll: {
     fontSize: 14,
-    color: colors.primary,
+    color: colors.text,
     fontWeight: '600',
   },
   noticeItem: {

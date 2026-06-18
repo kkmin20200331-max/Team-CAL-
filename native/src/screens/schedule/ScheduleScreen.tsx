@@ -25,8 +25,8 @@ const generateWeekDates = (base: Date) => {
 const ScheduleScreen = ({ navigation }: { navigation: any }) => {
   const { userInfo } = useApp();
   const { shifts, employees, setShifts: setGlobalShifts } = useSchedule();
-  const { colors, isDarkMode } = useTheme();
-  const styles = getThemedStyles(colors, isDarkMode);
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
   
   const [selectedDate, setSelectedDate] = useState(initialSelectedDate);
   const [baseDate, setBaseDate] = useState(new Date());
@@ -122,6 +122,11 @@ const ScheduleScreen = ({ navigation }: { navigation: any }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        {userInfo?.role === 'ADMIN' && (
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{width: 40}}>
+            <Text style={styles.backButton}>←</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.headerTitle}>{`${getYear(baseDate)}년 ${getMonth(baseDate) + 1}월`}</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity onPress={() => setMonthModalVisible(true)}>
@@ -139,10 +144,10 @@ const ScheduleScreen = ({ navigation }: { navigation: any }) => {
           <TouchableOpacity onPress={() => moveWeek(-1)} style={styles.arrowButton}><Text style={styles.arrowText}>◀</Text></TouchableOpacity>
           {generateWeekDates(baseDate).map((item) => {
             const isSelected = item.fullDate === selectedDate;
-            const dayColor = item.dayIndex === 0 ? '#EF4444' : item.dayIndex === 6 ? '#3B82F6' : colors.subText;
+            const dayColor = item.dayIndex === 0 ? colors.sunday : item.dayIndex === 6 ? colors.saturday : colors.subText;
             return (
               <TouchableOpacity key={item.fullDate} style={[styles.dateBox, isSelected && styles.dateBoxSelected]} onPress={() => setSelectedDate(item.fullDate)}>
-                <Text style={[styles.dayText, { color: isSelected ? '#FFFFFF' : dayColor }]}>{KOREAN_DAYS[item.dayIndex]}</Text>
+                <Text style={[styles.dayText, { color: isSelected ? colors.white : dayColor }]}>{KOREAN_DAYS[item.dayIndex]}</Text>
                 <Text style={[styles.dateText, isSelected && styles.dateTextSelected]}>{item.date}</Text>
               </TouchableOpacity>
             );
@@ -179,16 +184,16 @@ const CalendarModal = ({ isVisible, onClose, onDateSelect, shifts, colors }: any
   const markedDates = useMemo(() => {
     const marks: { [key: string]: { dots: { color: string }[] } } = {};
     shifts.forEach((item: Shift) => {
-      const color = item.status === 'OFF' ? 'red' : 'blue';
-      if (!marks[item.fullDate]) {
-        marks[item.fullDate] = { dots: [] };
+      const color = item.status === 'OFF' ? colors.red : colors.blue;
+      if (!marks[item.date]) {
+        marks[item.date] = { dots: [] };
       }
-      if (!marks[item.fullDate].dots.some(d => d.color === color)) {
-        marks[item.fullDate].dots.push({ color });
+      if (!marks[item.date].dots.some(d => d.color === color)) {
+        marks[item.date].dots.push({ color });
       }
     });
     return marks;
-  }, [shifts]);
+  }, [shifts, colors]);
 
   const changeMonth = (offset: number) => {
     setCalendarDate(prev => setMonth(prev, getMonth(prev) + offset));
@@ -228,7 +233,7 @@ const CalendarModal = ({ isVisible, onClose, onDateSelect, shifts, colors }: any
             <TouchableOpacity onPress={() => changeMonth(1)}><Text style={styles.calendarNav}>▶</Text></TouchableOpacity>
           </View>
           <View style={styles.weekHeader}>
-            {KOREAN_DAYS.map(day => <Text key={day} style={styles.weekDay}>{day}</Text>)}
+            {KOREAN_DAYS.map((day, index) => <Text key={day} style={[styles.weekDay, index === 0 && {color: colors.sunday}, index === 6 && {color: colors.saturday}]}>{day}</Text>)}
           </View>
           <View style={styles.calendarGrid}>{renderCalendarGrid()}</View>
         </TouchableOpacity>
@@ -237,47 +242,48 @@ const CalendarModal = ({ isVisible, onClose, onDateSelect, shifts, colors }: any
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10, backgroundColor: colors.card },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
+  backButton: { fontSize: 24, color: colors.text },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, flex: 1, textAlign: 'center' },
   headerButtons: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  monthViewButton: { fontSize: 14, color: colors.primary, fontWeight: '600' },
-  addButton: { fontSize: 14, color: colors.primary, fontWeight: 'bold' },
+  monthViewButton: { fontSize: 14, color: colors.text, fontWeight: '600' },
+  addButton: { fontSize: 14, color: colors.text, fontWeight: 'bold' },
   calendarContainer: { backgroundColor: colors.card, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   weekDaysContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 10 },
   arrowButton: { paddingHorizontal: 5, paddingVertical: 10 },
-  arrowText: { fontSize: 16, color: colors.subText },
-  dateBox: { width: 42, height: 65, justifyContent: 'center', alignItems: 'center', borderRadius: 10, backgroundColor: isDarkMode ? '#2A2A2A' : '#F9FAFB' },
-  dateBoxSelected: { backgroundColor: '#2563EB' },
+  arrowText: { fontSize: 16, color: colors.text },
+  dateBox: { width: 42, height: 65, justifyContent: 'center', alignItems: 'center', borderRadius: 10, backgroundColor: colors.background },
+  dateBoxSelected: { backgroundColor: colors.blue },
   dayText: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
   dateText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  dateTextSelected: { color: '#FFFFFF' },
+  dateTextSelected: { color: colors.white },
   listContainer: { padding: 16, gap: 16 },
   card: { backgroundColor: colors.card, borderRadius: 16, padding: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, borderWidth: 1, borderColor: 'transparent' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   cardDate: { fontSize: 16, fontWeight: '700', color: colors.text },
   badge: { paddingVertical: 4, paddingHorizontal: 8, borderRadius: 6 },
-  badgeScheduled: { backgroundColor: isDarkMode ? '#075985' : '#E0F2FE' },
-  badgeTextScheduled: { color: isDarkMode ? '#BAE6FD' : '#0284C7', fontSize: 12, fontWeight: '600' },
-  badgeInProgress: { backgroundColor: isDarkMode ? '#14532D' : '#DCFCE7' },
-  badgeTextInProgress: { color: isDarkMode ? '#86EFAC' : '#16A34A', fontSize: 12, fontWeight: '600' },
-  badgeCompleted: { backgroundColor: isDarkMode ? '#374151' : '#F3F4F6' },
-  badgeTextCompleted: { color: isDarkMode ? '#D1D5DB' : '#4B5563', fontSize: 12, fontWeight: '600' },
-  badgeSubstitute: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7' },
-  badgeTextSubstitute: { color: isDarkMode ? '#FDE68A' : '#D97706', fontSize: 12, fontWeight: '600' },
-  badgeLeaveReq: { backgroundColor: isDarkMode ? '#9A3412' : '#FFEDD5' },
-  badgeTextLeaveReq: { color: isDarkMode ? '#FB923C' : '#F97316', fontSize: 12, fontWeight: '600' },
-  badgeOff: { backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2' },
-  badgeTextOff: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 12, fontWeight: '600' },
+  badgeScheduled: { backgroundColor: colors.skyLight },
+  badgeTextScheduled: { color: colors.sky, fontSize: 12, fontWeight: '600' },
+  badgeInProgress: { backgroundColor: colors.greenLight },
+  badgeTextInProgress: { color: colors.green, fontSize: 12, fontWeight: '600' },
+  badgeCompleted: { backgroundColor: colors.gray },
+  badgeTextCompleted: { color: colors.subText, fontSize: 12, fontWeight: '600' },
+  badgeSubstitute: { backgroundColor: colors.yellowLight },
+  badgeTextSubstitute: { color: colors.yellow, fontSize: 12, fontWeight: '600' },
+  badgeLeaveReq: { backgroundColor: colors.orangeLight },
+  badgeTextLeaveReq: { color: colors.orange, fontSize: 12, fontWeight: '600' },
+  badgeOff: { backgroundColor: colors.redLight },
+  badgeTextOff: { color: colors.red, fontSize: 12, fontWeight: '600' },
   cardBody: { marginBottom: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   infoIcon: { fontSize: 16, marginRight: 8 },
   infoText: { fontSize: 15, color: colors.text, fontWeight: '500' },
   buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, gap: 10 },
-  actionButton: { flex: 1, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  substituteButton: { backgroundColor: isDarkMode ? '#5B21B6' : '#A78BFA' },
-  actionButtonText: { color: isDarkMode ? colors.text : '#1F2937', fontSize: 14, fontWeight: '600' },
+  actionButton: { flex: 1, backgroundColor: colors.gray, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  substituteButton: { backgroundColor: colors.purpleLight },
+  actionButtonText: { color: colors.text, fontSize: 14, fontWeight: '600' },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
   emptyIcon: { fontSize: 50, marginBottom: 16 },
   emptyText: { fontSize: 16, color: colors.subText, fontWeight: '500' },
@@ -285,12 +291,12 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   modalContent: { width: '85%', backgroundColor: colors.card, borderRadius: 16, padding: 24, elevation: 5 },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 8, textAlign: 'center' },
   modalSubtitle: { fontSize: 14, color: colors.subText, marginBottom: 20, textAlign: 'center' },
-  reasonInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12, height: 100, fontSize: 15, color: colors.text, backgroundColor: isDarkMode ? '#1E1E1E' : '#F9FAFB', marginBottom: 20 },
+  reasonInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12, height: 100, fontSize: 15, color: colors.text, backgroundColor: colors.background, marginBottom: 20 },
   modalButtonGroup: { flexDirection: 'row', gap: 12 },
-  modalCancelButton: { flex: 1, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  modalCancelButton: { flex: 1, backgroundColor: colors.gray, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   modalCancelText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  modalSubmitButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  modalSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  modalSubmitButton: { flex: 1, backgroundColor: colors.blue, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  modalSubmitText: { color: colors.white, fontSize: 15, fontWeight: '600' },
   // Calendar Modal Styles
   calendarModalContent: { width: '90%', backgroundColor: colors.card, borderRadius: 16, padding: 20 },
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10 },
@@ -301,7 +307,7 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: { width: `${100/7}%`, aspectRatio: 1, justifyContent: 'center', alignItems: 'center', position: 'relative' },
   dayNumber: { fontSize: 15, color: colors.text },
-  dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: 8 },
+  dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: -6 },
   dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
 });
 

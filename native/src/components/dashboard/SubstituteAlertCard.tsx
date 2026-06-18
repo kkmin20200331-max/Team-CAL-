@@ -1,18 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type Props = {
   isAlertVisible: boolean;
   navigation: any;
   handleAcceptSubstitute: () => void;
   setIsAlertVisible: (visible: boolean) => void;
-  colors: any;
-  isDarkMode: boolean;
   t: (key: string) => string;
 };
 
-const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitute, setIsAlertVisible, colors, isDarkMode, t }: Props) => {
-  const styles = getThemedStyles(colors, isDarkMode);
+const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitute, setIsAlertVisible, t }: Props) => {
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
 
   if (!isAlertVisible) {
     return null;
@@ -39,11 +39,11 @@ const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitut
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   alertCard: {
-    backgroundColor: isDarkMode ? '#3F3119' : '#FFFBEB',
+    backgroundColor: colors.yellowLight,
     borderWidth: 1,
-    borderColor: isDarkMode ? '#92400E' : '#FDE68A',
+    borderColor: colors.yellow,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
@@ -60,11 +60,11 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   alertTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: isDarkMode ? '#FCD34D' : '#D97706',
+    color: colors.yellow,
   },
   alertDescription: {
     fontSize: 14,
-    color: isDarkMode ? '#E5E7EB' : '#4B5563',
+    color: colors.text,
     marginBottom: 16,
     lineHeight: 20,
   },
@@ -74,13 +74,13 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   },
   acceptButton: {
     flex: 1,
-    backgroundColor: '#D97706',
+    backgroundColor: colors.yellow,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   acceptButtonText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontWeight: '700',
     fontSize: 14,
   },

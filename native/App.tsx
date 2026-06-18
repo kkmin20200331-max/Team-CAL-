@@ -29,7 +29,7 @@ import BoardDetailScreen from './src/screens/board/BoardDetailScreen';
 import BoardWriteScreen from './src/screens/board/BoardWriteScreen';
 import PayrollScreen from './src/screens/main/PayrollScreen';
 import PayrollDetailScreen from './src/screens/admin/PayrollDetailScreen';
-import WeeklyPayrollDetailScreen from './src/screens/mypage/WeeklyPayrollDetailScreen'; // 1. 새 화면 임포트
+import WeeklyPayrollDetailScreen from './src/screens/mypage/WeeklyPayrollDetailScreen';
 import ContractScreen from './src/screens/mypage/ContractScreen';
 import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
 import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
@@ -132,7 +132,7 @@ function AdminTabNavigator() {
     <AdminTab.Navigator screenOptions={{ headerShown: false }}>
       <AdminTab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: '대시보드' }} />
       <AdminTab.Screen name="AdminSchedule" component={ScheduleScreen} options={{ title: '근무 관리' }} />
-      <AdminTab.Screen name="EmployeeManagement" component={EmployeeManagementScreen} options={{ title: '직원관리' }} />
+      <AdminTab.Screen name="EmployeeManagement" component={EmployeeManagementScreen} options={{ title: '직원 관리' }} />
       <AdminTab.Screen name="AdminMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
     </AdminTab.Navigator>
   );
@@ -151,10 +151,10 @@ function BoardNavigator() {
 function StaffTabNavigator() {
   return (
     <StaffTab.Navigator screenOptions={{ headerShown: false }}>
-      <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '홈' }} />
-      <StaffTab.Screen name="StaffSchedule" component={ScheduleScreen} options={{ title: '스케줄' }} />
+      <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '대시보드' }} />
+      <StaffTab.Screen name="StaffSchedule" component={ScheduleScreen} options={{ title: '근무 관리' }} />
       <StaffTab.Screen name="Notifications" component={NotificationScreen} options={{ title: '알림' }} />
-      <StaffTab.Screen name="StaffMyPage" component={MyPageScreen} options={{ title: '마이페이지' }} />
+      <StaffTab.Screen name="StaffMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
     </StaffTab.Navigator>
   );
 }

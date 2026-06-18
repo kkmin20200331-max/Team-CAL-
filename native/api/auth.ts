@@ -3,7 +3,7 @@ import axios from 'axios';
 // ✅ [수정] 안드로이드 에뮬레이터용 주소(10.0.2.2)로 직접 연결합니다.
 // (만약 본인 스마트폰 기계로 직접 연결해서 테스트 중이시라면 PC의 IP주소 예: 192.168.x.x 를 넣으셔야 합니다)
 const API = axios.create({
-  baseURL: 'http://10.100.0.178:8080/api',
+  baseURL: 'http://10.100.0.21:8080/api',
   // baseURL: process.env.EXPO_PUBLIC_API_BASE_URL, // 기존 환경변수 코드 주석 처리
   timeout: 10000, // ✅ [추가] 10초 이상 서버 응답이 없으면 에러로 처리 (무한 로딩 방지)
   headers: {
@@ -86,3 +86,31 @@ export const checkOutAPI = (userId: string, storeId: string) =>
 // [게시판] 새 글 작성 API (직원/관리자 공통)
 export const createBoardPostAPI = (data: any) => 
   API.post(`/board`, data);
+
+// ✅ [추가] 보건증/근로계약서 조회 및 관리 API (관리자용)
+export const getHealthCertificatesAPI = (storeId: string) =>
+  API.get(`/documents/health-certificates?store_id=${storeId}`);
+
+export const getEmploymentContractsAPI = (storeId: string) =>
+  API.get(`/documents/employment-contracts?store_id=${storeId}`);
+
+// ✅ [추가] 보건증/근로계약서 업로드 API (직원용)
+export const uploadHealthCertificateAPI = (data: any) =>
+  API.post('/documents/health-certificates', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+export const uploadEmploymentContractAPI = (data: any) =>
+  API.post('/documents/employment-contracts', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+// ✅ [추가] 휴무 신청 관리 API (관리자용)
+export const getLeaveRequestsAPI = (storeId: string) =>
+  API.get(`/leave-requests?store_id=${storeId}`);
+
+export const approveLeaveRequestAPI = (requestId: string) =>
+  API.put(`/leave-requests/${requestId}/approve`);
+
+export const denyLeaveRequestAPI = (requestId: string) =>
+  API.put(`/leave-requests/${requestId}/deny`);

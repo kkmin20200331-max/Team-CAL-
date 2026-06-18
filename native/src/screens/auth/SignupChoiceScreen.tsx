@@ -15,7 +15,7 @@ const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>◀</Text>
+          <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>회원가입</Text>
         <View style={{ width: 40 }} />
@@ -62,7 +62,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   backButton: {
     fontSize: 24,
-    color: colors.primary,
+    color: colors.text,
     width: 40,
   },
   headerTitle: {
@@ -92,16 +92,15 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     padding: 24,
     marginBottom: 20,
     alignItems: 'center',
+    borderWidth: 2,
   },
   staffButton: {
-    backgroundColor: '#E0F2FE',
-    borderWidth: 2,
-    borderColor: '#7DD3FC',
+    backgroundColor: colors.skyLight,
+    borderColor: colors.sky,
   },
   adminButton: {
-    backgroundColor: '#FEF3C7',
-    borderWidth: 2,
-    borderColor: '#FCD34D',
+    backgroundColor: colors.yellowLight,
+    borderColor: colors.yellow,
   },
   choiceIcon: {
     fontSize: 32,

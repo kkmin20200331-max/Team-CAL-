@@ -97,7 +97,6 @@ export default function SignupScreen({ navigation, route }: Props) {
       if (supabaseError) throw new Error(`Supabase 회원가입 실패: ${supabaseError.message}`);
       if (!supabaseUser) throw new Error("Supabase 사용자가 생성되지 않았습니다.");
 
-      // ✅ [수정] 역할에 따라 status를 다르게 설정
       const signupData: any = {
         id: supabaseUser.id,
         username: id,
@@ -105,7 +104,7 @@ export default function SignupScreen({ navigation, route }: Props) {
         name,
         phone,
         role,
-        status: role === 'ADMIN' ? 'ACTIVE' : 'PENDING', // 관리자는 즉시 활성, 직원은 승인 대기
+        status: role === 'ADMIN' ? 'ACTIVE' : 'PENDING',
       };
 
       if (role === 'ADMIN') {
@@ -132,7 +131,6 @@ export default function SignupScreen({ navigation, route }: Props) {
         await AsyncStorage.setItem(`admin_branch_info_${id}`, JSON.stringify(branches));
         login({ ...userInfoForLogin, branches, activeBranchId: 'branch_1' }, true);
       } else {
-        // 직원은 가입 후, 지점 선택을 하지 않은 상태로 로그인
         login(userInfoForLogin, false);
       }
 
@@ -152,7 +150,7 @@ export default function SignupScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>◀</Text>
+          <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {role === 'ADMIN' ? '관리자 회원가입' : '직원 회원가입'}
@@ -169,11 +167,11 @@ export default function SignupScreen({ navigation, route }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.sectionTitle}>기본 정보</Text>
-          <TextInput style={styles.input} placeholder="아이디 (이메일 형식)" value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} autoCapitalize="none" keyboardType="email-address" />
-          <TextInput style={styles.input} placeholder="비밀번호" value={inputs.password} onChangeText={(text) => handleInputChange('password', text)} secureTextEntry={true} />
-          <TextInput style={styles.input} placeholder="비밀번호 확인" value={inputs.passwordCheck} onChangeText={(text) => handleInputChange('passwordCheck', text)} secureTextEntry={true} />
-          <TextInput style={styles.input} placeholder="이름 (예: 김선민)" value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
-          <TextInput style={styles.input} placeholder="전화번호 (예: 010-1234-5678)" value={inputs.phone} onChangeText={(text) => handleInputChange('phone', text)} keyboardType="phone-pad" />
+          <TextInput style={styles.input} placeholder="아이디 (이메일 형식)" placeholderTextColor={colors.subText} value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} autoCapitalize="none" keyboardType="email-address" />
+          <TextInput style={styles.input} placeholder="비밀번호" placeholderTextColor={colors.subText} value={inputs.password} onChangeText={(text) => handleInputChange('password', text)} secureTextEntry={true} />
+          <TextInput style={styles.input} placeholder="비밀번호 확인" placeholderTextColor={colors.subText} value={inputs.passwordCheck} onChangeText={(text) => handleInputChange('passwordCheck', text)} secureTextEntry={true} />
+          <TextInput style={styles.input} placeholder="이름 (예: 김선민)" placeholderTextColor={colors.subText} value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
+          <TextInput style={styles.input} placeholder="전화번호 (예: 010-1234-5678)" placeholderTextColor={colors.subText} value={inputs.phone} onChangeText={(text) => handleInputChange('phone', text)} keyboardType="phone-pad" />
 
           {role === 'ADMIN' && (
             <>
@@ -188,14 +186,14 @@ export default function SignupScreen({ navigation, route }: Props) {
               <View style={styles.toggleContainer}>
                 <Text style={styles.inputLabel}>프랜차이즈 매장인가요?</Text>
                 <Switch
-                  trackColor={{ false: "#767577", true: colors.primary }}
-                  thumbColor={inputs.isFranchise ? "#f4f3f4" : "#f4f3f4"}
+                  trackColor={{ false: colors.gray, true: colors.primary }}
+                  thumbColor={colors.white}
                   onValueChange={(value) => handleInputChange('isFranchise', value)}
                   value={inputs.isFranchise}
                 />
               </View>
-              <TextInput style={styles.input} placeholder="브랜드명 (예: 컴포즈커피)" value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
-              <TextInput style={styles.input} placeholder="지점명 (예: 미금점)" value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
+              <TextInput style={styles.input} placeholder="브랜드명 (예: 컴포즈커피)" placeholderTextColor={colors.subText} value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
+              <TextInput style={styles.input} placeholder="지점명 (예: 미금점)" placeholderTextColor={colors.subText} value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
               
               <View style={styles.timeContainer}>
                 <View style={styles.timeInputWrapper}>
@@ -213,7 +211,7 @@ export default function SignupScreen({ navigation, route }: Props) {
               </View>
 
               <Text style={styles.inputLabel}>최대 수용 인원 (선택)</Text>
-              <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('maxCapacity', text)} keyboardType="number-pad" />
+              <TextInput style={styles.input} placeholder="숫자만 입력" placeholderTextColor={colors.subText} value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('maxCapacity', text)} keyboardType="number-pad" />
             </>
           )}
 
@@ -273,7 +271,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backButton: { fontSize: 24, color: colors.primary, width: 40 },
+  backButton: { fontSize: 24, color: colors.text, width: 40 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   formContainer: { 
     padding: 20,
@@ -283,14 +281,14 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   input: { borderWidth: 1, borderColor: colors.border, padding: 15, borderRadius: 8, marginBottom: 15, backgroundColor: colors.card, color: colors.text, fontSize: 16 },
   inputLabel: { fontSize: 16, color: colors.subText, marginBottom: 8 },
   button: { 
-    backgroundColor: '#6EE7B7',
+    backgroundColor: colors.primary,
     padding: 15, 
     borderRadius: 8, 
     alignItems: 'center', 
     marginTop: 20 
   },
   buttonText: { 
-    color: '#064E3B',
+    color: colors.white,
     fontSize: 16, 
     fontWeight: 'bold' 
   },

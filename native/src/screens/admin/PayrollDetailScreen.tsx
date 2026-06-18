@@ -13,7 +13,7 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
   const { employees, shifts } = useSchedule();
 
   const payrollDetails = useMemo(() => {
-    if (!employees || !shifts) return null; // 데이터 로딩 중 방어
+    if (!employees || !shifts) return null;
 
     const employee = employees.find(e => e.id === employeeId);
     if (!employee) return null;
@@ -136,14 +136,14 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContainer: { padding: 16 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backButton: { fontSize: 24, color: colors.primary, width: 40 },
+  backButton: { fontSize: 24, color: colors.text, width: 40 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   errorText: { textAlign: 'center', marginTop: 50, color: colors.subText },
   
   summaryCard: { backgroundColor: colors.card, borderRadius: 16, padding: 24, alignItems: 'center' },
   employeeName: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 16 },
   totalPayLabel: { fontSize: 14, color: colors.subText },
-  totalPayAmount: { fontSize: 36, fontWeight: 'bold', color: colors.primary, marginTop: 4, marginBottom: 20 },
+  totalPayAmount: { fontSize: 36, fontWeight: 'bold', color: colors.text, marginTop: 4, marginBottom: 20 },
   divider: { width: '100%', height: 1, backgroundColor: colors.border, marginBottom: 20 },
   
   detailsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },

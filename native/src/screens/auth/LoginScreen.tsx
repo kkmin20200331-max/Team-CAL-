@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { loginAPI } from '../../../api/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User } from '../../types/User';
 import { useApp } from '../../contexts/AppContext';
 import { supabase } from '../../lib/supabase';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
 
@@ -14,6 +14,9 @@ type Props = {
 };
 
 export default function LoginScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
+
   const [inputs, setInputs] = useState({username : "", password : ""});
   const { username, password } = inputs;
   const [loginRole, setLoginRole] = useState<'STAFF' | 'ADMIN'>('STAFF');
@@ -44,7 +47,7 @@ export default function LoginScreen({ navigation }: Props) {
       }
 
       const serverRole = data.role ? data.role.toUpperCase() : 'GUEST';
-      const serverStatus = data.status || 'PENDING'; // ✅ [수정] status가 없으면 PENDING으로 간주
+      const serverStatus = data.status || 'PENDING';
 
       const isRoleMismatch = 
         (loginRole === 'ADMIN' && serverRole !== 'ADMIN') || 
@@ -56,7 +59,6 @@ export default function LoginScreen({ navigation }: Props) {
       }
 
       const finalRole = serverRole;
-      // ✅ [수정] finalUserInfo에 serverStatus를 명시적으로 포함
       let finalUserInfo: any = { ...data, role: finalRole, status: serverStatus };
       let hasBranch = false;
 
@@ -115,6 +117,7 @@ export default function LoginScreen({ navigation }: Props) {
         <TextInput
             style={styles.input}
             placeholder="아이디 (이메일 형식)"
+            placeholderTextColor={colors.subText}
             value={username}
             onChangeText={(text) => handleInputChange('username', text)}
             autoCapitalize="none"
@@ -123,6 +126,7 @@ export default function LoginScreen({ navigation }: Props) {
         <TextInput
             style={styles.input}
             placeholder="비밀번호"
+            placeholderTextColor={colors.subText}
             value={password}
             onChangeText={(text) => handleInputChange('password', text)}
             secureTextEntry={true}
@@ -141,16 +145,16 @@ export default function LoginScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  keyboardAvoidingContainer: { flex: 1 },
-  container: { flexGrow: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
+const getThemedStyles = (colors: any) => StyleSheet.create({
+  keyboardAvoidingContainer: { flex: 1, backgroundColor: colors.background },
+  container: { flexGrow: 1, justifyContent: 'center', padding: 20, backgroundColor: colors.background },
   logoImage: { width: 400, height: 150, alignSelf: 'center', marginBottom: 40 },
-  roleToggleContainer: { flexDirection: 'row', marginBottom: 20, backgroundColor: '#F3F4F6', borderRadius: 8, padding: 4 },
+  roleToggleContainer: { flexDirection: 'row', marginBottom: 20, backgroundColor: colors.border, borderRadius: 8, padding: 4 },
   roleButton: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 6 },
-  roleButtonActive: { backgroundColor: '#FFFFFF', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
-  roleButtonText: { fontSize: 15, fontWeight: '600', color: '#6B7280' },
+  roleButtonActive: { backgroundColor: colors.card, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
+  roleButtonText: { fontSize: 15, fontWeight: '600', color: colors.subText },
   roleButtonTextActive: { color: '#6EE7B7' },
-  input: { borderWidth: 1, borderColor: '#ddd', padding: 15, borderRadius: 8, marginBottom: 15 },
+  input: { borderWidth: 1, borderColor: colors.border, padding: 15, borderRadius: 8, marginBottom: 15, color: colors.text, backgroundColor: colors.card },
   button: { backgroundColor: '#6EE7B7', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
   buttonText: { color: '#064E3B', fontSize: 16, fontWeight: 'bold' }
 });

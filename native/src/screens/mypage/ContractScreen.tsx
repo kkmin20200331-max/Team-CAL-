@@ -3,28 +3,26 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image, Act
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import * as ImagePicker from 'expo-image-picker';
-import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import { useTheme } from '../../contexts/ThemeContext';
+import { useApp } from '../../contexts/AppContext';
+import { uploadEmploymentContractAPI } from '../../../api/auth';
 
-const ContractScreen = ({ route, navigation }: any) => {
+const ContractScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
-  const userInfo = route.params?.userInfo || {};
+  const { userInfo } = useApp();
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
 
-  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
-  const { colors, isDarkMode } = useTheme();
-  const styles = getThemedStyles(colors, isDarkMode);
-
-  // 상태 관리: 실제로는 백엔드에서 내려주는 데이터를 기반으로 작동합니다.
   const [contractData, setContractData] = useState({
-    branch: userInfo.store_id || '컴포즈 미금점',
-    startDate: '2024-01-15',
-    wage: '10,030',
+    branch: userInfo?.branchName || '지점 정보 없음',
+    startDate: '2024-01-15', // This should ideally come from userInfo or an API
+    wage: '10,030', // This should also be dynamic
     status: 'verified', // 'verified' | 'pending'
   });
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // 📸 갤러리 열기
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
@@ -43,16 +41,26 @@ const ContractScreen = ({ route, navigation }: any) => {
     }
   };
 
-  // 🚀 백엔드 전송 시뮬레이션
   const handleUploadToBackend = async () => {
-    if (!selectedImage) return;
+    if (!selectedImage || !userInfo) return;
     setIsUploading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // 서버 전송 대기 흉내
-      setContractData({ ...contractData, status: 'pending' }); // 상태를 '승인 대기'로 변경
+      const formData = new FormData();
+      formData.append('file', {
+        uri: selectedImage,
+        name: `contract-${userInfo.id}.jpg`,
+        type: 'image/jpeg',
+      } as any);
+      formData.append('user_id', userInfo.id);
+      formData.append('store_id', userInfo.activeBranchId || '');
+
+      await uploadEmploymentContractAPI(formData);
+
+      setContractData({ ...contractData, status: 'pending' });
       setSelectedImage(null);
       Alert.alert('전송 완료', '계약서가 업로드되었습니다. 점주 승인 후 최종 반영됩니다.');
     } catch (error) {
+      console.error("Contract upload error:", error);
       Alert.alert('오류', '업로드 중 문제가 발생했습니다.');
     } finally {
       setIsUploading(false);
@@ -61,7 +69,6 @@ const ContractScreen = ({ route, navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
@@ -89,7 +96,7 @@ const ContractScreen = ({ route, navigation }: any) => {
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('nameLabel')}</Text>
-            <Text style={styles.infoValue}>{userInfo.name || '김선민'}</Text>
+            <Text style={styles.infoValue}>{userInfo?.name || '사용자'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('workPlace')}</Text>
@@ -105,7 +112,6 @@ const ContractScreen = ({ route, navigation }: any) => {
           </View>
         </View>
 
-        {/* 이미지 업로드 / 미리보기 영역 분기 처리 */}
         {selectedImage ? (
           <View style={styles.previewContainer}>
             <Image source={{ uri: selectedImage }} style={styles.previewImage} />
@@ -114,7 +120,7 @@ const ContractScreen = ({ route, navigation }: any) => {
                 <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.submitButton} onPress={handleUploadToBackend} disabled={isUploading}>
-                {isUploading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitButtonText}>서버로 전송</Text>}
+                {isUploading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.submitButtonText}>서버로 전송</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -136,8 +142,7 @@ const ContractScreen = ({ route, navigation }: any) => {
   );
 };
 
-// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -150,34 +155,34 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   card: { backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   cardTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  badge: { backgroundColor: isDarkMode ? '#14532D' : '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { color: isDarkMode ? '#86EFAC' : '#16A34A', fontSize: 13, fontWeight: '700' },
-  badgePending: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7' },
-  badgeTextPending: { color: isDarkMode ? '#FDE68A' : '#D97706' },
+  badge: { backgroundColor: colors.greenLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  badgeText: { color: colors.green, fontSize: 13, fontWeight: '700' },
+  badgePending: { backgroundColor: colors.yellowLight },
+  badgeTextPending: { color: colors.yellow },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   infoLabel: { fontSize: 14, color: colors.subText },
   infoValue: { fontSize: 15, fontWeight: '600', color: colors.text },
   uploadBox: {
     backgroundColor: colors.card, borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#93C5FD', borderStyle: 'dashed', marginBottom: 12
+    borderWidth: 2, borderColor: colors.blueLight, borderStyle: 'dashed', marginBottom: 12
   },
   uploadIcon: { fontSize: 40, marginBottom: 12 },
-  uploadTitle: { fontSize: 16, fontWeight: 'bold', color: '#2563EB', marginBottom: 8 },
+  uploadTitle: { fontSize: 16, fontWeight: 'bold', color: colors.blue, marginBottom: 8 },
   uploadDesc: { fontSize: 13, color: colors.subText, textAlign: 'center' },
   previewContainer: { backgroundColor: colors.card, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 12, elevation: 2 },
-  previewImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain', backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6' },
+  previewImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain', backgroundColor: colors.background },
   previewButtonGroup: { flexDirection: 'row', gap: 12, width: '100%' },
-  cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', borderRadius: 8, alignItems: 'center' },
+  cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: colors.border, borderRadius: 8, alignItems: 'center' },
   cancelButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  submitButton: { flex: 1, paddingVertical: 14, backgroundColor: '#2563EB', borderRadius: 8, alignItems: 'center' },
-  submitButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
+  submitButton: { flex: 1, paddingVertical: 14, backgroundColor: colors.blue, borderRadius: 8, alignItems: 'center' },
+  submitButtonText: { color: colors.white, fontSize: 15, fontWeight: '600' },
   pendingBox: {
-    backgroundColor: isDarkMode ? '#3F3119' : '#FFFBEB', borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: isDarkMode ? '#92400E' : '#FCD34D', marginBottom: 12
+    backgroundColor: colors.yellowLight, borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.yellow, marginBottom: 12
   },
   pendingIcon: { fontSize: 40, marginBottom: 12 },
-  pendingTitle: { fontSize: 16, fontWeight: 'bold', color: isDarkMode ? '#FCD34D' : '#D97706', marginBottom: 8 },
-  pendingDesc: { fontSize: 13, color: isDarkMode ? '#E5E7EB' : '#92400E' },
+  pendingTitle: { fontSize: 16, fontWeight: 'bold', color: colors.yellow, marginBottom: 8 },
+  pendingDesc: { fontSize: 13, color: colors.subText },
 });
 
 export default ContractScreen;

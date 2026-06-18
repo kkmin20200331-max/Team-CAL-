@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type Props = {
   weeklyStats: {
@@ -7,13 +8,12 @@ type Props = {
     expectedSalary: number;
   };
   onPress: () => void;
-  colors: any;
-  isDarkMode: boolean;
   t: (key: string) => string;
 };
 
-const WeeklyStatsCard = ({ weeklyStats, onPress, colors, isDarkMode, t }: Props) => {
-  const styles = getThemedStyles(colors, isDarkMode);
+const WeeklyStatsCard = ({ weeklyStats, onPress, t }: Props) => {
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
 
   const formatNumber = (num: number) => {
     if (num === 0) return '0';
@@ -22,16 +22,13 @@ const WeeklyStatsCard = ({ weeklyStats, onPress, colors, isDarkMode, t }: Props)
 
   return (
     <TouchableOpacity style={styles.statsCard} onPress={onPress} activeOpacity={0.8}>
-      {/* 왼쪽: 이번 주 근무 시간 */}
       <View style={styles.statHalf}>
         <Text style={styles.statValue}>{weeklyStats.totalHours > 0 ? weeklyStats.totalHours.toFixed(1) : '0'}</Text>
         <Text style={styles.statLabel}>{t('weeklyHours')}</Text>
       </View>
 
-      {/* 가운데 구분선 */}
       <View style={styles.verticalDivider} />
 
-      {/* 오른쪽: 이번 주 예상 급여 */}
       <View style={styles.statHalf}>
         <Text style={styles.statValue}>{formatNumber(weeklyStats.expectedSalary)}</Text>
         <Text style={styles.statLabel}>{t('weeklySalary')}</Text>
@@ -40,7 +37,7 @@ const WeeklyStatsCard = ({ weeklyStats, onPress, colors, isDarkMode, t }: Props)
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   statsCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
@@ -64,7 +61,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   statValue: {
     fontSize: 24,
     fontWeight: '800',
-    color: isDarkMode ? '#34C759' : '#0cbb00',
+    color: colors.green,
     marginBottom: 4,
   },
   statLabel: {

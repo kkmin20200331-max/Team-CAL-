@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { format, addDays, startOfMonth, getDay, getDaysInMonth, getMonth, getYear, setMonth } from 'date-fns';
+import { getYear, getMonth, setMonth, startOfMonth, getDay, getDaysInMonth } from 'date-fns';
 
 const KOREAN_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -56,7 +56,18 @@ const DatePickerModal = ({ isVisible, onClose, onConfirm, initialDate }: Props) 
             </TouchableOpacity>
           </View>
           <View style={styles.weekHeader}>
-            {KOREAN_DAYS.map(day => <Text key={day} style={styles.weekDay}>{day}</Text>)}
+            {KOREAN_DAYS.map((day, index) => (
+              <Text 
+                key={day} 
+                style={[
+                  styles.weekDay,
+                  index === 0 && { color: colors.sunday },
+                  index === 6 && { color: colors.saturday },
+                ]}
+              >
+                {day}
+              </Text>
+            ))}
           </View>
           <View style={styles.calendarGrid}>{renderCalendarGrid()}</View>
         </Pressable>

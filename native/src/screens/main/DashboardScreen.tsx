@@ -7,7 +7,6 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
 import { startOfWeek, endOfWeek, parseISO, format, isWithinInterval } from 'date-fns';
-import { ko } from 'date-fns/locale';
 
 import { Post } from '../../types/Post';
 import TodayShiftCard from '../../components/dashboard/TodayShiftCard';
@@ -29,8 +28,8 @@ const DashboardScreen = ({ navigation }: Props) => {
   const { posts } = useBoard();
   const { shifts, employees } = useSchedule();
   const { t } = useLanguage();
-  const { colors, isDarkMode } = useTheme();
-  const styles = getThemedStyles(colors, isDarkMode);
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
 
   const userName = userInfo?.name || t('defaultUserName');
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
@@ -83,7 +82,6 @@ const DashboardScreen = ({ navigation }: Props) => {
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // 데이터는 Context 변경 시 자동으로 업데이트되므로, 여기서는 로딩 효과만 줌
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
@@ -171,8 +169,8 @@ const DashboardScreen = ({ navigation }: Props) => {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            colors={['#2563EB']}
-            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       >
@@ -186,16 +184,12 @@ const DashboardScreen = ({ navigation }: Props) => {
           loading={loading}
           todayShift={todayShift}
           fadeAnim={fadeAnim}
-          colors={colors}
-          isDarkMode={isDarkMode}
           t={t}
         />
 
         <WeeklyStatsCard
           weeklyStats={weeklyStats}
           onPress={handleNavigateToWeeklyDetail}
-          colors={colors}
-          isDarkMode={isDarkMode}
           t={t}
         />
 
@@ -204,8 +198,6 @@ const DashboardScreen = ({ navigation }: Props) => {
           navigation={navigation}
           handleAcceptSubstitute={handleAcceptSubstitute}
           setIsAlertVisible={setIsAlertVisible}
-          colors={colors}
-          isDarkMode={isDarkMode}
           t={t}
         />
 
@@ -213,8 +205,6 @@ const DashboardScreen = ({ navigation }: Props) => {
           posts={sortedDashboardPosts}
           handleOpenPost={handleOpenPost}
           navigation={navigation}
-          colors={colors}
-          isDarkMode={isDarkMode}
           t={t}
         />
 
@@ -223,15 +213,15 @@ const DashboardScreen = ({ navigation }: Props) => {
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  qrButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
+  qrButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.gray, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
   qrButtonText: { fontSize: 13, fontWeight: '600', color: colors.text },
   notificationButton: { padding: 4, position: 'relative' },
   notificationIcon: { fontSize: 22 },
-  badge: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: '#EF4444', borderWidth: 1, borderColor: colors.card },
+  badge: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.red, borderWidth: 1, borderColor: colors.card },
   contentContainer: { flex: 1, padding: 16 },
   greetingSection: { marginBottom: 20 },
   greetingText: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 4 },

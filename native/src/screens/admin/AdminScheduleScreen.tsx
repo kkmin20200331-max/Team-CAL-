@@ -115,8 +115,8 @@ const AdminScheduleScreen = ({ navigation }: { navigation: any }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>◀</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{width: 40}}>
+          <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
         <View style={styles.monthControl}>
           <TouchableOpacity onPress={() => changeMonth(-1)}>
@@ -165,8 +165,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   backButton: {
     fontSize: 24,
-    color: colors.primary,
-    width: 40,
+    color: colors.text,
   },
   monthControl: {
     flexDirection: 'row',
@@ -181,7 +180,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   arrow: {
     fontSize: 20,
-    color: colors.primary,
+    color: colors.text,
   },
   dayLabels: {
     flexDirection: 'row',

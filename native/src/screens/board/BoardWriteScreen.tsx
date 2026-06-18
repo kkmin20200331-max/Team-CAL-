@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -15,8 +15,8 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
   const { posts, addPost, updatePost } = useBoard();
   
   const { t } = useLanguage();
-  const { colors, isDarkMode } = useTheme();
-  const styles = getThemedStyles(colors, isDarkMode);
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
 
   const postToEdit = isEdit ? posts.find(p => p.id === postId) : null;
 
@@ -60,7 +60,6 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
         badge: 'badgeNew',
         isPinned: false,
       };
-      // ✅ [수정] addPost 호출 시 현재 로그인한 사용자의 username 전달
       addPost(newPostData, userInfo?.username || 'unknown_user');
       
       if (category === '공지사항') {
@@ -137,7 +136,7 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   backButton: { padding: 4, width: 40 },
@@ -147,16 +146,16 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   
   label: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 12, marginTop: 20 },
   categoryContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  categoryButton: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', borderWidth: 1, borderColor: 'transparent' },
-  categoryButtonActive: { backgroundColor: '#EFF6FF', borderColor: '#3B82F6' },
+  categoryButton: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: colors.gray, borderWidth: 1, borderColor: 'transparent' },
+  categoryButtonActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
   categoryText: { fontSize: 14, color: colors.subText, fontWeight: '600' },
-  categoryTextActive: { color: '#2563EB', fontWeight: 'bold' },
+  categoryTextActive: { color: colors.primary, fontWeight: 'bold' },
   
   input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 16, fontSize: 15, color: colors.text },
   contentInput: { minHeight: 200, paddingTop: 16 },
   
-  submitButton: { backgroundColor: '#2563EB', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 32, marginBottom: 40 },
-  submitButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }
+  submitButton: { backgroundColor: colors.blue, paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 32, marginBottom: 40 },
+  submitButtonText: { color: colors.white, fontSize: 16, fontWeight: 'bold' }
 });
 
 export default BoardWriteScreen;

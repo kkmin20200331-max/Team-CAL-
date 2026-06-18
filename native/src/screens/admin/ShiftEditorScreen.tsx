@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSchedule } from '../../contexts/ScheduleContext';
@@ -7,7 +7,7 @@ import { Picker } from '@react-native-picker/picker';
 import Toast from 'react-native-toast-message';
 import { format } from 'date-fns';
 import TimePickerModal from '../../components/common/TimePickerModal';
-import DatePickerModal from '../../components/common/DatePickerModal'; // 1. DatePickerModal 임포트
+import DatePickerModal from '../../components/common/DatePickerModal';
 
 const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any }) => {
   const { isEdit, shift: shiftToEdit } = route.params;
@@ -22,7 +22,7 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
   
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'start' | 'end'>('start');
-  const [isDatePickerVisible, setDatePickerVisible] = useState(false); // 2. 날짜 모달 상태 추가
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
 
   useEffect(() => {
     if (isEdit && shiftToEdit) {
@@ -93,7 +93,6 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
     setTimePickerVisible(false);
   };
   
-  // 3. 날짜 선택 확인 함수 추가
   const handleDateConfirm = (selectedDate: Date) => {
     setDate(selectedDate);
     setDatePickerVisible(false);
@@ -112,10 +111,15 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
       <ScrollView style={styles.content}>
         <Text style={styles.label}>직원 선택</Text>
         <View style={styles.pickerContainer}>
-          <Picker selectedValue={userId} onValueChange={(itemValue) => setUserId(itemValue)} style={styles.picker}>
-            <Picker.Item label="직원을 선택하세요..." value={undefined} />
+          <Picker 
+            selectedValue={userId} 
+            onValueChange={(itemValue) => setUserId(itemValue)} 
+            style={styles.picker}
+            itemStyle={styles.pickerItem}
+          >
+            <Picker.Item label="직원을 선택하세요..." value={undefined} color={colors.subText} />
             {employees.filter(e => e.status === 'ACTIVE').map(e => (
-              <Picker.Item key={e.id} label={e.name} value={e.id} />
+              <Picker.Item key={e.id} label={e.name} value={e.id} color={colors.text} />
             ))}
           </Picker>
         </View>
@@ -151,7 +155,6 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
         )}
       </ScrollView>
 
-      {/* 4. DatePickerModal 및 TimePickerModal 렌더링 */}
       <DatePickerModal
         isVisible={isDatePickerVisible}
         initialDate={date}
@@ -172,19 +175,20 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
 const getThemedStyles = (colors: any) => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-    backButton: { fontSize: 24, color: colors.primary, width: 40 },
+    backButton: { fontSize: 24, color: colors.text, width: 40 },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
     content: { padding: 20 },
     label: { fontSize: 16, color: colors.subText, marginBottom: 8, marginLeft: 4 },
     pickerContainer: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, marginBottom: 24, backgroundColor: colors.card },
-    picker: { color: colors.text },
+    picker: Platform.OS === 'ios' ? {} : { color: colors.text },
+    pickerItem: Platform.OS === 'ios' ? { color: colors.text } : {},
     dateButton: { borderWidth: 1, borderColor: colors.border, padding: 16, borderRadius: 8, marginBottom: 24, backgroundColor: colors.card, alignItems: 'center' },
     dateButtonText: { fontSize: 18, color: colors.text },
     timeContainer: { flexDirection: 'row', gap: 16 },
-    saveButton: { backgroundColor: '#6EE7B7', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
-    saveButtonText: { color: '#000000', fontSize: 16, fontWeight: 'bold' },
-    deleteButton: { backgroundColor: '#EF4444', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 12 },
-    deleteButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+    saveButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
+    saveButtonText: { color: colors.white, fontSize: 16, fontWeight: 'bold' },
+    deleteButton: { backgroundColor: colors.red, padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 12 },
+    deleteButtonText: { color: colors.white, fontSize: 16, fontWeight: 'bold' },
 });
 
 export default ShiftEditorScreen;

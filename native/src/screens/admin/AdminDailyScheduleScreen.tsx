@@ -4,17 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ko } from 'date-fns/locale';
 import { format } from 'date-fns';
-import { useSchedule } from '../../contexts/ScheduleContext'; // 1. useSchedule 훅 임포트
+import { useSchedule } from '../../contexts/ScheduleContext';
 
 const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigation: any }) => {
   const { date } = route.params;
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   
-  // 2. 전역 상태에서 shifts와 employees 가져오기
   const { shifts, employees, deleteShift } = useSchedule();
   
-  // 3. route.params에서 받은 shifts 대신, 전역 shifts에서 해당 날짜의 데이터 필터링
   const [dailyShifts, setDailyShifts] = useState(() => 
     shifts.filter(s => s.date === date).map(s => ({
       ...s,
@@ -31,12 +29,11 @@ const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigatio
   
   const formattedDate = format(new Date(date), "M월 d일 (eee)", { locale: ko });
 
-  // 4. ShiftEditorScreen으로 이동하는 핸들러 수정
   const handleNavigateToEditor = (shiftToEdit = null) => {
     navigation.navigate('ShiftEditor', {
-      isEdit: !!shiftToEdit, // shift 데이터가 있으면 true, 없으면 false
+      isEdit: !!shiftToEdit,
       shift: shiftToEdit,
-      date, // 새 근무 추가 시 기본 날짜로 사용
+      date,
     });
   };
 
@@ -46,7 +43,7 @@ const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigatio
       `${item.user.name} (${item.time}) 근무를 삭제하시겠습니까?`,
       [
         { text: "취소", style: "cancel" },
-        { text: "삭제", style: "destructive", onPress: () => deleteShift(item.id) } // 5. 전역 deleteShift 함수 사용
+        { text: "삭제", style: "destructive", onPress: () => deleteShift(item.id) }
       ]
     );
   };
@@ -114,7 +111,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   backButton: {
     fontSize: 24,
-    color: colors.primary,
+    color: colors.text,
     textAlign: 'left',
   },
   headerTitle: {
@@ -166,7 +163,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   timeText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.text,
   },
   deleteButton: {
     padding: 16,

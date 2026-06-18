@@ -80,7 +80,7 @@ const BranchSelectScreen = () => {
           onPress={handleConfirm}
           disabled={!selectedStore}
         >
-          <Text style={styles.confirmButtonText}>선택 완료</Text>
+          <Text style={[styles.confirmButtonText, !selectedStore && styles.confirmButtonTextDisabled]}>선택 완료</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -118,8 +118,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.border,
   },
   cardSelected: {
-    borderColor: '#6EE7B7', // 에메랄드 색상 테두리
-    backgroundColor: '#6EE7B7', // 에메랄드 색상 배경
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
   brandName: {
     fontSize: 18,
@@ -132,7 +132,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   textSelected: {
-    color: '#000000', // 검은색 글자
+    color: colors.white,
   },
   bottomContainer: {
     padding: 20,
@@ -141,7 +141,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
   },
   confirmButton: {
-    backgroundColor: '#6EE7B7', // 에메랄드 색상 배경
+    backgroundColor: colors.primary,
     padding: 16,
     alignItems: 'center',
     borderRadius: 8,
@@ -150,9 +150,12 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.disabled,
   },
   confirmButtonText: {
-    color: '#000000', // 검은색 글자
+    color: colors.white,
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  confirmButtonTextDisabled: {
+    color: colors.subText,
   },
 });
 

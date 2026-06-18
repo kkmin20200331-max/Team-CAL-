@@ -13,7 +13,7 @@ type Props = {
 const MyPageScreen = ({ navigation }: Props) => {
   const { userInfo, logout } = useApp(); 
 
-  const { themeMode, setThemeMode, colors } = useTheme();
+  const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
   const [themeModalVisible, setThemeModalVisible] = useState(false);
   const { language, setLanguage, t } = useLanguage();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
@@ -54,9 +54,9 @@ const MyPageScreen = ({ navigation }: Props) => {
         <Text style={styles.menuTitle}>{title}</Text>
       </View>
       <Switch
-        trackColor={{ false: '#D1D5DB', true: '#34C759' }}
-        thumbColor={'#FFFFFF'}
-        ios_backgroundColor="#D1D5DB"
+        trackColor={{ false: colors.gray, true: colors.green }}
+        thumbColor={colors.white}
+        ios_backgroundColor={colors.gray}
         onValueChange={onValueChange}
         value={value}
       />
@@ -119,11 +119,24 @@ const MyPageScreen = ({ navigation }: Props) => {
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
           {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit'))}
-          {renderMenuItem('💰', '나의 급여 명세서', handleNavigateToMonthlyDetail)}
-          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract'))}
-          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert'))}
-          {renderMenuItem('🤝', '나의 대타 내역', () => navigation.navigate('SubstituteMatching', { initialTab: 'history' }))}
+          {role === 'STAFF' && (
+            <>
+              {renderMenuItem('💰', '나의 급여 명세서', handleNavigateToMonthlyDetail)}
+              {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract'))}
+              {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert'))}
+              {renderMenuItem('🤝', '나의 대타 내역', () => navigation.navigate('SubstituteMatching', { initialTab: 'history' }))}
+            </>
+          )}
         </View>
+
+        {role === 'ADMIN' && (
+          <View style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>직원 관리</Text>
+            {renderMenuItem('📋', '보건증 관리', () => Alert.alert("준비 중", "보건증 관리 화면으로 이동합니다."))}
+            {renderMenuItem('📑', '근로계약서 관리', () => Alert.alert("준비 중", "근로계약서 관리 화면으로 이동합니다."))}
+            {renderMenuItem('🌴', '휴무 신청 관리', () => Alert.alert("준비 중", "휴무 신청 관리 화면으로 이동합니다."))}
+          </View>
+        )}
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
@@ -211,7 +224,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   profileSection: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 24, borderBottomWidth: 1, borderBottomColor: colors.border },
   avatarPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   avatarImage: { width: 60, height: 60, borderRadius: 30, marginRight: 16, backgroundColor: colors.primaryLight },
-  avatarText: { fontSize: 24, fontWeight: 'bold', color: '#007BFF' },
+  avatarText: { fontSize: 24, fontWeight: 'bold', color: colors.text },
   profileInfo: { flex: 1 },
   userName: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 4 },
   userRole: { fontSize: 14, color: colors.subText },
@@ -225,7 +238,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   
   connectSection: { marginTop: 20, paddingHorizontal: 20 },
   lineButton: { 
-    backgroundColor: '#00C300',
+    backgroundColor: colors.green,
     paddingVertical: 10,
     borderRadius: 8, 
     alignItems: 'center',
@@ -239,15 +252,15 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     resizeMode: 'contain',
   },
   lineButtonText: { 
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 16, 
     fontWeight: 'bold',
   },
 
-  logoutButton: { marginTop: 30, marginHorizontal: 20, paddingVertical: 14, backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: '#FF3B30', alignItems: 'center' },
-  logoutButtonText: { color: '#FF3B30', fontSize: 16, fontWeight: 'bold' },
+  logoutButton: { marginTop: 30, marginHorizontal: 20, paddingVertical: 14, backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: colors.red, alignItems: 'center' },
+  logoutButtonText: { color: colors.red, fontSize: 16, fontWeight: 'bold' },
   withdrawButton: { alignItems: 'center', paddingVertical: 10, marginBottom: 40 },
-  withdrawText: { color: '#9CA3AF', fontSize: 13, textDecorationLine: 'underline' },
+  withdrawText: { color: colors.gray, fontSize: 13, textDecorationLine: 'underline' },
   
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '80%', backgroundColor: colors.modalBg, borderRadius: 12, padding: 20 },

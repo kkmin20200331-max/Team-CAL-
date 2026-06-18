@@ -25,8 +25,8 @@ const BoardScreen = ({ route, navigation }: Props) => {
   
   const [activeCategory, setActiveCategory] = useState('ALL');
   const { t } = useLanguage();
-  const { colors, isDarkMode } = useTheme();
-  const styles = getThemedStyles(colors, isDarkMode);
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
 
   const CATEGORIES = [
     { id: 'ALL', label: 'boardTabAll' },
@@ -111,8 +111,8 @@ const BoardScreen = ({ route, navigation }: Props) => {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            colors={['#2563EB']}
-            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       />
@@ -128,7 +128,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
     flexDirection: 'row', 
@@ -158,11 +158,11 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6',
+    backgroundColor: colors.background,
   },
-  tabButtonActive: { backgroundColor: '#2563EB' },
+  tabButtonActive: { backgroundColor: colors.blue },
   tabText: { fontSize: 14, color: colors.subText, fontWeight: '500' },
-  tabTextActive: { color: '#FFFFFF', fontWeight: '700' },
+  tabTextActive: { color: colors.white, fontWeight: '700' },
 
   listContainer: {
     paddingHorizontal: 20,
@@ -185,14 +185,14 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     marginRight: 4,
   },
   categoryBadge: {
-    backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',
+    backgroundColor: colors.gray,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     marginRight: 8,
   },
   categoryBadgeText: {
-    color: isDarkMode ? '#D1D5DB' : '#4B5563',
+    color: colors.subText,
     fontSize: 10,
     fontWeight: '700',
   },
@@ -202,14 +202,14 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     fontWeight: '500',
   },
   newBadge: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.red,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     marginLeft: 8,
   },
   newBadgeText: {
-    color: '#FFFFFF',
+    color: colors.white,
     fontSize: 10,
     fontWeight: '800',
   },
@@ -229,7 +229,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.blue,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
@@ -240,7 +240,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   },
   fabIcon: {
     fontSize: 30,
-    color: '#FFFFFF',
+    color: colors.white,
     lineHeight: 32,
   },
 });

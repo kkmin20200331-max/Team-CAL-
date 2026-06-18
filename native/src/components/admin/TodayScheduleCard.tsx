@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface ShiftWithUser {
   time: string;
-  user?: { // user가 optional일 수 있음을 명시
+  user?: {
     name: string;
     color: string;
   };
@@ -18,10 +19,10 @@ interface TodayScheduleProps {
 type Props = {
   schedule: TodayScheduleProps;
   onPress: () => void;
-  colors: any;
 };
 
-const TodayScheduleCard = ({ schedule, onPress, colors }: Props) => {
+const TodayScheduleCard = ({ schedule, onPress }: Props) => {
+  const { colors } = useTheme();
   const styles = getThemedStyles(colors);
 
   const renderShiftGroup = (title: string, shifts: ShiftWithUser[]) => (
@@ -31,8 +32,7 @@ const TodayScheduleCard = ({ schedule, onPress, colors }: Props) => {
         {shifts.length > 0 ? (
           shifts.map((shift, index) => (
             <View key={index} style={styles.employeeChip}>
-              {/* ✅ [오류 수정] 옵셔널 체이닝(?.)을 사용하여 안정성 확보 */}
-              <View style={[styles.colorDot, { backgroundColor: shift?.user?.color || '#A1A1AA' }]} />
+              <View style={[styles.colorDot, { backgroundColor: shift?.user?.color || colors.subText }]} />
               <Text style={styles.employeeName}>{shift?.user?.name || '알 수 없음'}</Text>
             </View>
           ))
@@ -84,7 +84,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   arrow: {
-    fontSize: 18,
+    fontSize: 20,
     color: colors.subText,
   },
   content: {

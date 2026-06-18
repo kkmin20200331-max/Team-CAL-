@@ -1,17 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
-// Props 타입 정의
 type Props = {
   loading: boolean;
   todayShift: any;
   fadeAnim: Animated.Value;
-  colors: any;
-  isDarkMode: boolean;
   t: (key: string) => string;
 };
 
-// 근무 상태 텍스트 반환 함수
 const getStatusText = (status: string, t: (key: string) => string) => {
   switch(status) {
     case 'SCHEDULED': return t('scheduled');
@@ -23,31 +20,30 @@ const getStatusText = (status: string, t: (key: string) => string) => {
   }
 };
 
-// 근무 상태 색상 반환 함수
-const getStatusColor = (status: string, isDarkMode: boolean) => {
+const getStatusStyles = (status: string, colors: any) => {
   switch(status) {
-    case 'SCHEDULED': return { bg: isDarkMode ? '#075985' : '#E0F2FE', text: isDarkMode ? '#BAE6FD' : '#0284C7' };
-    case 'IN_PROGRESS': return { bg: isDarkMode ? '#14532D' : '#DCFCE7', text: isDarkMode ? '#86EFAC' : '#16A34A' };
-    case 'COMPLETED': return { bg: isDarkMode ? '#374151' : '#F3F4F6', text: isDarkMode ? '#D1D5DB' : '#4B5563' };
-    case 'SUBSTITUTE_REQ': return { bg: isDarkMode ? '#78350F' : '#FEF3C7', text: isDarkMode ? '#FDE68A' : '#D97706' };
-    case 'OFF': return { bg: isDarkMode ? '#7F1D1D' : '#FEE2E2', text: isDarkMode ? '#FECACA' : '#DC2626' };
-    default: return { bg: isDarkMode ? '#374151' : '#F3F4F6', text: isDarkMode ? '#D1D5DB' : '#4B5563' };
+    case 'SCHEDULED': return { bg: colors.skyLight, text: colors.sky };
+    case 'IN_PROGRESS': return { bg: colors.greenLight, text: colors.green };
+    case 'COMPLETED': return { bg: colors.gray, text: colors.subText };
+    case 'SUBSTITUTE_REQ': return { bg: colors.yellowLight, text: colors.yellow };
+    case 'OFF': return { bg: colors.redLight, text: colors.red };
+    default: return { bg: colors.gray, text: colors.subText };
   }
 };
 
-const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }: Props) => {
-  const styles = getThemedStyles(colors, isDarkMode);
-  const statusColor = todayShift ? getStatusColor(todayShift.status, isDarkMode) : getStatusColor('', isDarkMode);
+const TodayShiftCard = ({ loading, todayShift, fadeAnim, t }: Props) => {
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
+  const statusStyles = todayShift ? getStatusStyles(todayShift.status, colors) : getStatusStyles('', colors);
   const statusText = todayShift ? getStatusText(todayShift.status, t) : '';
 
   return (
     <View style={styles.card}>
-      {/* 타이틀 행 */}
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{t('todayWork')}</Text>
         {todayShift && (
-          <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
-            <Text style={[styles.statusBadgeText, { color: statusColor.text }]}>{statusText}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: statusStyles.bg }]}>
+            <Text style={[styles.statusBadgeText, { color: statusStyles.text }]}>{statusText}</Text>
           </View>
         )}
       </View>
@@ -55,22 +51,21 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
       {loading ? (
         <Animated.View style={{ opacity: fadeAnim, paddingVertical: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <View style={{ width: 20, height: 20, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 10, marginRight: 8 }} />
-            <View style={{ width: '50%', height: 18, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+            <View style={[styles.skeleton, { width: 20, height: 20, borderRadius: 10, marginRight: 8 }]} />
+            <View style={[styles.skeleton, { width: '50%', height: 18 }]} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <View style={{ width: 20, height: 20, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 10, marginRight: 8 }} />
-            <View style={{ width: '70%', height: 18, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+            <View style={[styles.skeleton, { width: 20, height: 20, borderRadius: 10, marginRight: 8 }]} />
+            <View style={[styles.skeleton, { width: '70%', height: 18 }]} />
           </View>
           <View style={styles.divider} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ width: '30%', height: 18, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
-            <View style={{ width: '40%', height: 24, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+            <View style={[styles.skeleton, { width: '30%', height: 18 }]} />
+            <View style={[styles.skeleton, { width: '40%', height: 24 }]} />
           </View>
         </Animated.View>
       ) : todayShift ? (
         <>
-          {/* 근무 상세 정보 */}
           <View style={styles.workInfoRow}>
             <Text style={styles.infoIcon}>🕒</Text>
             <Text style={styles.infoText}>{todayShift.time}</Text>
@@ -81,8 +76,6 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
               <Text style={styles.infoText}>{todayShift.storeName}</Text>
             </View>
           )}
-
-          {/* 출퇴근 시간 표시 영역 */}
           {todayShift.checkInTime && (
             <View style={styles.workInfoRow}>
               <Text style={styles.infoIcon}>▶️</Text>
@@ -95,10 +88,7 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
               <Text style={styles.infoText}>퇴근: {todayShift.checkOutTime}</Text>
             </View>
           )}
-
-          {/* 구분선 */}
           <View style={styles.divider} />
-          {/* 급여 정보 */}
           <View style={styles.salaryRow}>
             <Text style={styles.salaryLabel}>{t('expectedDailyWage')}</Text>
             <Text style={styles.salaryValue}>72,000{t('currency')}</Text>
@@ -114,8 +104,7 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
   );
 };
 
-// 스타일 정의
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: 16,
@@ -184,6 +173,10 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
   emptyIcon: { fontSize: 40, marginBottom: 10 },
   emptyText: { fontSize: 15, color: colors.subText, fontWeight: '500' },
+  skeleton: {
+    backgroundColor: colors.gray,
+    borderRadius: 6,
+  },
 });
 
 export default TodayShiftCard;

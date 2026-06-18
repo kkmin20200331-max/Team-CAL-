@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
-// Expo Camera 최신 API
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Toast from 'react-native-toast-message';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type QRCheckInScreenNavigationProp = StackNavigationProp<any, 'QRCheckIn'>;
 
@@ -13,17 +13,16 @@ type Props = {
 };
 
 const QRCheckInScreen = ({ navigation }: Props) => {
-  // 카메라 권한 상태와 권한 요청 함수를 가져옵니다.
+  const { colors } = useTheme();
+  const styles = getThemedStyles(colors);
+  
   const [permission, requestPermission] = useCameraPermissions();
-  // 중복 스캔(여러 번 연속으로 찍히는 것)을 방지하기 위한 상태
   const [scanned, setScanned] = useState(false);
 
-  // 1. 카메라 권한 로딩 중일 때
   if (!permission) {
     return <View style={styles.container} />;
   }
 
-  // 2. 카메라 권한이 거부되었거나 아직 묻지 않았을 때
   if (!permission.granted) {
     return (
       <View style={styles.container}>
@@ -35,43 +34,35 @@ const QRCheckInScreen = ({ navigation }: Props) => {
     );
   }
 
-  // 3. QR 코드가 성공적으로 스캔되었을 때 실행되는 함수
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
-    setScanned(true); // 중복 스캔 방지
+    setScanned(true);
     
-    // TODO: 여기서 백엔드로 스캔한 QR 데이터(data)를 보내는 로직(Axios)이 들어갑니다.
     Toast.show({
       type: 'success',
       text1: 'QR 인식 성공!',
       text2: `스캔된 데이터: ${data}`,
     });
     
-    // 스캔 직후 바로 대시보드로 돌아가기
     navigation.goBack();
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 카메라 뷰 */}
       <CameraView 
         style={styles.camera} 
-        facing="back" // 후면 카메라 사용
+        facing="back"
         barcodeScannerSettings={{
-          barcodeTypes: ["qr"], // QR 코드만 스캔하도록 설정
+          barcodeTypes: ["qr"],
         }}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       >
-        
-        {/* 카메라 위에 띄우는 UI (가이드라인, 닫기 버튼 등) */}
         <View style={styles.overlay}>
-          {/* 상단 닫기 버튼 */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>✕ 닫기</Text>
             </TouchableOpacity>
           </View>
 
-          {/* 중앙 사각형 타겟 가이드라인 */}
           <View style={styles.targetFrame}>
             <View style={[styles.corner, styles.topLeft]} />
             <View style={[styles.corner, styles.topRight]} />
@@ -79,18 +70,16 @@ const QRCheckInScreen = ({ navigation }: Props) => {
             <View style={[styles.corner, styles.bottomRight]} />
           </View>
 
-          {/* 하단 안내 문구 */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>사각 영역 안에 QR 코드를 맞춰주세요.</Text>
           </View>
         </View>
-
       </CameraView>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -99,17 +88,17 @@ const styles = StyleSheet.create({
   message: {
     textAlign: 'center',
     paddingBottom: 20,
-    color: '#fff',
+    color: colors.white,
   },
   permissionButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
     padding: 15,
     marginHorizontal: 40,
     borderRadius: 8,
     alignItems: 'center',
   },
   permissionButtonText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: 'bold',
   },
   camera: {
@@ -117,7 +106,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)', // 반투명 검은 배경
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'space-between',
   },
   header: {
@@ -131,7 +120,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   closeButtonText: {
-    color: '#FFF',
+    color: colors.white,
     fontWeight: 'bold',
   },
   footer: {
@@ -139,17 +128,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: '#FFF',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '500',
   },
-  // --- QR 타겟 프레임 디자인 ---
   targetFrame: {
     alignSelf: 'center',
     width: 250,
     height: 250,
     backgroundColor: 'transparent',
-    // 가운데가 투명하게 뚫린 효과를 위해
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)', 
     position: 'relative',
@@ -158,7 +145,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: '#FFF',
+    borderColor: colors.white,
   },
   topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4 },
   topRight: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4 },

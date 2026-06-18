@@ -72,7 +72,7 @@ const PayrollScreen = ({ navigation }: { navigation: any }) => {
   const handleNavigateToDetail = (employeeId: string) => {
     navigation.navigate('PayrollDetail', {
       employeeId,
-      month: selectedMonth.toISOString(), // 날짜 객체를 문자열로 전달
+      month: selectedMonth.toISOString(),
     });
   };
 
@@ -134,11 +134,11 @@ const PayrollScreen = ({ navigation }: { navigation: any }) => {
 const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backButton: { fontSize: 24, color: colors.primary, width: 40 },
+  backButton: { fontSize: 24, color: colors.text, width: 40 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   monthSelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 20, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
   arrowButton: { padding: 10 },
-  arrowText: { fontSize: 18, color: colors.primary, fontWeight: 'bold' },
+  arrowText: { fontSize: 18, color: colors.text, fontWeight: 'bold' },
   monthText: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   listContainer: { padding: 16 },
   listHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, marginBottom: 10 },
@@ -152,7 +152,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   infoBox: { alignItems: 'flex-end', marginBottom: 8 },
   infoLabel: { fontSize: 12, color: colors.subText },
   infoValue: { fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 2 },
-  totalPay: { color: colors.primary, fontSize: 18, fontWeight: 'bold' },
+  totalPay: { color: colors.text, fontSize: 18, fontWeight: 'bold' },
 });
 
 export default PayrollScreen;

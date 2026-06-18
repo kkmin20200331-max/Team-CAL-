@@ -9,15 +9,15 @@ import { useSchedule } from '../../contexts/ScheduleContext';
 import TodayScheduleCard from '../../components/admin/TodayScheduleCard';
 
 const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
-  const { colors } = useTheme();
-  const styles = getThemedStyles(colors);
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
   const isFocused = useIsFocused();
 
   const { userInfo, setActiveBranch } = useApp();
   const { shifts, employees } = useSchedule();
 
   const [currentlyWorking, setCurrentlyWorking] = useState(0);
-  const [pendingRequestCount, setPendingRequestCount] = useState(0); // 1. 요청 건수 상태
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [todaySchedule, setTodaySchedule] = useState({ morning: [], afternoon: [], closing: [] });
   const [todayShifts, setTodayShifts] = useState<any[]>([]);
   const [isBranchModalVisible, setBranchModalVisible] = useState(false);
@@ -112,7 +112,6 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
             <Text style={styles.summaryValue}>{currentlyWorking}명</Text>
             <Text style={styles.summaryLabel}>현재 근무중</Text>
           </TouchableOpacity>
-          {/* 2. onPress 이벤트를 네비게이션으로 변경 */}
           <TouchableOpacity style={styles.summaryBox} onPress={() => navigation.navigate('SubstituteManagement')}>
             <Text style={styles.summaryValue}>{pendingRequestCount}건</Text>
             <Text style={styles.summaryLabel}>요청 처리</Text>
@@ -122,7 +121,6 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
         <TodayScheduleCard 
           schedule={todaySchedule}
           onPress={handleNavigateToDailySchedule}
-          colors={colors}
         />
 
         <View style={styles.menuGrid}>
@@ -175,16 +173,16 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   );
 };
 
-const getThemedStyles = (colors: any) => StyleSheet.create({
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContainer: { padding: 16 },
   header: { marginBottom: 24 },
   headerTitle: { fontSize: 28, fontWeight: 'bold', color: colors.text },
   branchSelector: { marginTop: 4 },
-  storeName: { fontSize: 18, color: colors.primary, fontWeight: '600' },
+  storeName: { fontSize: 18, color: colors.text, fontWeight: '600' },
   summaryContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
   summaryBox: { alignItems: 'center', backgroundColor: colors.card, padding: 20, borderRadius: 12, width: '45%' },
-  summaryValue: { fontSize: 24, fontWeight: 'bold', color: colors.primary },
+  summaryValue: { fontSize: 24, fontWeight: 'bold', color: colors.text },
   summaryLabel: { fontSize: 14, color: colors.subText, marginTop: 8 },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   card: { width: '48%', height: 120, backgroundColor: colors.card, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 16, padding: 16 },
@@ -196,9 +194,9 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   branchItem: { padding: 16, borderRadius: 8, marginBottom: 10 },
   branchItemActive: { backgroundColor: colors.primary },
   branchName: { fontSize: 18, color: colors.text },
-  branchNameActive: { color: '#FFFFFF', fontWeight: 'bold' },
-  addBranchButton: { padding: 16, borderRadius: 8, backgroundColor: '#E5E7EB', alignItems: 'center', marginTop: 10 },
-  addBranchButtonText: { fontSize: 16, color: colors.primary, fontWeight: '600' },
+  branchNameActive: { color: colors.white, fontWeight: 'bold' },
+  addBranchButton: { padding: 16, borderRadius: 8, backgroundColor: isDarkMode ? colors.border : '#E5E7EB', alignItems: 'center', marginTop: 10 },
+  addBranchButtonText: { fontSize: 16, color: colors.text, fontWeight: '600' },
   closeButton: { marginTop: 20, alignItems: 'center' },
   closeButtonText: { fontSize: 16, color: colors.subText },
 });
