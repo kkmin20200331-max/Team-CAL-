@@ -19,18 +19,30 @@ public class UserLineService {
             UserLineVO vo
     ) {
 
-        UserLineVO exists =
-                userLineMapper.getLineInfo(
+        UserLineVO userInfo =
+                userLineMapper.findByUserId(
                         vo.getUser_id()
                 );
 
-        if(exists != null){
+        if(userInfo != null){
 
-            userLineMapper.update(
+            userLineMapper.updateLineUserId(
                     vo
             );
 
             return;
+        }
+
+        UserLineVO lineInfo =
+                userLineMapper.findByLineUserId(
+                        vo.getLine_user_id()
+                );
+
+        if(lineInfo != null){
+
+            throw new RuntimeException(
+                    "이미 다른 계정에 연동된 LINE 계정입니다."
+            );
         }
 
         userLineMapper.register(
@@ -41,12 +53,13 @@ public class UserLineService {
 
 
     // =========================
-    // LINE 정보 조회
+    // LINE 조회
     // =========================
 
     public UserLineVO getLineInfo(
             String user_id
     ) {
+
         return userLineMapper.getLineInfo(
                 user_id
         );
@@ -61,6 +74,7 @@ public class UserLineService {
     public String getLineUserId(
             String user_id
     ) {
+
         return userLineMapper.getLineUserId(
                 user_id
         );
@@ -75,6 +89,7 @@ public class UserLineService {
     public void follow(
             String line_user_id
     ) {
+
         userLineMapper.follow(
                 line_user_id
         );
@@ -89,6 +104,7 @@ public class UserLineService {
     public void unfollow(
             String line_user_id
     ) {
+
         userLineMapper.unfollow(
                 line_user_id
         );
@@ -103,6 +119,7 @@ public class UserLineService {
     public void delete(
             String user_id
     ) {
+
         userLineMapper.delete(
                 user_id
         );

@@ -4,7 +4,6 @@ import com.dm.backend.service.LineLoginService;
 import com.dm.backend.service.UserLineService;
 import com.dm.backend.vo.LineProfileVO;
 import com.dm.backend.vo.UserLineVO;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,21 +12,30 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.view.RedirectView;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @RestController
 @RequestMapping("/api/line")
 public class LineLoginC {
 
+
     @Value("${line.login.channel-id}")
     private String clientId;
+
 
     @Value("${line.login.redirect-uri}")
     private String redirectUri;
 
+
     @Autowired
     private LineLoginService lineLoginService;
 
+
     @Autowired
     private UserLineService userLineService;
+
+
 
     // =========================
     // LINE 로그인 시작
@@ -35,25 +43,41 @@ public class LineLoginC {
 
     @GetMapping("/login")
     public RedirectView lineLogin(
-            @RequestParam String userId,
-            HttpSession session
+            @RequestParam String userId
     ) {
-
-        session.setAttribute(
-                "line_link_user_id",
-                userId
-        );
 
 
         String url =
                 "https://access.line.me/oauth2/v2.1/authorize"
                         + "?response_type=code"
-                        + "&client_id=" + clientId
-                        + "&redirect_uri=" + redirectUri
+
+                        + "&client_id="
+                        + clientId
+
+                        + "&redirect_uri="
+                        + URLEncoder.encode(
+                        redirectUri,
+                        StandardCharsets.UTF_8
+                )
+
+                        // 우리 서비스 USER_ID 전달
+                        + "&state="
+                        + userId
+
                         + "&scope=profile%20openid";
+
+
+        System.out.println(
+                "LINE LOGIN URL = "
+                        + url
+        );
+
 
         return new RedirectView(url);
     }
+
+
+
 
     // =========================
     // LINE Callback
@@ -61,18 +85,68 @@ public class LineLoginC {
 
     @GetMapping("/callback")
     public RedirectView callback(
-            @RequestParam String code,
-            HttpSession session
+
+            @RequestParam(required = false)
+            String code,
+
+            @RequestParam(required = false)
+            String state,
+
+            @RequestParam(required = false)
+            String error,
+
+            @RequestParam(required = false)
+            String error_description
+
     ) {
 
+
+        System.out.println(
+                "CODE = "
+                        + code
+        );
+
+
+        System.out.println(
+                "STATE(USER_ID) = "
+                        + state
+        );
+
+
+        System.out.println(
+                "ERROR = "
+                        + error
+        );
+
+
+        System.out.println(
+                "ERROR_DESCRIPTION = "
+                        + error_description
+        );
+
+
+
         // =========================
-        // 현재 로그인 사용자
+        // 로그인 취소 처리
         // =========================
 
-        String userId =
-                (String) session.getAttribute(
-                        "line_link_user_id"
-                );
+        if(code == null){
+
+            return new RedirectView(
+                    "http://localhost:5173/auth/login"
+            );
+        }
+
+
+
+
+        // =========================
+        // 우리 서비스 USER_ID
+        // =========================
+
+        String userId = state;
+
+
 
         if(userId == null){
 
@@ -81,8 +155,11 @@ public class LineLoginC {
             );
         }
 
+
+
+
         // =========================
-        // 1. Access Token 발급
+        // 1. LINE Access Token 발급
         // =========================
 
         String accessToken =
@@ -90,8 +167,11 @@ public class LineLoginC {
                         code
                 );
 
+
+
+
         // =========================
-        // 2. Profile 조회
+        // 2. LINE Profile 조회
         // =========================
 
         LineProfileVO profile =
@@ -99,10 +179,14 @@ public class LineLoginC {
                         accessToken
                 );
 
+
         System.out.println(
                 "LINE USER ID = "
                         + profile.getUserId()
         );
+
+
+
 
         // =========================
         // 3. USER_LINE 저장
@@ -111,24 +195,37 @@ public class LineLoginC {
         UserLineVO vo =
                 new UserLineVO();
 
+
         vo.setUser_id(
                 userId
         );
+
 
         vo.setLine_user_id(
                 profile.getUserId()
         );
 
+
         userLineService.register(
                 vo
         );
+
+
+
+        System.out.println(
+                "USER_LINE 저장 완료"
+        );
+
+
 
         // =========================
         // 친구추가 페이지 이동
         // =========================
 
         return new RedirectView(
-                "http://localhost:5173/line/friend-add"
+                "https://line.me/R/ti/p/@354cpsdr"
         );
+
     }
+
 }

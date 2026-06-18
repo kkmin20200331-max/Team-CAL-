@@ -31,6 +31,36 @@ public interface UserLineMapper {
 
 
     // =========================
+    // USER_ID 조회
+    // =========================
+
+    @Select("""
+        SELECT *
+        FROM USER_LINE
+        WHERE USER_ID = #{user_id}
+    """)
+    UserLineVO findByUserId(
+            String user_id
+    );
+
+
+
+    // =========================
+    // LINE_USER_ID 조회
+    // =========================
+
+    @Select("""
+        SELECT *
+        FROM USER_LINE
+        WHERE LINE_USER_ID = #{line_user_id}
+    """)
+    UserLineVO findByLineUserId(
+            String line_user_id
+    );
+
+
+
+    // =========================
     // LINE 연동 조회
     // =========================
 
@@ -62,7 +92,7 @@ public interface UserLineMapper {
 
 
     // =========================
-    // LINE 연동 수정
+    // LINE USER ID 변경
     // =========================
 
     @Update("""
@@ -70,7 +100,7 @@ public interface UserLineMapper {
         SET LINE_USER_ID = #{line_user_id}
         WHERE USER_ID = #{user_id}
     """)
-    void update(
+    void updateLineUserId(
             UserLineVO vo
     );
 
