@@ -1,12 +1,30 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { useTheme } from 'next-themes';
 import axios from 'axios';
-import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+import { useLanguage } from '../../i18n/useLanguage';
+import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
 import {
   X, Bell, CheckCircle, XCircle, Store, User, LogOut, Camera, Clock, FileText, UserCheck
 } from 'lucide-react';
+import { Switch } from '../../components/ui/switch';
+
+function SunIcon({ color }: { color: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 29 29" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20.1565 14.4456C20.1565 11.2915 17.5996 8.73453 14.4455 8.73453C11.2914 8.73453 8.73446 11.2914 8.73446 14.4456C8.73447 17.5997 11.2914 20.1565 14.4455 20.1565C17.5996 20.1565 20.1565 17.5997 20.1565 14.4456ZM22.1721 14.4456C22.1721 18.7129 18.7128 22.1722 14.4455 22.1722C10.1782 22.1722 6.71882 18.7129 6.71881 14.4456C6.71881 10.1782 10.1782 6.71887 14.4455 6.71887C18.7128 6.71888 22.1721 10.1782 22.1721 14.4456Z" fill={color} /><path d="M13.4377 3.69538V1.00783C13.4377 0.451219 13.8889 0 14.4455 0C15.0021 0 15.4533 0.451219 15.4533 1.00783V3.69538C15.4533 4.25198 15.0021 4.7032 14.4455 4.7032C13.8889 4.7032 13.4377 4.25198 13.4377 3.69538Z" fill={color} /><path d="M13.4377 27.8832V25.1957C13.4377 24.6391 13.8889 24.1879 14.4455 24.1879C15.0021 24.1879 15.4533 24.6391 15.4533 25.1957V27.8832C15.4533 28.4398 15.0021 28.8911 14.4455 28.8911C13.8889 28.8911 13.4377 28.4398 13.4377 27.8832Z" fill={color} /><path d="M3.69538 13.4377C4.25198 13.4377 4.7032 13.8889 4.7032 14.4455C4.7032 15.0021 4.25198 15.4533 3.69538 15.4533H1.00783C0.451219 15.4533 0 15.0021 0 14.4455C0 13.8889 0.451219 13.4377 1.00783 13.4377H3.69538Z" fill={color} /><path d="M27.8832 13.4377C28.4398 13.4377 28.8911 13.8889 28.8911 14.4455C28.8911 15.0021 28.4398 15.4533 27.8832 15.4533H25.1957C24.6391 15.4533 24.1879 15.0021 24.1879 14.4455C24.1879 13.8889 24.6391 13.4377 25.1957 13.4377H27.8832Z" fill={color} /><path opacity="0.5" d="M24.2171 3.25079C24.6278 2.87521 25.2653 2.90374 25.6409 3.31453C26.0165 3.72531 25.988 4.36278 25.5772 4.73836L22.5913 7.46835C22.1805 7.84392 21.5431 7.81539 21.1675 7.40461C20.7919 6.99382 20.8204 6.35633 21.2312 5.98074L24.2171 3.25079Z" fill={color} /><path opacity="0.5" d="M3.25012 3.31453C3.6257 2.90374 4.26316 2.87521 4.67395 3.25079L7.65983 5.98074C8.07062 6.35632 8.09915 6.99382 7.72357 7.40461C7.34798 7.81539 6.71049 7.84393 6.2997 7.46835L3.31386 4.73836C2.90307 4.36277 2.87454 3.72532 3.25012 3.31453Z" fill={color} /><path opacity="0.5" d="M6.26737 21.1984C6.66095 20.8049 7.29907 20.8049 7.69265 21.1984C8.08623 21.592 8.08623 22.2302 7.69265 22.6237L4.70649 25.6098C4.31291 26.0034 3.67479 26.0034 3.28121 25.6098C2.88763 25.2163 2.88763 24.5781 3.28121 24.1846L6.26737 21.1984Z" fill={color} /><path opacity="0.5" d="M21.1987 21.1976C21.5923 20.8041 22.2304 20.8041 22.624 21.1977L25.6098 24.1838C26.0034 24.5774 26.0033 25.2155 25.6097 25.6091C25.2161 26.0026 24.578 26.0026 24.1845 25.609L21.1986 22.6229C20.805 22.2293 20.8051 21.5912 21.1987 21.1976Z" fill={color} />
+    </svg>
+  );
+}
+function MoonIcon({ color }: { color: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path opacity="0.5" fillRule="evenodd" clipRule="evenodd" d="M27.898 13.9496C27.898 21.6533 21.6527 27.8986 13.949 27.8986C12.325 27.8986 10.7658 27.621 9.31634 27.1109C8.70609 25.6344 8.36938 24.016 8.36938 22.319C8.36938 19.2206 9.49182 16.3844 11.3522 14.1948C12.9865 16.5739 15.7267 18.1343 18.8311 18.1343C22.1252 18.1343 25.009 16.3775 26.5968 13.7498C26.9306 13.1974 27.898 13.3041 27.898 13.9496Z" fill={color} /><path d="M0 13.949C0 20.0288 3.88971 25.2001 9.31636 27.1103C8.70611 25.6338 8.36941 24.0155 8.36941 22.3184C8.36941 19.2201 9.49184 16.3838 11.3523 14.1942C10.3505 12.7359 9.76431 10.9698 9.76431 9.06686C9.76431 5.77273 11.521 2.88891 14.1488 1.30111C14.7011 0.967322 14.5944 0 13.949 0C6.24518 0 0 6.24518 0 13.949Z" fill={color} />
+    </svg>
+  );
+}
 
 const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
@@ -75,6 +93,27 @@ const getDayLabel = (dateStr: string) => {
 
 export default function ProfilePanel() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === 'dark';
+  const language = useLanguage();
+
+  const changeLanguage = (lang: 'ko' | 'en' | 'ja') => {
+    sessionStorage.setItem('app-language', lang);
+    window.dispatchEvent(new CustomEvent('app-language-change', { detail: lang }));
+  };
+
+  const panelBg  = isDark ? '#1c1c1e' : 'white';
+  const textMain = isDark ? '#fff' : '#111827';
+  const textSub  = isDark ? '#aaa' : '#6b7280';
+  const divider  = isDark ? '#3a3a3c' : '#e5e7eb';
+  const closeBg  = isDark ? '#2c2c2e' : '#E6F5C8';
+  const closeIcon= isDark ? '#aaa' : '#07790F';
+  const cardBg   = isDark ? '#2c2c2e' : '#f9fafb';
+  const cardBorder=isDark ? '#3a3a3c' : '#e5e7eb';
+  const logoutBg = isDark ? '#2c2c2e' : '#f5f5f5';
+  const logoutHov= isDark ? '#3a3a3c' : '#ebebeb';
+  const logoutTxt= isDark ? '#ccc' : '#555';
+
   const [open, setOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -334,15 +373,16 @@ export default function ProfilePanel() {
       {open && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0" onClick={() => setOpen(false)} />
-          <div className="relative z-50 w-full max-w-sm bg-white dark:bg-gray-800 h-full shadow-2xl flex flex-col">
+          <div className="relative z-50 w-[420px] h-full shadow-2xl flex flex-col" style={{ background: panelBg }}>
 
-            {/* 닫기 */}
-            <div className="flex justify-end px-4 pt-4">
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '2.5px solid #18A022', background: panelBg }}>
+              <span style={{ fontWeight: 800, fontSize: 18, color: '#18A022' }}>내 프로필</span>
               <button
                 onClick={() => setOpen(false)}
-                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                style={{ background: closeBg, border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-4 h-4" style={{ color: closeIcon }} />
               </button>
             </div>
 
@@ -352,9 +392,9 @@ export default function ProfilePanel() {
                 className="relative cursor-pointer group mb-3"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Avatar className="w-20 h-20 border-4 border-blue-100 bg-white">
+                <Avatar className="w-20 h-20 border-4 border-[#E6F5C8]" style={{ background: '#80D180' }}>
                   <AvatarImage src={profileImage} className="object-cover" />
-                  <AvatarFallback className="bg-blue-600 text-white font-bold text-3xl">
+                  <AvatarFallback className="bg-green-600 text-white font-bold text-3xl">
                     {currentUser?.name?.[0] ?? '?'}
                   </AvatarFallback>
                 </Avatar>
@@ -369,21 +409,22 @@ export default function ProfilePanel() {
                 className="hidden"
                 onChange={handleImageChange}
               />
-              <p className="text-xs text-gray-400 mb-2">사진을 클릭하여 변경</p>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{currentUser?.name ?? ''}</h2>
-              <p className="text-sm text-gray-500 mt-1">{currentUser?.username ?? ''}</p>
-              <span className="mt-2 px-3 py-1 bg-blue-100 text-blue-600 text-xs font-semibold rounded-full">
+              <p className="text-xs mb-2" style={{ color: '#aaa' }}>사진을 클릭하여 변경</p>
+              <h2 className="text-xl font-bold" style={{ color: textMain }}>{currentUser?.name ?? ''}</h2>
+              <p className="text-sm mt-1" style={{ color: textSub }}>{currentUser?.username ?? ''}</p>
+              <span className="mt-2 px-3 py-1 text-xs font-semibold rounded-full"
+                style={{ background: isDark ? '#2c3e2c' : '#E6F5C8', color: isDark ? '#4cd964' : '#07790F' }}>
                 관리자
               </span>
             </div>
 
-            <div className="border-t border-gray-200 dark:border-gray-700" />
+            <div style={{ borderTop: `1px solid ${divider}` }} />
 
             {/* 알림 */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <div className="flex items-center gap-2 mb-3">
-                <Bell className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                <h3 className="font-semibold text-sm text-gray-900 dark:text-white">알림</h3>
+                <Bell className="w-4 h-4" style={{ color: textSub }} />
+                <h3 className="font-semibold text-sm" style={{ color: textMain }}>알림</h3>
                 {totalBadge > 0 && (
                   <Badge className="bg-red-500 text-white text-xs">{totalBadge}</Badge>
                 )}
@@ -391,7 +432,7 @@ export default function ProfilePanel() {
 
               <div className="space-y-3">
                 {totalBadge === 0 && (
-                  <div className="flex flex-col items-center py-8 text-gray-400">
+                  <div className="flex flex-col items-center py-8" style={{ color: textSub }}>
                     <CheckCircle className="w-8 h-8 mb-2 text-green-400" />
                     <p className="text-xs">대기 중인 요청이 없습니다.</p>
                   </div>
@@ -401,7 +442,8 @@ export default function ProfilePanel() {
                 {pendingList.map(emp => (
                   <div
                     key={emp.id}
-                    className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 space-y-2 bg-gray-50 dark:bg-gray-900"
+                    className="rounded-xl p-3 space-y-2"
+                    style={{ border: `1px solid ${cardBorder}`, background: cardBg }}
                   >
                     {/* 지점명 */}
                     <div className="flex items-center gap-1 text-xs text-blue-600 font-semibold">
@@ -412,11 +454,11 @@ export default function ProfilePanel() {
                         <User className="w-4 h-4 text-blue-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-xs text-gray-900 dark:text-white">{emp.name}</p>
-                        <p className="text-xs text-gray-500">{emp.phone}</p>
+                        <p className="font-semibold text-xs" style={{ color: textMain }}>{emp.name}</p>
+                        <p className="text-xs" style={{ color: textSub }}>{emp.phone}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500">직원 승인 요청이 있습니다.</p>
+                    <p className="text-xs" style={{ color: textSub }}>직원 승인 요청이 있습니다.</p>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -443,7 +485,8 @@ export default function ProfilePanel() {
                   return (
                     <div
                       key={app.app_id}
-                      className="border border-orange-200 dark:border-orange-800 rounded-xl p-3 space-y-2 bg-orange-50 dark:bg-orange-900/20"
+                      className="rounded-xl p-3 space-y-2"
+                      style={{ border: `1px solid ${isDark ? '#7c4a1a' : '#fed7aa'}`, background: isDark ? 'rgba(120,60,10,0.2)' : '#fff7ed' }}
                     >
                       <div className="flex items-center gap-1 text-xs text-orange-700 font-semibold">
                         <Store className="w-3 h-3" />{app.store_name}
@@ -454,12 +497,12 @@ export default function ProfilePanel() {
                           <UserCheck className="w-4 h-4 text-orange-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-xs text-gray-900 dark:text-white">{applicantName}</p>
-                          <p className="text-xs text-gray-500">대타 지원 신청이 있습니다.</p>
+                          <p className="font-semibold text-xs" style={{ color: textMain }}>{applicantName}</p>
+                          <p className="text-xs" style={{ color: textSub }}>대타 지원 신청이 있습니다.</p>
                         </div>
                       </div>
                       {app.message && (
-                        <p className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded p-2 border border-orange-100 dark:border-orange-800">
+                        <p className="text-xs rounded p-2" style={{ color: textSub, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${isDark ? '#7c4a1a' : '#fed7aa'}` }}>
                           "{app.message}"
                         </p>
                       )}
@@ -492,7 +535,8 @@ export default function ProfilePanel() {
                   return (
                     <div
                       key={leave.id}
-                      className="border border-green-200 dark:border-green-800 rounded-xl p-3 space-y-2 bg-green-50 dark:bg-green-900/20"
+                      className="rounded-xl p-3 space-y-2"
+                      style={{ border: `1px solid ${isDark ? '#1a4a1a' : '#bbf7d0'}`, background: isDark ? 'rgba(10,40,10,0.3)' : '#f0fdf4' }}
                     >
                       {/* 지점명 */}
                       <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
@@ -504,9 +548,9 @@ export default function ProfilePanel() {
                           <User className="w-4 h-4 text-green-600" />
                         </div>
                         <div>
-                          <p className="font-semibold text-xs text-gray-900 dark:text-white">{empName}</p>
+                          <p className="font-semibold text-xs" style={{ color: textMain }}>{empName}</p>
                           {shift ? (
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <div className="flex items-center gap-1 text-xs" style={{ color: textSub }}>
                               <Clock className="w-3 h-3" />
                               {datePart} ({getDayLabel(shift.work_date)}) {formatTimePart(shift.start_at)}~{formatTimePart(shift.end_at)}
                             </div>
@@ -515,7 +559,7 @@ export default function ProfilePanel() {
                           )}
                         </div>
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 rounded p-2 border border-green-100 dark:border-green-800">
+                      <p className="text-xs rounded p-2" style={{ color: textSub, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${isDark ? '#1a4a1a' : '#bbf7d0'}` }}>
                         "{leave.reason}"
                       </p>
                       <div className="flex gap-2">
@@ -541,21 +585,71 @@ export default function ProfilePanel() {
               </div>
             </div>
 
-            <div className="border-t border-gray-200 dark:border-gray-700" />
+            <div style={{ borderTop: `1px solid ${divider}` }} />
 
             {/* 로그아웃 / 탈퇴 */}
-            <div className="px-6 py-4 space-y-2">
-              <Button
-                variant="outline"
-                className="w-full gap-2 text-gray-700 dark:text-gray-300"
+            <div className="px-6 pb-7 pt-4" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* 다크모드 토글 */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: logoutTxt }}>
+                  {language === 'ko' ? '다크 모드' : language === 'en' ? 'Dark Mode' : 'ダークモード'}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <SunIcon color="#18A022" />
+                  <Switch
+                    checked={isDark}
+                    onCheckedChange={(v) => setTheme(v ? 'dark' : 'light')}
+                    className="data-[state=checked]:bg-[#00A200]"
+                  />
+                  <MoonIcon color="#18A022" />
+                </div>
+              </div>
+
+              {/* 언어 선택 */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: logoutTxt }}>
+                  {language === 'ko' ? '언어' : language === 'en' ? 'Language' : '言語'}
+                </span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {(['ko', 'en', 'ja'] as const).map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => changeLanguage(lang)}
+                      style={{
+                        padding: '5px 12px', borderRadius: 20, border: 'none',
+                        fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        background: language === lang ? '#18A022' : logoutBg,
+                        color: language === lang ? '#fff' : logoutTxt,
+                      }}
+                    >
+                      {lang === 'ko' ? '한' : lang === 'en' ? 'EN' : '日'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
                 onClick={handleLogout}
+                style={{
+                  width: '100%', padding: '13px 0', borderRadius: 14,
+                  border: 'none', background: logoutBg,
+                  color: logoutTxt, fontWeight: 700, fontSize: 15, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  transition: 'background 0.15s',
+                }}
+                onMouseOver={e => (e.currentTarget.style.background = logoutHov)}
+                onMouseOut={e => (e.currentTarget.style.background = logoutBg)}
               >
-                <LogOut className="w-4 h-4" />로그아웃
-              </Button>
+                <LogOut style={{ width: 16, height: 16, color: '#e03434' }} />
+                로그아웃
+              </button>
               <div className="text-center pt-1">
                 <button
                   onClick={handleDeleteAccount}
-                  className="text-xs text-gray-400 hover:text-red-500 underline transition-colors"
+                  className="text-xs underline transition-colors hover:text-red-500"
+                  style={{ color: textSub }}
                 >
                   회원 탈퇴하기
                 </button>

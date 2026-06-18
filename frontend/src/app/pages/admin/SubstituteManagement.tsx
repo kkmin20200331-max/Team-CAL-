@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
-import { useNavigate, useParams } from 'react-router';
+import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   UserPlus,
@@ -15,9 +15,11 @@ import {
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import ProfilePanel from '../../components/admin/ProfilePanel';
+import ProfilePanel from './ProfilePanel';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 /* ─── 타입 ─────────────────────────────────────────── */
 interface UserVo {
@@ -59,35 +61,42 @@ interface ShiftVO {
 const toDateStr = (d: Date) => d.toISOString().slice(0, 10);
 
 const formatDate = (s: string) => {
-  if (!s) return '-';
+  if (!s) return "-";
   const d = new Date(s);
   if (isNaN(d.getTime())) return s.slice(0, 10);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
-    d.getDate()
-  ).padStart(2, '0')}`;
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
 };
 
 /* ─── 컴포넌트 ──────────────────────────────────────── */
 const SubstituteManagement: React.FC = () => {
   const navigate = useNavigate();
   const { branchId } = useParams();
+  const language = useLanguage();
+  const t = translations.substituteManagement[language];
 
   const user = useMemo(() => {
-    try { return JSON.parse(localStorage.getItem('user') || '{}'); }
-    catch { return {}; }
+    try {
+      return JSON.parse(sessionStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
   }, []);
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   /* 직원 목록 + 최근 근무일 */
   const [employees, setEmployees] = useState<UserVo[]>([]);
-  const [lastWorkedByUser, setLastWorkedByUser] = useState<Record<string, string>>({});
+  const [lastWorkedByUser, setLastWorkedByUser] = useState<
+    Record<string, string>
+  >({});
   const [loadingStaff, setLoadingStaff] = useState(true);
 
   /* 대타 요청하기 모달 */
   const [stores, setStores] = useState<StoreVo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalStoreId, setModalStoreId] = useState(branchId ?? '');
+  const [modalStoreId, setModalStoreId] = useState(branchId ?? "");
   const [modalDate, setModalDate] = useState(toDateStr(new Date()));
   const [modalCount, setModalCount] = useState(1);
   const [modalSubmitting, setModalSubmitting] = useState(false);
@@ -101,8 +110,8 @@ const SubstituteManagement: React.FC = () => {
     past90.setDate(today.getDate() - 90);
 
     Promise.all([
-      API.get('/users', { params: { store_id: branchId } }),
-      API.get('/shift', {
+      API.get("/users", { params: { store_id: branchId } }),
+      API.get("/shift", {
         params: {
           store_id: branchId,
           start_date: toDateStr(past90),
@@ -113,10 +122,12 @@ const SubstituteManagement: React.FC = () => {
       .then(([usersRes, shiftsRes]) => {
         setEmployees(Array.isArray(usersRes.data) ? usersRes.data : []);
 
-        const shifts: ShiftVO[] = Array.isArray(shiftsRes.data) ? shiftsRes.data : [];
+        const shifts: ShiftVO[] = Array.isArray(shiftsRes.data)
+          ? shiftsRes.data
+          : [];
         const lastWorked: Record<string, string> = {};
         shifts.forEach((s) => {
-          if (s.status !== 'VACANT' && s.status !== 'CANCELLED' && s.user_id) {
+          if (s.status !== "VACANT" && s.status !== "CANCELLED" && s.user_id) {
             if (!lastWorked[s.user_id] || s.work_date > lastWorked[s.user_id]) {
               lastWorked[s.user_id] = s.work_date;
             }
@@ -131,14 +142,14 @@ const SubstituteManagement: React.FC = () => {
   /* ── admin 관리 지점 목록 (모달 지점 선택용) ───────── */
   useEffect(() => {
     if (!user.id) return;
-    API.get('/store', { params: { user_id: user.id } })
+    API.get("/store", { params: { user_id: user.id } })
       .then((res) => setStores(Array.isArray(res.data) ? res.data : []))
       .catch(() => {});
   }, [user.id]);
 
   /* ── 모달 열기 ──────────────────────────────────────── */
   const openModal = () => {
-    setModalStoreId(branchId ?? stores[0]?.id ?? '');
+    setModalStoreId(branchId ?? stores[0]?.id ?? "");
     setModalDate(toDateStr(new Date()));
     setModalCount(1);
     setIsModalOpen(true);
@@ -150,16 +161,16 @@ const SubstituteManagement: React.FC = () => {
 
     // TODO: 인원수 전용 DB 컬럼 추가 시 reason 대신 별도 필드로 교체
     const payload: Partial<SubstitutePostVO> = {
-      shift_id: '',
+      shift_id: "",
       store_id: modalStoreId,
       requester_user_id: user.id,
       reason: `인원 ${modalCount}명 필요`,
-      status: 'open',
+      status: "open",
     };
 
-    API.post('/substitute/staff', payload)
+    API.post("/substitute/staff", payload)
       .then(() => setIsModalOpen(false))
-      .catch(() => alert('요청 생성 중 오류가 발생했습니다.'))
+      .catch(() => alert(t.errCreate))
       .finally(() => setModalSubmitting(false));
   };
 
@@ -167,9 +178,7 @@ const SubstituteManagement: React.FC = () => {
   const handleContact = (phone: string, name: string) => {
     if (!phone) return;
     // TODO: SMS API 연동 시 이 부분을 교체
-    const msg = encodeURIComponent(
-      `안녕하세요 ${name}님, 대타 근무 요청드립니다. 가능하신지 확인 부탁드립니다.`
-    );
+    const msg = encodeURIComponent(t.smsMessage(name));
     window.open(`sms:${phone}?body=${msg}`);
   };
 
@@ -177,20 +186,20 @@ const SubstituteManagement: React.FC = () => {
   const filteredEmployees = employees.filter(
     (emp) =>
       emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.phone?.includes(searchTerm)
+      emp.phone?.includes(searchTerm),
   );
 
   /* ── 상태 뱃지 ──────────────────────────────────────── */
   const getEmployeeStatusBadge = (status: string) => {
-    const s = (status || '').toUpperCase();
-    if (s === 'ACTIVE' || s === 'APPROVED')
+    const s = (status || "").toUpperCase();
+    if (s === "ACTIVE" || s === "APPROVED")
       return (
         <Badge className="bg-green-500 text-white flex items-center gap-1">
-          <CheckCircle className="w-3 h-3" />근무 가능
+          <CheckCircle className="w-3 h-3" />{t.statusActive}
         </Badge>
       );
     if (s === 'INACTIVE')
-      return <Badge className="bg-gray-400 text-white">비활성</Badge>;
+      return <Badge className="bg-gray-400 text-white">{t.statusInactive}</Badge>;
     return <Badge variant="outline" className="text-gray-500">{status}</Badge>;
   };
 
@@ -198,25 +207,27 @@ const SubstituteManagement: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-
         {/* 페이지 헤더 */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" onClick={() => navigate(`/admin/dashboard/${branchId}`)}>
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`/admin/dashboard/${branchId}`)}
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              대시보드로 돌아가기
+              {t.backToDashboard}
             </Button>
             <ProfilePanel />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">대타 근무자 관리</h1>
-              <p className="text-gray-600 mt-1">직접 연락하거나 대타 요청을 올려 지원을 받으세요</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t.title}</h1>
+              <p className="text-gray-600 mt-1">{t.subtitle}</p>
             </div>
             <Button onClick={openModal}>
               <Plus className="w-4 h-4 mr-2" />
-              대타 요청하기
+              {t.createRequest}
             </Button>
           </div>
         </div>
@@ -227,7 +238,7 @@ const SubstituteManagement: React.FC = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">현재 지점 직원</p>
+                  <p className="text-sm text-gray-600">{t.currentBranchStaff}</p>
                   <p className="text-3xl font-bold text-gray-900">{employees.length}</p>
                 </div>
                 <UserPlus className="w-8 h-8 text-gray-400" />
@@ -238,9 +249,9 @@ const SubstituteManagement: React.FC = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">오늘 근무 없음</p>
+                  <p className="text-sm text-gray-600">{t.noWorkToday}</p>
                   <p className="text-3xl font-bold text-yellow-600">
-                    {employees.filter(e => !lastWorkedByUser[e.id]).length}
+                    {employees.filter((e) => !lastWorkedByUser[e.id]).length}
                   </p>
                 </div>
                 <AlertCircle className="w-8 h-8 text-yellow-400" />
@@ -256,7 +267,7 @@ const SubstituteManagement: React.FC = () => {
               <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="이름 또는 전화번호로 검색..."
+                placeholder={t.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -267,10 +278,10 @@ const SubstituteManagement: React.FC = () => {
 
         {/* 직원 카드 목록 */}
         {loadingStaff ? (
-          <div className="text-center py-16 text-gray-400">불러오는 중...</div>
+          <div className="text-center py-16 text-gray-400">{t.loading}</div>
         ) : filteredEmployees.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            {searchTerm ? '검색 결과가 없습니다.' : '등록된 직원이 없습니다.'}
+            {searchTerm ? t.noSearchResult : t.noEmployees}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -282,11 +293,13 @@ const SubstituteManagement: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
                         <span className="text-blue-600 font-semibold text-lg">
-                          {emp.name?.[0] ?? '?'}
+                          {emp.name?.[0] ?? "?"}
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg leading-tight">{emp.name}</h3>
+                        <h3 className="font-semibold text-lg leading-tight">
+                          {emp.name}
+                        </h3>
                         <p className="text-sm text-gray-400">{emp.username}</p>
                       </div>
                     </div>
@@ -297,15 +310,15 @@ const SubstituteManagement: React.FC = () => {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span>{emp.phone || '-'}</span>
+                      <span>{emp.phone || "-"}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
                       <span>
-                        최근 근무:{' '}
+                        {t.recentWork}{' '}
                         {lastWorkedByUser[emp.id]
                           ? formatDate(lastWorkedByUser[emp.id])
-                          : '기록 없음'}
+                          : t.noRecord}
                       </span>
                     </div>
                   </div>
@@ -313,11 +326,11 @@ const SubstituteManagement: React.FC = () => {
                   {/* 근무 가능 요일·시간 (DB 컬럼 추가 후 연동 예정) */}
                   <div className="mb-5">
                     <p className="text-xs font-medium text-gray-400 mb-2">
-                      근무 가능 요일·시간{' '}
-                      <span className="text-gray-300">(설정 예정)</span>
+                      {t.availableSchedule}{' '}
+                      <span className="text-gray-300">({t.settingPending})</span>
                     </p>
                     <div className="flex gap-1">
-                      {['월', '화', '수', '목', '금', '토', '일'].map((day) => (
+                      {t.dayLabels.map((day: string) => (
                         <div
                           key={day}
                           className="flex-1 text-center py-1 rounded text-sm bg-gray-100 text-gray-400"
@@ -336,7 +349,7 @@ const SubstituteManagement: React.FC = () => {
                     onClick={() => handleContact(emp.phone, emp.name)}
                   >
                     <Phone className="w-4 h-4 mr-2" />
-                    연락
+                    {t.contactBtn}
                   </Button>
                 </CardContent>
               </Card>
@@ -348,11 +361,14 @@ const SubstituteManagement: React.FC = () => {
       {/* ── 대타 요청하기 모달 ────────────────────────── */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsModalOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsModalOpen(false)}
+          />
 
           <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">대타 요청하기</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t.modalTitle}</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-1 rounded-full hover:bg-gray-100"
@@ -364,21 +380,23 @@ const SubstituteManagement: React.FC = () => {
             <div className="space-y-5">
               {/* 지점 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">지점</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.branchLabel}</label>
                 <select
                   value={modalStoreId}
                   onChange={(e) => setModalStoreId(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                 >
                   {stores.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
               {/* 날짜 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">날짜</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.dateLabel}</label>
                 <input
                   type="date"
                   value={modalDate}
@@ -389,7 +407,7 @@ const SubstituteManagement: React.FC = () => {
 
               {/* 인원수 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">인원수</label>
+                <label className="block text-sm font-medium text-gray-700 mb-3">{t.staffCountLabel}</label>
                 <div className="flex items-center gap-4">
                   <button
                     type="button"
@@ -399,7 +417,7 @@ const SubstituteManagement: React.FC = () => {
                     −
                   </button>
                   <span className="text-2xl font-bold text-gray-900 w-16 text-center">
-                    {modalCount}명
+                    {t.count(modalCount)}
                   </span>
                   <button
                     type="button"
@@ -414,10 +432,10 @@ const SubstituteManagement: React.FC = () => {
 
             <div className="flex gap-3 mt-6">
               <Button variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)} disabled={modalSubmitting}>
-                취소
+                {t.cancelBtn}
               </Button>
               <Button className="flex-1" onClick={handleCreatePost} disabled={modalSubmitting}>
-                {modalSubmitting ? '요청 중...' : '요청하기'}
+                {modalSubmitting ? t.requesting : t.requestBtn}
               </Button>
             </div>
           </div>

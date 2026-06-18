@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import React, { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   DollarSign,
@@ -21,7 +21,9 @@ import {
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import ProfilePanel from '../../components/admin/ProfilePanel';
+import ProfilePanel from './ProfilePanel';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 import {
   BarChart,
   Bar,
@@ -35,8 +37,8 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
-} from 'recharts';
+  Cell,
+} from "recharts";
 
 interface PayrollEntry {
   id: string;
@@ -58,7 +60,7 @@ interface PayrollEntry {
     pension: number;
   };
   totalPay: number;
-  status: 'pending' | 'approved' | 'paid' | 'rejected';
+  status: "pending" | "approved" | "paid" | "rejected";
   requestedDate: string;
   paidDate?: string;
 }
@@ -71,7 +73,7 @@ interface WeeklyPayRequest {
   weekEnd: string;
   requestedAmount: number;
   approvedAmount?: number;
-  status: 'pending' | 'approved' | 'paid' | 'rejected';
+  status: "pending" | "approved" | "paid" | "rejected";
   requestDate: string;
   reason: string;
 }
@@ -79,6 +81,8 @@ interface WeeklyPayRequest {
 const PayrollManagement: React.FC = () => {
   const navigate = useNavigate();
   const { branchId } = useParams();
+  const language = useLanguage();
+  const t = translations.payrollManagement[language];
   const [selectedPeriod, setSelectedPeriod] = useState('2024-03');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,12 +91,12 @@ const PayrollManagement: React.FC = () => {
   // Mock data - 급여 내역
   const [payrollEntries, setPayrollEntries] = useState<PayrollEntry[]>([
     {
-      id: 'PAY001',
-      employeeId: 'EMP001',
-      employeeName: '김민수',
-      position: '주방장',
-      location: '강남점',
-      period: '2024-03',
+      id: "PAY001",
+      employeeId: "EMP001",
+      employeeName: "김민수",
+      position: "주방장",
+      location: "강남점",
+      period: "2024-03",
       regularHours: 160,
       overtimeHours: 12,
       holidayHours: 8,
@@ -103,20 +107,20 @@ const PayrollManagement: React.FC = () => {
       deductions: {
         tax: 387000,
         insurance: 145000,
-        pension: 193000
+        pension: 193000,
       },
       totalPay: 3155000,
-      status: 'paid',
-      requestedDate: '2024-03-25',
-      paidDate: '2024-03-31'
+      status: "paid",
+      requestedDate: "2024-03-25",
+      paidDate: "2024-03-31",
     },
     {
-      id: 'PAY002',
-      employeeId: 'EMP002',
-      employeeName: '이지은',
-      position: '서빙',
-      location: '강남점',
-      period: '2024-03',
+      id: "PAY002",
+      employeeId: "EMP002",
+      employeeName: "이지은",
+      position: "서빙",
+      location: "강남점",
+      period: "2024-03",
       regularHours: 80,
       overtimeHours: 5,
       holidayHours: 0,
@@ -127,19 +131,19 @@ const PayrollManagement: React.FC = () => {
       deductions: {
         tax: 52500,
         insurance: 31500,
-        pension: 42000
+        pension: 42000,
       },
       totalPay: 924000,
-      status: 'approved',
-      requestedDate: '2024-03-28'
+      status: "approved",
+      requestedDate: "2024-03-28",
     },
     {
-      id: 'PAY003',
-      employeeId: 'EMP003',
-      employeeName: '박철수',
-      position: '매니저',
-      location: '홍대점',
-      period: '2024-03',
+      id: "PAY003",
+      employeeId: "EMP003",
+      employeeName: "박철수",
+      position: "매니저",
+      location: "홍대점",
+      period: "2024-03",
       regularHours: 160,
       overtimeHours: 20,
       holidayHours: 16,
@@ -150,63 +154,68 @@ const PayrollManagement: React.FC = () => {
       deductions: {
         tax: 398400,
         insurance: 149100,
-        pension: 199800
+        pension: 199800,
       },
       totalPay: 3449700,
-      status: 'pending',
-      requestedDate: '2024-03-29'
-    }
+      status: "pending",
+      requestedDate: "2024-03-29",
+    },
   ]);
 
   // Mock data - 주급 요청
-  const [weeklyPayRequests, setWeeklyPayRequests] = useState<WeeklyPayRequest[]>([
+  const [weeklyPayRequests, setWeeklyPayRequests] = useState<
+    WeeklyPayRequest[]
+  >([
     {
-      id: 'WPR001',
-      employeeId: 'EMP002',
-      employeeName: '이지은',
-      weekStart: '2024-03-18',
-      weekEnd: '2024-03-24',
+      id: "WPR001",
+      employeeId: "EMP002",
+      employeeName: "이지은",
+      weekStart: "2024-03-18",
+      weekEnd: "2024-03-24",
       requestedAmount: 240000,
       approvedAmount: 240000,
-      status: 'approved',
-      requestDate: '2024-03-24',
-      reason: '긴급 생활비'
+      status: "approved",
+      requestDate: "2024-03-24",
+      reason: "긴급 생활비",
     },
     {
-      id: 'WPR002',
-      employeeId: 'EMP004',
-      employeeName: '최영희',
-      weekStart: '2024-03-25',
-      weekEnd: '2024-03-31',
+      id: "WPR002",
+      employeeId: "EMP004",
+      employeeName: "최영희",
+      weekStart: "2024-03-25",
+      weekEnd: "2024-03-31",
       requestedAmount: 200000,
-      status: 'pending',
-      requestDate: '2024-03-30',
-      reason: '학비 납부'
-    }
+      status: "pending",
+      requestDate: "2024-03-30",
+      reason: "학비 납부",
+    },
   ]);
 
   // Chart data
   const monthlyPayrollData = [
-    { month: '10월', amount: 12500000 },
-    { month: '11월', amount: 13200000 },
-    { month: '12월', amount: 14100000 },
-    { month: '1월', amount: 13800000 },
-    { month: '2월', amount: 13500000 },
-    { month: '3월', amount: 14500000 }
+    { month: "10월", amount: 12500000 },
+    { month: "11월", amount: 13200000 },
+    { month: "12월", amount: 14100000 },
+    { month: "1월", amount: 13800000 },
+    { month: "2월", amount: 13500000 },
+    { month: "3월", amount: 14500000 },
   ];
 
   const payrollByPosition = [
-    { name: '주방장', value: 6400000, percentage: 44 },
-    { name: '매니저', value: 3200000, percentage: 22 },
-    { name: '서빙', value: 2880000, percentage: 20 },
-    { name: '주방보조', value: 2020000, percentage: 14 }
+    { name: "주방장", value: 6400000, percentage: 44 },
+    { name: "매니저", value: 3200000, percentage: 22 },
+    { name: "서빙", value: 2880000, percentage: 20 },
+    { name: "주방보조", value: 2020000, percentage: 14 },
   ];
 
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+  const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"];
 
-  const filteredPayroll = payrollEntries.filter(entry => {
-    const matchesSearch = entry.employeeName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || entry.status === filterStatus;
+  const filteredPayroll = payrollEntries.filter((entry) => {
+    const matchesSearch = entry.employeeName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" || entry.status === filterStatus;
     const matchesPeriod = entry.period === selectedPeriod;
     return matchesSearch && matchesStatus && matchesPeriod;
   });
@@ -214,24 +223,33 @@ const PayrollManagement: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />지급완료</Badge>;
+        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />{t.statusPaid}</Badge>;
       case 'approved':
-        return <Badge className="bg-blue-500"><CheckCircle className="w-3 h-3 mr-1" />승인됨</Badge>;
+        return <Badge className="bg-blue-500"><CheckCircle className="w-3 h-3 mr-1" />{t.statusApproved}</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" />대기중</Badge>;
+        return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" />{t.statusPending}</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-500"><XCircle className="w-3 h-3 mr-1" />반려됨</Badge>;
+        return <Badge className="bg-red-500"><XCircle className="w-3 h-3 mr-1" />{t.statusRejected}</Badge>;
       default:
         return null;
     }
   };
 
   const calculateStats = () => {
-    const totalPayroll = filteredPayroll.reduce((sum, entry) => sum + entry.totalPay, 0);
-    const pending = filteredPayroll.filter(e => e.status === 'pending').length;
-    const approved = filteredPayroll.filter(e => e.status === 'approved').length;
-    const paid = filteredPayroll.filter(e => e.status === 'paid').length;
-    const weeklyPending = weeklyPayRequests.filter(r => r.status === 'pending').length;
+    const totalPayroll = filteredPayroll.reduce(
+      (sum, entry) => sum + entry.totalPay,
+      0,
+    );
+    const pending = filteredPayroll.filter(
+      (e) => e.status === "pending",
+    ).length;
+    const approved = filteredPayroll.filter(
+      (e) => e.status === "approved",
+    ).length;
+    const paid = filteredPayroll.filter((e) => e.status === "paid").length;
+    const weeklyPending = weeklyPayRequests.filter(
+      (r) => r.status === "pending",
+    ).length;
 
     return { totalPayroll, pending, approved, paid, weeklyPending };
   };
@@ -249,25 +267,25 @@ const PayrollManagement: React.FC = () => {
               onClick={() => navigate(`/admin/dashboard/${branchId}`)}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              대시보드로 돌아가기
+              {t.backToDashboard}
             </Button>
             <ProfilePanel />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">급여 관리</h1>
-              <p className="text-gray-600 mt-1">급여 계산 및 주급 요청 처리</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t.title}</h1>
+              <p className="text-gray-600 mt-1">{t.subtitle}</p>
             </div>
 
             <div className="flex gap-3">
               <Button variant="outline">
                 <Download className="w-4 h-4 mr-2" />
-                급여명세서
+                {t.exportPayslip}
               </Button>
               <Button>
                 <Send className="w-4 h-4 mr-2" />
-                일괄 지급
+                {t.bulkPay}
               </Button>
             </div>
           </div>
@@ -278,7 +296,7 @@ const PayrollManagement: React.FC = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-sm text-gray-600">총 급여</p>
+                <p className="text-sm text-gray-600">{t.totalPay}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {(stats.totalPayroll / 10000).toFixed(0)}만원
                 </p>
@@ -289,7 +307,7 @@ const PayrollManagement: React.FC = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-sm text-gray-600">지급완료</p>
+                <p className="text-sm text-gray-600">{t.paid}</p>
                 <p className="text-3xl font-bold text-green-600">{stats.paid}</p>
               </div>
             </CardContent>
@@ -298,7 +316,7 @@ const PayrollManagement: React.FC = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-sm text-gray-600">승인됨</p>
+                <p className="text-sm text-gray-600">{t.approved}</p>
                 <p className="text-3xl font-bold text-blue-600">{stats.approved}</p>
               </div>
             </CardContent>
@@ -307,7 +325,7 @@ const PayrollManagement: React.FC = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-sm text-gray-600">대기중</p>
+                <p className="text-sm text-gray-600">{t.pending}</p>
                 <p className="text-3xl font-bold text-yellow-600">{stats.pending}</p>
               </div>
             </CardContent>
@@ -316,7 +334,7 @@ const PayrollManagement: React.FC = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <p className="text-sm text-gray-600">주급요청</p>
+                <p className="text-sm text-gray-600">{t.weeklyRequest}</p>
                 <p className="text-3xl font-bold text-orange-600">{stats.weeklyPending}</p>
               </div>
             </CardContent>
@@ -326,30 +344,30 @@ const PayrollManagement: React.FC = () => {
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           <Button
-            variant={activeTab === 'payroll' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('payroll')}
+            variant={activeTab === "payroll" ? "default" : "outline"}
+            onClick={() => setActiveTab("payroll")}
           >
             <DollarSign className="w-4 h-4 mr-2" />
-            급여 내역
+            {t.tabPayroll}
           </Button>
           <Button
-            variant={activeTab === 'weekly' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('weekly')}
+            variant={activeTab === "weekly" ? "default" : "outline"}
+            onClick={() => setActiveTab("weekly")}
           >
             <CreditCard className="w-4 h-4 mr-2" />
-            주급 요청
+            {t.tabWeekly}
           </Button>
           <Button
-            variant={activeTab === 'analytics' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('analytics')}
+            variant={activeTab === "analytics" ? "default" : "outline"}
+            onClick={() => setActiveTab("analytics")}
           >
             <TrendingUp className="w-4 h-4 mr-2" />
-            분석
+            {t.tabAnalytics}
           </Button>
         </div>
 
         {/* Payroll Tab */}
-        {activeTab === 'payroll' && (
+        {activeTab === "payroll" && (
           <>
             {/* Filters */}
             <Card className="mb-6">
@@ -369,7 +387,7 @@ const PayrollManagement: React.FC = () => {
                     <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="직원 이름 검색..."
+                      placeholder={t.searchPlaceholder}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border rounded-lg"
@@ -381,11 +399,11 @@ const PayrollManagement: React.FC = () => {
                     onChange={(e) => setFilterStatus(e.target.value)}
                     className="border rounded-lg px-3 py-2"
                   >
-                    <option value="all">모든 상태</option>
-                    <option value="pending">대기중</option>
-                    <option value="approved">승인됨</option>
-                    <option value="paid">지급완료</option>
-                    <option value="rejected">반려됨</option>
+                    <option value="all">{t.allStatus}</option>
+                    <option value="pending">{t.statusPending}</option>
+                    <option value="approved">{t.statusApproved}</option>
+                    <option value="paid">{t.statusPaid}</option>
+                    <option value="rejected">{t.statusRejected}</option>
                   </select>
                 </div>
               </CardContent>
@@ -394,53 +412,74 @@ const PayrollManagement: React.FC = () => {
             {/* Payroll List */}
             <Card>
               <CardHeader>
-                <CardTitle>급여 내역 ({filteredPayroll.length}건)</CardTitle>
+                <CardTitle>{t.payrollList(filteredPayroll.length)}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-3 px-4">직원명</th>
-                        <th className="text-left py-3 px-4">직책/매장</th>
-                        <th className="text-left py-3 px-4">근무시간</th>
-                        <th className="text-left py-3 px-4">기본급</th>
-                        <th className="text-left py-3 px-4">연장수당</th>
-                        <th className="text-left py-3 px-4">공제액</th>
-                        <th className="text-left py-3 px-4">실수령액</th>
-                        <th className="text-left py-3 px-4">상태</th>
-                        <th className="text-left py-3 px-4">작업</th>
+                        <th className="text-left py-3 px-4">{t.colEmployee}</th>
+                        <th className="text-left py-3 px-4">{t.colPositionStore}</th>
+                        <th className="text-left py-3 px-4">{t.colHours}</th>
+                        <th className="text-left py-3 px-4">{t.colBase}</th>
+                        <th className="text-left py-3 px-4">{t.colOvertime}</th>
+                        <th className="text-left py-3 px-4">{t.colDeduction}</th>
+                        <th className="text-left py-3 px-4">{t.colNet}</th>
+                        <th className="text-left py-3 px-4">{t.colStatus}</th>
+                        <th className="text-left py-3 px-4">{t.colActions}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredPayroll.map(entry => (
-                        <tr key={entry.id} className="border-b hover:bg-gray-50">
+                      {filteredPayroll.map((entry) => (
+                        <tr
+                          key={entry.id}
+                          className="border-b hover:bg-gray-50"
+                        >
                           <td className="py-3 px-4">
                             <div>
-                              <div className="font-medium">{entry.employeeName}</div>
-                              <div className="text-sm text-gray-500">{entry.employeeId}</div>
+                              <div className="font-medium">
+                                {entry.employeeName}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {entry.employeeId}
+                              </div>
                             </div>
                           </td>
                           <td className="py-3 px-4">
                             <div>
                               <div>{entry.position}</div>
-                              <div className="text-sm text-gray-500">{entry.location}</div>
+                              <div className="text-sm text-gray-500">
+                                {entry.location}
+                              </div>
                             </div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="text-sm">
-                              <div>일반: {entry.regularHours}h</div>
-                              <div className="text-blue-600">연장: {entry.overtimeHours}h</div>
-                              <div className="text-green-600">휴일: {entry.holidayHours}h</div>
+                              <div>{t.regularHours(entry.regularHours)}</div>
+                              <div className="text-blue-600">{t.overtimeHours(entry.overtimeHours)}</div>
+                              <div className="text-green-600">{t.holidayHours(entry.holidayHours)}</div>
                             </div>
                           </td>
-                          <td className="py-3 px-4">{(entry.basePay / 10000).toFixed(0)}만원</td>
                           <td className="py-3 px-4">
-                            {((entry.overtimePay + entry.holidayPay) / 10000).toFixed(0)}만원
+                            {(entry.basePay / 10000).toFixed(0)}만원
+                          </td>
+                          <td className="py-3 px-4">
+                            {(
+                              (entry.overtimePay + entry.holidayPay) /
+                              10000
+                            ).toFixed(0)}
+                            만원
                           </td>
                           <td className="py-3 px-4">
                             <div className="text-sm text-red-600">
-                              {((entry.deductions.tax + entry.deductions.insurance + entry.deductions.pension) / 10000).toFixed(0)}만원
+                              {(
+                                (entry.deductions.tax +
+                                  entry.deductions.insurance +
+                                  entry.deductions.pension) /
+                                10000
+                              ).toFixed(0)}
+                              만원
                             </div>
                           </td>
                           <td className="py-3 px-4">
@@ -448,17 +487,19 @@ const PayrollManagement: React.FC = () => {
                               {(entry.totalPay / 10000).toFixed(0)}만원
                             </div>
                           </td>
-                          <td className="py-3 px-4">{getStatusBadge(entry.status)}</td>
+                          <td className="py-3 px-4">
+                            {getStatusBadge(entry.status)}
+                          </td>
                           <td className="py-3 px-4">
                             <div className="flex gap-2">
                               <Button size="sm" variant="outline">
                                 <FileText className="w-4 h-4" />
                               </Button>
                               {entry.status === 'pending' && (
-                                <Button size="sm">승인</Button>
+                                <Button size="sm">{t.approveBtn}</Button>
                               )}
                               {entry.status === 'approved' && (
-                                <Button size="sm">지급</Button>
+                                <Button size="sm">{t.payBtn}</Button>
                               )}
                             </div>
                           </td>
@@ -473,17 +514,17 @@ const PayrollManagement: React.FC = () => {
         )}
 
         {/* Weekly Pay Requests Tab */}
-        {activeTab === 'weekly' && (
+        {activeTab === "weekly" && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
-                주급 요청 목록
+                {t.weeklyRequestList}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {weeklyPayRequests.map(request => (
+                {weeklyPayRequests.map((request) => (
                   <div
                     key={request.id}
                     className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
@@ -494,8 +535,12 @@ const PayrollManagement: React.FC = () => {
                           <User className="w-6 h-6 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-lg">{request.employeeName}</h3>
-                          <p className="text-sm text-gray-500">{request.employeeId}</p>
+                          <h3 className="font-semibold text-lg">
+                            {request.employeeName}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {request.employeeId}
+                          </p>
                         </div>
                       </div>
                       {getStatusBadge(request.status)}
@@ -503,51 +548,51 @@ const PayrollManagement: React.FC = () => {
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                       <div>
-                        <p className="text-sm text-gray-600">근무 기간</p>
+                        <p className="text-sm text-gray-600">{t.workPeriod}</p>
                         <p className="font-medium">{request.weekStart} ~ {request.weekEnd}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">요청 금액</p>
+                        <p className="text-sm text-gray-600">{t.requestAmount}</p>
                         <p className="font-medium text-blue-600">
                           {(request.requestedAmount / 10000).toFixed(0)}만원
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">승인 금액</p>
+                        <p className="text-sm text-gray-600">{t.approvedAmount}</p>
                         <p className="font-medium">
                           {request.approvedAmount
                             ? `${(request.approvedAmount / 10000).toFixed(0)}만원`
-                            : '-'}
+                            : "-"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">요청일</p>
+                        <p className="text-sm text-gray-600">{t.requestDate}</p>
                         <p className="font-medium">{request.requestDate}</p>
                       </div>
                     </div>
 
                     <div className="mb-3 p-3 bg-gray-50 rounded">
-                      <p className="text-sm text-gray-600 mb-1">요청 사유</p>
+                      <p className="text-sm text-gray-600 mb-1">{t.requestReason}</p>
                       <p className="text-sm">{request.reason}</p>
                     </div>
 
-                    {request.status === 'pending' && (
+                    {request.status === "pending" && (
                       <div className="flex gap-2">
                         <Button className="flex-1">
                           <CheckCircle className="w-4 h-4 mr-2" />
-                          승인
+                          {t.approveRequest}
                         </Button>
                         <Button variant="outline" className="flex-1">
                           <XCircle className="w-4 h-4 mr-2" />
-                          반려
+                          {t.rejectRequest}
                         </Button>
                       </div>
                     )}
 
-                    {request.status === 'approved' && (
+                    {request.status === "approved" && (
                       <Button className="w-full">
                         <Send className="w-4 h-4 mr-2" />
-                        지급 처리
+                        {t.payRequest}
                       </Button>
                     )}
                   </div>
@@ -558,12 +603,12 @@ const PayrollManagement: React.FC = () => {
         )}
 
         {/* Analytics Tab */}
-        {activeTab === 'analytics' && (
+        {activeTab === "analytics" && (
           <div className="space-y-6">
             {/* Monthly Trend */}
             <Card>
               <CardHeader>
-                <CardTitle>월별 급여 추이</CardTitle>
+                <CardTitle>{t.monthlyTrend}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -577,7 +622,7 @@ const PayrollManagement: React.FC = () => {
                       type="monotone"
                       dataKey="amount"
                       stroke="#3B82F6"
-                      name="총 급여"
+                      name={t.totalPay}
                       strokeWidth={2}
                     />
                   </LineChart>
@@ -589,7 +634,7 @@ const PayrollManagement: React.FC = () => {
               {/* By Position */}
               <Card>
                 <CardHeader>
-                  <CardTitle>직책별 급여 분포</CardTitle>
+                  <CardTitle>{t.byPosition}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -599,13 +644,18 @@ const PayrollManagement: React.FC = () => {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percentage }) => `${name} ${percentage}%`}
+                        label={({ name, percentage }) =>
+                          `${name} ${percentage}%`
+                        }
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
                       >
                         {payrollByPosition.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -617,12 +667,15 @@ const PayrollManagement: React.FC = () => {
               {/* Summary */}
               <Card>
                 <CardHeader>
-                  <CardTitle>급여 요약</CardTitle>
+                  <CardTitle>{t.payrollSummary}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {payrollByPosition.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-3">
                           <div
                             className="w-4 h-4 rounded"
@@ -631,8 +684,12 @@ const PayrollManagement: React.FC = () => {
                           <span className="font-medium">{item.name}</span>
                         </div>
                         <div className="text-right">
-                          <div className="font-bold">{(item.value / 10000).toFixed(0)}만원</div>
-                          <div className="text-sm text-gray-500">{item.percentage}%</div>
+                          <div className="font-bold">
+                            {(item.value / 10000).toFixed(0)}만원
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {item.percentage}%
+                          </div>
                         </div>
                       </div>
                     ))}

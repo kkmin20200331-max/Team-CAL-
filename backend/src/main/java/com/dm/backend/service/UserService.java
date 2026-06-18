@@ -55,6 +55,18 @@ public class UserService {
         return member;
     }
 
+    // 경민 수정 6/11 12:00
+    // 닉네임 중복체크
+    public boolean checkNickname(String nickname) {
+        return userMapper.countByName(nickname) > 0;
+    }
+
+    // 경민 수정 6/11 12:00
+    // 아이디 중복체크
+    public boolean checkUsername(String username) {
+        return userMapper.countByUsername(username) > 0;
+    }
+
     // 개인정보 수정
     public void approveStaff(UserVo userVo) {
         userMapper.approveStaff(userVo);
