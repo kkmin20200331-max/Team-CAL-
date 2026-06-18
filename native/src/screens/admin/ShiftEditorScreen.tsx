@@ -8,10 +8,12 @@ import Toast from 'react-native-toast-message';
 import { format } from 'date-fns';
 import TimePickerModal from '../../components/common/TimePickerModal';
 import DatePickerModal from '../../components/common/DatePickerModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any }) => {
   const { isEdit, shift: shiftToEdit } = route.params;
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getThemedStyles(colors);
   const { employees, addShift, updateShift, deleteShift } = useSchedule();
 
@@ -46,7 +48,7 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
 
   const handleSave = () => {
     if (!userId) {
-      Alert.alert("오류", "직원을 선택해주세요.");
+      Alert.alert(t('error'), t('selectEmployee'));
       return;
     }
 
@@ -60,20 +62,20 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
 
     if (isEdit) {
       updateShift({ ...shiftToEdit, ...shiftData });
-      Toast.show({ type: 'success', text1: '근무 수정 완료' });
+      Toast.show({ type: 'success', text1: t('editShiftSuccess') });
     } else {
       addShift(shiftData);
-      Toast.show({ type: 'success', text1: '새 근무 추가 완료' });
+      Toast.show({ type: 'success', text1: t('addShiftSuccess') });
     }
     navigation.goBack();
   };
 
   const handleDelete = () => {
-    Alert.alert("삭제 확인", "이 근무를 정말 삭제하시겠습니까?", [
-      { text: "취소", style: "cancel" },
+    Alert.alert(t('deleteConfirmTitle'), t('deleteConfirmMsg'), [
+      { text: t('cancel'), style: "cancel" },
       { text: "삭제", style: "destructive", onPress: () => {
         deleteShift(shiftToEdit.id);
-        Toast.show({ type: 'info', text1: '근무 삭제 완료' });
+        Toast.show({ type: 'info', text1: t('deleteShiftSuccess') });
         navigation.goBack();
       }}
     ]);
@@ -104,12 +106,12 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEdit ? "근무 수정" : "새 근무 추가"}</Text>
+        <Text style={styles.headerTitle}>{isEdit ? t('editShift') : t('addShift')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.content}>
-        <Text style={styles.label}>직원 선택</Text>
+        <Text style={styles.label}>{t('selectEmployee')}</Text>
         <View style={styles.pickerContainer}>
           <Picker 
             selectedValue={userId} 
@@ -117,27 +119,27 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
             style={styles.picker}
             itemStyle={styles.pickerItem}
           >
-            <Picker.Item label="직원을 선택하세요..." value={undefined} color={colors.subText} />
+            <Picker.Item label={t('selectEmployeePlaceholder')} value={undefined} color={colors.subText} />
             {employees.filter(e => e.status === 'ACTIVE').map(e => (
               <Picker.Item key={e.id} label={e.name} value={e.id} color={colors.text} />
             ))}
           </Picker>
         </View>
 
-        <Text style={styles.label}>날짜</Text>
+        <Text style={styles.label}>{t('date')}</Text>
         <TouchableOpacity style={styles.dateButton} onPress={() => setDatePickerVisible(true)}>
           <Text style={styles.dateButtonText}>{format(date, 'yyyy년 M월 d일')}</Text>
         </TouchableOpacity>
 
         <View style={styles.timeContainer}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.label}>시작 시간</Text>
+            <Text style={styles.label}>{t('startTime')}</Text>
             <TouchableOpacity style={styles.dateButton} onPress={() => showTimepicker('start')}>
               <Text style={styles.dateButtonText}>{formatTime(startTime)}</Text>
             </TouchableOpacity>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.label}>종료 시간</Text>
+            <Text style={styles.label}>{t('endTime')}</Text>
             <TouchableOpacity style={styles.dateButton} onPress={() => showTimepicker('end')}>
               <Text style={styles.dateButtonText}>{formatTime(endTime)}</Text>
             </TouchableOpacity>
@@ -145,12 +147,12 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
         </View>
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>저장</Text>
+          <Text style={styles.saveButtonText}>{t('save')}</Text>
         </TouchableOpacity>
 
         {isEdit && (
           <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Text style={styles.deleteButtonText}>삭제</Text>
+            <Text style={styles.deleteButtonText}>{t('delete')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

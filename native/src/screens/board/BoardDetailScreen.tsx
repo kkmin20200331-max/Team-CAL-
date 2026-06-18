@@ -172,7 +172,7 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
 
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
           <View style={styles.postContainer}>
-            <Text style={styles.postTitle}>{t(post.title)}</Text>
+            <Text style={styles.postTitle}>{post.title}</Text>
             <View style={styles.postMeta}>
               <Text style={styles.postAuthor}>{t('writer')}: {authorName}</Text>
               <Text style={styles.postDate}>{post.date}</Text>
@@ -181,7 +181,7 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
               <Text style={styles.postViewCount}>{t('views')}: {viewCount}</Text>
             </View>
             <View style={styles.postContentContainer}>
-              <Text style={styles.postContent}>{t(post.content)}</Text>
+              <Text style={styles.postContent}>{post.content}</Text>
             </View>
           </View>
 

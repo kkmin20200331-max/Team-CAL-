@@ -6,10 +6,12 @@ import { useSchedule } from '../../contexts/ScheduleContext';
 import { useApp } from '../../contexts/AppContext';
 import { format, startOfWeek, endOfWeek, parseISO, isWithinInterval } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
   const { weekStartDate } = route.params;
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getThemedStyles(colors);
   const { employees, shifts } = useSchedule();
   const { userInfo } = useApp();
@@ -67,10 +69,10 @@ const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigati
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.backButton}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>주간 근무 상세</Text>
+          <Text style={styles.headerTitle}>{t('weeklyDetailTitle')}</Text>
           <View style={{ width: 40 }} />
         </View>
-        <Text style={styles.errorText}>상세 내역을 불러올 수 없습니다.</Text>
+        <Text style={styles.errorText}>{t('noDetails')}</Text>
       </SafeAreaView>
     );
   }
@@ -81,7 +83,7 @@ const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigati
     <View style={styles.historyItem}>
       <Text style={styles.historyDate}>{format(new Date(item.date), 'M/d (eee)', { locale: ko })}</Text>
       <Text style={styles.historyTime}>{item.time}</Text>
-      <Text style={styles.historyPay}>{item.dailyPay.toLocaleString()}원</Text>
+      <Text style={styles.historyPay}>{item.dailyPay.toLocaleString()}{t('currency')}</Text>
     </View>
   );
 
@@ -91,7 +93,7 @@ const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigati
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>주간 근무 상세</Text>
+        <Text style={styles.headerTitle}>{t('weeklyDetailTitle')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -100,35 +102,35 @@ const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigati
           <Text style={styles.weekRangeText}>
             {format(weekStart, 'M월 d일')} ~ {format(weekEnd, 'M월 d일')}
           </Text>
-          <Text style={styles.totalPayLabel}>이번 주 예상 급여 (세전)</Text>
-          <Text style={styles.totalPayAmount}>{totalPay.toLocaleString()}원</Text>
+          <Text style={styles.totalPayLabel}>{t('weeklySalary')} (세전)</Text>
+          <Text style={styles.totalPayAmount}>{totalPay.toLocaleString()}{t('currency')}</Text>
           
           <View style={styles.divider} />
 
           <View style={styles.detailsGrid}>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>근무일</Text>
-              <Text style={styles.detailValue}>{totalDays}일</Text>
+              <Text style={styles.detailLabel}>{t('totalWorkDays')}</Text>
+              <Text style={styles.detailValue}>{totalDays}{t('daysUnit')}</Text>
             </View>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>총 시간</Text>
-              <Text style={styles.detailValue}>{totalHours}시간</Text>
+              <Text style={styles.detailLabel}>{t('totalWorkHours')}</Text>
+              <Text style={styles.detailValue}>{totalHours}{t('hoursUnit')}</Text>
             </View>
             <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>적용 시급</Text>
-              <Text style={styles.detailValue}>{employee.payRate.toLocaleString()}원</Text>
+              <Text style={styles.detailLabel}>{t('appliedRate')}</Text>
+              <Text style={styles.detailValue}>{employee.payRate.toLocaleString()}{t('currency')}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>일별 근무 내역</Text>
+          <Text style={styles.sectionTitle}>{t('dailyWorkHistory')}</Text>
           <FlatList
             data={dailyBreakdown}
             renderItem={renderWorkHistoryItem}
             keyExtractor={(item) => item.id}
             scrollEnabled={false}
-            ListEmptyComponent={<Text style={styles.emptyHistory}>이번 주 근무 기록이 없습니다.</Text>}
+            ListEmptyComponent={<Text style={styles.emptyHistory}>{t('noWeeklyWorkHistory')}</Text>}
           />
         </View>
       </ScrollView>
@@ -140,14 +142,14 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContainer: { padding: 16 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backButton: { fontSize: 24, color: colors.primary, width: 40 },
+  backButton: { fontSize: 24, color: colors.text, width: 40 },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   errorText: { textAlign: 'center', marginTop: 50, color: colors.subText },
   
   summaryCard: { backgroundColor: colors.card, borderRadius: 16, padding: 24, alignItems: 'center' },
   weekRangeText: { fontSize: 14, color: colors.subText, marginBottom: 16 },
   totalPayLabel: { fontSize: 14, color: colors.subText },
-  totalPayAmount: { fontSize: 36, fontWeight: 'bold', color: colors.primary, marginTop: 4, marginBottom: 20 },
+  totalPayAmount: { fontSize: 36, fontWeight: 'bold', color: colors.text, marginTop: 4, marginBottom: 20 },
   divider: { width: '100%', height: 1, backgroundColor: colors.border, marginBottom: 20 },
   
   detailsGrid: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
@@ -160,7 +162,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   historyItem: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.card, padding: 16, borderRadius: 8, marginBottom: 8, alignItems: 'center' },
   historyDate: { flex: 2, fontSize: 15, color: colors.text, fontWeight: '500' },
   historyTime: { flex: 3, fontSize: 15, color: colors.subText, textAlign: 'center' },
-  historyPay: { flex: 2, fontSize: 15, color: colors.primary, fontWeight: '600', textAlign: 'right' },
+  historyPay: { flex: 2, fontSize: 15, color: colors.text, fontWeight: '600', textAlign: 'right' },
   emptyHistory: { textAlign: 'center', color: colors.subText, padding: 20 },
 });
 

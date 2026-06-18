@@ -79,13 +79,13 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, t }: Props) => {
           {todayShift.checkInTime && (
             <View style={styles.workInfoRow}>
               <Text style={styles.infoIcon}>▶️</Text>
-              <Text style={styles.infoText}>출근: {todayShift.checkInTime}</Text>
+              <Text style={styles.infoText}>{t('checkIn')}: {todayShift.checkInTime}</Text>
             </View>
           )}
           {todayShift.checkOutTime && (
             <View style={styles.workInfoRow}>
               <Text style={styles.infoIcon}>⏹️</Text>
-              <Text style={styles.infoText}>퇴근: {todayShift.checkOutTime}</Text>
+              <Text style={styles.infoText}>{t('checkOut')}: {todayShift.checkOutTime}</Text>
             </View>
           )}
           <View style={styles.divider} />

@@ -67,14 +67,14 @@ const NotificationListScreen = () => {
         <View style={styles.contentContainer}>
           <View style={styles.titleRow}>
             <Text style={[styles.titleText, !item.isRead && styles.unreadTitleText]}>
-              {t(item.title)}
+              {t(item.title as any)}
             </Text>
             {!item.isRead && <View style={styles.unreadDot} />}
           </View>
           <Text style={styles.messageText} numberOfLines={2}>
-            {t(item.message)}
+            {item.message}
           </Text>
-          <Text style={styles.timeText}>{t(item.createdAt)}</Text>
+          <Text style={styles.timeText}>{item.createdAt}</Text>
         </View>
       </TouchableOpacity>
     </Swipeable>
@@ -118,11 +118,11 @@ const NotificationListScreen = () => {
                   <Text style={styles.modalIcon}>
                     {selectedNotification.type === 'SCHEDULE' ? '📅' : selectedNotification.type === 'NOTICE' ? '📢' : '⚙️'}
                   </Text>
-                  <Text style={styles.modalTitle}>{t(selectedNotification.title)}</Text>
-                  <Text style={styles.modalTime}>{t(selectedNotification.createdAt)}</Text>
+                  <Text style={styles.modalTitle}>{t(selectedNotification.title as any)}</Text>
+                  <Text style={styles.modalTime}>{selectedNotification.createdAt}</Text>
                 </View>
                 <View style={styles.modalBody}>
-                  <Text style={styles.modalMessage}>{t(selectedNotification.message)}</Text>
+                  <Text style={styles.modalMessage}>{selectedNotification.message}</Text>
                 </View>
                 
                 <View style={styles.modalButtonGroup}>

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -15,7 +15,7 @@ const MyPageScreen = ({ navigation }: Props) => {
 
   const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
   const [themeModalVisible, setThemeModalVisible] = useState(false);
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage, t, isTranslating } = useLanguage();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [isPushEnabled, setIsPushEnabled] = useState(true);
 
@@ -123,8 +123,8 @@ const MyPageScreen = ({ navigation }: Props) => {
           {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert'))}
           {role === 'STAFF' && (
             <>
-              {renderMenuItem('💰', '나의 급여 명세서', handleNavigateToMonthlyDetail)}
-              {renderMenuItem('🤝', '나의 대타 내역', () => navigation.navigate('SubstituteMatching', { initialTab: 'history' }))}
+              {renderMenuItem('💰', t('myPaystub'), () => handleNavigateToMonthlyDetail())}
+              {renderMenuItem('🤝', t('mySubstituteHistory'), () => navigation.navigate('SubstituteMatching', { initialTab: 'history' }))}
             </>
           )}
         </View>
@@ -132,21 +132,21 @@ const MyPageScreen = ({ navigation }: Props) => {
         {role === 'ADMIN' && (
           <>
             <View style={styles.menuSection}>
-              <Text style={styles.sectionTitle}>매장 관리</Text>
-              {renderMenuItem('🏪', '매장 정보 수정', () => navigation.navigate('StoreEdit'))}
+              <Text style={styles.sectionTitle}>{t('storeManagement')}</Text>
+              {renderMenuItem('🏪', t('storeInfoEdit'), () => navigation.navigate('StoreEdit'))}
             </View>
             <View style={styles.menuSection}>
-              <Text style={styles.sectionTitle}>직원 관리</Text>
-              {renderMenuItem('📋', '보건증 관리', () => Alert.alert("준비 중", "보건증 관리 화면으로 이동합니다."))}
-              {renderMenuItem('📑', '근로계약서 관리', () => Alert.alert("준비 중", "근로계약서 관리 화면으로 이동합니다."))}
-              {renderMenuItem('🌴', '휴무 신청 관리', () => Alert.alert("준비 중", "휴무 신청 관리 화면으로 이동합니다."))}
+              <Text style={styles.sectionTitle}>{t('employeeManagement')}</Text>
+              {renderMenuItem('📋', t('healthCertManagement'), () => Alert.alert("준비 중", "보건증 관리 화면으로 이동합니다."))}
+              {renderMenuItem('📑', t('contractManagement'), () => Alert.alert("준비 중", "근로계약서 관리 화면으로 이동합니다."))}
+              {renderMenuItem('🌴', t('leaveRequestManagement'), () => Alert.alert("준비 중", "휴무 신청 관리 화면으로 이동합니다."))}
             </View>
           </>
         )}
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
-          {renderMenuItem('🌙', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
+          {renderMenuItem('🌙', `${t('themeMode')} (${t(themeMode as any)})`, () => setThemeModalVisible(true))}
           {renderMenuItem('🌐', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
           {renderSwitchItem('🔔', t('pushAlert'), isPushEnabled, setIsPushEnabled)}
         </View>
@@ -154,7 +154,7 @@ const MyPageScreen = ({ navigation }: Props) => {
         <View style={styles.connectSection}>
           <TouchableOpacity style={styles.lineButton} onPress={handleLineConnect}>
             <Image source={require('../../../assets/img/line-icon-144.png')} style={styles.lineLogo} />
-            <Text style={styles.lineButtonText}>LINE 연동하기</Text>
+            <Text style={styles.lineButtonText}>{t('lineConnect')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -180,16 +180,16 @@ const MyPageScreen = ({ navigation }: Props) => {
         <Pressable style={styles.modalOverlay} onPress={() => setThemeModalVisible(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t('themeSettings')}</Text>
-            {['라이트 모드', '다크 모드', '시스템 설정'].map((mode) => (
+            {['lightMode', 'darkMode', 'systemSetting'].map((mode) => (
               <TouchableOpacity
                 key={mode}
-                style={[styles.modalOption, themeMode === mode && styles.modalOptionSelected]}
+                style={[styles.modalOption, themeMode === t(mode as any) && styles.modalOptionSelected]}
                 onPress={() => {
-                  setThemeMode(mode as any);
+                  setThemeMode(t(mode as any));
                   setThemeModalVisible(false);
                 }}
               >
-                <Text style={[styles.modalOptionText, themeMode === mode && styles.modalOptionTextSelected]}>{mode}</Text>
+                <Text style={[styles.modalOptionText, themeMode === t(mode as any) && styles.modalOptionTextSelected]}>{t(mode as any)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -218,6 +218,12 @@ const MyPageScreen = ({ navigation }: Props) => {
               </TouchableOpacity>
             ))}
           </View>
+          {isTranslating && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.loadingText}>번역 중...</Text>
+            </View>
+          )}
         </Pressable>
       </Modal>
     </SafeAreaView>
@@ -275,6 +281,22 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   modalOptionSelected: { backgroundColor: colors.primaryLight },
   modalOptionText: { fontSize: 16, color: colors.text },
   modalOptionTextSelected: { color: colors.primary, fontWeight: 'bold' },
+  
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    marginTop: 10,
+    fontSize: 16,
+  },
 });
 
 export default MyPageScreen;

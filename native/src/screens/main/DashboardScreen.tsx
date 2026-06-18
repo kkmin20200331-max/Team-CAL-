@@ -153,7 +153,7 @@ const DashboardScreen = ({ navigation }: Props) => {
         />
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('SubstituteMatching', { initialTab: 'requests' })}>
-            <Text style={styles.headerButtonText}>대타 찾기</Text>
+            <Text style={styles.headerButtonText}>{t('findSubstitute')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleQRCheckIn}>
             <Text style={styles.headerButtonText}>{t('qrCheckIn')}</Text>

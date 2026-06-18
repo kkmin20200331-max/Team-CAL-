@@ -7,10 +7,12 @@ import { useApp } from '../../contexts/AppContext';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import Toast from 'react-native-toast-message';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, route: any }) => {
   const { initialTab = 'requests' } = route.params || {};
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getThemedStyles(colors);
   const { userInfo } = useApp();
   const { shifts, employees, applyForSubstitute } = useSchedule();
@@ -36,14 +38,14 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
 
   const handleApply = (shiftId: string) => {
     if (!userInfo) return;
-    Alert.alert("대타 지원", "이 근무에 대타로 지원하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      { text: "지원", onPress: async () => {
+    Alert.alert(t('substituteApplyTitle'), t('substituteApplyMsg'), [
+      { text: t('cancel'), style: "cancel" },
+      { text: t('applyBtn'), onPress: async () => {
         try {
           await applyForSubstitute(shiftId, userInfo.id);
-          Toast.show({ type: 'success', text1: '지원이 완료되었습니다.' });
+          Toast.show({ type: 'success', text1: t('applySuccess') });
         } catch (error) {
-          Toast.show({ type: 'error', text1: '지원 중 오류가 발생했습니다.' });
+          Toast.show({ type: 'error', text1: t('error'), text2: t('errorApplySubstitute') });
         }
       }}
     ]);
@@ -58,12 +60,12 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
       <View style={styles.cardBody}>
         <View style={styles.userInfo}>
           <View style={[styles.avatar, { backgroundColor: item.user?.color || colors.subText }]} />
-          <Text style={styles.userName}>{item.user?.name || '알 수 없음'}</Text>
+          <Text style={styles.userName}>{item.user?.name || t('unknown')}</Text>
         </View>
         <Text style={styles.reasonText}>{item.reason}</Text>
       </View>
       <TouchableOpacity style={styles.applyButton} onPress={() => handleApply(item.id)}>
-        <Text style={styles.applyButtonText}>지원하기</Text>
+        <Text style={styles.applyButtonText}>{t('applyBtn')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -79,7 +81,7 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
       </View>
       <View style={styles.statusFooter}>
         <Text style={styles.statusText}>
-          {item.userId === userInfo?.id ? `내가 올린 요청` : `내가 지원한 요청`}
+          {item.userId === userInfo?.id ? t('myRequest') : t('myApplication')}
         </Text>
       </View>
     </View>
@@ -91,7 +93,7 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>대타 구인</Text>
+        <Text style={styles.headerTitle}>{t('findSubstitute')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -100,13 +102,13 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
           style={[styles.tab, activeTab === 'requests' && styles.activeTab]}
           onPress={() => setActiveTab('requests')}
         >
-          <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>대타 구해요</Text>
+          <Text style={[styles.tabText, activeTab === 'requests' && styles.activeTabText]}>{t('substituteRequests')}</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'history' && styles.activeTab]}
           onPress={() => setActiveTab('history')}
         >
-          <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>내역</Text>
+          <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>{t('history')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -116,7 +118,7 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
           renderItem={renderRequestItem}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={<Text style={styles.emptyText}>현재 올라온 대타 요청이 없습니다.</Text>}
+          ListEmptyComponent={<Text style={styles.emptyText}>{t('noSubstituteRequests')}</Text>}
         />
       ) : (
         <FlatList
@@ -124,7 +126,7 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
           renderItem={renderHistoryItem}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={<Text style={styles.emptyText}>요청 또는 지원 내역이 없습니다.</Text>}
+          ListEmptyComponent={<Text style={styles.emptyText}>{t('noHistory')}</Text>}
         />
       )}
     </SafeAreaView>

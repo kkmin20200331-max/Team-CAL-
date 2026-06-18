@@ -18,43 +18,44 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
 
-  const postToEdit = isEdit ? posts.find(p => p.id === postId) : null;
+  const predefinedCategories = [
+    { key: 'notice', dbValue: 'NOTICE' },
+    { key: 'suggestion', dbValue: 'MENU' },
+    { key: 'lost_found', dbValue: 'LOST' },
+    { key: 'free_board', dbValue: 'EVENT' },
+  ];
 
-  const getInitialCategory = (catCode?: string) => {
-    if (catCode === 'MENU') return '건의사항';
-    if (catCode === 'EVENT') return '자유게시판';
-    if (catCode === 'LOST') return '분실물';
-    return '공지사항';
+  const getInitialCategoryKey = (dbValue?: string) => {
+    return predefinedCategories.find(c => c.dbValue === dbValue)?.key || 'notice';
   };
   
-  const [title, setTitle] = useState(isEdit && postToEdit ? t(postToEdit.title) : '');
-  const [content, setContent] = useState(isEdit && postToEdit ? t(postToEdit.content) : '');
-  const [category, setCategory] = useState(isEdit && postToEdit ? getInitialCategory(postToEdit.category) : '공지사항'); 
-  const predefinedCategories = ['공지사항', '건의사항', '분실물', '자유게시판'];
+  const postToEdit = isEdit ? posts.find(p => p.id === postId) : null;
+
+  const [title, setTitle] = useState(isEdit && postToEdit ? postToEdit.title : '');
+  const [content, setContent] = useState(isEdit && postToEdit ? postToEdit.content : '');
+  const [categoryKey, setCategoryKey] = useState(isEdit && postToEdit ? getInitialCategoryKey(postToEdit.category) : 'notice'); 
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
-      Toast.show({ type: 'error', text1: '알림', text2: '제목과 내용을 모두 입력해주세요.' });
+      Toast.show({ type: 'error', text1: t('alert'), text2: t('titleContentRequired') });
       return;
     }
 
-    let dummyCategory = 'NOTICE';
-    if (category === '건의사항') dummyCategory = 'MENU';
-    if (category === '자유게시판') dummyCategory = 'EVENT';
-    if (category === '분실물') dummyCategory = 'LOST';
+    const selectedCategory = predefinedCategories.find(c => c.key === categoryKey);
+    const categoryDbValue = selectedCategory?.dbValue || 'NOTICE';
       
     if (isEdit && postToEdit) {
       const updatedPost: Post = {
         ...postToEdit,
-        category: dummyCategory,
+        category: categoryDbValue,
         title: title,
         content: content,
       };
       updatePost(updatedPost);
-      Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 수정되었습니다.' });
+      Toast.show({ type: 'success', text1: t('success'), text2: t('postEditSuccess') });
     } else {
       const newPostData = {
-        category: dummyCategory,
+        category: categoryDbValue,
         title: title,
         content: content,
         badge: 'badgeNew',
@@ -62,12 +63,12 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       };
       addPost(newPostData, userInfo?.username || 'unknown_user');
       
-      if (category === '공지사항') {
+      if (categoryKey === 'notice') {
         try {
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: "📢 새로운 공지사항 등록",
-              body: `[공지] ${title}`,
+              title: t('newNotice'),
+              body: `[${t('notice')}] ${title}`,
               data: {
                 screen: 'Board',
               }
@@ -76,10 +77,10 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
           });
         } catch (notifError) {
           console.log("알림 발송 실패:", notifError);
-          Alert.alert("알림 실패", "푸시 알림을 보내는 데 실패했습니다.");
+          Alert.alert(t('alertFailed'), t('pushAlertFailed'));
         }
       }
-      Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 등록되었습니다.' });
+      Toast.show({ type: 'success', text1: t('success'), text2: t('postCreateSuccess') });
     }
     navigation.goBack();
   };
@@ -90,37 +91,37 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEdit ? '글 수정하기' : '새 글 쓰기'}</Text>
+        <Text style={styles.headerTitle}>{isEdit ? t('editPost') : t('writeNewPost')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={styles.label}>카테고리 선택</Text>
+        <Text style={styles.label}>{t('selectCategory')}</Text>
         <View style={styles.categoryContainer}>
           {predefinedCategories.map((cat) => (
             <TouchableOpacity 
-              key={cat} 
-              style={[styles.categoryButton, category === cat && styles.categoryButtonActive]}
-              onPress={() => setCategory(cat)}
+              key={cat.key} 
+              style={[styles.categoryButton, categoryKey === cat.key && styles.categoryButtonActive]}
+              onPress={() => setCategoryKey(cat.key)}
             >
-              <Text style={[styles.categoryText, category === cat && styles.categoryTextActive]}>{cat}</Text>
+              <Text style={[styles.categoryText, categoryKey === cat.key && styles.categoryTextActive]}>{t(cat.key as any)}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.label}>제목</Text>
+        <Text style={styles.label}>{t('title')}</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="제목을 입력하세요" 
+          placeholder={t('titlePlaceholder')} 
           value={title} 
           onChangeText={setTitle} 
           placeholderTextColor={colors.subText}
         />
 
-        <Text style={styles.label}>내용</Text>
+        <Text style={styles.label}>{t('content')}</Text>
         <TextInput 
           style={[styles.input, styles.contentInput]} 
-          placeholder="내용을 자세히 작성해주세요." 
+          placeholder={t('contentPlaceholder')} 
           value={content} 
           onChangeText={setContent} 
           multiline 
@@ -129,7 +130,7 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
         />
 
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>{isEdit ? '수정하기' : '등록하기'}</Text>
+          <Text style={styles.submitButtonText}>{isEdit ? t('editComplete') : t('createComplete')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

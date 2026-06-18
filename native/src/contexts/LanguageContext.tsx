@@ -1,594 +1,295 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { translateTexts } from '../api/translation';
+
+const TRANSLATION_VERSION = '1.1'; // 번역 데이터 버전
+
+const ko = {
+  greeting: '안녕하세요',
+  suffixNim: '님',
+  todayWork: '오늘의 근무',
+  scheduled: '근무 예정',
+  inProgress: '근무중',
+  completed: '근무 완료',
+  substituteReq: '대타 요청중',
+  offDay: '휴무',
+  weeklyHours: '이번 주 근무 시간',
+  weeklySalary: '이번 주 예상 급여',
+  subReqAlertTitle: '새로운 대타 요청',
+  subReqAlertDesc: '김민준 님의 근무에 대타 지원이 필요합니다.',
+  applyBtn: '지원하기',
+  rejectBtn: '거절',
+  latestNotices: '최신 공지사항',
+  viewAll: '전체보기',
+  noNotices: '등록된 공지사항이 없습니다.',
+  qrCheckIn: 'QR 체크인',
+  defaultUserName: '사용자',
+  admin: '관리자',
+  staff: '직원',
+  myInfo: '내 정보',
+  profileEdit: '프로필 수정',
+  contract: '근로계약서',
+  healthCert: '보건증',
+  appSettings: '앱 설정',
+  themeMode: '테마 모드',
+  languageSetting: '언어 설정',
+  pushAlert: '푸시 알림',
+  logout: '로그아웃',
+  withdrawBtn: '회원 탈퇴',
+  withdrawConfirmTitle: '회원 탈퇴 확인',
+  withdrawConfirmMsg: '정말로 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+  cancel: '취소',
+  confirm: '확인',
+  withdrawSuccessTitle: '탈퇴 완료',
+  withdrawSuccessMsg: '회원 탈퇴가 완료되었습니다. 이용해주셔서 감사합니다.',
+  themeSettings: '테마 설정',
+  langSettings: '언어 설정',
+  employeeManagement: '직원 관리',
+  monthlySchedule: '월간 근무표',
+  payroll: '급여 정산',
+  internalBoard: '사내 게시판',
+  adminDashboard: '관리자 대시보드',
+  brand: '브랜드',
+  branch: '지점',
+  currentlyWorking: '현재 근무중',
+  requestProcessing: '요청 처리',
+  selectBranch: '지점 선택',
+  addNewBranch: '+ 새 지점 추가',
+  close: '닫기',
+  findSubstitute: '대타 찾기',
+  myPaystub: '나의 급여 명세서',
+  mySubstituteHistory: '나의 대타 내역',
+  storeManagement: '매장 관리',
+  storeInfoEdit: '매장 정보 수정',
+  healthCertManagement: '보건증 관리',
+  contractManagement: '근로계약서 관리',
+  leaveRequestManagement: '휴무 신청 관리',
+  lineConnect: 'LINE 연동하기',
+  lightMode: '라이트 모드',
+  darkMode: '다크 모드',
+  systemSetting: '시스템 설정',
+  writer: '작성자',
+  views: '조회수',
+  boardDetailTitle: '게시글 상세',
+  unpin: '상단 고정 해제',
+  pin: '상단 고정',
+  comments: '댓글',
+  noComments: '아직 댓글이 없습니다.',
+  addCommentPlaceholder: '댓글을 입력하세요...',
+  register: '등록',
+  commentEmptyTitle: '댓글 오류',
+  commentEmptyMsg: '댓글 내용을 입력해주세요.',
+  deleteCommentConfirmTitle: '댓글 삭제',
+  deleteCommentConfirmMsg: '이 댓글을 정말 삭제하시겠습니까?',
+  deleteCommentSuccessTitle: '삭제 완료',
+  deleteCommentSuccessMsg: '댓글이 삭제되었습니다.',
+  unknown: '알 수 없음',
+  checkIn: '출근',
+  checkOut: '퇴근',
+  expectedDailyWage: '예상 일급',
+  currency: '원',
+  noScheduleToday: '오늘은 예정된 근무가 없습니다.',
+  notifListTitle: '알림 목록',
+  markAllRead: '모두 읽음',
+  delete: '삭제',
+  weeklyDetailTitle: '주간 근무 상세',
+  noDetails: '상세 내역을 불러올 수 없습니다.',
+  totalWorkDays: '근무일',
+  daysUnit: '일',
+  totalWorkHours: '총 시간',
+  hoursUnit: '시간',
+  appliedRate: '적용 시급',
+  dailyWorkHistory: '일별 근무 내역',
+  noWeeklyWorkHistory: '이번 주 근무 기록이 없습니다.',
+  alert: '알림',
+  titleContentRequired: '제목과 내용을 모두 입력해주세요.',
+  success: '성공',
+  postEditSuccess: '게시글이 성공적으로 수정되었습니다.',
+  newNotice: '새로운 공지사항 등록',
+  notice: '공지사항',
+  alertFailed: '알림 실패',
+  pushAlertFailed: '푸시 알림을 보내는 데 실패했습니다.',
+  postCreateSuccess: '게시글이 성공적으로 등록되었습니다.',
+  editPost: '글 수정하기',
+  writeNewPost: '새 글 쓰기',
+  selectCategory: '카테고리 선택',
+  title: '제목',
+  titlePlaceholder: '제목을 입력하세요',
+  content: '내용',
+  contentPlaceholder: '내용을 자세히 작성해주세요.',
+  editComplete: '수정하기',
+  createComplete: '등록하기',
+  suggestion: '건의사항',
+  lost_found: '분실물',
+  free_board: '자유게시판',
+  leaveRequest: '휴무 신청 대기중',
+  requestComplete: '신청 완료',
+  requestSentToAdmin: '점주에게 요청이 전송되었습니다.',
+  unassigned: '배정 안됨',
+  requestLeave: '휴가 신청',
+  requestSubstitute: '대타 신청',
+  monthlyView: '월간 보기',
+  newShift: '새 근무',
+  noSchedule: '예정된 근무가 없습니다.',
+  leaveReasonPlaceholder: '휴가 사유를 입력해주세요.',
+  substituteReasonPlaceholder: '대타 요청 사유를 입력해주세요.',
+  substituteApplyTitle: '대타 지원',
+  substituteApplyMsg: '이 근무에 대타로 지원하시겠습니까?',
+  applySuccess: '지원이 완료되었습니다.',
+  error: '오류',
+  errorApplySubstitute: '지원 중 오류가 발생했습니다.',
+  myRequest: '내가 올린 요청',
+  myApplication: '내가 지원한 요청',
+  substituteRequests: '대타 구해요',
+  history: '내역',
+  noSubstituteRequests: '현재 올라온 대타 요청이 없습니다.',
+  noHistory: '요청 또는 지원 내역이 없습니다.',
+  todaySchedule: '오늘의 스케줄',
+  morning: '오전',
+  afternoon: '오후',
+  closing: '마감',
+  sun: '일',
+  mon: '월',
+  tue: '화',
+  wed: '수',
+  thu: '목',
+  fri: '금',
+  sat: '토',
+  selectEmployee: '직원을 선택해주세요.',
+  editShiftSuccess: '근무 수정 완료',
+  addShiftSuccess: '새 근무 추가 완료',
+  deleteConfirmTitle: '삭제 확인',
+  deleteConfirmMsg: '이 근무를 정말 삭제하시겠습니까?',
+  deleteShiftSuccess: '근무 삭제 완료',
+  editShift: '근무 수정',
+  addShift: '새 근무 추가',
+  selectEmployeePlaceholder: '직원을 선택하세요...',
+  date: '날짜',
+  startTime: '시작 시간',
+  endTime: '종료 시간',
+  save: '저장',
+  approveRequestTitle: '요청 승인',
+  approveRequestMsg: '이 요청을 승인하시겠습니까?',
+  approve: '승인',
+  approvalComplete: '승인 완료',
+  denyRequestTitle: '요청 거절',
+  denyRequestMsg: '이 요청을 거절하시겠습니까?',
+  deny: '거절',
+  denialComplete: '거절 처리 완료',
+  leave: '휴무',
+  substitute: '대타',
+  employee: '직원',
+  workTime: '근무 시간',
+  reason: '사유',
+  requestManagement: '요청 관리',
+  noRequests: '처리할 요청이 없습니다.',
+};
 
 export type Language = '한국어' | 'English' | '日本語';
+type TranslationData = typeof ko;
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: keyof TranslationData) => string;
+  isTranslating: boolean;
 }
 
-// 다국어 사전 (필요한 텍스트를 여기에 계속 추가하면 됩니다)
-const translations = {
-  '한국어': {
-    greeting: '안녕하세요',
-    admin: '관리자',
-    staff: '일반 직원',
-    todayWork: '오늘의 근무',
-    weeklyHours: '이번 주 근무 시간',
-    weeklySalary: '이번 주 예상급여',
-    notice: '사내 게시판',
-    more: '더보기',
-    myInfo: '내 정보 관리',
-    profileEdit: '개인정보 수정',
-    contract: '나의 근로계약서',
-    healthCert: '보건증 관리',
-    appSettings: '앱 설정',
-    themeMode: '화면 모드',
-    languageSetting: '언어 설정',
-    pushAlert: '앱 푸시 알림',
-    logout: '로그아웃',
-    scheduled: '근무 예정',
-    inProgress: '근무 중',
-    completed: '근무 완료',
-    substituteReq: '대타 찾는 중',
-    offDay: '휴무',
-    leaveRequest: '휴무 신청 / 대타 구하기',
-    noSchedule: '선택한 날짜에는 근무 일정이 없습니다.',
-    leaveReasonPlaceholder: '휴무 사유를 상세히 적어주세요 (예: 병원 진료, 학교 시험 등)',
-    cancel: '취소',
-    apply: '신청하기',
-    monthlyView: '월간 보기',
-    close: '닫기',
-    sun: '일',
-    mon: '월',
-    tue: '화',
-    wed: '수',
-    thu: '목',
-    fri: '금',
-    sat: '토',
-    month: '월',
-    year: '년',
-    // 모달 및 탭 텍스트
-    themeSettings: '화면 모드 설정',
-    themeLight: '라이트 모드',
-    themeDark: '다크 모드',
-    themeSystem: '시스템 설정',
-    langSettings: '언어 설정',
-    tabHome: '홈',
-    tabSchedule: '내 스케줄',
-    tabNotif: '알림',
-    tabMyPage: '마이페이지',
-    tabAdminHome: '매장 관리',
-    tabAdminSchedule: '스케줄 관리',
-    tabAdminSettings: '설정',
-    // 알림 더미데이터 텍스트
-    notifSubReqTitle: '🚨 대타 요청 알림',
-    notifSubReqMsg: '5월 28일 수요일 17:00~22:00 대타 요청이 있습니다. 앱에서 확인 후 지원해주세요!',
-    notifNoticeTitle: '📢 [공지] 가을 시즌 신메뉴 출시',
-    notifNoticeMsg: '가을 시즌 신메뉴가 곧 출시됩니다!\n\n게시판에서 레시피 및 상세 매뉴얼을 꼭 확인해 주세요.',
-    notifHealthTitle: '🏥 보건증 만료 임박',
-    notifHealthMsg: '보건증 만료일이 7일 남았습니다.\n보건소 방문 후 마이페이지에서 새 이미지를 업로드해주세요.',
-    notifLeaveTitle: '✅ 휴무 승인 완료',
-    notifLeaveMsg: '요청하신 6/3(수) 휴무 신청이 승인되어 스케줄에 반영되었습니다.',
-    time10Min: '10분 전',
-    time1Hour: '1시간 전',
-    timeYesterday: '어제',
-    time2Days: '2일 전',
-    // 알림 화면
-    notifListTitle: '알림 목록',
-    markAllRead: '모두 읽음',
-    delete: '삭제',
-    confirm: '확인',
-    // 프로필 수정 화면
-    accountInfoReadonly: '계정 정보 (수정 불가)',
-    idLabel: '아이디',
-    unknown: '알 수 없음',
-    branchLabel: '소속 지점',
-    roleLabel: '권한 (직급)',
-    adminRole: '관리자 (점주)',
-    staffRole: '일반 직원',
-    myInfoSection: '내 정보',
-    nameLabel: '이름',
-    namePlaceholder: '이름을 입력하세요',
-    phoneLabel: '전화번호',
-    phonePlaceholder: '예: 010-1234-5678',
-    changePasswordSection: '비밀번호 변경',
-    currentPasswordLabel: '현재 비밀번호',
-    currentPasswordPlaceholder: '현재 비밀번호를 입력하세요',
-    newPasswordLabel: '새 비밀번호',
-    newPasswordPlaceholder: '변경할 비밀번호를 입력하세요',
-    editCompleteBtn: '수정 완료',
-    withdrawBtn: '회원 탈퇴',
-    saveCompleteTitle: '저장 완료',
-    saveCompleteMsg: '개인정보가 성공적으로 수정되었습니다.',
-    editFailTitle: '수정 실패',
-    editFailMsg: '정보를 수정하는 도중 에러가 발생했습니다.',
-    withdrawConfirmTitle: '회원 탈퇴',
-    withdrawConfirmMsg: '정말 회원 탈퇴를 하시겠습니까? 모든 정보가 삭제됩니다.',
-    withdrawSuccessTitle: '탈퇴 완료',
-    withdrawSuccessMsg: '회원 탈퇴가 성공적으로 처리되었습니다.',
-    // 대시보드 화면
-    defaultUserName: '사용자',
-    suffixNim: '님',
-    qrCheckIn: 'QR출퇴근',
-    expectedDailyWage: '예상 일급',
-    currency: '원',
-    noScheduleToday: '오늘은 근무 일정이 없습니다.',
-    subReqAlertTitle: '대타 요청이 있습니다',
-    subReqAlertDesc: '6월 03일 수요일 17:00 ~ 22:00 대타 가능하신가요?',
-    applyBtn: '지원하기',
-    rejectBtn: '거절',
-    subReqConfirmTitle: '대타 지원 확인',
-    subReqConfirmMsg: '6월 03일 수요일 17:00 ~ 22:00 대타를 지원하시겠습니까?',
-    subApplySuccessTitle: '지원 완료',
-    subApplySuccessMsg: '대타 지원이 완료되었습니다!\n점주님 승인 후 내 스케줄에 최종 반영됩니다.',
-    boardDummy1Title: '가을 시즌 신메뉴 출시 안내',
-    boardDummy1Content: '가을 시즌 신메뉴가 곧 출시됩니다!\n\n레시피 및 상세 매뉴얼은 추후 관리자가 업로드 할 예정이니 꼭 확인해 주세요.',
-    boardDummy2Title: '보건증 만료 재확인 요청',
-    boardDummy2Content: '안녕하세요, 점주입니다.\n\n최근 보건증 만료일이 도래하는 직원분들이 많습니다. 각자 마이페이지에서 보건증 유효기간을 확인하시고, 만료 전 반드시 보건소에 방문하시어 갱신해 주시기 바랍니다.',
-    boardDummy3Title: '김선민, 서동윤, 김경민, 서동민 CAL 입사 경축',
-    boardDummy3Content: '새로운 팀원 김선민, 서동윤, 김경민, 서동민님이 CAL에 합류하셨습니다!\n모두 반갑게 인사하며 따뜻한 환영 부탁드립니다. 🎉',
-    boardDummy4Title: '마감 청소 매뉴얼 변경 안내',
-    boardDummy4Content: '마감 청소 매뉴얼이 일부 변경되었습니다.\n자세한 내용은 포스기 옆에 부착된 새 매뉴얼을 확인해 주세요.',
-    boardDummy5Title: '5월 우수 직원 선정 안내',
-    boardDummy5Content: '5월 우수 직원으로 김선민 님이 선정되었습니다!\n김선민 님께는 소정의 상품이 지급될 예정입니다. 축하합니다.',
-    boardDummy6Title: '여름 시즌 하계 유니폼 신청',
-    boardDummy6Content: '여름 시즌을 맞아 반팔 유니폼을 추가 신청 받습니다.\n필요하신 분들은 이번 주 금요일까지 사이즈를 매니저에게 전달해 주세요.',
-    // 게시판 카테고리 탭
-    boardTabAll: '전체',
-    boardTabNotice: '공지사항',
-    boardTabMenu: '신메뉴',
-    boardTabEvent: '이벤트',
-    boardTabManual: '매뉴얼',
-    boardTabLost: '분실물',
-    badgeNew: 'NEW',
-    badgeImportant: '중요!',
-    // 대타 전용 화면
-    substituteTitle: '대타 구하기 / 지원하기',
-    subTabRequest: '대타 요청 목록',
-    subTabHistory: '내 대타 이력',
-    subPointTotal: '내 누적 인센티브 점수',
-    subPointUnit: '점',
-    subEmptyReq: '현재 올라온 대타 요청이 없습니다.',
-    subEmptyHist: '아직 대타 이력이 없습니다.',
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-    // 문서 관리 화면
-    uploadNew: '새 이미지 업로드',
-    valid: '정상 (유효)',
-    expired: '만료됨',
-    needsRenewal: '갱신 요망',
-    pendingApproval: '승인 대기',
-    expiryDate: '만료일',
-    startDate: '계약 시작일',
-    wage: '시급',
-    workPlace: '근무지',
-
-    // 급여 및 주급 신청 화면
-    payrollTitle: '급여 및 주급 관리',
-    estMonthlySalary: '이번 달 예상 급여',
-    advancePayBtn: '주급(가불) 신청하기',
-    dailyWageDetail: '일별 급여 상세',
-    advancePayConfirmTitle: '주급 신청',
-    advancePayConfirmMsg: '이번 주 예상 급여에 대해 주급(가불)을 신청하시겠습니까?\n(점주 승인 후 지급됩니다.)',
-    advancePaySuccessTitle: '신청 완료',
-    advancePaySuccessMsg: '주급 신청이 접수되었습니다.',
-    basePay: '기본급',
-    holidayPay: '주휴수당 (예상)',
-    substituteBonus: '대타 보너스',
-    
-    // 게시판 상세 화면
-    boardDetailTitle: '게시글 상세',
-    writer: '작성자',
-    views: '조회수',
-    comments: '댓글',
-    noComments: '아직 댓글이 없습니다.',
-    addCommentPlaceholder: '댓글을 입력하세요...',
-    register: '등록',
-    commentEmptyTitle: '댓글 미입력',
-    commentEmptyMsg: '댓글 내용을 입력해주세요.',
-    deleteCommentConfirmTitle: '댓글 삭제',
-    deleteCommentConfirmMsg: '정말 이 댓글을 삭제하시겠습니까?',
-    deleteCommentSuccessTitle: '삭제 완료',
-    deleteCommentSuccessMsg: '댓글이 삭제되었습니다.',
-    pin: '고정',
-    unpin: '고정 해제',
-    pinSuccess: '게시글을 상단에 고정했습니다.',
-    unpinSuccess: '게시글 고정을 해제했습니다.',
-  },
-  '日本語': {
-    greeting: 'こんにちは',
-    admin: '管理者',
-    staff: '一般スタッフ',
-    todayWork: '今日の勤務',
-    weeklyHours: '今週の勤務時間',
-    weeklySalary: '今週の予想給与',
-    notice: '社内掲示板',
-    more: 'もっと見る',
-    myInfo: '自分の情報管理',
-    profileEdit: '個人情報の修正',
-    contract: '私の労働契約書',
-    healthCert: '保健証の管理',
-    appSettings: 'アプリ設定',
-    themeMode: '画面モード',
-    languageSetting: '言語設定',
-    pushAlert: 'アプリプッシュ通知',
-    logout: 'ログアウト',
-    scheduled: '勤務予定',
-    inProgress: '勤務中',
-    completed: '勤務完了',
-    substituteReq: '代打探し中',
-    offDay: '休み',
-    leaveRequest: '休み申請 / 代打探し',
-    noSchedule: '選択した日付の勤務予定はありません。',
-    leaveReasonPlaceholder: '休みの理由を詳しく記入してください（例：通院、テストなど）',
-    cancel: 'キャンセル',
-    apply: '申請する',
-    monthlyView: '月間ビュー',
-    close: '閉じる',
-    sun: '日',
-    mon: '月',
-    tue: '火',
-    wed: '水',
-    thu: '木',
-    fri: '金',
-    sat: '土',
-    month: '月',
-    year: '年',
-    // 모달 및 탭 텍스트
-    themeSettings: '画面モード設定',
-    themeLight: 'ライトモード',
-    themeDark: 'ダークモード',
-    themeSystem: 'システム設定',
-    langSettings: '言語設定',
-    tabHome: 'ホーム',
-    tabSchedule: 'スケジュール',
-    tabNotif: '通知',
-    tabMyPage: 'マイページ',
-    tabAdminHome: '店舗管理',
-    tabAdminSchedule: 'シフト管理',
-    tabAdminSettings: '設定',
-    // 알림 더미데이터 텍스트
-    notifSubReqTitle: '🚨 代打リクエスト',
-    notifSubReqMsg: '5月28日(水) 17:00~22:00の代打リクエストがあります。アプリで確認後、ご応募ください！',
-    notifNoticeTitle: '📢 [お知らせ] 秋の新作メニュー発売',
-    notifNoticeMsg: '秋の新作メニューがまもなく発売されます！\n\n掲示板でレシピや詳細マニュアルを必ずご確認ください。',
-    notifHealthTitle: '🏥 保健証の有効期限間近',
-    notifHealthMsg: '保健証の有効期限が残り7日です。\n保健所を訪問後、マイページから新しい画像をアップロードしてください。',
-    notifLeaveTitle: '✅ 休み申請の承認完了',
-    notifLeaveMsg: 'リクエストされた6/3(水)の休み申請が承認され、スケジュールに反映されました。',
-    time10Min: '10分前',
-    time1Hour: '1時間前',
-    timeYesterday: '昨日',
-    time2Days: '2日前',
-    // 알림 화면
-    notifListTitle: '通知リスト',
-    markAllRead: 'すべて既読',
-    delete: '削除',
-    confirm: '確認',
-    // 프로필 수정 화면
-    accountInfoReadonly: 'アカウント情報（修正不可）',
-    idLabel: 'ID',
-    unknown: '不明',
-    branchLabel: '所属店舗',
-    roleLabel: '権限（役職）',
-    adminRole: '管理者（店長）',
-    staffRole: '一般スタッフ',
-    myInfoSection: '自分の情報',
-    nameLabel: '名前',
-    namePlaceholder: '名前を入力してください',
-    phoneLabel: '電話番号',
-    phonePlaceholder: '例：090-1234-5678',
-    changePasswordSection: 'パスワード変更',
-    currentPasswordLabel: '現在のパスワード',
-    currentPasswordPlaceholder: '現在のパスワードを入力してください',
-    newPasswordLabel: '新しいパスワード',
-    newPasswordPlaceholder: '変更するパスワードを入力してください',
-    editCompleteBtn: '修正完了',
-    withdrawBtn: '退会する',
-    saveCompleteTitle: '保存完了',
-    saveCompleteMsg: '個人情報が正常に修正されました。',
-    editFailTitle: '修正失敗',
-    editFailMsg: '情報の修正中にエラーが発生しました。',
-    withdrawConfirmTitle: '退会',
-    withdrawConfirmMsg: '本当に退会しますか？すべての情報が削除されます。',
-    withdrawSuccessTitle: '退会完了',
-    withdrawSuccessMsg: '退会処理が正常に完了しました。',
-    // 대시보드 화면
-    defaultUserName: 'ユーザー',
-    suffixNim: '様',
-    qrCheckIn: 'QR出退勤',
-    expectedDailyWage: '予想日給',
-    currency: '円',
-    noScheduleToday: '今日は勤務予定がありません。',
-    subReqAlertTitle: '代打リクエストがあります',
-    subReqAlertDesc: '6月03日(水) 17:00 ~ 22:00 代打可能ですか？',
-    applyBtn: '応募する',
-    rejectBtn: '拒否',
-    subReqConfirmTitle: '代打応募の確認',
-    subReqConfirmMsg: '6月03日(水) 17:00 ~ 22:00の代打に応募しますか？',
-    subApplySuccessTitle: '応募完了',
-    subApplySuccessMsg: '代打の応募が完了しました！\n店長の承認後、スケジュールに反映されます。',
-    boardDummy1Title: '秋の新作メニュー発売のお知らせ',
-    boardDummy1Content: '秋の新作メニューがまもなく発売されます！\n\nレシピや詳細マニュアルは後日管理者がアップロードする予定ですので、必ずご確認ください。',
-    boardDummy2Title: '保健証の有効期限再確認のお願い',
-    boardDummy2Content: 'こんにちは、店長です。\n\n最近、保健証の有効期限が近づいているスタッフが多くいます。各自マイページで有効期限を確認し、期限前に必ず保健所を訪問して更新してください。',
-    boardDummy3Title: 'キム・ソンミン CAL入社のお祝い',
-    boardDummy3Content: '新しいチームメンバーのキム・ソンミンさんがCALに加わりました！\n皆さん、温かい歓迎をよろしくお願いします。 🎉',
-    boardDummy4Title: '締め作業マニュアル変更のご案内',
-    boardDummy4Content: '締め作業のマニュアルが一部変更されました。\n詳細はレジ横に貼られている新しいマニュアルをご確認ください。',
-    boardDummy5Title: '5月の優秀スタッフ選定のお知らせ',
-    boardDummy5Content: '5月の優秀スタッフとしてキム・ミンスさんが選ばれました！\nキム・ミンスさんにはささやかな商品が贈られます。おめでとうございます。',
-    boardDummy6Title: '夏期ユニフォーム申請',
-    boardDummy6Content: '夏シーズンに向けて半袖ユニフォームの追加申請を受け付けます。\n必要な方は今週の金曜日までにサイズをマネージャーに伝えてください。',
-    // 게시판 카테고리 탭
-    boardTabAll: '全体',
-    boardTabNotice: 'お知らせ',
-    boardTabMenu: '新作メニュー',
-    boardTabEvent: 'イベント',
-    boardTabManual: 'マニュアル',
-    boardTabLost: '忘れ物',
-    badgeNew: 'NEW',
-    badgeImportant: '重要！',
-    // 대타 전용 화면
-    substituteTitle: '代打探し / 応募',
-    subTabRequest: '代打リクエストリスト',
-    subTabHistory: '自分の代打履歴',
-    subPointTotal: '累積インセンティブポイント',
-    subPointUnit: 'pt',
-    subEmptyReq: '現在、代打リクエストはありません。',
-    subEmptyHist: 'まだ代打履歴がありません。',
-
-    // 문서 관리 화면
-    uploadNew: '新しい画像をアップロード',
-    valid: '正常 (有効)',
-    expired: '期限切れ',
-    needsRenewal: '更新が必要',
-    pendingApproval: '承認待ち',
-    expiryDate: '有効期限',
-    startDate: '契約開始日',
-    wage: '時給',
-    workPlace: '勤務地',
-
-    // 급여 및 주급 신청 화면
-    payrollTitle: '給与・週払い管理',
-    estMonthlySalary: '今月の予想給与',
-    advancePayBtn: '週払い(前借り)を申請する',
-    dailyWageDetail: '日別給与詳細',
-    advancePayConfirmTitle: '週払い申請',
-    advancePayConfirmMsg: '今週の予想給与について週払いを申請しますか？\n(店長の承認後に支給されます。)',
-    advancePaySuccessTitle: '申請完了',
-    advancePaySuccessMsg: '週払い申請を受け付けました。',
-    basePay: '基本給',
-    holidayPay: '週休手当 (予想)',
-    substituteBonus: '代打ボーナス',
-    
-    // ✅ [추가] 게시판 상세 화면
-    boardDetailTitle: '掲示物の詳細',
-    writer: '作成者',
-    views: '閲覧数',
-    comments: 'コメント',
-    noComments: 'コメントはまだありません。',
-    addCommentPlaceholder: 'コメントを入力してください...',
-    register: '登録',
-    commentEmptyTitle: 'コメント未入力',
-    commentEmptyMsg: 'コメント内容を入力してください。',
-    deleteCommentConfirmTitle: 'コメント削除',
-    deleteCommentConfirmMsg: '本当にこのコメントを削除しますか？',
-    deleteCommentSuccessTitle: '削除完了',
-    deleteCommentSuccessMsg: 'コメントが削除されました。',
-    pin: 'ピン留め',
-    unpin: 'ピン留め解除',
-    pinSuccess: '掲示物を上部にピン留めしました。',
-    unpinSuccess: '掲示物のピン留めを解除しました。',
-  },
-  'English': {
-    greeting: 'Hello',
-    admin: 'Admin',
-    staff: 'Staff',
-    todayWork: 'Today\'s Shift',
-    weeklyHours: 'Weekly Hours',
-    weeklySalary: 'Expected Salary',
-    notice: 'Notice Board',
-    more: 'More',
-    myInfo: 'My Info Management',
-    profileEdit: 'Edit Profile',
-    contract: 'My Contract',
-    healthCert: 'Health Certificate',
-    appSettings: 'App Settings',
-    themeMode: 'Theme Mode',
-    languageSetting: 'Language Settings',
-    pushAlert: 'Push Notifications',
-    logout: 'Logout',
-    scheduled: 'Scheduled',
-    inProgress: 'In Progress',
-    completed: 'Completed',
-    substituteReq: 'Finding Sub',
-    offDay: 'Off',
-    leaveRequest: 'Request Leave / Substitute',
-    noSchedule: 'No schedule for the selected date.',
-    leaveReasonPlaceholder: 'Please enter details for leave (e.g. sick, exam)',
-    cancel: 'Cancel',
-    apply: 'Apply',
-    monthlyView: 'Monthly View',
-    close: 'Close',
-    sun: 'Sun',
-    mon: 'Mon',
-    tue: 'Tue',
-    wed: 'Wed',
-    thu: 'Thu',
-    fri: 'Fri',
-    sat: 'Sat',
-    month: 'Month',
-    year: 'Year',
-    // 모달 및 탭 텍스트
-    themeSettings: 'Theme Settings',
-    themeLight: 'Light Mode',
-    themeDark: 'Dark Mode',
-    themeSystem: 'System Default',
-    langSettings: 'Language Settings',
-    tabHome: 'Home',
-    tabSchedule: 'Schedule',
-    tabNotif: 'Notifications',
-    tabMyPage: 'My Page',
-    tabAdminHome: 'Store Mgmt',
-    tabAdminSchedule: 'Schedule Mgmt',
-    tabAdminSettings: 'Settings',
-    // 알림 더미데이터 텍스트
-    notifSubReqTitle: '🚨 Substitute Request',
-    notifSubReqMsg: 'There is a substitute request for Wed, May 28, 17:00~22:00. Please check and apply!',
-    notifNoticeTitle: '📢 [Notice] Fall Season New Menu',
-    notifNoticeMsg: 'The new fall season menu will be released soon!\n\nPlease check the recipe and manual on the board.',
-    notifHealthTitle: '🏥 Health Cert Expiring Soon',
-    notifHealthMsg: 'Your health certificate expires in 7 days.\nPlease visit the health center and upload a new image.',
-    notifLeaveTitle: '✅ Leave Approved',
-    notifLeaveMsg: 'Your leave request for 6/3(Wed) has been approved and applied to your schedule.',
-    time10Min: '10 mins ago',
-    time1Hour: '1 hour ago',
-    timeYesterday: 'Yesterday',
-    time2Days: '2 days ago',
-    // 알림 화면
-    notifListTitle: 'Notifications',
-    markAllRead: 'Mark all as read',
-    delete: 'Delete',
-    confirm: 'Confirm',
-    // Profile Edit Screen
-    accountInfoReadonly: 'Account Info (Read-Only)',
-    idLabel: 'ID',
-    unknown: 'Unknown',
-    branchLabel: 'Branch',
-    roleLabel: 'Role (Position)',
-    adminRole: 'Admin (Manager)',
-    staffRole: 'Staff',
-    myInfoSection: 'My Info',
-    nameLabel: 'Name',
-    namePlaceholder: 'Enter your name',
-    phoneLabel: 'Phone Number',
-    phonePlaceholder: 'e.g. 123-456-7890',
-    changePasswordSection: 'Change Password',
-    currentPasswordLabel: 'Current Password',
-    currentPasswordPlaceholder: 'Enter current password',
-    newPasswordLabel: 'New Password',
-    newPasswordPlaceholder: 'Enter new password',
-    editCompleteBtn: 'Save Changes',
-    withdrawBtn: 'Delete Account',
-    saveCompleteTitle: 'Saved',
-    saveCompleteMsg: 'Profile successfully updated.',
-    editFailTitle: 'Update Failed',
-    editFailMsg: 'An error occurred while updating.',
-    withdrawConfirmTitle: 'Delete Account',
-    withdrawConfirmMsg: 'Are you sure you want to delete your account? All information will be deleted.',
-    withdrawSuccessTitle: 'Account Deleted',
-    withdrawSuccessMsg: 'Your account has been successfully deleted.',
-    // Dashboard Screen
-    defaultUserName: 'User',
-    suffixNim: '',
-    qrCheckIn: 'QR Check-In',
-    expectedDailyWage: 'Est. Daily Wage',
-    currency: 'KRW',
-    noScheduleToday: 'No schedule for today.',
-    subReqAlertTitle: 'Substitute Request',
-    subReqAlertDesc: 'Are you available to sub on Wed, Jun 3, 17:00~22:00?',
-    applyBtn: 'Apply',
-    rejectBtn: 'Decline',
-    subReqConfirmTitle: 'Confirm Application',
-    subReqConfirmMsg: 'Apply for the substitute shift on Wed, Jun 3, 17:00~22:00?',
-    subApplySuccessTitle: 'Application Complete',
-    subApplySuccessMsg: 'Application submitted!\nIt will be added to your schedule upon manager approval.',
-    boardDummy1Title: 'Fall Season New Menu Release',
-    boardDummy1Content: 'The new fall season menu will be released soon!\n\nRecipes and detailed manuals will be uploaded shortly by the admin. Please check back.',
-    boardDummy2Title: 'Health Certificate Expiration Notice',
-    boardDummy2Content: 'Hello from the manager.\n\nMany staff members have expiring health certificates. Please check your expiration date on My Page and renew it at the health center before it expires.',
-    boardDummy3Title: 'Welcome Seonmin Kim to CAL',
-    boardDummy3Content: 'A new team member, Seonmin Kim, has joined CAL!\nLet\'s all give a warm welcome. 🎉',
-    boardDummy4Title: 'Closing Cleaning Manual Update',
-    boardDummy4Content: 'The closing cleaning manual has been partially updated.\nPlease check the new manual attached next to the POS machine for details.',
-    boardDummy5Title: 'May Employee of the Month',
-    boardDummy5Content: 'Minsu Kim has been selected as the Employee of the Month for May!\nA small gift will be awarded to Minsu Kim. Congratulations!',
-    boardDummy6Title: 'Summer Uniform Request',
-    boardDummy6Content: 'We are taking additional requests for short-sleeve uniforms for the summer season.\nIf you need one, please give your size to the manager by this Friday.',
-    // Board Category Tabs
-    boardTabAll: 'All',
-    boardTabNotice: 'Notice',
-    boardTabMenu: 'New Menu',
-    boardTabEvent: 'Event',
-    boardTabManual: 'Manual',
-    boardTabLost: 'Lost & Found',
-    badgeNew: 'NEW',
-    badgeImportant: 'Important!',
-    // Substitute Screen
-    substituteTitle: 'Substitute / Apply',
-    subTabRequest: 'Substitute Requests',
-    subTabHistory: 'My Sub History',
-    subPointTotal: 'Accumulated Incentive Points',
-    subPointUnit: 'pt',
-    subEmptyReq: 'There are no substitute requests currently.',
-    subEmptyHist: 'No substitute history yet.',
-
-    // 문서 관리 화면
-    uploadNew: 'Upload New Image',
-    valid: 'Valid',
-    expired: 'Expired',
-    needsRenewal: 'Needs Renewal',
-    pendingApproval: 'Pending Approval',
-    expiryDate: 'Expiry Date',
-    startDate: 'Start Date',
-    wage: 'Hourly Wage',
-    workPlace: 'Workplace',
-
-    // 급여 및 주급 신청 화면
-    payrollTitle: 'Payroll & Advance',
-    estMonthlySalary: 'Est. Monthly Salary',
-    advancePayBtn: 'Request Weekly Advance',
-    dailyWageDetail: 'Daily Wage Details',
-    advancePayConfirmTitle: 'Advance Request',
-    advancePayConfirmMsg: 'Would you like to request an advance on your weekly salary?\n(Requires manager approval)',
-    advancePaySuccessTitle: 'Request Complete',
-    advancePaySuccessMsg: 'Your advance request has been submitted.',
-    basePay: 'Base Pay',
-    holidayPay: 'Holiday Pay (Est.)',
-    substituteBonus: 'Sub Bonus',
-    
-    // ✅ [추가] 게시판 상세 화면
-    boardDetailTitle: 'Post Detail',
-    writer: 'Author',
-    views: 'Views',
-    comments: 'Comments',
-    noComments: 'No comments yet.',
-    addCommentPlaceholder: 'Add a comment...',
-    register: 'Post',
-    commentEmptyTitle: 'Empty Comment',
-    commentEmptyMsg: 'Please enter your comment.',
-    deleteCommentConfirmTitle: 'Delete Comment',
-    deleteCommentConfirmMsg: 'Are you sure you want to delete this comment?',
-    deleteCommentSuccessTitle: 'Deleted',
-    deleteCommentSuccessMsg: 'The comment has been deleted.',
-    pin: 'Pin',
-    unpin: 'Unpin',
-    pinSuccess: 'Post pinned to top.',
-    unpinSuccess: 'Post unpinned.',
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
   }
+  return context;
 };
 
-export const LanguageContext = createContext<LanguageContextType>({
-  language: '한국어',
-  setLanguage: () => {},
-  t: (key: string) => key, // Provider가 없을 경우 key를 그대로 반환하여 에러 방지
-});
+export const LanguageProvider = ({ children }: { children: ReactNode }) => {
+  const [language, setLanguageState] = useState<Language>('한국어');
+  const [translations, setTranslations] = useState<{ [key: string]: Partial<TranslationData> }>({ ko });
+  const [isTranslating, setIsTranslating] = useState(false);
 
-export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
-  const [language, setLanguage] = useState<Language>('한국어');
+  useEffect(() => {
+    const loadLanguage = async () => {
+      const savedVersion = await AsyncStorage.getItem('translation_version');
+      if (savedVersion !== TRANSLATION_VERSION) {
+        await AsyncStorage.removeItem('translations');
+        await AsyncStorage.setItem('translation_version', TRANSLATION_VERSION);
+        setTranslations({ ko });
+      } else {
+        const savedTranslations = await AsyncStorage.getItem('translations');
+        if (savedTranslations) {
+          setTranslations(JSON.parse(savedTranslations));
+        }
+      }
+      
+      const savedLang = await AsyncStorage.getItem('language') as Language | null;
+      if (savedLang) {
+        setLanguageState(savedLang);
+      }
+    };
+    loadLanguage();
+  }, []);
 
-  // key 값을 받아 현재 선택된 언어의 텍스트를 반환하는 번역 함수
-  const t = (key: string) => {
-    return translations[language][key as keyof typeof translations['한국어']] || key;
+  const setLanguage = async (lang: Language) => {
+    if (lang === language) return;
+
+    const langCode = lang === 'English' ? 'en' : lang === '日本語' ? 'ja' : 'ko';
+
+    if (langCode === 'ko') {
+      setLanguageState('한국어');
+      await AsyncStorage.setItem('language', '한국어');
+      return;
+    }
+
+    if (translations[langCode] && Object.keys(translations[langCode]).length === Object.keys(ko).length) {
+      setLanguageState(lang);
+      await AsyncStorage.setItem('language', lang);
+    } else {
+      setIsTranslating(true);
+      try {
+        const keys = Object.keys(ko) as (keyof TranslationData)[];
+        const values = keys.map(key => ko[key]);
+        
+        const translatedValues = await translateTexts(values, langCode);
+        
+        const newTranslation: Partial<TranslationData> = {};
+        keys.forEach((key, index) => {
+          newTranslation[key] = translatedValues[index];
+        });
+
+        const newTranslations = { ...translations, [langCode]: newTranslation };
+        setTranslations(newTranslations);
+        setLanguageState(lang);
+
+        await AsyncStorage.setItem('translations', JSON.stringify(newTranslations));
+        await AsyncStorage.setItem('language', lang);
+
+      } catch (error: any) {
+        console.error("언어 변경 오류:", error);
+        Alert.alert(
+          "번역 오류",
+          `언어 변경 중 문제가 발생했습니다. API 키 또는 네트워크 연결을 확인해주세요.\n\n(${error.message})`
+        );
+        setLanguageState('한국어');
+        await AsyncStorage.setItem('language', '한국어');
+      } finally {
+        setIsTranslating(false);
+      }
+    }
+  };
+
+  const t = (key: keyof TranslationData): string => {
+    const langCode = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
+    const translationSet = translations[langCode] || translations.ko;
+    return translationSet[key] || String(key);
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, isTranslating }}>
       {children}
     </LanguageContext.Provider>
   );
 };
-
-export const useLanguage = () => useContext(LanguageContext);

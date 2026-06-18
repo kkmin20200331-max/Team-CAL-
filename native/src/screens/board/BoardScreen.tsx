@@ -67,7 +67,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
           </View>
         )}
         <Text style={styles.noticeItemTitle} numberOfLines={1}>
-          {t(item.title).length > (activeCategory === 'ALL' ? 14 : 18) ? t(item.title).substring(0, (activeCategory === 'ALL' ? 14 : 18)) + '..' : t(item.title)}
+          {item.title.length > (activeCategory === 'ALL' ? 14 : 18) ? item.title.substring(0, (activeCategory === 'ALL' ? 14 : 18)) + '..' : item.title}
         </Text>
         {item.badge && (
           <View style={styles.newBadge}><Text style={styles.newBadgeText}>{t(item.badge)}</Text></View>
@@ -83,7 +83,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('notice')}</Text>
+        <Text style={styles.headerTitle}>{t('internalBoard')}</Text>
         <View style={{ width: 40 }} />
       </View>
 

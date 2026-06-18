@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ko } from 'date-fns/locale';
 import { format, addMonths, startOfMonth, getDaysInMonth, startOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const dummyUsers = [
   { id: 'user_1', name: '김민준', role: '매니저', color: '#4A90E2' },
@@ -42,11 +43,11 @@ const generateDummyShifts = (month: Date) => {
   return shifts;
 };
 
-const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
-
 const AdminScheduleScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getThemedStyles(colors);
+  const DAY_LABELS = [t('sun'), t('mon'), t('tue'), t('wed'), t('thu'), t('fri'), t('sat')];
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -133,8 +134,8 @@ const AdminScheduleScreen = ({ navigation }: { navigation: any }) => {
       </View>
 
       <View style={styles.dayLabels}>
-        {DAY_LABELS.map(day => (
-          <Text key={day} style={styles.dayLabel}>{day}</Text>
+        {DAY_LABELS.map((day, index) => (
+          <Text key={day} style={[styles.dayLabel, index === 0 && {color: colors.sunday}, index === 6 && {color: colors.saturday}]}>{day}</Text>
         ))}
       </View>
 

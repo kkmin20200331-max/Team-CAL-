@@ -112,10 +112,10 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>관리자 대시보드</Text>
+          <Text style={styles.headerTitle}>{t('adminDashboard')}</Text>
           <TouchableOpacity style={styles.branchSelector} onPress={() => setBranchModalVisible(true)}>
             <Text style={styles.storeName}>
-              {activeBranch?.brandName || '브랜드'} {activeBranch?.branchName || '지점'} ▼
+              {activeBranch?.brandName || t('brand')} {activeBranch?.branchName || t('branch')} ▼
             </Text>
           </TouchableOpacity>
         </View>
@@ -123,11 +123,11 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
         <View style={styles.summaryContainer}>
           <TouchableOpacity style={styles.summaryBox} onPress={handleNavigateToDailySchedule}>
             <Text style={styles.summaryValue}>{currentlyWorking}명</Text>
-            <Text style={styles.summaryLabel}>현재 근무중</Text>
+            <Text style={styles.summaryLabel}>{t('currentlyWorking')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.summaryBox} onPress={() => navigation.navigate('SubstituteManagement')}>
             <Text style={styles.summaryValue}>{pendingRequestCount}건</Text>
-            <Text style={styles.summaryLabel}>요청 처리</Text>
+            <Text style={styles.summaryLabel}>{t('requestProcessing')}</Text>
           </TouchableOpacity>
         </View>
         
@@ -154,7 +154,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>지점 선택</Text>
+            <Text style={styles.modalTitle}>{t('selectBranch')}</Text>
             {userInfo?.branches?.map(branch => (
               <TouchableOpacity
                 key={branch.id}
@@ -174,10 +174,10 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
                 navigation.navigate('AddBranch');
               }}
             >
-              <Text style={styles.addBranchButtonText}>+ 새 지점 추가</Text>
+              <Text style={styles.addBranchButtonText}>{t('addNewBranch')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.closeButton} onPress={() => setBranchModalVisible(false)}>
-              <Text style={styles.closeButtonText}>닫기</Text>
+              <Text style={styles.closeButtonText}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
         </View>

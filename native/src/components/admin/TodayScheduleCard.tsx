@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ShiftWithUser {
   time: string;
@@ -23,6 +24,7 @@ type Props = {
 
 const TodayScheduleCard = ({ schedule, onPress }: Props) => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getThemedStyles(colors);
 
   const renderShiftGroup = (title: string, shifts: ShiftWithUser[]) => (
@@ -33,7 +35,7 @@ const TodayScheduleCard = ({ schedule, onPress }: Props) => {
           shifts.map((shift, index) => (
             <View key={index} style={styles.employeeChip}>
               <View style={[styles.colorDot, { backgroundColor: shift?.user?.color || colors.subText }]} />
-              <Text style={styles.employeeName}>{shift?.user?.name || '알 수 없음'}</Text>
+              <Text style={styles.employeeName}>{shift?.user?.name || t('unknown')}</Text>
             </View>
           ))
         ) : (
@@ -46,15 +48,15 @@ const TodayScheduleCard = ({ schedule, onPress }: Props) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.header}>
-        <Text style={styles.title}>오늘의 스케줄</Text>
+        <Text style={styles.title}>{t('todaySchedule')}</Text>
         <Text style={styles.arrow}>〉</Text>
       </View>
       <View style={styles.content}>
-        {renderShiftGroup("오전", schedule.morning)}
+        {renderShiftGroup(t('morning'), schedule.morning)}
         <View style={styles.divider} />
-        {renderShiftGroup("오후", schedule.afternoon)}
+        {renderShiftGroup(t('afternoon'), schedule.afternoon)}
         <View style={styles.divider} />
-        {renderShiftGroup("마감", schedule.closing)}
+        {renderShiftGroup(t('closing'), schedule.closing)}
       </View>
     </TouchableOpacity>
   );
