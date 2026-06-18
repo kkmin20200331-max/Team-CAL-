@@ -12,7 +12,6 @@ import axios from "axios";
 // Auth pages
 import Login from "./pages/auth/Login";
 import SignUp from "./pages/auth/Signup";
-import LineFriendAdd from "./pages/auth/LineFriendAdd";
 
 // LoginCheck and AdminCheck
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -59,7 +58,11 @@ export default function App() {
   }, []);
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableColorScheme={false}>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableColorScheme={false}
+    >
       <Router>
         <div className="border-b bg-white px-4 py-2 text-sm font-medium text-slate-700">
           {"API \uC0C1\uD0DC"}: {apiMessage}
@@ -72,7 +75,6 @@ export default function App() {
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/signup" element={<SignUp />} />
-          <Route path="/line/friend-add" element={<LineFriendAdd />} />
 
           {/* Admin routes */}
           <Route
