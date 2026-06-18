@@ -3,32 +3,23 @@ import { useNavigate, useParams } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
 import {
   Users,
   TrendingUp,
   AlertCircle,
   Clock,
   DollarSign,
-  FileWarning,
   CalendarDays,
-  Menu,
-  Home,
   Calendar,
   UserPlus,
   Wallet,
   FileText,
   MessageSquare,
   BarChart3,
-  Camera,
-  Settings,
-  ChevronRight,
-  Store,
-  Loader2
+  Loader2,
 } from 'lucide-react';
-import ProfilePanel from './ProfilePanel';
+import AdminHeader from './AdminHeader';
+import { useTheme } from 'next-themes';
 import {
   LineChart,
   Line,
@@ -39,6 +30,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 const AI_INSIGHT_API = "http://localhost:8080/api/ai-insights";
@@ -358,6 +354,8 @@ export default function AdminDashboard() {
   const { branchId } = useParams();
   const language = useLanguage();
   const t = translations.adminDashboard[language];
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const currentBranch = sessionStorage.getItem("store_name") || "지점 선택";
 

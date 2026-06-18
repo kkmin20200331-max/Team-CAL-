@@ -222,245 +222,170 @@ const DailySchedule: React.FC = () => {
       }, 0),
   };
 
+  const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const cardBg = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const textColor = isDark ? '#fff' : '#111';
+  const subTextColor = isDark ? '#aaa' : '#555';
+  const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? '#3a3a3c' : '#fff', color: textColor, fontSize: 14, boxSizing: 'border-box' as const };
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t.title}</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">{t.subtitle}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button onClick={openAddModal}>
-                <Plus className="w-4 h-4 mr-2" />{t.addShift}
-              </Button>
-              <ProfilePanel />
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+              <ChevronLeft size={20} />
+            </button>
+            <div>
+              <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB' }}>{t.title}</h1>
+              <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{t.subtitle}</p>
             </div>
           </div>
+          <button onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            <Plus size={16} />{t.addShift}
+          </button>
         </div>
-      </div>
+      </AdminHeader>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* 날짜 필터 */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-gray-500" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="border rounded-lg px-3 py-2"
-            />
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 40px' }}>
+        {/* 날짜 + 뷰전환 */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '10px 16px' }}>
+            <Calendar size={18} color={DARK_GREEN} />
+            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ border: 'none', background: 'transparent', fontSize: 14, color: textColor, outline: 'none' }} />
           </div>
-        </div>
-
-        {/* 뷰 전환 버튼 */}
-        <div className="flex gap-3 mb-6">
-          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}>
-            <Calendar className="w-4 h-4 mr-2" />{t.monthlyView}
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}>
-            <Calendar className="w-4 h-4 mr-2" />{t.weeklyView}
-          </Button>
+          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}>
+            {t.monthlyView}
+          </button>
+          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}>
+            {t.weeklyView}
+          </button>
         </div>
 
         {/* 통계 */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">{t.totalWorkers}</p><p className="text-3xl font-bold text-gray-900">{stats.total}</p></CardContent></Card>
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">{t.statusConfirmed}</p><p className="text-3xl font-bold text-green-600">{stats.confirmed}</p></CardContent></Card>
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">{t.statusPending}</p><p className="text-3xl font-bold text-yellow-600">{stats.pending}</p></CardContent></Card>
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">{t.statusCancelled}</p><p className="text-3xl font-bold text-red-600">{stats.cancelled}</p></CardContent></Card>
-          <Card><CardContent className="pt-6 text-center"><p className="text-sm text-gray-600">{t.totalHours}</p><p className="text-3xl font-bold text-blue-600">{stats.totalHours.toFixed(1)}h</p></CardContent></Card>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 20 }}>
+          {[
+            { label: t.totalWorkers, value: stats.total, color: textColor },
+            { label: t.statusConfirmed, value: stats.confirmed, color: GREEN },
+            { label: t.statusPending, value: stats.pending, color: '#f59e0b' },
+            { label: t.statusCancelled, value: stats.cancelled, color: '#ef4444' },
+            { label: t.totalHours, value: `${stats.totalHours.toFixed(1)}h`, color: DARK_GREEN },
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, padding: '16px', textAlign: 'center', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
+              <p style={{ fontSize: 12, color: subTextColor, marginBottom: 6 }}>{label}</p>
+              <p style={{ fontSize: 28, fontWeight: 700, color }}>{value}</p>
+            </div>
+          ))}
         </div>
 
         {/* 시간별 타임라인 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />{t.hourlyStatus}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <p className="text-center py-8 text-gray-500">{t.loading}</p>
-            ) : shifts.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <Calendar className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p>{t.noShifts}</p>
-                <Button className="mt-4" onClick={openAddModal}>
-                  <Plus className="w-4 h-4 mr-2" />{t.addFirstShift}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {Object.entries(hourlySchedule).map(([hour, assignments]) => {
-                  if (assignments.length === 0) return null;
-                  return (
-                    <div
-                      key={hour}
-                      className="border-l-4 border-blue-500 pl-4 py-2"
-                    >
-                      <h3 className="font-semibold text-lg mb-3">{hour}</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {assignments.map((shift) => (
-                          <div
-                            key={shift.id}
-                            className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                <User className="w-4 h-4 text-gray-500" />
-                                <span className="font-semibold">
-                                  {getEmployeeName(shift.user_id)}
-                                </span>
-                              </div>
-                              {getStatusBadge(shift.status)}
+        <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 17, fontWeight: 700, color: textColor }}>
+            <Clock size={18} color={DARK_GREEN} />{t.hourlyStatus}
+          </div>
+          {loading ? (
+            <p style={{ textAlign: 'center', padding: '32px 0', color: subTextColor }}>{t.loading}</p>
+          ) : shifts.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '48px 0', color: subTextColor }}>
+              <Calendar size={48} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+              <p>{t.noShifts}</p>
+              <button onClick={openAddModal} style={{ marginTop: 16, padding: '10px 24px', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                <Plus size={14} style={{ display: 'inline', marginRight: 6 }} />{t.addFirstShift}
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {Object.entries(hourlySchedule).map(([hour, assignments]) => {
+                if (assignments.length === 0) return null;
+                return (
+                  <div key={hour} style={{ borderLeft: `4px solid ${DARK_GREEN}`, paddingLeft: 16, paddingTop: 4, paddingBottom: 4 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 10 }}>{hour}</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+                      {assignments.map((shift) => (
+                        <div key={shift.id} style={{ background: isDark ? '#3a3a3c' : '#f8fff4', border: `1px solid ${BORDER_GREEN}`, borderRadius: 16, padding: 16 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <User size={14} color={subTextColor} />
+                              <span style={{ fontWeight: 700, fontSize: 14, color: textColor }}>{getEmployeeName(shift.user_id)}</span>
                             </div>
-                            <div className="space-y-1 text-sm text-gray-600">
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-3 h-3" />
-                                {formatTime(shift.start_at)} -{" "}
-                                {formatTime(shift.end_at)}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-3 h-3" />
-                                {getEmployeePhone(shift.user_id) || "-"}
-                              </div>
-                            </div>
-                            <div className="mt-3 flex gap-2">
-                              <Button size="sm" variant="outline" className="flex-1" onClick={() => openEditModal(shift)}>{t.editBtn}</Button>
-                              <Button size="sm" variant="outline" className="flex-1" onClick={() => handleContact(shift.user_id)}>{t.contactBtn}</Button>
-                              <Button size="sm" variant="outline" className="px-2 text-red-500 border-red-200 hover:bg-red-50" onClick={() => handleDelete(shift.id)}>
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
+                            {getStatusBadge(shift.status)}
                           </div>
-                        ))}
-                      </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: subTextColor, marginBottom: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={12} />{formatTime(shift.start_at)} - {formatTime(shift.end_at)}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Phone size={12} />{getEmployeePhone(shift.user_id) || '-'}</div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button onClick={() => openEditModal(shift)} style={{ flex: 1, padding: '8px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, fontSize: 12, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.editBtn}</button>
+                            <button onClick={() => handleContact(shift.user_id)} style={{ flex: 1, padding: '8px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, fontSize: 12, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.contactBtn}</button>
+                            <button onClick={() => handleDelete(shift.id)} style={{ padding: '8px 12px', background: 'none', border: '1px solid #fca5a5', borderRadius: 10, color: '#ef4444', cursor: 'pointer' }}><Trash2 size={12} /></button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-        {/* 하단 버튼 */}
-        <div className="mt-6">
-          <Button
-            className="w-full bg-gray-900 hover:bg-gray-700 text-white"
-            onClick={() => navigate(`/admin/substitute/${branchId}`)}
-          >
+        <div style={{ marginTop: 24 }}>
+          <button style={{ width: '100%', padding: '14px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer' }} onClick={() => navigate(`/admin/substitute/${branchId}`)}>
             {t.substituteManagement}
-          </Button>
+          </button>
         </div>
       </div>
 
-      {/* 근무 추가 / 수정 모달 */}
+      {/* 모달 */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setModalOpen(false)}
-          />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">{modalMode === 'add' ? t.modalAddTitle : t.modalEditTitle}</h2>
-              <button onClick={() => setModalOpen(false)} className="p-1 rounded-full hover:bg-gray-100">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setModalOpen(false)} />
+          <div style={{ position: 'relative', background: isDark ? '#2c2c2e' : '#fff', borderRadius: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', width: '100%', maxWidth: 440, margin: '0 16px', padding: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: textColor }}>{modalMode === 'add' ? t.modalAddTitle : t.modalEditTitle}</h2>
+              <button onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subTextColor }}><X size={20} /></button>
             </div>
-
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.employeeLabel}</label>
-                <select
-                  value={form.user_id}
-                  onChange={(e) =>
-                    setForm({ ...form, user_id: e.target.value })
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 6 }}>{t.employeeLabel}</label>
+                <select value={form.user_id} onChange={(e) => setForm({ ...form, user_id: e.target.value })} style={inputStyle}>
                   <option value="">{t.selectEmployee}</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.name}</option>
-                  ))}
+                  {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.dateLabel}</label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 6 }}>{t.dateLabel}</label>
+                <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={inputStyle} />
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.startTimeLabel}</label>
-                  <input
-                    type="time"
-                    value={form.start_time}
-                    onChange={(e) =>
-                      setForm({ ...form, start_time: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 6 }}>{t.startTimeLabel}</label>
+                  <input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} style={inputStyle} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t.endTimeLabel}</label>
-                  <input
-                    type="time"
-                    value={form.end_time}
-                    onChange={(e) =>
-                      setForm({ ...form, end_time: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 6 }}>{t.endTimeLabel}</label>
+                  <input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} style={inputStyle} />
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.statusLabel}</label>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 6 }}>{t.statusLabel}</label>
+                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} style={inputStyle}>
                   <option value="confirmed">{t.statusConfirmed}</option>
                   <option value="pending">{t.statusPending}</option>
                   <option value="cancelled">{t.statusCancelled}</option>
                 </select>
               </div>
             </div>
-
-            <div className="flex gap-3 mt-6">
-              {modalMode === "edit" && (
-                <Button
-                  variant="outline"
-                  className="text-red-500 border-red-300 hover:bg-red-50"
-                  onClick={() => {
-                    handleDelete(editingShift!.id);
-                    setModalOpen(false);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />{t.deleteBtn}
-                </Button>
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              {modalMode === 'edit' && (
+                <button onClick={() => { handleDelete(editingShift!.id); setModalOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 16px', background: 'none', border: '1px solid #fca5a5', borderRadius: 10, color: '#ef4444', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <Trash2 size={13} />{t.deleteBtn}
+                </button>
               )}
-              <Button variant="outline" className="flex-1" onClick={() => setModalOpen(false)}>{t.cancelBtn}</Button>
-              <Button className="flex-1" onClick={handleSubmit}>
+              <button onClick={() => setModalOpen(false)} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t.cancelBtn}</button>
+              <button onClick={handleSubmit} style={{ flex: 1, padding: '12px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                 {modalMode === 'add' ? t.addBtn : t.saveBtn}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
