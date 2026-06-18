@@ -40,6 +40,7 @@ import LeaveRequest from "./pages/employee/LeaveRequest";
 import SubstituteList from "./pages/employee/SubstituteList";
 import EmployeePayroll from "./pages/employee/EmployeePayroll";
 import EmployeeBoard from "./pages/employee/EmployeeBoard";
+import EditProfile from "./pages/employee/EditProfile";
 
 export default function App() {
   const [apiMessage, setApiMessage] = useState(
@@ -58,7 +59,7 @@ export default function App() {
   }, []);
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light">
+    <ThemeProvider attribute="class" defaultTheme="light" enableColorScheme={false}>
       <Router>
         <div className="border-b bg-white px-4 py-2 text-sm font-medium text-slate-700">
           {"API \uC0C1\uD0DC"}: {apiMessage}
@@ -250,6 +251,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <EmployeeBoard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/edit-profile"
+            element={
+              <ProtectedRoute>
+                <EditProfile />
               </ProtectedRoute>
             }
           />

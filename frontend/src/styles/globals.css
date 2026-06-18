@@ -1,0 +1,24 @@
+/* 자동완성 배경/텍스트 색 유지 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #333 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #F2F5EB inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* 회원가입/프로필 편집 페이지 비밀번호 인풋 (라이트 배경 전용) */
+.light-form-password[type="password"] {
+  color: #333 !important;
+  -webkit-text-fill-color: #333 !important;
+  color-scheme: light !important;
+}
+
+/* 회원가입 인풋 placeholder 색 통일 */
+.pw-input::placeholder,
+.signup-input::placeholder {
+  color: #B7B4B4 !important;
+  -webkit-text-fill-color: #B7B4B4 !important;
+  opacity: 1 !important;
+  font-weight: 300 !important;
+}

@@ -1,11 +1,19 @@
 import EmployeeProfilePanel from './EmployeeProfilePanel';
 import { useLanguage } from '../../i18n/useLanguage';
+import { useNavigate } from 'react-router';
+import { useTheme } from 'next-themes';
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
 const LIGHT_GREEN = '#80D180';
 
 const logoMap: Record<string, string> = {
+  ko: '/logo_ko_long.png',
+  en: '/logo_en_long.png',
+  ja: '/logo_ja_long.png',
+};
+
+const logoMapDark: Record<string, string> = {
   ko: '/logo_ko_long.png',
   en: '/logo_en_long.png',
   ja: '/logo_ja_long.png',
@@ -23,20 +31,31 @@ interface Props {
 
 export default function EmployeeHeader({ children }: Props) {
   const language = useLanguage();
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const storeName = localStorage.getItem('store_name') || '';
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const storeName = sessionStorage.getItem('store_name') || '';
+
+  const headerBg = isDark ? '#2c2c2e' : '#fff';
+  const nameColor = isDark ? '#4cd964' : DARK_GREEN;
+  const shadow = isDark ? '0 1px 0 rgba(255,255,255,0.06)' : '0 1px 0 rgba(0,162,0,0.12)';
 
   return (
     <header style={{
-      background: '#fff', position: 'sticky', top: 0, zIndex: 100,
-      boxShadow: '0 1px 0 rgba(0,162,0,0.12)',
+      background: headerBg, position: 'sticky', top: 0, zIndex: 100,
+      boxShadow: shadow,
     }}>
-      {/* 상단 바: 로고 + 지점명 + 유저정보 + 아바타 */}
       <div style={{
         height: 120, display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', padding: '0 40px',
       }}>
-        <img src={logoMap[language]} alt="logo" style={{ height: 60, width: 'auto', objectFit: 'contain' }} />
+        <img
+          src={logoMap[language]} alt="logo"
+          style={{ height: 60, width: 'auto', objectFit: 'contain', cursor: 'pointer' }}
+          onClick={() => navigate('/employee/home')}
+        />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
           {storeName && (
@@ -52,15 +71,14 @@ export default function EmployeeHeader({ children }: Props) {
           )}
 
           <div style={{ textAlign: 'right', marginRight: -20 }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: DARK_GREEN }}>{currentUser?.name ?? ''}</div>
-            <div style={{ fontSize: 15, fontWeight: 300, color: DARK_GREEN }}>{currentUser?.role ?? ''}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: nameColor }}>{currentUser?.name ?? ''}</div>
+            <div style={{ fontSize: 15, fontWeight: 300, color: nameColor }}>{currentUser?.role ?? ''}</div>
           </div>
 
           <EmployeeProfilePanel />
         </div>
       </div>
 
-      {/* 페이지별 콘텐츠 (타이틀 등) */}
       {children && (
         <div style={{
           background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`,
