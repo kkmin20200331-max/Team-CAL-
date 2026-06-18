@@ -5,17 +5,13 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import {
-  format,
-  addMonths,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  addDays,
-  isSameMonth,
-  isSameDay,
-} from "date-fns";
-import { ko } from "date-fns/locale";
-import ProfilePanel from "../../components/admin/ProfilePanel";
+  format, addMonths, startOfMonth, endOfMonth,
+  startOfWeek, addDays, isSameMonth, isSameDay
+} from 'date-fns';
+import { ko } from 'date-fns/locale';
+import ProfilePanel from './ProfilePanel';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -62,11 +58,12 @@ interface ShiftVO {
   status: string;
 }
 
-const DAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
-
 export default function MonthlySchedule() {
   const navigate = useNavigate();
   const { branchId } = useParams();
+  const language = useLanguage();
+  const t = translations.monthlySchedule[language];
+  const DAY_LABELS = t.dayLabels;
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [shifts, setShifts] = useState<ShiftVO[]>([]);
@@ -126,9 +123,7 @@ export default function MonthlySchedule() {
                 <ChevronLeft className="w-5 h-5" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  월간 근무표
-                </h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t.title}</h1>
                 <p className="mt-1 text-gray-600 dark:text-gray-400">
                   {format(currentMonth, "yyyy년 M월", { locale: ko })}
                 </p>
@@ -142,19 +137,19 @@ export default function MonthlySchedule() {
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
-                <span className="text-gray-600 dark:text-gray-400">확정</span>
+                <span className="text-gray-600 dark:text-gray-400">{t.legendConfirmed}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full" />
-                <span className="text-gray-600 dark:text-gray-400">대기</span>
+                <span className="text-gray-600 dark:text-gray-400">{t.legendPending}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 bg-red-500 rounded-full" />
-                <span className="text-gray-600 dark:text-gray-400">취소</span>
+                <span className="text-gray-600 dark:text-gray-400">{t.legendCancelled}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 bg-red-300 rounded-full" />
-                <span className="text-red-500 dark:text-red-400">공휴일</span>
+                <span className="text-red-500 dark:text-red-400">{t.legendHoliday}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -165,17 +160,8 @@ export default function MonthlySchedule() {
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setCurrentMonth(new Date())}
-              >
-                오늘
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
-              >
+              <Button variant="outline" onClick={() => setCurrentMonth(new Date())}>{t.today}</Button>
+              <Button variant="outline" size="icon" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}>
                 <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
@@ -187,24 +173,11 @@ export default function MonthlySchedule() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* 뷰 전환 버튼 */}
         <div className="flex gap-3 mb-4">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}
-          >
-            주간 근무표 보기
+          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}>
+            {t.weeklyView}
           </Button>
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() =>
-              navigate(
-                `/admin/schedule/daily/${branchId}/${format(new Date(), "yyyy-MM-dd")}`,
-              )
-            }
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            일간 근무표 보기
+          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/daily/${branchId}/${format(new Date(), 'yyyy-MM-dd')}`)}>
+            <Calendar className="w-4 h-4 mr-2" />{t.dailyView}
           </Button>
         </div>
 
@@ -226,9 +199,7 @@ export default function MonthlySchedule() {
 
             {/* 날짜 셀 */}
             {loading ? (
-              <div className="text-center py-20 text-gray-400">
-                불러오는 중...
-              </div>
+              <div className="text-center py-20 text-gray-400">{t.loading}</div>
             ) : (
               <div className="grid grid-cols-7 border-l border-t border-gray-200 dark:border-gray-700">
                 {calendarDates.map((date, index) => {
@@ -353,7 +324,7 @@ export default function MonthlySchedule() {
             className="w-full bg-gray-900 hover:bg-gray-700 text-white dark:bg-gray-950 dark:hover:bg-gray-800"
             onClick={() => navigate(`/admin/substitute/${branchId}`)}
           >
-            대타 근무자 관리
+            {t.substituteManagement}
           </Button>
         </div>
       </div>

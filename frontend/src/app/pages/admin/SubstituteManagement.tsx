@@ -11,11 +11,13 @@ import {
   Calendar,
   Plus,
   X,
-} from "lucide-react";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import ProfilePanel from "../../components/admin/ProfilePanel";
+} from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import ProfilePanel from './ProfilePanel';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -71,6 +73,8 @@ const formatDate = (s: string) => {
 const SubstituteManagement: React.FC = () => {
   const navigate = useNavigate();
   const { branchId } = useParams();
+  const language = useLanguage();
+  const t = translations.substituteManagement[language];
 
   const user = useMemo(() => {
     try {
@@ -166,7 +170,7 @@ const SubstituteManagement: React.FC = () => {
 
     API.post("/substitute/staff", payload)
       .then(() => setIsModalOpen(false))
-      .catch(() => alert("요청 생성 중 오류가 발생했습니다."))
+      .catch(() => alert(t.errCreate))
       .finally(() => setModalSubmitting(false));
   };
 
@@ -174,9 +178,7 @@ const SubstituteManagement: React.FC = () => {
   const handleContact = (phone: string, name: string) => {
     if (!phone) return;
     // TODO: SMS API 연동 시 이 부분을 교체
-    const msg = encodeURIComponent(
-      `안녕하세요 ${name}님, 대타 근무 요청드립니다. 가능하신지 확인 부탁드립니다.`,
-    );
+    const msg = encodeURIComponent(t.smsMessage(name));
     window.open(`sms:${phone}?body=${msg}`);
   };
 
@@ -193,17 +195,12 @@ const SubstituteManagement: React.FC = () => {
     if (s === "ACTIVE" || s === "APPROVED")
       return (
         <Badge className="bg-green-500 text-white flex items-center gap-1">
-          <CheckCircle className="w-3 h-3" />
-          근무 가능
+          <CheckCircle className="w-3 h-3" />{t.statusActive}
         </Badge>
       );
-    if (s === "INACTIVE")
-      return <Badge className="bg-gray-400 text-white">비활성</Badge>;
-    return (
-      <Badge variant="outline" className="text-gray-500">
-        {status}
-      </Badge>
-    );
+    if (s === 'INACTIVE')
+      return <Badge className="bg-gray-400 text-white">{t.statusInactive}</Badge>;
+    return <Badge variant="outline" className="text-gray-500">{status}</Badge>;
   };
 
   /* ── 렌더링 ─────────────────────────────────────────── */
@@ -218,23 +215,19 @@ const SubstituteManagement: React.FC = () => {
               onClick={() => navigate(`/admin/dashboard/${branchId}`)}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              대시보드로 돌아가기
+              {t.backToDashboard}
             </Button>
             <ProfilePanel />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                대타 근무자 관리
-              </h1>
-              <p className="text-gray-600 mt-1">
-                직접 연락하거나 대타 요청을 올려 지원을 받으세요
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900">{t.title}</h1>
+              <p className="text-gray-600 mt-1">{t.subtitle}</p>
             </div>
             <Button onClick={openModal}>
               <Plus className="w-4 h-4 mr-2" />
-              대타 요청하기
+              {t.createRequest}
             </Button>
           </div>
         </div>
@@ -245,10 +238,8 @@ const SubstituteManagement: React.FC = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">현재 지점 직원</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {employees.length}
-                  </p>
+                  <p className="text-sm text-gray-600">{t.currentBranchStaff}</p>
+                  <p className="text-3xl font-bold text-gray-900">{employees.length}</p>
                 </div>
                 <UserPlus className="w-8 h-8 text-gray-400" />
               </div>
@@ -258,7 +249,7 @@ const SubstituteManagement: React.FC = () => {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">오늘 근무 없음</p>
+                  <p className="text-sm text-gray-600">{t.noWorkToday}</p>
                   <p className="text-3xl font-bold text-yellow-600">
                     {employees.filter((e) => !lastWorkedByUser[e.id]).length}
                   </p>
@@ -276,7 +267,7 @@ const SubstituteManagement: React.FC = () => {
               <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="이름 또는 전화번호로 검색..."
+                placeholder={t.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -287,10 +278,10 @@ const SubstituteManagement: React.FC = () => {
 
         {/* 직원 카드 목록 */}
         {loadingStaff ? (
-          <div className="text-center py-16 text-gray-400">불러오는 중...</div>
+          <div className="text-center py-16 text-gray-400">{t.loading}</div>
         ) : filteredEmployees.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            {searchTerm ? "검색 결과가 없습니다." : "등록된 직원이 없습니다."}
+            {searchTerm ? t.noSearchResult : t.noEmployees}
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -324,10 +315,10 @@ const SubstituteManagement: React.FC = () => {
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
                       <span>
-                        최근 근무:{" "}
+                        {t.recentWork}{' '}
                         {lastWorkedByUser[emp.id]
                           ? formatDate(lastWorkedByUser[emp.id])
-                          : "기록 없음"}
+                          : t.noRecord}
                       </span>
                     </div>
                   </div>
@@ -335,11 +326,11 @@ const SubstituteManagement: React.FC = () => {
                   {/* 근무 가능 요일·시간 (DB 컬럼 추가 후 연동 예정) */}
                   <div className="mb-5">
                     <p className="text-xs font-medium text-gray-400 mb-2">
-                      근무 가능 요일·시간{" "}
-                      <span className="text-gray-300">(설정 예정)</span>
+                      {t.availableSchedule}{' '}
+                      <span className="text-gray-300">({t.settingPending})</span>
                     </p>
                     <div className="flex gap-1">
-                      {["월", "화", "수", "목", "금", "토", "일"].map((day) => (
+                      {t.dayLabels.map((day: string) => (
                         <div
                           key={day}
                           className="flex-1 text-center py-1 rounded text-sm bg-gray-100 text-gray-400"
@@ -358,7 +349,7 @@ const SubstituteManagement: React.FC = () => {
                     onClick={() => handleContact(emp.phone, emp.name)}
                   >
                     <Phone className="w-4 h-4 mr-2" />
-                    연락
+                    {t.contactBtn}
                   </Button>
                 </CardContent>
               </Card>
@@ -377,7 +368,7 @@ const SubstituteManagement: React.FC = () => {
 
           <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">대타 요청하기</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t.modalTitle}</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-1 rounded-full hover:bg-gray-100"
@@ -389,9 +380,7 @@ const SubstituteManagement: React.FC = () => {
             <div className="space-y-5">
               {/* 지점 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  지점
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.branchLabel}</label>
                 <select
                   value={modalStoreId}
                   onChange={(e) => setModalStoreId(e.target.value)}
@@ -407,9 +396,7 @@ const SubstituteManagement: React.FC = () => {
 
               {/* 날짜 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  날짜
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t.dateLabel}</label>
                 <input
                   type="date"
                   value={modalDate}
@@ -420,9 +407,7 @@ const SubstituteManagement: React.FC = () => {
 
               {/* 인원수 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  인원수
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-3">{t.staffCountLabel}</label>
                 <div className="flex items-center gap-4">
                   <button
                     type="button"
@@ -432,7 +417,7 @@ const SubstituteManagement: React.FC = () => {
                     −
                   </button>
                   <span className="text-2xl font-bold text-gray-900 w-16 text-center">
-                    {modalCount}명
+                    {t.count(modalCount)}
                   </span>
                   <button
                     type="button"
@@ -446,20 +431,11 @@ const SubstituteManagement: React.FC = () => {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setIsModalOpen(false)}
-                disabled={modalSubmitting}
-              >
-                취소
+              <Button variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)} disabled={modalSubmitting}>
+                {t.cancelBtn}
               </Button>
-              <Button
-                className="flex-1"
-                onClick={handleCreatePost}
-                disabled={modalSubmitting}
-              >
-                {modalSubmitting ? "요청 중..." : "요청하기"}
+              <Button className="flex-1" onClick={handleCreatePost} disabled={modalSubmitting}>
+                {modalSubmitting ? t.requesting : t.requestBtn}
               </Button>
             </div>
           </div>

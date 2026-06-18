@@ -1,40 +1,21 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import EmployeeHeader from "../../components/employee/EmployeeHeader";
-import { Card, CardContent } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router';
+import axios from 'axios';
+import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
+import EmployeeHeader from './EmployeeHeader';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import EmployeeBottomNav from './EmployeeBottomNav';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../components/ui/tabs";
-import {
-  Home,
-  Calendar,
-  QrCode,
-  Wallet,
-  MessageSquare,
-  TrendingUp,
-  ChevronLeft,
-  ChevronRight,
-  BarChart3,
-  Clock,
-  Banknote,
-} from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
-import { ko } from "date-fns/locale";
+  LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from 'recharts';
+import { subMonths, startOfMonth, endOfMonth } from 'date-fns';
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -75,11 +56,7 @@ const getTimePart = (s: string) => {
   const t = s.includes("T") ? s.split("T")[1] : s.split(" ")[1];
   return t ? t.substring(0, 5) : "";
 };
-const DAY = ["일", "월", "화", "수", "목", "금", "토"];
-const getDayName = (d: string) => {
-  const [y, m, dd] = d.split("-").map(Number);
-  return DAY[new Date(y, m - 1, dd).getDay()];
-};
+const getDayName = (d: string, days: string[]) => { const [y,m,dd] = d.split('-').map(Number); return days[new Date(y,m-1,dd).getDay()]; };
 const calcHours = (start: string, end: string) => {
   const getMin = (s: string) => {
     const t = s.includes("T") ? s.split("T")[1] : s.split(" ")[1];
@@ -89,14 +66,12 @@ const calcHours = (start: string, end: string) => {
   };
   return Math.max(0, (getMin(end) - getMin(start)) / 60);
 };
-const fmtW = (n: number) => Math.round(n).toLocaleString() + "원";
-const fmtM = (n: number) => (Math.round(n) / 10000).toFixed(1) + "만원";
+// fmtW / fmtM are replaced by t.fmtCurrency / t.fmtCurrencyM at render time
 
-// ISO 주의 월요일 날짜 구하기
 const getIsoMonday = (dateStr: string): string => {
   const [y, m, d] = dateStr.split("-").map(Number);
   const dt = new Date(y, m - 1, d);
-  const day = dt.getDay(); // 0=일, 1=월 ...
+  const day = dt.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   const mon = new Date(dt);
   mon.setDate(dt.getDate() + diff);
@@ -105,15 +80,11 @@ const getIsoMonday = (dateStr: string): string => {
 
 export default function EmployeePayroll() {
   const navigate = useNavigate();
-  const user = useMemo(
-    () => JSON.parse(sessionStorage.getItem("user") || "{}"),
-    [],
-  );
+  const language = useLanguage();
+  const t = translations.employeePayroll[language];
+  const user = useMemo(() => JSON.parse(sessionStorage.getItem('user') || '{}'), []);
 
-  const [storeId, setStoreId] = useState(
-    sessionStorage.getItem("store_id") || "",
-  );
-  const storeName = sessionStorage.getItem("store_name") || "";
+  const [storeId, setStoreId] = useState(sessionStorage.getItem('store_id') || '');
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [memberInfo, setMemberInfo] = useState<MemberInfo | null>(null);
   const [payroll, setPayroll] = useState<PayrollResult | null>(null);
@@ -126,9 +97,8 @@ export default function EmployeePayroll() {
     "monthly" | "weekly" | "daily"
   >("monthly");
   const [requesting, setRequesting] = useState(false);
-  // TODO: DB 연동 - GET /api/weekly_pay_request?user_id= 로 신청 상태 조회
+  const [activeTab, setActiveTab] = useState<'history' | 'trends'>('history');
 
-  // store_id 없으면 조회
   useEffect(() => {
     if (storeId || !user.id) return;
     API.get("/store/my", { params: { user_id: user.id } })
@@ -141,7 +111,6 @@ export default function EmployeePayroll() {
       .catch(() => {});
   }, []);
 
-  // 시급/월급 정보
   useEffect(() => {
     if (!user.id || !storeId) return;
     API.get("/store_member/pay", {
@@ -153,7 +122,6 @@ export default function EmployeePayroll() {
       .catch(() => {});
   }, [storeId]);
 
-  // 선택 달 급여 + 근무
   useEffect(() => {
     if (!user.id || !storeId) return;
     setLoadingPayroll(true);
@@ -180,7 +148,6 @@ export default function EmployeePayroll() {
       .finally(() => setLoadingPayroll(false));
   }, [storeId, selectedMonth]);
 
-  // 년도별 내역 (이번달 제외)
   useEffect(() => {
     if (!user.id || !storeId) return;
     setLoadingHistory(true);
@@ -191,7 +158,6 @@ export default function EmployeePayroll() {
       const m = new Date(historyYear, i, 1);
       if (m < thisMonth) months.push(m);
     }
-
     Promise.all(
       months.map((m) => {
         const start = toDateStr(startOfMonth(m)),
@@ -209,7 +175,7 @@ export default function EmployeePayroll() {
             params: { user_id: user.id, start_date: start, end_date: end },
           }),
         ]).then(([p, s]) => ({
-          label: format(m, "M월", { locale: ko }),
+          label: t.monthLabel(m.getMonth() + 1),
           data: p.data as PayrollResult,
           shifts: Array.isArray(s.data) ? (s.data as ShiftVO[]) : [],
         }));
@@ -235,7 +201,6 @@ export default function EmployeePayroll() {
   }, [selectedMonth]);
   const isCurrentYear = historyYear >= new Date().getFullYear();
 
-  // 이번 주 예상 급여 (HOURLY + 현재 달 선택 시)
   const thisWeekPay = useMemo(() => {
     if (!memberInfo?.pay_amount || memberInfo.pay_type !== "HOURLY") return 0;
     if (!isCurrentMonth) return 0;
@@ -258,38 +223,26 @@ export default function EmployeePayroll() {
       );
   }, [assignedShifts, memberInfo, isCurrentMonth]);
 
-  // 주급 신청 핸들러 (TODO: DB 연동)
   const handleWeeklyRequest = async () => {
     setRequesting(true);
-    // TODO: DB 연동 - POST /api/weekly_pay_request { user_id, store_id, request_amount: thisWeekPay }
-    await new Promise((r) => setTimeout(r, 600));
-    alert(
-      `주급 신청이 완료되었습니다.\n신청 금액: ${fmtW(thisWeekPay)}\n\n(TODO: DB 연동 필요)`,
-    );
+    await new Promise(r => setTimeout(r, 600));
+    alert(`${t.weeklyAdvanceRequest}\n${t.fmtCurrency(thisWeekPay)}`);
     setRequesting(false);
   };
 
-  // 일별 내역 (history 전체 flatten)
-  const dailyHistory = useMemo(
-    () =>
-      history
-        .flatMap((item) =>
-          item.shifts
-            .filter((s) => s.status !== "VACANT" && s.status !== "CANCELLED")
-            .map((s) => ({
-              ...s,
-              monthLabel: item.label,
-              pay:
-                calcHours(s.start_at, s.end_at) * (memberInfo?.pay_amount || 0),
-            })),
-        )
-        .sort((a, b) =>
-          getDatePart(b.work_date).localeCompare(getDatePart(a.work_date)),
-        ),
-    [history, memberInfo],
+  const dailyHistory = useMemo(() =>
+    history.flatMap(item =>
+      item.shifts
+        .filter(s => s.status !== 'VACANT' && s.status !== 'CANCELLED')
+        .map(s => ({
+          ...s,
+          monthLabel: item.label,
+          pay: calcHours(s.start_at, s.end_at) * (memberInfo?.pay_amount || 0),
+        }))
+    ).sort((a, b) => getDatePart(b.work_date).localeCompare(getDatePart(a.work_date))),
+    [history, memberInfo]
   );
 
-  // 주별 내역 (ISO week 기준)
   const weeklyHistory = useMemo(() => {
     const map: Record<
       string,
@@ -320,38 +273,31 @@ export default function EmployeePayroll() {
     [history],
   );
 
-  const payLabel =
-    memberInfo?.pay_type === "MONTHLY"
-      ? `월급 ${memberInfo.pay_amount?.toLocaleString()}원`
-      : memberInfo?.pay_type === "HOURLY"
-        ? `시급 ${memberInfo.pay_amount?.toLocaleString()}원/시`
-        : null;
+  const payLabel = memberInfo?.pay_type === 'MONTHLY' && memberInfo.pay_amount != null
+    ? t.payTypeMonthly(memberInfo.pay_amount)
+    : memberInfo?.pay_type === 'HOURLY' && memberInfo.pay_amount != null
+    ? t.payTypeHourly(memberInfo.pay_amount)
+    : null;
 
   const renderShiftRows = (list: ShiftVO[]) => {
-    const valid = list.filter(
-      (s) => s.status !== "VACANT" && s.status !== "CANCELLED",
-    );
-    if (!valid.length)
-      return <p className="text-xs text-gray-400 py-1">근무 일정 없음</p>;
+    const valid = list.filter(s => s.status !== 'VACANT' && s.status !== 'CANCELLED');
+    if (!valid.length) return <p style={{ fontSize: 15, color: '#aaa', padding: '8px 0' }}>{t.noShifts}</p>;
     return valid.map((s, i) => {
       const d = getDatePart(s.work_date);
       const done = d < today;
       return (
-        <div
-          key={i}
-          className={`flex justify-between items-center text-xs py-1.5 px-2 rounded ${done ? "bg-white/60 dark:bg-gray-700/50" : "bg-white/20 dark:bg-gray-800/30"}`}
-        >
-          <span
-            className={
-              done ? "text-gray-700 dark:text-gray-200" : "text-gray-400"
-            }
-          >
-            {d.slice(5).replace("-", "/")} ({getDayName(d)})&nbsp;
-            {getTimePart(s.start_at)}~{getTimePart(s.end_at)}
+        <div key={i} style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '12px 14px',
+          background: i % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(24,160,34,0.04)',
+          border: '1px solid rgba(0,162,0,0.12)',
+          borderRadius: 16,
+          opacity: done ? 1 : 0.6,
+        }}>
+          <span style={{ fontSize: 15, color: DARK_GREEN }}>
+            {d.slice(5).replace('-','/')} ({getDayName(d, translations.employeeHome[language].days)})&nbsp;{getTimePart(s.start_at)}~{getTimePart(s.end_at)}
           </span>
-          <span
-            className={`font-medium tabular-nums ${done ? "text-gray-800 dark:text-gray-100" : "text-gray-400"}`}
-          >
+          <span style={{ fontSize: 14, fontWeight: 600, color: DARK_GREEN, fontVariantNumeric: 'tabular-nums' }}>
             {calcHours(s.start_at, s.end_at).toFixed(1)}h
           </span>
         </div>
@@ -359,420 +305,350 @@ export default function EmployeePayroll() {
     });
   };
 
-  const PayDetail = ({
-    data,
-    shiftList,
-  }: {
-    data: PayrollResult;
-    shiftList: ShiftVO[];
-  }) => (
-    <div className="space-y-3">
-      {/* 시급/월급 */}
+  const PayDetail = ({ data, shiftList }: { data: PayrollResult; shiftList: ShiftVO[] }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {payLabel && (
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-          <Clock className="w-3 h-3" />
-          {payLabel}
+        <div style={{ fontSize: 15, color: '#5a8a5c', display: 'flex', alignItems: 'center', gap: 6 }}>
+          ⏱ {payLabel}
         </div>
       )}
-      {/* 근무 일정 */}
-      <div className="space-y-1">{renderShiftRows(shiftList)}</div>
-      {/* 수당 상세 */}
-      <div className="border-t border-pink-200 dark:border-pink-800 pt-3 space-y-1.5">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">기본급</span>
-          <span className="font-medium">{fmtW(data.basePay)}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {renderShiftRows(shiftList)}
+      </div>
+      <div style={{ borderTop: `1px solid rgba(0,162,0,0.2)`, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16 }}>
+          <span style={{ color: '#5a8a5c' }}>{t.basePay}</span>
+          <span style={{ fontWeight: 600, color: DARK_GREEN }}>{t.fmtCurrency(data.basePay)}</span>
         </div>
         {data.overtimePay > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">연장수당</span>
-            <span className="font-medium text-green-600">
-              +{fmtW(data.overtimePay)}
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16 }}>
+            <span style={{ color: '#5a8a5c' }}>{t.overtimePay}</span>
+            <span style={{ fontWeight: 600, color: GREEN }}>+{t.fmtCurrency(data.overtimePay)}</span>
           </div>
         )}
         {data.nightPay > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600 dark:text-gray-400">야간수당</span>
-            <span className="font-medium text-green-600">
-              +{fmtW(data.nightPay)}
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16 }}>
+            <span style={{ color: '#5a8a5c' }}>{t.nightPay}</span>
+            <span style={{ fontWeight: 600, color: GREEN }}>+{t.fmtCurrency(data.nightPay)}</span>
           </div>
         )}
-        {/* 주휴수당: 항상 표시 */}
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600 dark:text-gray-400">주휴수당</span>
-          <span
-            className={
-              data.weeklyPay > 0
-                ? "font-medium text-green-600"
-                : "text-gray-400"
-            }
-          >
-            {data.weeklyPay > 0 ? `+${fmtW(data.weeklyPay)}` : "-"}
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16 }}>
+          <span style={{ color: '#5a8a5c' }}>{t.weeklyPay}</span>
+          <span style={{ fontWeight: 600, color: data.weeklyPay > 0 ? GREEN : '#aaa' }}>
+            {data.weeklyPay > 0 ? `+${t.fmtCurrency(data.weeklyPay)}` : '-'}
           </span>
         </div>
       </div>
-      {/* 총 급여 볼드 */}
-      <div className="border-t border-pink-300 dark:border-pink-700 pt-3 text-center">
-        <p className="text-xs text-gray-500 mb-1">총 급여</p>
-        <p className="text-3xl font-bold text-pink-700 dark:text-pink-400">
-          {fmtW(data.totalPay)}
-        </p>
+      <div style={{ borderTop: `1px solid rgba(0,162,0,0.2)`, paddingTop: 12, textAlign: 'center' }}>
+        <p style={{ fontSize: 13, color: '#5a8a5c', marginBottom: 4 }}>{t.totalPay}</p>
+        <p style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(data.totalPay)}</p>
       </div>
     </div>
   );
 
-  const bottomNavItems = [
-    { icon: Home, label: "홈", path: "/employee/home" },
-    { icon: Calendar, label: "근무표", path: "/employee/schedule" },
-    { icon: QrCode, label: "체크인", path: "/employee/checkin" },
-    { icon: Wallet, label: "급여", path: "/employee/payroll", active: true },
-    { icon: MessageSquare, label: "게시판", path: "/employee/board" },
-  ];
+  const SectionPill = ({ children }: { children: React.ReactNode }) => (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+      background: DARK_GREEN, borderRadius: 54.55,
+      boxShadow: '3px 4px 12.6px rgba(255,255,255,0.25)',
+      height: 36, minWidth: 168, padding: '0 20px',
+      fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 12,
+    }}>
+      {children}
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)',
+      paddingBottom: 120,
+    }}>
       <EmployeeHeader>
         <div>
-          <h1 className="text-2xl font-bold">급여 조회</h1>
-          <p className="text-blue-100 text-sm mt-1">급여 내역을 확인하세요</p>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{t.title}</h1>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{t.subtitle}</p>
         </div>
       </EmployeeHeader>
 
-      <div className="px-4 py-4 space-y-4">
-        {/* ── 상단 카드 ── */}
-        <Card className="border-2 border-pink-200 dark:border-pink-800 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20">
-          <CardContent className="pt-4 pb-4">
-            {/* 월 네비 (yyyy년 M월, 년도 네비 없음) */}
-            <div className="flex items-center justify-between mb-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setSelectedMonth((prev) => subMonths(prev, 1))}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <div className="text-center">
-                <span className="text-lg font-bold">
-                  {format(selectedMonth, "yyyy년 M월", { locale: ko })}
-                </span>
-                <span className="text-xs text-gray-500 ml-2">
-                  {isCurrentMonth ? "이번 달 예상 급여" : "급여 계산 결과"}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setSelectedMonth((prev) => subMonths(prev, -1))}
-                disabled={isCurrentMonth}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+      <div style={{ padding: '20px 40px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* ── 이번 달 급여 카드 ── */}
+        <div style={{
+          background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
+          borderRadius: 26, padding: '20px 20px',
+          boxShadow: '0px 4px 12px rgba(0,162,0,0.08)',
+        }}>
+          {/* 월 네비 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <button
+              onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: DARK_GREEN }}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: 20, fontWeight: 700, color: DARK_GREEN }}>
+                {t.yearMonthLabel(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1)}
+              </span>
+              <span style={{ fontSize: 13, color: '#5a8a5c', marginLeft: 8 }}>
+                {isCurrentMonth ? t.currentMonthExpected : t.payrollResult}
+              </span>
             </div>
+            <button
+              onClick={() => setSelectedMonth(prev => subMonths(prev, -1))}
+              disabled={isCurrentMonth}
+              style={{ background: 'none', border: 'none', cursor: isCurrentMonth ? 'default' : 'pointer', padding: 4, color: isCurrentMonth ? '#ccc' : DARK_GREEN }}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
 
-            {loadingPayroll ? (
-              <p className="text-center py-8 text-gray-400 text-sm">
-                계산 중...
-              </p>
-            ) : !payroll ? (
-              <p className="text-center py-8 text-gray-400 text-sm">
-                급여 정보를 불러올 수 없습니다
-              </p>
-            ) : (
-              <PayDetail data={payroll} shiftList={assignedShifts} />
-            )}
-          </CardContent>
-        </Card>
+          {loadingPayroll ? (
+            <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 16 }}>{t.calculating}</p>
+          ) : !payroll ? (
+            <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 16 }}>{t.cannotLoad}</p>
+          ) : (
+            <PayDetail data={payroll} shiftList={assignedShifts} />
+          )}
+        </div>
 
-        {/* ── 이번 주 주급 카드 (시급제 + 이번달만) ── */}
-        {isCurrentMonth && memberInfo?.pay_type === "HOURLY" && (
-          <Card className="border border-amber-200 dark:border-amber-700 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20">
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Banknote className="w-4 h-4 text-amber-600" />
-                  <div>
-                    <p className="text-xs text-gray-500">이번 주 예상 급여</p>
-                    <p className="text-xl font-bold text-amber-700 dark:text-amber-400">
-                      {fmtW(thisWeekPay)}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  className="bg-amber-500 hover:bg-amber-600 text-white text-xs"
-                  onClick={handleWeeklyRequest}
-                  disabled={requesting || thisWeekPay === 0}
-                >
-                  {requesting ? "신청 중..." : "💸 주급(가불) 신청하기"}
-                </Button>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                * 이번 주 확정 근무 기준 계산 · 점주 승인 후 지급
-                {/* TODO: DB 연동 후 신청 상태(대기/승인/거절) 표시 */}
-              </p>
-            </CardContent>
-          </Card>
+        {/* ── 주급 선지급 카드 (시급제 + 이번달) ── */}
+        {isCurrentMonth && memberInfo?.pay_type === 'HOURLY' && (
+          <div style={{
+            background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
+            borderRadius: 26, padding: '16px 20px',
+            boxShadow: '0px 4px 12px rgba(0,162,0,0.08)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div>
+              <p style={{ fontSize: 13, color: '#5a8a5c', marginBottom: 4 }}>{t.thisWeekExpected}</p>
+              <p style={{ fontSize: 24, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(thisWeekPay)}</p>
+              <p style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>{t.weeklyNote}</p>
+            </div>
+            <button
+              onClick={handleWeeklyRequest}
+              disabled={requesting || thisWeekPay === 0}
+              style={{
+                background: thisWeekPay === 0 ? '#ccc' : DARK_GREEN,
+                color: '#fff', border: 'none', borderRadius: 54,
+                padding: '12px 20px', fontSize: 15, fontWeight: 600, cursor: thisWeekPay === 0 ? 'default' : 'pointer',
+              }}
+            >
+              {requesting ? t.requesting : t.weeklyAdvanceRequest}
+            </button>
+          </div>
         )}
 
         {/* ── 탭 ── */}
-        <Tabs defaultValue="history">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="history">급여 내역</TabsTrigger>
-            <TabsTrigger value="trends">통계</TabsTrigger>
-          </TabsList>
+        <div style={{
+          position: 'relative', display: 'flex', alignItems: 'center',
+          background: LIGHT_GREEN, borderRadius: 17, padding: '10px 10px', height: 72,
+          boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25), inset 0px 4px 6px rgba(0,0,0,0.1)',
+        }}>
+          <div style={{
+            position: 'absolute', top: 10, bottom: 10,
+            left: activeTab === 'history' ? 10 : 'calc(50% + 5px)',
+            width: 'calc(50% - 15px)', background: '#fff', borderRadius: 11,
+            opacity: 0.52, filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.15))',
+            transition: 'left 0.2s ease', pointerEvents: 'none',
+          }} />
+          {(['history', 'trends'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                flex: 1, border: 'none', background: 'transparent', cursor: 'pointer',
+                fontSize: 16, fontWeight: 600,
+                color: activeTab === tab ? DARK_GREEN : '#5a8a5c',
+                position: 'relative', zIndex: 1,
+              }}
+            >
+              {tab === 'history' ? t.tabHistory : t.tabTrends}
+            </button>
+          ))}
+        </div>
 
-          {/* 급여 내역 탭 */}
-          <TabsContent value="history" className="mt-3">
+        {/* ── 급여 내역 탭 ── */}
+        {activeTab === 'history' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* 년도 네비 */}
-            <div className="flex items-center justify-center gap-4 py-2 mb-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setHistoryYear((p) => p - 1)}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-base font-bold">{historyYear}년</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setHistoryYear((p) => p + 1)}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+              <button onClick={() => setHistoryYear(p => p - 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: DARK_GREEN }}>
+                <ChevronLeft size={20} />
+              </button>
+              <span style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>{t.yearLabel(historyYear)}</span>
+              <button
+                onClick={() => setHistoryYear(p => p + 1)}
                 disabled={isCurrentYear}
+                style={{ background: 'none', border: 'none', cursor: isCurrentYear ? 'default' : 'pointer', color: isCurrentYear ? '#ccc' : DARK_GREEN }}
               >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+                <ChevronRight size={20} />
+              </button>
             </div>
 
             {/* 월별/주별/일별 세그먼트 */}
-            <div className="flex gap-2 mb-3">
-              {(["monthly", "weekly", "daily"] as const).map((v) => (
+            <div style={{ display: 'flex', gap: 8 }}>
+              {(['monthly', 'weekly', 'daily'] as const).map(v => (
                 <button
                   key={v}
                   onClick={() => setHistoryView(v)}
-                  className={`flex-1 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    historyView === v
-                      ? "bg-pink-500 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
+                  style={{
+                    flex: 1, padding: '10px 0', borderRadius: 54, fontSize: 16, fontWeight: 600,
+                    border: historyView === v ? 'none' : `1px solid ${BORDER_GREEN}`,
+                    background: historyView === v ? DARK_GREEN : 'transparent',
+                    color: historyView === v ? '#fff' : DARK_GREEN,
+                    cursor: 'pointer',
+                  }}
                 >
-                  {v === "monthly" ? "월별" : v === "weekly" ? "주별" : "일별"}
+                  {v === 'monthly' ? t.monthly : v === 'weekly' ? t.weekly : t.daily}
                 </button>
               ))}
             </div>
 
             {loadingHistory ? (
-              <p className="text-center py-8 text-sm text-gray-400">
-                불러오는 중...
-              </p>
+              <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 16 }}>{t.loadingHistory}</p>
             ) : (
               <>
                 {/* 월별 뷰 */}
-                {historyView === "monthly" &&
-                  (history.length === 0 ? (
-                    <p className="text-center py-8 text-sm text-gray-400">
-                      내역이 없습니다
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {history.map((item, idx) => (
-                        <Card key={idx}>
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <h3 className="font-bold">{item.label}</h3>
-                              <Badge className="bg-blue-500 text-xs">
-                                계산 완료
-                              </Badge>
+                {historyView === 'monthly' && (
+                  history.length === 0
+                    ? <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 16 }}>{t.noHistory}</p>
+                    : <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {history.map((item, idx) => (
+                          <div key={idx} style={{
+                            background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
+                            borderRadius: 26, padding: '16px 20px',
+                            boxShadow: '0px 4px 12px rgba(0,162,0,0.08)',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                              <span style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>{item.label}</span>
+                              <span style={{
+                                background: LIGHT_GREEN, color: DARK_GREEN, borderRadius: 20,
+                                padding: '3px 10px', fontSize: 13, fontWeight: 600,
+                              }}>{t.calcDone}</span>
                             </div>
-                            <PayDetail
-                              data={item.data}
-                              shiftList={item.shifts}
-                            />
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ))}
+                            <PayDetail data={item.data} shiftList={item.shifts} />
+                          </div>
+                        ))}
+                      </div>
+                )}
 
                 {/* 주별 뷰 */}
-                {historyView === "weekly" &&
-                  (weeklyHistory.length === 0 ? (
-                    <p className="text-center py-8 text-sm text-gray-400">
-                      내역이 없습니다
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {weeklyHistory.map((w, idx) => (
-                        <Card key={idx}>
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <div>
-                                <p className="text-xs text-gray-500">
-                                  {w.weekLabel}
-                                </p>
-                                <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mt-0.5">
-                                  {w.count}일 · {w.hours.toFixed(1)}h
-                                </p>
-                              </div>
-                              <p className="text-xl font-bold text-pink-700 dark:text-pink-400">
-                                {fmtW(w.total)}
+                {historyView === 'weekly' && (
+                  weeklyHistory.length === 0
+                    ? <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 16 }}>{t.noHistory}</p>
+                    : <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {weeklyHistory.map((w, idx) => (
+                          <div key={idx} style={{
+                            background: idx % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(24,160,34,0.04)',
+                            border: '1px solid rgba(0,162,0,0.12)', borderRadius: 16, padding: '14px 18px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          }}>
+                            <div>
+                              <p style={{ fontSize: 13, color: '#5a8a5c' }}>{w.weekLabel}</p>
+                              <p style={{ fontSize: 16, fontWeight: 600, color: DARK_GREEN, marginTop: 2 }}>
+                                {t.weekSummary(w.count, w.hours)}
                               </p>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ))}
+                            <p style={{ fontSize: 20, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(w.total)}</p>
+                          </div>
+                        ))}
+                      </div>
+                )}
 
                 {/* 일별 뷰 */}
-                {historyView === "daily" &&
-                  (dailyHistory.length === 0 ? (
-                    <p className="text-center py-8 text-sm text-gray-400">
-                      내역이 없습니다
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {dailyHistory.map((s, idx) => {
-                        const d = getDatePart(s.work_date);
-                        const hours = calcHours(s.start_at, s.end_at);
-                        return (
-                          <Card key={idx}>
-                            <CardContent className="p-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="text-center min-w-[36px]">
-                                    <p className="text-xs text-gray-400">
-                                      {getDayName(d)}
-                                    </p>
-                                    <p className="text-base font-bold">
-                                      {d.slice(8)}
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                      {d.slice(0, 7).replace("-", ".")}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm text-gray-700 dark:text-gray-200">
-                                      {getTimePart(s.start_at)} ~{" "}
-                                      {getTimePart(s.end_at)}
-                                    </p>
-                                    <p className="text-xs text-gray-400">
-                                      {hours.toFixed(1)}시간
-                                    </p>
-                                    {/* TODO: DB 연동 - GET /api/substitute/history?user_id= 로 대타 여부 판별 후 뱃지 표시 */}
-                                  </div>
+                {historyView === 'daily' && (
+                  dailyHistory.length === 0
+                    ? <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 16 }}>{t.noHistory}</p>
+                    : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {dailyHistory.map((s, idx) => {
+                          const d = getDatePart(s.work_date);
+                          const hours = calcHours(s.start_at, s.end_at);
+                          return (
+                            <div key={idx} style={{
+                              background: idx % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(24,160,34,0.04)',
+                              border: '1px solid rgba(0,162,0,0.12)', borderRadius: 16, padding: '12px 16px',
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                <div style={{ textAlign: 'center', minWidth: 36 }}>
+                                  <p style={{ fontSize: 13, color: '#5a8a5c' }}>{getDayName(d, translations.employeeHome[language].days)}</p>
+                                  <p style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>{d.slice(8)}</p>
+                                  <p style={{ fontSize: 13, color: '#5a8a5c' }}>{d.slice(0,7).replace('-','.')}</p>
                                 </div>
-                                <p className="text-base font-bold text-pink-700 dark:text-pink-400">
-                                  {fmtW(s.pay)}
-                                </p>
+                                <div>
+                                  <p style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>{getTimePart(s.start_at)} ~ {getTimePart(s.end_at)}</p>
+                                  <p style={{ fontSize: 13, color: '#5a8a5c' }}>{hours.toFixed(1)}h</p>
+                                </div>
                               </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  ))}
+                              <p style={{ fontSize: 18, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(s.pay)}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                )}
               </>
             )}
-          </TabsContent>
+          </div>
+        )}
 
-          {/* 통계 탭 */}
-          <TabsContent value="trends" className="space-y-4 mt-3">
-            <Card>
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-2 mb-3 text-sm font-semibold">
-                  <TrendingUp className="w-4 h-4" />
-                  월별 급여 추이
-                </div>
-                {loadingHistory ? (
-                  <p className="text-center py-8 text-sm text-gray-400">
-                    불러오는 중...
-                  </p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                      <YAxis
-                        tick={{ fontSize: 10 }}
-                        tickFormatter={(v) => (v / 10000).toFixed(0) + "만"}
-                      />
-                      <Tooltip formatter={(v: number) => fmtW(v)} />
-                      <Line
-                        type="monotone"
-                        dataKey="급여"
-                        stroke="#a855f7"
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
+        {/* ── 통계 탭 ── */}
+        {activeTab === 'trends' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{
+              background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
+              borderRadius: 26, padding: '16px 20px',
+            }}>
+              <SectionPill>{t.monthlyTrend}</SectionPill>
+              {loadingHistory ? (
+                <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 16 }}>{t.loadingHistory}</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,162,0,0.15)" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#5a8a5c' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#5a8a5c' }} tickFormatter={v => (v/10000).toFixed(0)+'만'} />
+                    <Tooltip formatter={(v: number) => t.fmtCurrency(v)} />
+                    <Line type="monotone" dataKey="급여" stroke={GREEN} strokeWidth={2} dot={{ r: 4, fill: DARK_GREEN }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
 
             {!loadingHistory && history.length > 0 && (
-              <Card className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 border-pink-200 dark:border-pink-800">
-                <CardContent className="pt-4">
-                  <div className="flex items-center gap-2 mb-4 text-sm font-semibold">
-                    <BarChart3 className="w-4 h-4" />
-                    급여 통계 ({history.length}개월)
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <p className="text-xs text-gray-500">월 평균 급여</p>
-                      <p className="text-2xl font-bold text-pink-700 dark:text-pink-400">
-                        {fmtM(
-                          history.reduce((s, h) => s + h.data.totalPay, 0) /
-                            history.length,
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">최고 급여</p>
-                      <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">
-                        {fmtM(Math.max(...history.map((h) => h.data.totalPay)))}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="border-t border-pink-200 dark:border-pink-800 pt-3">
-                    <p className="text-xs text-gray-500 mb-1">
-                      {history.length}개월 총 수입
-                    </p>
-                    <p className="text-3xl font-bold text-pink-700 dark:text-pink-400">
-                      {fmtM(history.reduce((s, h) => s + h.data.totalPay, 0))}
+              <div style={{
+                background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
+                borderRadius: 26, padding: '16px 20px',
+              }}>
+                <SectionPill>{t.payStats(history.length)}</SectionPill>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                  <div>
+                    <p style={{ fontSize: 13, color: '#5a8a5c' }}>{t.avgMonthlyPay}</p>
+                    <p style={{ fontSize: 24, fontWeight: 800, color: DARK_GREEN }}>
+                      {t.fmtCurrencyM(history.reduce((s,h) => s+h.data.totalPay, 0) / history.length)}
                     </p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <p style={{ fontSize: 13, color: '#5a8a5c' }}>{t.maxPay}</p>
+                    <p style={{ fontSize: 24, fontWeight: 800, color: GREEN }}>
+                      {t.fmtCurrencyM(Math.max(...history.map(h => h.data.totalPay)))}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ borderTop: '1px solid rgba(0,162,0,0.2)', paddingTop: 12 }}>
+                  <p style={{ fontSize: 12, color: '#5a8a5c', marginBottom: 4 }}>{t.totalIncome(history.length)}</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>
+                    {t.fmtCurrencyM(history.reduce((s,h) => s+h.data.totalPay, 0))}
+                  </p>
+                </div>
+              </div>
             )}
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
 
-      {/* 하단 네비 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-around px-2 py-2">
-          {bottomNavItems.map((item, i) => (
-            <button
-              key={i}
-              onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                (item as any).active
-                  ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              <item.icon className="w-5 h-5" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <EmployeeBottomNav />
     </div>
   );
 }
