@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import PasswordInput from "../../components/PasswordInput";
 import axios from "axios";
+import { useTheme } from "next-themes";
 import {
   Select,
   SelectContent,
@@ -143,39 +145,18 @@ const logoMap: Record<string, string> = {
 
 type NicknameStatus = "idle" | "ok" | "error";
 
-const inputStyle: React.CSSProperties = {
-  height: 37.53,
-  background: INPUT_BG,
-  boxShadow: INPUT_SHADOW,
-  borderRadius: 9,
-  border: "none",
-  outline: "none",
-  padding: "0 14px",
-  fontFamily: FONT,
-  fontWeight: 300,
-  fontSize: 15,
-  color: "#333",
-  boxSizing: "border-box",
-  width: "100%",
-};
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: FONT,
-  fontWeight: 300,
-  fontSize: 15,
-  color: LABEL_COLOR,
-  marginBottom: 7,
-  display: "block",
-};
+// inputStyle / labelStyle은 컴포넌트 안에서 isDark를 받아 생성
 
 function Field({
   label,
   children,
   style,
+  labelStyle,
 }: {
   label: string;
   children: React.ReactNode;
   style?: React.CSSProperties;
+  labelStyle?: React.CSSProperties;
 }) {
   return (
     <div style={{ marginBottom: 18, ...style }}>
@@ -187,15 +168,67 @@ function Field({
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [language] = useState(
     () => sessionStorage.getItem("app-language") || "ko",
   );
   const [step, setStep] = useState(1);
 
+  // color-scheme을 테마에 맞게 설정 (비밀번호 dots 가시성)
+  useEffect(() => {
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+  }, [isDark]);
+
+  // 다크/라이트 색상 팔레트
+  const pageBg   = isDark ? '#1c1c1e' : BG;
+  const cardBg   = isDark ? '#2c2c2e' : '#FFFFFF';
+  const inputBg  = isDark ? '#3a3a3c' : INPUT_BG;
+  const inputTxt = isDark ? '#fff'    : '#333';
+  const labelClr = isDark ? '#aaa'    : LABEL_COLOR;
+  const shadow   = isDark ? '3px 4px 20px rgba(0,0,0,0.4)' : '3px 4px 12.6px rgba(255,255,255,0.25)';
+
+  const inputStyle: React.CSSProperties = {
+    height: 37.53,
+    background: inputBg,
+    boxShadow: INPUT_SHADOW,
+    borderRadius: 9,
+    border: "none",
+    outline: "none",
+    padding: "0 14px",
+    fontFamily: 'system-ui, -apple-system, "Noto Sans KR", sans-serif',
+    fontWeight: 300,
+    fontSize: 15,
+    color: inputTxt,
+    boxSizing: "border-box",
+    width: "100%",
+  };
+
+  // 비밀번호 인풋 전용: color-scheme 우회를 위해 transparent + textShadow 트릭 사용
+  const pwInputStyle: React.CSSProperties = {
+    ...inputStyle,
+    color: inputTxt,            // 현재 적용된 텍스트 색상
+    WebkitTextFillColor: inputTxt, // Safari/Chrome 대응
+    opacity: 1,                 // 혹시 모를 투명도 문제 방지
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontFamily: FONT,
+    fontWeight: 300,
+    fontSize: 15,
+    color: labelClr,
+    marginBottom: 7,
+    display: "block",
+  };
+
   const [role, setRole] = useState("employee");
   const [username, setUsername] = useState("");
   const [nickname, setNickname] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone1, setPhone1] = useState("");
+  const [phone2, setPhone2] = useState("");
+  const [phone3, setPhone3] = useState("");
+  const phone = `${phone1}${phone2}${phone3}`;
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>("idle");
@@ -337,7 +370,7 @@ export default function Signup() {
     <div
       style={{
         minHeight: "100vh",
-        background: BG,
+        background: pageBg,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -347,17 +380,17 @@ export default function Signup() {
       <div
         style={{
           width: "100%",
-          maxWidth: 480,
+          maxWidth: 560,
           marginTop: 20,
           marginBottom: 20,
         }}
       >
         <div
           style={{
-            background: "#FFFFFF",
+            background: cardBg,
             borderRadius: 58,
-            boxShadow: "3px 4px 12.6px rgba(255,255,255,0.25)",
-            padding: "43px 80px 45px 80px",
+            boxShadow: shadow,
+            padding: "48px 80px",
           }}
         >
           {/* Logo - 118×83px from Figma */}
@@ -406,7 +439,7 @@ export default function Signup() {
           {step === 1 && (
             <div>
               {/* Role */}
-              <Field label={t.role}>
+              <Field labelStyle={labelStyle} label={t.role}>
                 <Select value={role} onValueChange={setRole}>
                   <SelectTrigger
                     style={{
@@ -437,7 +470,7 @@ export default function Signup() {
                     value={nickname}
                     onChange={(e) => handleNicknameChange(e.target.value)}
                     placeholder={t.nickname}
-                    style={{ ...inputStyle, flex: 1, width: "auto" }}
+                    style={{ ...inputStyle, flex: 1, width: "auto" }} className="signup-input"
                   />
                   <button
                     type="button"
@@ -498,33 +531,49 @@ export default function Signup() {
                 </div>
               </div>
 
-              <Field label={t.phone}>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="000-0000-0000"
-                  style={inputStyle}
-                />
+              <Field labelStyle={labelStyle} label={t.phone}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input
+                    type="tel" maxLength={3}
+                    value={phone1}
+                    onChange={(e) => setPhone1(e.target.value.replace(/\D/g, ''))}
+                    style={{ ...inputStyle, width: "28%", textAlign: "center" }} className="signup-input"
+                  />
+                  <span style={{ color: "#aaa", fontWeight: 400, flexShrink: 0 }}>-</span>
+                  <input
+                    type="tel" maxLength={4}
+                    value={phone2}
+                    onChange={(e) => setPhone2(e.target.value.replace(/\D/g, ''))}
+                    style={{ ...inputStyle, flex: 1, textAlign: "center" }} className="signup-input"
+                  />
+                  <span style={{ color: "#aaa", fontWeight: 400, flexShrink: 0 }}>-</span>
+                  <input
+                    type="tel" maxLength={4}
+                    value={phone3}
+                    onChange={(e) => setPhone3(e.target.value.replace(/\D/g, ''))}
+                    style={{ ...inputStyle, flex: 1, textAlign: "center" }} className="signup-input"
+                  />
+                </div>
               </Field>
 
-              <Field label={t.username}>
+              <Field labelStyle={labelStyle} label={t.username}>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder={t.username}
-                  style={inputStyle}
+                  style={{ ...inputStyle }}
+                  className="signup-input"
                 />
               </Field>
 
-              <Field label={t.password}>
-                <input
-                  type="password"
+              <Field labelStyle={labelStyle} label={t.password}>
+                <PasswordInput
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={setPassword}
                   placeholder={t.password}
-                  style={inputStyle}
+                  autoComplete="new-password"
+                  style={inputStyle} className="signup-input"
                 />
                 {password && (
                   <div style={{ marginTop: 6 }}>
@@ -570,13 +619,13 @@ export default function Signup() {
                 )}
               </Field>
 
-              <Field label={t.confirmPassword}>
-                <input
-                  type="password"
+              <Field labelStyle={labelStyle} label={t.confirmPassword}>
+                <PasswordInput
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={setConfirmPassword}
                   placeholder={t.confirmPassword}
-                  style={inputStyle}
+                  autoComplete="new-password"
+                  style={inputStyle} className="signup-input"
                 />
               </Field>
 
@@ -664,7 +713,7 @@ export default function Signup() {
                     />
                   </div>
 
-                  <Field label={t.brandName}>
+                  <Field labelStyle={labelStyle} label={t.brandName}>
                     <input
                       type="text"
                       value={brandName}
@@ -676,11 +725,11 @@ export default function Signup() {
                             ? "e.g. My Store"
                             : "例: 春日の店"
                       }
-                      style={inputStyle}
+                      style={inputStyle} className="signup-input"
                     />
                   </Field>
 
-                  <Field label={t.branchName}>
+                  <Field labelStyle={labelStyle} label={t.branchName}>
                     <input
                       type="text"
                       value={branchName}
@@ -722,7 +771,7 @@ export default function Signup() {
                         type="time"
                         value={openTime}
                         onChange={(e) => setOpenTime(e.target.value)}
-                        style={inputStyle}
+                        style={inputStyle} className="signup-input"
                       />
                     </div>
                     <div>
@@ -731,26 +780,26 @@ export default function Signup() {
                         type="time"
                         value={closeTime}
                         onChange={(e) => setCloseTime(e.target.value)}
-                        style={inputStyle}
+                        style={inputStyle} className="signup-input"
                       />
                     </div>
                   </div>
 
-                  <Field label={t.maxCapacity}>
+                  <Field labelStyle={labelStyle} label={t.maxCapacity}>
                     <input
                       type="number"
                       value={maxCapacity}
                       onChange={(e) => setMaxCapacity(e.target.value)}
                       placeholder="10"
                       min="1"
-                      style={inputStyle}
+                      style={inputStyle} className="signup-input"
                     />
                   </Field>
                 </>
               )}
 
               {role === "employee" && (
-                <Field label={t.selectStore}>
+                <Field labelStyle={labelStyle} label={t.selectStore}>
                   <Select
                     value={selectedStoreId}
                     onValueChange={setSelectedStoreId}

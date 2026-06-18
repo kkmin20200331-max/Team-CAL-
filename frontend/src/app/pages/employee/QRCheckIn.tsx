@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
+import { useTheme } from 'next-themes';
 import {
   Camera,
   CheckCircle2,
@@ -123,8 +124,24 @@ export default function QRCheckIn() {
   const navigate = useNavigate();
   const language = useLanguage();
   const t = translations.qrCheckIn[language];
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const user = useMemo(() => JSON.parse(sessionStorage.getItem('user') || '{}'), []);
   const storeName = sessionStorage.getItem('store_name') || t.store;
+
+  const pageBg = isDark
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const dynCardStyle: React.CSSProperties = {
+    background: isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)',
+    border: `1px solid ${isDark ? '#3a3a3c' : '#00A200'}`,
+    borderRadius: 26,
+    boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
+    marginBottom: 16,
+    overflow: 'hidden',
+  };
+  const textMain = isDark ? '#fff' : '#111';
+  const textSub  = isDark ? '#aaa' : '#555';
 
   const [isScanning, setIsScanning] = useState(false);
   const [checkInStatus, setCheckInStatus] = useState<
@@ -226,16 +243,16 @@ export default function QRCheckIn() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)',
+      background: pageBg,
       paddingBottom: 120,
     }}>
       <EmployeeHeader>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: 0 }}>{t.title}</h1>
+          <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB', margin: 0 }}>{t.title}</h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
             <Clock size={16} color="rgba(255,255,255,0.85)" />
             <span style={{ fontSize: 17, fontFamily: 'monospace', color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
-              {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              {currentTime.toLocaleTimeString(language === 'ko' ? 'ko-KR' : language === 'ja' ? 'ja-JP' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           </div>
         </div>
@@ -244,7 +261,7 @@ export default function QRCheckIn() {
       <div style={{ padding: '16px 40px 0' }}>
 
         {/* ── 오늘의 근무 ── */}
-        <div style={cardStyle}>
+        <div style={dynCardStyle}>
           <div style={{ padding: '18px 20px 14px' }}>
             <span style={pillStyle}>{t.todayWork}</span>
           </div>
@@ -258,28 +275,19 @@ export default function QRCheckIn() {
               </div>
             ) : (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Clock size={20} color="#07790F" />
-                    <span style={{ fontSize: 22, fontWeight: 700, color: '#07790F' }}>
-                      {getTimePart(todayShift.start_at)} - {getTimePart(todayShift.end_at)}
-                    </span>
-                  </div>
-                  <span style={{
-                    background: '#E6F5C8',
-                    color: '#07790F',
-                    borderRadius: 20,
-                    padding: '4px 14px',
-                    fontSize: 14,
-                    fontWeight: 600,
-                  }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <Clock size={20} color="#07790F" />
+                  <span style={{ fontSize: 22, fontWeight: 700, color: '#07790F' }}>
+                    {getTimePart(todayShift.start_at)} - {getTimePart(todayShift.end_at)}
+                  </span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#8BA68D' }}>
                     {calcHours(todayShift.start_at, todayShift.end_at).toFixed(1)}h
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                   <MapPin size={16} color="#8BA68D" />
-                  <span style={{ fontSize: 15, fontWeight: 500, color: '#333' }}>{storeName}</span>
+                  <span style={{ fontSize: 15, fontWeight: 500, color: textMain }}>{storeName}</span>
                 </div>
 
                 {timeStatus && (
@@ -295,12 +303,12 @@ export default function QRCheckIn() {
 
         {/* ── 체크인 상태 ── */}
         {checkInStatus === 'idle' && (
-          <div style={cardStyle}>
+          <div style={dynCardStyle}>
             <div style={{ padding: 24 }}>
               {/* QR 스캔 영역 */}
               <div style={{
                 aspectRatio: '1',
-                background: '#E6F5C8',
+                background: isDark ? '#1a2e1a' : '#E6F5C8',
                 borderRadius: 20,
                 display: 'flex',
                 alignItems: 'center',
@@ -335,8 +343,8 @@ export default function QRCheckIn() {
 
         {checkInStatus === 'loading' && (
           <div style={{
-            ...cardStyle,
-            background: '#E6F5C8',
+            ...dynCardStyle,
+            background: isDark ? '#1a2e1a' : '#E6F5C8',
             border: '1px solid #80D180',
             padding: '18px 20px',
             display: 'flex',
@@ -349,7 +357,7 @@ export default function QRCheckIn() {
         )}
 
         {checkInStatus === 'success' && (
-          <div style={{ ...cardStyle, background: 'rgba(230,245,200,0.6)', border: '2px solid #18A022' }}>
+          <div style={{ ...dynCardStyle, background: 'rgba(230,245,200,0.6)', border: '2px solid #18A022' }}>
             <div style={{ padding: 24 }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{
@@ -368,19 +376,19 @@ export default function QRCheckIn() {
                   {t.checkInSuccess}
                 </h3>
                 <p style={{ color: '#18A022', marginBottom: 20, fontSize: 16 }}>
-                  {t.checkedInAt(currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))}
+                  {t.checkedInAt(currentTime.toLocaleTimeString(language === 'ko' ? 'ko-KR' : language === 'ja' ? 'ja-JP' : 'en-US', { hour: '2-digit', minute: '2-digit' }))}
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-                  <div style={{ background: 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
+                  <div style={{ background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
                     <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 4 }}>{t.scheduledTime}</p>
                     <p style={{ fontSize: 20, fontWeight: 700, color: '#07790F', margin: 0 }}>
                       {todayShift ? getTimePart(todayShift.start_at) : '-'}
                     </p>
                   </div>
-                  <div style={{ background: 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
+                  <div style={{ background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
                     <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 4 }}>{t.actualTime}</p>
                     <p style={{ fontSize: 20, fontWeight: 700, color: '#18A022', margin: 0 }}>
-                      {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                      {currentTime.toLocaleTimeString(language === 'ko' ? 'ko-KR' : language === 'ja' ? 'ja-JP' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
@@ -399,7 +407,7 @@ export default function QRCheckIn() {
 
         {checkInStatus === 'error' && (
           <div style={{
-            ...cardStyle,
+            ...dynCardStyle,
             background: 'rgba(254,242,242,0.8)',
             border: '1px solid #dc2626',
             padding: '18px 20px',
@@ -421,7 +429,7 @@ export default function QRCheckIn() {
         )}
 
         {/* ── 체크인 안내 ── */}
-        <div style={cardStyle}>
+        <div style={dynCardStyle}>
           <div style={{ padding: '18px 20px 14px' }}>
             <span style={pillStyle}>{t.howToCheckIn}</span>
           </div>
@@ -435,7 +443,7 @@ export default function QRCheckIn() {
                 <div style={{
                   width: 28,
                   height: 28,
-                  background: '#E6F5C8',
+                  background: isDark ? '#1a2e1a' : '#E6F5C8',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -446,7 +454,7 @@ export default function QRCheckIn() {
                   <span style={{ color: '#07790F', fontWeight: 700, fontSize: 13 }}>{n}</span>
                 </div>
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: 16, color: '#222', margin: '0 0 2px' }}>{title}</p>
+                  <p style={{ fontWeight: 600, fontSize: 16, color: textMain, margin: '0 0 2px' }}>{title}</p>
                   <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{desc}</p>
                 </div>
               </div>
@@ -455,7 +463,7 @@ export default function QRCheckIn() {
         </div>
 
         {/* ── 최근 근무 기록 ── */}
-        <div style={cardStyle}>
+        <div style={dynCardStyle}>
           <div style={{ padding: '18px 20px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
             <History size={18} color="#07790F" />
             <span style={pillStyle}>{t.recentWorkHistory}</span>
@@ -469,16 +477,16 @@ export default function QRCheckIn() {
                 const hours = calcHours(shift.start_at, shift.end_at);
                 const startTime = getTimePart(shift.start_at);
                 const endTime = getTimePart(shift.end_at);
-                const rowBg = index % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(24,160,34,0.04)';
                 return (
                   <div key={index} style={{
-                    background: rowBg,
+                    background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
                     border: '1px solid rgba(0,162,0,0.12)',
                     borderRadius: 16,
                     padding: '14px 20px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    boxShadow: '0px 2px 6px rgba(0,0,0,0.06)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ textAlign: 'center', minWidth: 36 }}>
@@ -496,7 +504,7 @@ export default function QRCheckIn() {
                       </div>
                     </div>
                     <span style={{
-                      background: '#E6F5C8',
+                      background: isDark ? '#1a2e1a' : '#E6F5C8',
                       color: '#07790F',
                       borderRadius: 20,
                       padding: '4px 14px',

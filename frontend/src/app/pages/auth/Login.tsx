@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import PasswordInput from "../../components/PasswordInput";
 import {
   Select,
   SelectContent,
@@ -101,6 +102,11 @@ export default function Login() {
   const isDark = theme === "dark";
   const font = fontMap[language];
 
+  // 비밀번호 dots 가시성: HTML color-scheme을 테마에 맞게 강제
+  useEffect(() => {
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+  }, [isDark]);
+
   const bgColor = isDark ? "#1c1c1e" : "#EEF5DD";
   const cardBg = isDark ? "#2c2c2e" : "#FFFFFF";
   const labelColor = isDark ? "#aaa" : "#606060";
@@ -180,7 +186,8 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder={t.username}
-                style={{ width: "100%", height: 38, background: inputBg, boxShadow: "inset -2px -1px 4px rgba(126,147,126,0.14)", borderRadius: 9, border: "none", outline: "none", padding: "0 14px", fontFamily: font, fontWeight: 300, fontSize: 16, color: isDark ? "#fff" : "#333", boxSizing: "border-box" as const }}
+                className="signup-input"
+                style={{ width: "100%", height: 38, background: inputBg, boxShadow: "inset -2px -1px 4px rgba(126,147,126,0.14)", borderRadius: 9, border: "none", outline: "none", padding: "0 14px", fontFamily: font, fontWeight: 300, fontSize: 16, color: isDark ? "#fff" : "#333", WebkitTextFillColor: isDark ? "#fff" : "#333", boxSizing: "border-box" as const }}
               />
             </div>
 
@@ -189,12 +196,12 @@ export default function Login() {
               <div style={{ fontFamily: font, fontWeight: 300, fontSize: 16, color: labelColor, marginBottom: 6 }}>
                 {t.password}
               </div>
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={setPassword}
                 placeholder={t.password}
-                style={{ width: "100%", height: 38, background: inputBg, boxShadow: "inset -2px -1px 4px rgba(126,147,126,0.14)", borderRadius: 9, border: "none", outline: "none", padding: "0 14px", fontFamily: font, fontWeight: 300, fontSize: 16, color: isDark ? "#fff" : "#333", boxSizing: "border-box" as const }}
+                autoComplete="current-password"
+                style={{ width: "100%", height: 38, background: inputBg, boxShadow: "inset -2px -1px 4px rgba(126,147,126,0.14)", borderRadius: 9, border: "none", outline: "none", padding: "0 14px", fontFamily: font, fontWeight: 300, fontSize: 16, color: isDark ? "#fff" : "#333", WebkitTextFillColor: isDark ? "#fff" : "#333", boxSizing: "border-box" as const }}
               />
             </div>
 
