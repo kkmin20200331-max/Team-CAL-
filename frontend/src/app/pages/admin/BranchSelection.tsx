@@ -3,10 +3,14 @@ import { useNavigate } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Store, Clock, MapPin, LayoutGrid } from 'lucide-react';
-import ProfilePanel from './ProfilePanel';
+import AdminHeader from './AdminHeader';
+import { useTheme } from 'next-themes';
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -32,6 +36,8 @@ export default function BranchSelection() {
   const navigate = useNavigate();
   const language = useLanguage();
   const t = translations.branchSelection[language];
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [stores, setStores] = useState<StoreVo[]>([]);
   const [storesLoading, setStoresLoading] = useState(true);
 
@@ -80,72 +86,81 @@ export default function BranchSelection() {
     navigate(`/admin/dashboard/${store.id}`);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t.title}</h1>
-              <p className="mt-1 text-gray-600 dark:text-gray-400">{t.subtitle}</p>
-            </div>
+  const pageBg = isDark
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const cardBg = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const textColor = isDark ? '#fff' : '#111';
+  const subTextColor = isDark ? '#aaa' : '#555';
 
-            {/* ProfilePanel 컴포넌트 사용 (알림 + 프로필 통합) */}
-            <ProfilePanel />
-          </div>
+  return (
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader>
+        <div>
+          <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB' }}>{t.title}</h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{t.subtitle}</p>
         </div>
-      </div>
+      </AdminHeader>
 
       {/* Store Cards */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Button
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 40px' }}>
+        <button
           onClick={() => navigate("/admin/multibranch")}
-          variant="outline"
-          className="gap-2 mb-6 w-full"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            width: '100%', marginBottom: 24, padding: '14px 0',
+            background: isDark ? '#3a3a3c' : LIGHT_GREEN,
+            border: `1px solid ${BORDER_GREEN}`, borderRadius: 54,
+            color: DARK_GREEN, fontSize: 16, fontWeight: 600, cursor: 'pointer',
+          }}
         >
-          <LayoutGrid className="w-4 h-4" />
+          <LayoutGrid size={18} />
           {t.viewAllBranches}
-        </Button>
+        </button>
 
         {storesLoading ? (
-          <div className="flex items-center justify-center py-20 text-gray-500">{t.loading}</div>
+          <div style={{ textAlign: 'center', padding: '80px 0', color: subTextColor, fontSize: 16 }}>{t.loading}</div>
         ) : stores.length === 0 ? (
-          <div className="text-center text-gray-500 py-20">{t.noStores}</div>
+          <div style={{ textAlign: 'center', padding: '80px 0', color: subTextColor, fontSize: 16 }}>{t.noStores}</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
             {stores.map((store) => (
-              <Card
+              <div
                 key={store.id}
-                className="hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => handleSelectStore(store)}
+                style={{
+                  background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26,
+                  boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: '24px',
+                  cursor: 'pointer', transition: 'box-shadow 0.2s',
+                }}
               >
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Store className="w-5 h-5 text-blue-600" />
-                    {store.name}
-                  </CardTitle>
-                  <CardDescription className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    {store.address}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="w-4 h-4" />
-                    <span>{t.operatingHours(store.open_time, store.close_time)}</span>
-                  </div>
-                  <Button
-                    className="w-full mt-4"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectStore(store);
-                    }}
-                  >
-                    {t.viewDetails}
-                  </Button>
-                </CardContent>
-              </Card>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <Store size={20} color={GREEN} />
+                  <span style={{ fontSize: 20, fontWeight: 700, color: textColor }}>{store.name}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: subTextColor, fontSize: 14, marginBottom: 6 }}>
+                  <MapPin size={13} />
+                  <span>{store.address}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: subTextColor, fontSize: 14, marginBottom: 20 }}>
+                  <Clock size={13} />
+                  <span>{t.operatingHours(store.open_time, store.close_time)}</span>
+                </div>
+                <button
+                  style={{
+                    width: '100%', padding: '12px 0',
+                    background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`,
+                    border: 'none', borderRadius: 54, color: '#fff',
+                    fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectStore(store);
+                  }}
+                >
+                  {t.viewDetails}
+                </button>
+              </div>
             ))}
           </div>
         )}

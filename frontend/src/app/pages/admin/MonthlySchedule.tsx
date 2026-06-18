@@ -1,17 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import {
   format, addMonths, startOfMonth, endOfMonth,
   startOfWeek, addDays, isSameMonth, isSameDay
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import ProfilePanel from './ProfilePanel';
+import AdminHeader from './AdminHeader';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
+import { useTheme } from 'next-themes';
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -63,6 +67,8 @@ export default function MonthlySchedule() {
   const { branchId } = useParams();
   const language = useLanguage();
   const t = translations.monthlySchedule[language];
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const DAY_LABELS = t.dayLabels;
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -111,221 +117,151 @@ export default function MonthlySchedule() {
   const calendarDates = getCalendarDates();
   const today = new Date();
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Row 1: 제목 + 프로필 */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t.title}</h1>
-                <p className="mt-1 text-gray-600 dark:text-gray-400">
-                  {format(currentMonth, "yyyy년 M월", { locale: ko })}
-                </p>
-              </div>
-            </div>
-            <ProfilePanel />
-          </div>
+  const pageBg = isDark
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const cardBg = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const textColor = isDark ? '#fff' : '#111';
+  const subTextColor = isDark ? '#aaa' : '#555';
+  const cellBorder = isDark ? '#3a3a3c' : '#d4edda';
 
-          {/* Row 2: 범례 + 월 이동 */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
-                <span className="text-gray-600 dark:text-gray-400">{t.legendConfirmed}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full" />
-                <span className="text-gray-600 dark:text-gray-400">{t.legendPending}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 bg-red-500 rounded-full" />
-                <span className="text-gray-600 dark:text-gray-400">{t.legendCancelled}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 bg-red-300 rounded-full" />
-                <span className="text-red-500 dark:text-red-400">{t.legendHoliday}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setCurrentMonth((prev) => addMonths(prev, -1))}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button variant="outline" onClick={() => setCurrentMonth(new Date())}>{t.today}</Button>
-              <Button variant="outline" size="icon" onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}>
-                <ChevronRight className="w-5 h-5" />
-              </Button>
+  return (
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+              <ChevronLeft size={20} />
+            </button>
+            <div>
+              <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB' }}>{t.title}</h1>
+              <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
+                {format(currentMonth, "yyyy년 M월", { locale: ko })}
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </AdminHeader>
 
       {/* 달력 */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* 뷰 전환 버튼 */}
-        <div className="flex gap-3 mb-4">
-          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}>
-            {t.weeklyView}
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/daily/${branchId}/${format(new Date(), 'yyyy-MM-dd')}`)}>
-            <Calendar className="w-4 h-4 mr-2" />{t.dailyView}
-          </Button>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 40px' }}>
+        {/* 범례 + 월 이동 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13 }}>
+            {[
+              { color: '#18A022', label: t.legendConfirmed },
+              { color: '#f59e0b', label: t.legendPending },
+              { color: '#ef4444', label: t.legendCancelled },
+              { color: '#fca5a5', label: t.legendHoliday },
+            ].map(({ color, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: color }} />
+                <span style={{ color: subTextColor }}>{label}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={() => setCurrentMonth(prev => addMonths(prev, -1))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronLeft size={16} /></button>
+            <button onClick={() => setCurrentMonth(new Date())} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, padding: '6px 16px', fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.today}</button>
+            <button onClick={() => setCurrentMonth(prev => addMonths(prev, 1))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronRight size={16} /></button>
+          </div>
         </div>
 
-        <Card>
-          <CardContent className="p-4">
-            {/* 요일 헤더 */}
-            <div className="grid grid-cols-7 mb-1">
-              {DAY_LABELS.map((day, i) => (
-                <div
-                  key={day}
-                  className={`text-center text-sm font-semibold py-2
-                    ${i === 5 ? "text-blue-500" : i === 6 ? "text-red-500" : "text-gray-500 dark:text-gray-400"}
-                  `}
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
+        {/* 뷰 전환 버튼 */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 15, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}>
+            {t.weeklyView}
+          </button>
+          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 15, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={() => navigate(`/admin/schedule/daily/${branchId}/${format(new Date(), 'yyyy-MM-dd')}`)}>
+            <Calendar size={16} />{t.dailyView}
+          </button>
+        </div>
 
-            {/* 날짜 셀 */}
-            {loading ? (
-              <div className="text-center py-20 text-gray-400">{t.loading}</div>
-            ) : (
-              <div className="grid grid-cols-7 border-l border-t border-gray-200 dark:border-gray-700">
-                {calendarDates.map((date, index) => {
-                  const dateStr = format(date, "yyyy-MM-dd");
-                  const dayShifts = getShiftsForDate(date);
-                  const confirmedCount = dayShifts.filter(
-                    (s) => s.status === "confirmed",
-                  ).length;
-                  const pendingCount = dayShifts.filter(
-                    (s) => s.status === "pending",
-                  ).length;
-                  const cancelledCount = dayShifts.filter(
-                    (s) => s.status === "cancelled",
-                  ).length;
-                  const isCurrentMonth = isSameMonth(date, currentMonth);
-                  const isToday = isSameDay(date, today);
-                  const isHoliday = !!HOLIDAYS[dateStr];
-                  const isSunday = date.getDay() === 0;
-                  const isSaturday = date.getDay() === 6;
-
-                  const isRed = isHoliday || isSunday;
-
-                  return (
-                    <div
-                      key={index}
-                      onClick={() =>
-                        isCurrentMonth &&
-                        navigate(`/admin/schedule/daily/${branchId}/${dateStr}`)
-                      }
-                      className={`
-                        min-h-[90px] p-2 border-r border-b border-gray-200 dark:border-gray-700
-                        flex flex-col items-center
-                        ${isCurrentMonth ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800" : "cursor-default"}
-                        ${!isCurrentMonth ? "bg-gray-50/50 dark:bg-gray-900/50" : ""}
-                        ${isCurrentMonth && isRed ? "bg-red-50/40 dark:bg-red-900/10" : ""}
-                        ${isCurrentMonth && isSaturday ? "bg-blue-50/40 dark:bg-blue-900/10" : ""}
-                        transition-colors
-                      `}
-                    >
-                      {/* 날짜 숫자 */}
-                      <div
-                        className={`
-                        w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium mt-0.5 shrink-0
-                        ${isToday && isCurrentMonth ? "bg-blue-600 text-white" : ""}
-                        ${!isToday && isCurrentMonth && isRed ? "text-red-500" : ""}
-                        ${!isToday && isCurrentMonth && isSaturday ? "text-blue-500" : ""}
-                        ${!isToday && isCurrentMonth && !isRed && !isSaturday ? "text-gray-800 dark:text-gray-200" : ""}
-                        ${!isCurrentMonth ? "text-gray-300 dark:text-gray-600" : ""}
-                      `}
-                      >
-                        {format(date, "d")}
-                      </div>
-
-                      {/* 공휴일 이름 */}
-                      {isHoliday && isCurrentMonth && (
-                        <span className="text-[10px] text-red-400 leading-tight text-center mt-0.5 px-0.5">
-                          {HOLIDAYS[dateStr]}
-                        </span>
-                      )}
-
-                      {/* 이벤트 동그라미 */}
-                      {isCurrentMonth &&
-                        (confirmedCount > 0 ||
-                          pendingCount > 0 ||
-                          cancelledCount > 0) && (
-                          <div className="flex flex-wrap gap-1 mt-auto justify-center pb-1">
-                            {/* 확정 - 초록 점 (최대 3개) */}
-                            {Array.from({
-                              length: Math.min(confirmedCount, 3),
-                            }).map((_, i) => (
-                              <div
-                                key={`cf-${i}`}
-                                className="w-2 h-2 rounded-full bg-green-500"
-                              />
-                            ))}
-                            {confirmedCount > 3 && (
-                              <span className="text-[9px] text-green-600 font-medium">
-                                +{confirmedCount - 3}
-                              </span>
-                            )}
-                            {/* 대기 - 노란 점 (최대 3개) */}
-                            {Array.from({
-                              length: Math.min(pendingCount, 3),
-                            }).map((_, i) => (
-                              <div
-                                key={`p-${i}`}
-                                className="w-2 h-2 rounded-full bg-yellow-400"
-                              />
-                            ))}
-                            {pendingCount > 3 && (
-                              <span className="text-[9px] text-yellow-600 font-medium">
-                                +{pendingCount - 3}
-                              </span>
-                            )}
-                            {/* 취소 - 빨간 점 (최대 3개) */}
-                            {Array.from({
-                              length: Math.min(cancelledCount, 3),
-                            }).map((_, i) => (
-                              <div
-                                key={`c-${i}`}
-                                className="w-2 h-2 rounded-full bg-red-500"
-                              />
-                            ))}
-                            {cancelledCount > 3 && (
-                              <span className="text-[9px] text-red-600 font-medium">
-                                +{cancelledCount - 3}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                    </div>
-                  );
-                })}
+        <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', overflow: 'hidden' }}>
+          {/* 요일 헤더 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: LIGHT_GREEN }}>
+            {DAY_LABELS.map((day, i) => (
+              <div key={day} style={{ textAlign: 'center', padding: '10px 0', fontSize: 13, fontWeight: 700, color: i === 5 ? '#2563eb' : i === 6 ? '#ef4444' : DARK_GREEN }}>
+                {day}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+
+          {/* 날짜 셀 */}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '80px 0', color: subTextColor }}>{t.loading}</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderLeft: `1px solid ${cellBorder}`, borderTop: `1px solid ${cellBorder}` }}>
+              {calendarDates.map((date, index) => {
+                const dateStr = format(date, "yyyy-MM-dd");
+                const dayShifts = getShiftsForDate(date);
+                const confirmedCount = dayShifts.filter(s => s.status === "confirmed").length;
+                const pendingCount = dayShifts.filter(s => s.status === "pending").length;
+                const cancelledCount = dayShifts.filter(s => s.status === "cancelled").length;
+                const isCurrentMonth = isSameMonth(date, currentMonth);
+                const isToday = isSameDay(date, today);
+                const isHoliday = !!HOLIDAYS[dateStr];
+                const isSunday = date.getDay() === 0;
+                const isSaturday = date.getDay() === 6;
+                const isRed = isHoliday || isSunday;
+
+                let dateBg = 'transparent';
+                if (!isCurrentMonth) dateBg = isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.03)';
+                else if (isRed) dateBg = isDark ? 'rgba(239,68,68,0.08)' : 'rgba(254,202,202,0.3)';
+                else if (isSaturday) dateBg = isDark ? 'rgba(37,99,235,0.08)' : 'rgba(219,234,254,0.3)';
+
+                let dateNumColor = textColor;
+                if (!isCurrentMonth) dateNumColor = isDark ? '#555' : '#bbb';
+                else if (isRed) dateNumColor = '#ef4444';
+                else if (isSaturday) dateNumColor = '#2563eb';
+
+                return (
+                  <div
+                    key={index}
+                    onClick={() => isCurrentMonth && navigate(`/admin/schedule/daily/${branchId}/${dateStr}`)}
+                    style={{
+                      minHeight: 90, padding: 8, background: dateBg,
+                      borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      cursor: isCurrentMonth ? 'pointer' : 'default',
+                    }}
+                  >
+                    <div style={{
+                      width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 13, fontWeight: 500,
+                      background: isToday && isCurrentMonth ? DARK_GREEN : 'transparent',
+                      color: isToday && isCurrentMonth ? '#fff' : dateNumColor,
+                    }}>
+                      {format(date, "d")}
+                    </div>
+                    {isHoliday && isCurrentMonth && (
+                      <span style={{ fontSize: 9, color: '#ef4444', textAlign: 'center', marginTop: 2 }}>{HOLIDAYS[dateStr]}</span>
+                    )}
+                    {isCurrentMonth && (confirmedCount > 0 || pendingCount > 0 || cancelledCount > 0) && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, marginTop: 'auto', justifyContent: 'center', paddingBottom: 4 }}>
+                        {Array.from({ length: Math.min(confirmedCount, 3) }).map((_, i) => <div key={`cf-${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: '#18A022' }} />)}
+                        {confirmedCount > 3 && <span style={{ fontSize: 8, color: '#18A022', fontWeight: 600 }}>+{confirmedCount - 3}</span>}
+                        {Array.from({ length: Math.min(pendingCount, 3) }).map((_, i) => <div key={`p-${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: '#f59e0b' }} />)}
+                        {pendingCount > 3 && <span style={{ fontSize: 8, color: '#f59e0b', fontWeight: 600 }}>+{pendingCount - 3}</span>}
+                        {Array.from({ length: Math.min(cancelledCount, 3) }).map((_, i) => <div key={`c-${i}`} style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444' }} />)}
+                        {cancelledCount > 3 && <span style={{ fontSize: 8, color: '#ef4444', fontWeight: 600 }}>+{cancelledCount - 3}</span>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {/* 하단 버튼 */}
-        <div className="mt-6">
-          <Button
-            className="w-full bg-gray-900 hover:bg-gray-700 text-white dark:bg-gray-950 dark:hover:bg-gray-800"
+        <div style={{ marginTop: 24 }}>
+          <button
+            style={{ width: '100%', padding: '14px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}
             onClick={() => navigate(`/admin/substitute/${branchId}`)}
           >
             {t.substituteManagement}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

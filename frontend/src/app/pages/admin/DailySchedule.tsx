@@ -2,16 +2,19 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import {
-  ArrowLeft, Calendar, Clock, User,
+  Calendar, Clock, User,
   AlertCircle, CheckCircle, XCircle,
-  Plus, Phone, Trash2, X
+  Plus, Phone, Trash2, X, ChevronLeft
 } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import ProfilePanel from './ProfilePanel';
+import AdminHeader from './AdminHeader';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
+import { useTheme } from 'next-themes';
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -37,6 +40,8 @@ const DailySchedule: React.FC = () => {
   const { branchId, date } = useParams<{ branchId: string; date: string }>();
   const language = useLanguage();
   const t = translations.dailySchedule[language];
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const [selectedDate, setSelectedDate] = useState(
     date || new Date().toISOString().split("T")[0],
@@ -189,12 +194,18 @@ const DailySchedule: React.FC = () => {
   const hourlySchedule = groupByHour();
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'confirmed': return <Badge className="bg-green-500 text-white"><CheckCircle className="w-3 h-3 mr-1" />{t.statusConfirmed}</Badge>;
-      case 'pending':   return <Badge className="bg-yellow-500 text-white"><AlertCircle className="w-3 h-3 mr-1" />{t.statusPending}</Badge>;
-      case 'cancelled': return <Badge className="bg-red-500 text-white"><XCircle className="w-3 h-3 mr-1" />{t.statusCancelled}</Badge>;
-      default: return null;
-    }
+    const styles: Record<string, { bg: string; icon: React.ReactNode }> = {
+      confirmed: { bg: GREEN, icon: <CheckCircle size={11} /> },
+      pending: { bg: '#f59e0b', icon: <AlertCircle size={11} /> },
+      cancelled: { bg: '#ef4444', icon: <XCircle size={11} /> },
+    };
+    const s = styles[status];
+    if (!s) return null;
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 10px', borderRadius: 20, background: s.bg, color: '#fff', fontSize: 11, fontWeight: 600 }}>
+        {s.icon}{status === 'confirmed' ? t.statusConfirmed : status === 'pending' ? t.statusPending : t.statusCancelled}
+      </span>
+    );
   };
 
   const stats = {
