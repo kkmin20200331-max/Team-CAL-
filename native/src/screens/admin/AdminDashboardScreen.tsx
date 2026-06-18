@@ -7,9 +7,11 @@ import { useIsFocused } from '@react-navigation/native';
 import { useApp } from '../../contexts/AppContext';
 import { useSchedule } from '../../contexts/ScheduleContext';
 import TodayScheduleCard from '../../components/admin/TodayScheduleCard';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const { colors, isDarkMode } = useTheme();
+  const { t } = useLanguage();
   const styles = getThemedStyles(colors, isDarkMode);
   const isFocused = useIsFocused();
 
@@ -27,7 +29,6 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   }, [userInfo]);
 
   useEffect(() => {
-    // userInfo, shifts, employees 데이터가 모두 로드된 후에만 실행
     if (!isFocused || !userInfo || !shifts || !employees) return;
 
     const now = new Date();
@@ -44,7 +45,6 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
 
     const scheduleByTime: any = { morning: [], afternoon: [], closing: [] };
     processedTodayShifts.forEach(shift => {
-      // 방어 코드: shift.time 형식이 유효하지 않으면 계산에서 제외
       if (!shift.time || !shift.time.includes(' - ')) return;
       const timeParts = shift.time.split(' - ');
       if (timeParts.length < 2) return;
@@ -67,7 +67,6 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     
     const workingNowCount = processedTodayShifts.filter(shift => {
-      // 방어 코드: shift.time 형식이 유효하지 않으면 계산에서 제외
       if (!shift.time || !shift.time.includes(' - ')) return false;
       const timeParts = shift.time.split(' - ');
       if (timeParts.length < 2) return false;
@@ -103,10 +102,10 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const menuItems = [
-    { title: '직원 관리', icon: '👥', screen: 'EmployeeManagement' },
-    { title: '월간 근무표 보기', icon: '📅', screen: 'AdminSchedule' },
-    { title: '급여 정산', icon: '💰', screen: 'Payroll' },
-    { title: '사내 게시판', icon: '📢', screen: 'BoardNavigator' },
+    { title: t('employeeManagement'), icon: '👥', screen: 'EmployeeManagement' },
+    { title: t('monthlySchedule'), icon: '📅', screen: 'AdminSchedule' },
+    { title: t('payroll'), icon: '💰', screen: 'Payroll' },
+    { title: t('internalBoard'), icon: '📢', screen: 'BoardNavigator' },
   ];
 
   return (

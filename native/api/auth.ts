@@ -76,6 +76,16 @@ export const requestLeaveAPI = (data: { shift_id: string; user_id: string; reaso
 export const getAttendanceRecordsAPI = (userId: string, month: string) =>
   API.get(`/attendance?user_id=${userId}&month=${month}`);
 
+// ✅ [추가] 대타 관련 API
+export const getSubstituteRequestsAPI = (storeId: string) =>
+  API.get(`/substitute-requests?store_id=${storeId}`);
+
+export const applyForSubstituteAPI = (shiftId: string, applicantId: string) =>
+  API.post(`/shifts/${shiftId}/apply`, { applicantId });
+
+export const acceptSubstituteAPI = (shiftId: string, applicantId: string) =>
+  API.put(`/shifts/${shiftId}/accept`, { applicantId });
+
 // ---------------------------------------------------------
 // 💡 [예정] 앞으로 연동할 빈 껍데기 API 함수들을 미리 선언해 둡니다.
 // ---------------------------------------------------------

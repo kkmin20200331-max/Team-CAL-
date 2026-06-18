@@ -152,8 +152,11 @@ const DashboardScreen = ({ navigation }: Props) => {
           resizeMode="contain" 
         />
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.qrButton} onPress={handleQRCheckIn}>
-            <Text style={styles.qrButtonText}>{t('qrCheckIn')}</Text>
+          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('SubstituteMatching', { initialTab: 'requests' })}>
+            <Text style={styles.headerButtonText}>대타 찾기</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={handleQRCheckIn}>
+            <Text style={styles.headerButtonText}>{t('qrCheckIn')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}>
             <Text style={styles.notificationIcon}>🔔</Text>
@@ -217,8 +220,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.card },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  qrButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.gray, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
-  qrButtonText: { fontSize: 13, fontWeight: '600', color: colors.text },
+  headerButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.gray, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
+  headerButtonText: { fontSize: 13, fontWeight: '600', color: colors.text },
   notificationButton: { padding: 4, position: 'relative' },
   notificationIcon: { fontSize: 22 },
   badge: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.red, borderWidth: 1, borderColor: colors.card },

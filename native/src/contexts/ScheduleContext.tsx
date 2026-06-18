@@ -3,7 +3,7 @@ import { format, getDaysInMonth } from 'date-fns';
 import { Shift } from '../types/Schedule';
 import { User } from '../types/User';
 import { useApp } from './AppContext';
-import { getMyScheduleAPI, updateUserStatusAPI } from '../../api/auth';
+import { getMyScheduleAPI, updateUserStatusAPI, applyForSubstituteAPI } from '../../api/auth';
 
 const dummyEmployees: (User & { color: string, payType: 'HOURLY' | 'SALARY', payRate: number })[] = [
   { id: 'user_0', username: 'admin', name: '관리자', role: 'ADMIN', color: '#FF5A5F', payType: 'SALARY' as const, payRate: 4000000, status: 'ACTIVE' },
@@ -31,7 +31,7 @@ const generateDummyShifts = (month: Date): Shift[] => {
         shifts.push({ id: `s_${day}_2`, userId: dummyEmployees[(day + 1) % 5].id, date: dateStr, time: '15:00-23:00', status: 'CONFIRMED', reason: '' });
       } else if (day % 4 === 0) {
         shifts.push({ id: `s_${day}_3`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '08:00-16:00', status: 'CONFIRMED', reason: '' });
-        shifts.push({ id: `s_${day}_4`, userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '12:00-20:00', status: 'SUBSTITUTE_REQ', reason: '병원 진료' });
+        shifts.push({ id: `s_${day}_4`, userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '12:00-20:00', status: 'SUBSTITUTE_REQ', reason: '병원 진료', applicants: [] });
         shifts.push({ id: `s_${day}_5`, userId: dummyEmployees[(day + 3) % 5].id, date: dateStr, time: '16:00-23:00', status: 'CONFIRMED', reason: '' });
       } else {
         shifts.push({ id: `s_${day}_generic`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '10:00-18:00', status: 'CONFIRMED', reason: '' });
@@ -39,7 +39,7 @@ const generateDummyShifts = (month: Date): Shift[] => {
     } else if (dayOfWeek === 6) {
       shifts.push({ id: `s_${day}_6`, userId: dummyEmployees[day % 5].id, date: dateStr, time: '10:00-18:00', status: 'CONFIRMED', reason: '' });
       shifts.push({ id: `s_${day}_7`, userId: dummyEmployees[(day + 1) % 5].id, date: dateStr, time: '12:00-20:00', status: 'CONFIRMED', reason: '' });
-      shifts.push({ id: `s_${day}_8`, userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '14:00-22:00', status: 'SUBSTITUTE_REQ', reason: '가족 행사' });
+      shifts.push({ id: `s_${day}_8`, userId: dummyEmployees[(day + 2) % 5].id, date: dateStr, time: '14:00-22:00', status: 'SUBSTITUTE_REQ', reason: '가족 행사', applicants: [{userId: 'user_1', name: '김민준'}] });
     }
   }
   return shifts;
@@ -54,6 +54,7 @@ interface ScheduleContextType {
   addShift: (newShift: Omit<Shift, 'id'>) => void;
   updateShift: (updatedShift: Shift) => void;
   deleteShift: (shiftId: string) => void;
+  applyForSubstitute: (shiftId: string, applicantId: string) => Promise<void>;
   fetchSchedules: () => void;
 }
 
@@ -77,7 +78,6 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
   const [employees, setEmployees] = useState(() => dummyEmployees);
 
   useEffect(() => {
-    // This effect can be used to add the logged-in user to the dummy list if not present
     if (userInfo) {
       const userExists = employees.some(emp => emp.id === userInfo.id);
       if (!userExists) {
@@ -129,6 +129,22 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
   const deleteShift = (shiftId: string) => {
     setShifts(prev => prev.filter(s => s.id !== shiftId));
   };
+
+  const applyForSubstitute = async (shiftId: string, applicantId: string) => {
+    try {
+      // await applyForSubstituteAPI(shiftId, applicantId);
+      setShifts(prev => prev.map(s => {
+        if (s.id === shiftId) {
+          const newApplicants = [...(s.applicants || []), { userId: applicantId, name: employees.find(e=>e.id === applicantId)?.name || '' }];
+          return { ...s, applicants: newApplicants };
+        }
+        return s;
+      }));
+    } catch (error) {
+      console.error("대타 지원 실패:", error);
+      throw error;
+    }
+  };
   
   const value = {
     employees,
@@ -139,6 +155,7 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
     addShift,
     updateShift,
     deleteShift,
+    applyForSubstitute,
     fetchSchedules,
   };
 
