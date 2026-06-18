@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router';
+import { useTheme } from 'next-themes';
 import Holidays from 'date-holidays';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -82,6 +83,16 @@ const getDayLabel = (dateStr: string, days: string[]): string => {
 
 export default function MySchedule() {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const pageBg     = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const cardBg     = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const cardBorder = isDark ? '#3a3a3c' : '#00A200';
+  const shiftRowBg = isDark ? '#3a3a3c' : '#fff';
+  const toggleBg   = isDark ? '#1a2e1a' : '#E6F5C8';
+  const textMain   = isDark ? '#fff' : '#07790F';
+  const textSub    = isDark ? '#aaa' : '#8BA68D';
   const language = useLanguage();
   const t = translations.mySchedule[language];
 
@@ -217,32 +228,38 @@ export default function MySchedule() {
   );
 
   const getStatusBadge = (status: string) => {
+    const base: React.CSSProperties = {
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+    };
     switch (status) {
       case 'confirmed':
-        return <Badge className="gap-1 bg-green-500"><CheckCircle2 className="w-3 h-3" />{t.statusConfirmed}</Badge>;
+        return <span style={{ ...base, background: '#18A022', color: '#fff' }}><CheckCircle2 style={{ width: 13, height: 13 }} />{t.statusConfirmed}</span>;
       case 'pending':
-        return <Badge variant="outline" className="gap-1 border-yellow-400 text-yellow-600"><AlertCircle className="w-3 h-3" />{t.statusPending}</Badge>;
+        return <span style={{ ...base, background: 'transparent', border: '1.5px solid #C9A800', color: '#C9A800' }}><AlertCircle style={{ width: 13, height: 13 }} />{t.statusPending}</span>;
       case 'cancelled':
-        return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" />{t.statusCancelled}</Badge>;
+        return <span style={{ ...base, background: '#8B1A1A', color: '#fff' }}><XCircle style={{ width: 13, height: 13 }} />{t.statusCancelled}</span>;
       default:
-        return <Badge className="gap-1 bg-red-500"><XCircle className="w-3 h-3" />{t.statusSub}</Badge>;
+        return <span style={{ ...base, background: '#8B1A1A', color: '#fff' }}><XCircle style={{ width: 13, height: 13 }} />{t.statusSub}</span>;
     }
   };
 
   return (
-    <div style={{ minHeight: '130vh', background: 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', paddingBottom: 120 }}>
+    <div style={{ minHeight: '130vh', background: pageBg, paddingBottom: 120 }}>
 
       {/* Header */}
       <EmployeeHeader>
         <div>
-          <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB', textAlign: 'center' }}>{t.title}</h1>
+          <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB', textAlign: 'center', marginTop: 10, marginBottom: 10 }}>
+            {viewMode === 'month' ? t.thisMonth : t.thisWeek}
+          </h1>
           {/* 월간 통계 4칸 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 30, marginBottom: 25 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 16, marginBottom: 25 }}>
             {[
-              { label: t.totalWork,  value: `${activeShifts.length}日` },
+              { label: t.totalWork,  value: `${activeShifts.length} ${t.unitDay}` },
               { label: t.totalHours, value: `${totalHours.toFixed(1)} h` },
-              { label: t.completed,  value: `${completedShifts} 件` },
-              { label: t.scheduled,  value: `${upcomingShifts} 件` },
+              { label: t.completed,  value: `${completedShifts} ${t.unitCase}` },
+              { label: t.scheduled,  value: `${upcomingShifts} ${t.unitCase}` },
             ].map(({ label, value }) => (
               <div key={label} style={{
                 background: 'rgba(255,255,255,0.45)',
@@ -264,7 +281,7 @@ export default function MySchedule() {
         <div style={{
           position: 'relative',
           display: 'flex', alignItems: 'center',
-          background: '#E6F5C8', borderRadius: 17,
+          background: toggleBg, borderRadius: 17,
           padding: '10px 10px',
           marginBottom: 40,
           boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25), inset 0px 4px 6px rgba(0,0,0,0.1)',
@@ -289,7 +306,7 @@ export default function MySchedule() {
             style={{
               flex: 1, height: '100%', border: 'none', cursor: 'pointer',
               background: 'transparent',
-              color: viewMode === 'month' ? '#07790F' : '#8BA68D',
+              color: viewMode === 'month' ? textMain : textSub,
               fontWeight: 600, fontSize: 22,
               position: 'relative', zIndex: 1,
             }}
@@ -299,7 +316,7 @@ export default function MySchedule() {
             style={{
               flex: 1, height: '100%', border: 'none', cursor: 'pointer',
               background: 'transparent',
-              color: viewMode === 'week' ? '#07790F' : '#8BA68D',
+              color: viewMode === 'week' ? textMain : textSub,
               fontWeight: 600, fontSize: 22,
               position: 'relative', zIndex: 1,
             }}
@@ -329,18 +346,18 @@ export default function MySchedule() {
                 onClick={() => viewMode === 'month'
                   ? setCurrentMonth(prev => subMonths(prev, 1))
                   : setCurrentWeekStart(prev => addDays(prev, -7))}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#07790F' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMain }}
               >
                 <ChevronLeft size={22} />
               </button>
-              <span style={{ fontWeight: 800, fontSize: 25, color: '#07790F', width: 260, textAlign: 'center', display: 'inline-block' }}>
+              <span style={{ fontWeight: 800, fontSize: 25, color: textMain, width: 260, textAlign: 'center', display: 'inline-block' }}>
                 {viewMode === 'month' ? monthLabel : weekLabel}
               </span>
               <button
                 onClick={() => viewMode === 'month'
                   ? setCurrentMonth(prev => addMonths(prev, 1))
                   : setCurrentWeekStart(prev => addDays(prev, 7))}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#07790F' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: textMain }}
               >
                 <ChevronRight size={22} />
               </button>
@@ -356,7 +373,7 @@ export default function MySchedule() {
             { color: '#A20000', label: t.legendCancelledSub },
             { color: '#FFA6A6', label: t.legendHoliday },
           ].map(({ color, label }) => (
-            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: '#8BA68D' }}>
+            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: textSub }}>
               <span style={{ width: 14, height: 14, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
               {label}
             </span>
@@ -367,7 +384,7 @@ export default function MySchedule() {
         {viewMode === 'month' && (
           <>
             {/* 달력 */}
-            <div style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid #00A200', borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: '20px 20px 0 20px', marginBottom: 20 }}>
+            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: '20px 20px 0 20px', marginBottom: 20 }}>
               <div style={{ display: 'inline-block', transform: 'scale(1.2)', transformOrigin: 'top left', marginBottom: 80 }}>
                 <Calendar
                   mode="single"
@@ -396,32 +413,32 @@ export default function MySchedule() {
             </div>
 
             {/* 근무 목록 컨테이너 */}
-            <div style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid #00A200', borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: 20, marginBottom: 20 }}>
+            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: 20, marginBottom: 20 }}>
               {loading ? (
-                <p style={{ textAlign: 'center', padding: '32px 0', color: '#8BA68D', fontSize: 18 }}>{t.loading}</p>
+                <p style={{ textAlign: 'center', padding: '32px 0', color: textSub, fontSize: 18 }}>{t.loading}</p>
               ) : shifts.length === 0 ? (
-                <p style={{ textAlign: 'center', padding: '32px 0', color: '#18A022', fontSize: 32, fontWeight: 800 }}>{t.noShifts}</p>
+                <p style={{ textAlign: 'center', padding: '32px 0', color: '#18A022', fontSize: 24, fontWeight: 800 }}>{t.noShifts}</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {shifts.map((shift) => {
                     const dateStr = getWorkDate(shift);
                     const hours = calcHours(shift.start_at, shift.end_at);
                     return (
-                      <div key={shift.id} style={{ background: '#fff', borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
+                      <div key={shift.id} style={{ background: shiftRowBg, borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                           <div style={{ textAlign: 'center', minWidth: 48 }}>
-                            <p style={{ fontSize: 13, color: '#8BA68D' }}>{getDayLabel(dateStr, t.dayLabels)}</p>
-                            <p style={{ fontSize: 28, fontWeight: 800, color: '#07790F' }}>{dateStr.split('-')[2]}</p>
+                            <p style={{ fontSize: 13, color: textSub }}>{getDayLabel(dateStr, t.dayLabels)}</p>
+                            <p style={{ fontSize: 28, fontWeight: 800, color: textMain }}>{dateStr.split('-')[2]}</p>
                           </div>
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                              <Clock size={16} color="#07790F" />
-                              <span style={{ fontWeight: 700, fontSize: 18, color: '#07790F' }}>
+                              <Clock size={16} color={textMain} />
+                              <span style={{ fontWeight: 700, fontSize: 18, color: textMain }}>
                                 {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
                               </span>
-                              <span style={{ fontSize: 13, color: '#8BA68D' }}>{hours}h</span>
+                              <span style={{ fontSize: 13, color: textSub }}>{hours}h</span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#8BA68D', fontSize: 13 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: textSub, fontSize: 13 }}>
                               <MapPin size={14} />
                               <span>{storeName}</span>
                             </div>
@@ -439,9 +456,9 @@ export default function MySchedule() {
 
         {/* 주간 뷰 */}
         {viewMode === 'week' && (
-          <div style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid #00A200', borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: 20, marginBottom: 20 }}>
+          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: 20, marginBottom: 20 }}>
             {loading ? (
-              <p style={{ textAlign: 'center', padding: '32px 0', color: '#8BA68D', fontSize: 18 }}>{t.loading}</p>
+              <p style={{ textAlign: 'center', padding: '32px 0', color: textSub, fontSize: 18 }}>{t.loading}</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {weekDates.flatMap((date) => {
@@ -449,28 +466,28 @@ export default function MySchedule() {
                   const dayShifts = shifts.filter(s => getWorkDate(s) === dateStr);
                   const isHoliday = !!getHolidayName(dateStr);
                   const isSunday = date.getDay() === 0;
-                  const dayColor = isHoliday || isSunday ? '#A20000' : '#07790F';
+                  const dayColor = isHoliday || isSunday ? '#A20000' : textMain;
 
                   if (dayShifts.length === 0) return [];
 
                   return dayShifts.map((shift) => {
                     const hours = calcHours(shift.start_at, shift.end_at);
                     return (
-                      <div key={shift.id} style={{ background: '#fff', borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
+                      <div key={shift.id} style={{ background: shiftRowBg, borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                           <div style={{ textAlign: 'center', minWidth: 48 }}>
-                            <p style={{ fontSize: 13, color: dayColor === '#A20000' ? dayColor : '#8BA68D' }}>{t.dayLabels[date.getDay()]}</p>
+                            <p style={{ fontSize: 13, color: dayColor === '#A20000' ? dayColor : textSub }}>{t.dayLabels[date.getDay()]}</p>
                             <p style={{ fontSize: 28, fontWeight: 800, color: dayColor }}>{String(date.getDate()).padStart(2, '0')}</p>
                           </div>
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                              <Clock size={16} color="#07790F" />
-                              <span style={{ fontWeight: 700, fontSize: 18, color: '#07790F' }}>
+                              <Clock size={16} color={textMain} />
+                              <span style={{ fontWeight: 700, fontSize: 18, color: textMain }}>
                                 {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
                               </span>
-                              <span style={{ fontSize: 13, color: '#8BA68D' }}>{hours}h</span>
+                              <span style={{ fontSize: 13, color: textSub }}>{hours}h</span>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#8BA68D', fontSize: 13 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: textSub, fontSize: 13 }}>
                               <MapPin size={14} />
                               <span>{storeName}</span>
                             </div>

@@ -1,3 +1,4 @@
+import { useTheme } from 'next-themes';
 import { useState, useEffect, useMemo } from 'react';
 import EmployeeHeader from './EmployeeHeader';
 import { useNavigate } from 'react-router';
@@ -60,24 +61,34 @@ const checkIsNew = (s: string) => {
 };
 
 export default function EmployeeBoard() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const navigate = useNavigate();
   const language = useLanguage();
   const t = translations.employeeBoard[language];
   const storeId = sessionStorage.getItem('store_id') || '';
 
-  const [boards, setBoards] = useState<BoardVO[]>([]);
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCategoryKey, setSelectedCategoryKey] = useState<string>('');
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+
+  // 하드코딩 카테고리 (key=DB board.name, label=번역된 표시명)
+  const hardCategories = t.categories;
+  // key → colorMap
+  const colorMap = useMemo(() => {
+    const map: Record<string, { bg: string; color: string }> = {};
+    hardCategories.forEach((c, i) => { map[c.key] = CHIP_COLORS[i % CHIP_COLORS.length]; });
+    return map;
+  }, [hardCategories]);
 
   useEffect(() => {
     if (!storeId) return;
     setLoading(true);
+    // board 목록 전체 가져와서 이름으로 매칭
     API.get('/board', { params: { store_id: storeId } })
       .then(res => {
         const boardList: BoardVO[] = Array.isArray(res.data) ? res.data : [];
-        setBoards(boardList);
         return Promise.all(
           boardList.map((board) =>
             API.get("/board_post", { params: { board_id: board.id } })
@@ -104,10 +115,10 @@ export default function EmployeeBoard() {
   }, [storeId]);
 
   const filtered = useMemo(() =>
-    !selectedCategory || selectedCategory === t.allCategory
+    !selectedCategoryKey
       ? posts
-      : posts.filter(p => p.categoryName === selectedCategory),
-    [posts, selectedCategory, t.allCategory]
+      : posts.filter(p => p.categoryName === selectedCategoryKey),
+    [posts, selectedCategoryKey]
   );
 
   const selectedPost = posts.find(p => p.id === selectedPostId) ?? null;
@@ -117,49 +128,37 @@ export default function EmployeeBoard() {
   const prevPost = currentIdx > 0 ? posts[currentIdx - 1] : null;
   const nextPost = currentIdx < posts.length - 1 ? posts[currentIdx + 1] : null;
 
-  const colorMap = useMemo(() => {
-    const map: Record<string, { bg: string; color: string }> = {};
-    boards.forEach((b, i) => { map[b.name] = CHIP_COLORS[i % CHIP_COLORS.length]; });
-    return map;
-  }, [boards]);
-
-  const handleCategoryClick = (cat: string) => {
-    setSelectedCategory(cat);
+  const handleCategoryClick = (key: string) => {
+    setSelectedCategoryKey(key);
     setSelectedPostId(null);
   };
-
-  const categoryChips = [t.allCategory, ...boards.map(b => b.name)];
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)',
+      background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)',
       paddingBottom: 120,
     }}>
       <EmployeeHeader>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>{t.title}</h1>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{t.subtitle}</p>
+          <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB' }}>{t.title}</h1>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{t.subtitle}</p>
         </div>
       </EmployeeHeader>
 
-      {/* ── 카테고리 칩 (sticky) ── */}
-      <div style={{
-        background: 'rgba(230,245,200,0.95)', backdropFilter: 'blur(8px)',
-        position: 'sticky', top: 0, zIndex: 10,
-        borderBottom: `1px solid rgba(0,162,0,0.15)`,
-        padding: '12px 40px',
-      }}>
+      {/* ── 카테고리 칩 ── */}
+      <div style={{ padding: '12px 40px' }}>
         <div style={{
           display: 'grid', gap: 6,
-          gridTemplateColumns: `repeat(${categoryChips.length}, minmax(0, 1fr))`,
+          gridTemplateColumns: `repeat(${hardCategories.length + 1}, minmax(0, 1fr))`,
         }}>
-          {categoryChips.map(cat => {
-            const active = selectedCategory === cat || (!selectedCategory && cat === t.allCategory);
+          {/* 전체 버튼 */}
+          {[{ key: '', label: t.allCategory }, ...hardCategories].map(cat => {
+            const active = selectedCategoryKey === cat.key;
             return (
               <button
-                key={cat}
-                onClick={() => handleCategoryClick(cat)}
+                key={cat.key || '__all__'}
+                onClick={() => handleCategoryClick(cat.key)}
                 style={{
                   padding: '10px 0', borderRadius: 54, fontSize: 15, fontWeight: 600,
                   border: active ? 'none' : `1px solid ${BORDER_GREEN}`,
@@ -168,7 +167,7 @@ export default function EmployeeBoard() {
                   cursor: 'pointer',
                 }}
               >
-                {cat}
+                {cat.label}
               </button>
             );
           })}
@@ -183,8 +182,9 @@ export default function EmployeeBoard() {
           ) : filtered.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '48px 0', color: '#888', fontSize: 16 }}>{t.noPosts}</p>
           ) : (
-            filtered.map((post, i) => {
+            filtered.map((post) => {
               const chipStyle = colorMap[post.categoryName] ?? { bg: LIGHT_GREEN, color: DARK_GREEN };
+              const catLabel = hardCategories.find(c => c.key === post.categoryName)?.label ?? post.categoryName;
               return (
                 <button
                   key={post.id}
@@ -192,7 +192,7 @@ export default function EmployeeBoard() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '14px 16px', textAlign: 'left', width: '100%',
-                    background: i % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(24,160,34,0.04)',
+                    background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
                     border: '1px solid rgba(0,162,0,0.12)',
                     borderRadius: 16, cursor: 'pointer',
                     boxShadow: '0px 2px 6px rgba(0,0,0,0.04)',
@@ -205,11 +205,11 @@ export default function EmployeeBoard() {
                     background: chipStyle.bg, color: chipStyle.color,
                     whiteSpace: 'nowrap',
                   }}>
-                    {post.categoryName}
+                    {catLabel}
                   </span>
                   {/* 제목 */}
                   <span style={{
-                    flex: 1, fontSize: 16, color: '#333',
+                    flex: 1, fontSize: 16, color: isDark ? '#fff' : '#333',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
                     {post.title}
@@ -261,12 +261,13 @@ export default function EmployeeBoard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 {(() => {
                   const chipStyle = colorMap[selectedPost.categoryName] ?? { bg: LIGHT_GREEN, color: DARK_GREEN };
+                  const catLabel = hardCategories.find(c => c.key === selectedPost.categoryName)?.label ?? selectedPost.categoryName;
                   return (
                     <span style={{
                       fontSize: 13, fontWeight: 600, padding: '4px 14px', borderRadius: 20,
                       background: chipStyle.bg, color: chipStyle.color,
                     }}>
-                      {selectedPost.categoryName}
+                      {catLabel}
                     </span>
                   );
                 })()}
@@ -279,7 +280,7 @@ export default function EmployeeBoard() {
               </div>
 
               {/* 제목 */}
-              <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111', marginBottom: 12, lineHeight: 1.4 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 700, color: isDark ? '#fff' : '#111', marginBottom: 12, lineHeight: 1.4 }}>
                 {selectedPost.title}
               </h2>
 
@@ -296,7 +297,7 @@ export default function EmployeeBoard() {
               </div>
 
               {/* 본문 */}
-              <p style={{ fontSize: 16, color: '#333', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+              <p style={{ fontSize: 16, color: isDark ? '#fff' : '#333', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
                 {selectedPost.content}
               </p>
             </div>

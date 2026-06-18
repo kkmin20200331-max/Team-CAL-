@@ -5,6 +5,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import EmployeeProfilePanel from './EmployeeProfilePanel';
 import EmployeeBottomNav from './EmployeeBottomNav';
+import { useTheme } from 'next-themes';
 import {
   HomeNavIcon, CalendarNavIcon, QrNavIcon, PayrollNavIcon, BoardNavIcon,
   QrCardIcon, CalendarCardIcon, LeaveCardIcon, SubCardIcon, PayrollCardIcon, BoardCardIcon,
@@ -124,6 +125,18 @@ export default function EmployeeHome() {
   const language = useLanguage();
   const t = translations.employeeHome[language];
   const font = fontMap[language];
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  // 다크모드 색상 팔레트 (Login.tsx 기준)
+  const pageBg    = isDark ? '#1c1c1e' : '#fff';
+  const cardBg    = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const cardBorder= isDark ? '#3a3a3c' : BORDER_GREEN;
+  const textMain  = isDark ? '#fff'    : GREEN;
+  const textSub   = isDark ? '#aaa'    : 'rgba(24,160,34,0.7)';
+  const mainGrad  = isDark
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
 
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   const [storeName, setStoreName] = useState('');
@@ -208,21 +221,21 @@ export default function EmployeeHome() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F2F5EB', fontFamily: font }}>
-        <p style={{ color: DARK_GREEN, fontSize: 18 }}>{t.loading}</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isDark ? '#1c1c1e' : '#F2F5EB', fontFamily: font }}>
+        <p style={{ color: isDark ? '#4cd964' : DARK_GREEN, fontSize: 18 }}>{t.loading}</p>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: font }}>
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: font }}>
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <header style={{
-        height: 120, background: '#fff', position: 'sticky', top: 0, zIndex: 100,
+        height: 120, background: isDark ? '#2c2c2e' : '#fff', position: 'sticky', top: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 40px',
-        boxShadow: '0 1px 0 rgba(0,162,0,0.12)',
+        boxShadow: isDark ? '0 1px 0 rgba(255,255,255,0.06)' : '0 1px 0 rgba(0,162,0,0.12)',
       }}>
         {/* Logo */}
         <img src={logoMap[language]} alt="logo" style={{ height: 60, width: 'auto', objectFit: 'contain' }} />
@@ -244,8 +257,8 @@ export default function EmployeeHome() {
           )}
 
           <div style={{ textAlign: 'right', marginRight: -20 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>{currentUser?.name ?? ''}</div>
-            <div style={{ fontSize: 14, fontWeight: 300, color: DARK_GREEN }}>{currentUser?.role ?? ''}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: isDark ? '#4cd964' : DARK_GREEN }}>{currentUser?.name ?? ''}</div>
+            <div style={{ fontSize: 14, fontWeight: 300, color: isDark ? '#4cd964' : DARK_GREEN }}>{currentUser?.role ?? ''}</div>
           </div>
 
           <div style={{ position: 'relative' }}>
@@ -264,7 +277,7 @@ export default function EmployeeHome() {
 
       {/* ── GRADIENT CONTENT ─────────────────────────────────────────────── */}
       <main style={{
-        background: 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)',
+        background: mainGrad,
         padding: '18px 40px 130px',
         minHeight: 'calc(100vh - 88px - 114px)',
       }}>
@@ -277,12 +290,15 @@ export default function EmployeeHome() {
             { label: t.completedTotal, value: `${completedShifts}/${thisWeekShifts.length}` },
           ].map((stat, i) => (
             <div key={i} style={{
-              ...cardWhite, flex: 1, height: 130,
+              flex: 1, height: 130,
+              background: cardBg,
+              border: `1px solid ${cardBorder}`,
+              borderRadius: 16,
               display: 'flex', flexDirection: 'column',
               justifyContent: 'space-between', padding: '12px 30px',
             }}>
-              <div style={{ fontSize: 16, fontWeight: 400, color: 'rgba(24,160,34,0.7)' }}>{stat.label}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: GREEN, textAlign: 'right' }}>{stat.value}</div>
+              <div style={{ fontSize: 16, fontWeight: 400, color: textSub }}>{stat.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: textMain, textAlign: 'right' }}>{stat.value}</div>
             </div>
           ))}
         </div>
@@ -311,11 +327,11 @@ export default function EmployeeHome() {
           </div>
 
           {todayShift ? (
-            <div style={{ textAlign: 'center', fontSize: 60, fontWeight: 900, color: DARK_GREEN, letterSpacing: 2 }}>
+            <div style={{ textAlign: 'center', fontSize: 60, fontWeight: 900, color: isDark ? '#4cd964' : DARK_GREEN, letterSpacing: 2 }}>
               {formatTime(todayShift.start_at)} - {formatTime(todayShift.end_at)}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: GREEN, padding: '8px 0' }}>
+            <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: isDark ? '#4cd964' : GREEN, padding: '8px 0' }}>
               {t.noWorkToday}
             </div>
           )}
@@ -353,7 +369,7 @@ export default function EmployeeHome() {
           </div>
           {/* Row 2 */}
           <div style={{ display: 'flex', gap: 16 }}>
-            <QuickCard style={cardWhite} onClick={() => navigate('/employee/substitute')}
+            <QuickCard style={{ background: isDark ? '#fff' : 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', borderRadius: 26 }} onClick={() => navigate('/employee/substitute')}
               icon={<SubCardIcon size={38} />} label={t.substituteFind} />
             <QuickCard style={cardGreen} onClick={() => navigate('/employee/payroll')}
               icon={<PayrollCardIcon size={38} />} label={t.payrollCheck} />
@@ -380,9 +396,9 @@ export default function EmployeeHome() {
             </button>
           </div>
 
-          <div style={{ ...cardWhite, padding: '28px 40px', minHeight: 140 }}>
+          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: '28px 40px', minHeight: 140 }}>
             {upcomingShifts.length === 0 ? (
-              <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: GREEN, padding: '20px 0' }}>
+              <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: textMain, padding: '20px 0' }}>
                 {t.noUpcoming}
               </div>
             ) : (
@@ -393,28 +409,32 @@ export default function EmployeeHome() {
                   const hours = Math.round(calcHours(shift.start_at, shift.end_at) * 10) / 10;
                   const statusColor = shift.status === 'confirmed' ? GREEN : shift.status === 'cancelled' ? '#dc2626' : '#d97706';
                   const statusBg = shift.status === 'confirmed' ? 'rgba(24,160,34,0.12)' : shift.status === 'cancelled' ? 'rgba(220,38,38,0.1)' : 'rgba(217,119,6,0.1)';
+                  const shiftRowBg = isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)';
+                  const shiftRowBorder = isDark ? '#4a4a4c' : 'rgba(0,162,0,0.12)';
+                  const timeColor = isDark ? '#4cd964' : DARK_GREEN;
+                  const metaColor = isDark ? '#aaa' : '#8BA68D';
                   return (
                     <div key={i} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '14px 18px', borderRadius: 16,
-                      background: i % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(24,160,34,0.04)',
-                      border: '1px solid rgba(0,162,0,0.12)',
+                      background: shiftRowBg,
+                      border: `1px solid ${shiftRowBorder}`,
                       boxShadow: '0px 2px 6px rgba(0,0,0,0.06)',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                         <div style={{ textAlign: 'center', minWidth: 48 }}>
-                          <div style={{ fontSize: 13, color: '#8BA68D' }}>{getDayOfWeek(shift.work_date)}</div>
-                          <div style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>{dateNum}</div>
+                          <div style={{ fontSize: 13, color: metaColor }}>{getDayOfWeek(shift.work_date)}</div>
+                          <div style={{ fontSize: 28, fontWeight: 800, color: timeColor }}>{dateNum}</div>
                         </div>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                            <Clock size={16} color={DARK_GREEN} />
-                            <span style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>
+                            <Clock size={16} color={timeColor} />
+                            <span style={{ fontSize: 18, fontWeight: 700, color: timeColor }}>
                               {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
                             </span>
-                            <span style={{ fontSize: 13, color: '#8BA68D' }}>{hours}h</span>
+                            <span style={{ fontSize: 13, color: metaColor }}>{hours}h</span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#8BA68D', fontSize: 13 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: metaColor, fontSize: 13 }}>
                             <MapPin size={14} />
                             <span>{storeName}</span>
                           </div>
