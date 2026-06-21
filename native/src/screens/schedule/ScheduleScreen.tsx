@@ -8,7 +8,7 @@ import { format, addDays, startOfWeek, getDay, getDaysInMonth, getMonth, getYear
 import { ko } from 'date-fns/locale';
 import { useApp } from '../../contexts/AppContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getShiftListAPI, getMyShiftListAPI, requestLeaveAPI } from '../../../api/auth';
+import { getShiftListAPI, getMyShiftListAPI, requestLeaveAPI, createSubstitutePostAPI } from '../../../api/auth';
 import { useFocusEffect } from '@react-navigation/native';
 
 const today = new Date();
@@ -75,31 +75,30 @@ const ScheduleScreen = ({ navigation }: { navigation: any }) => {
       return;
     }
 
-    if (modalType === 'SUBSTITUTE') {
-      // TODO: 대타 요청 API 연동
-      Alert.alert("준비 중", "대타 요청 기능은 현재 준비 중입니다.");
-      return;
-    }
-
     try {
-      // URL: /api/leave_request (POST)
-      // Body: { shift_id, user_id, reason, status: 'PENDING' }
-      // DB: LEAVE_REQUESTS 테이블에 새로운 휴무 신청 기록 추가
-      await requestLeaveAPI({
-        shift_id: selectedShift.id,
-        user_id: userInfo.id,
-        reason: reason,
-        status: 'PENDING',
-      });
+      if (modalType === 'LEAVE') {
+        await requestLeaveAPI({
+          shift_id: selectedShift.id,
+          user_id: userInfo.id,
+          reason: reason,
+          status: 'PENDING',
+        });
+      } else { // modalType === 'SUBSTITUTE'
+        await createSubstitutePostAPI({
+          shift_id: selectedShift.id,
+          requester_id: userInfo.id,
+          reason: reason,
+          status: 'OPEN', // 대타 모집글의 최초 상태는 '모집중'
+        });
+      }
       
       Toast.show({ type: 'success', text1: t('requestComplete'), text2: t('requestSentToAdmin') });
       setReqModalVisible(false);
       setSelectedShift(null);
-      // 휴무 신청 후 목록 새로고침
-      fetchShifts(currentMonth);
+      fetchShifts(currentMonth); // 목록 새로고침
     } catch (error) {
-      console.error("휴무 신청 오류:", error);
-      Alert.alert("오류", "휴무 신청 중 문제가 발생했습니다.");
+      console.error(`${modalType} 신청 오류:`, error);
+      Alert.alert("오류", "신청 중 문제가 발생했습니다.");
     }
   };
 
@@ -116,7 +115,6 @@ const ScheduleScreen = ({ navigation }: { navigation: any }) => {
           <View style={styles.infoRow}><Text style={styles.infoIcon}>🕒</Text><Text style={styles.infoText}>{`${startTime} - ${endTime}`}</Text></View>
           <View style={styles.infoRow}><Text style={styles.infoIcon}>👤</Text><Text style={styles.infoText}>{item.user_name || t('unassigned')}</Text></View>
         </View>
-        {/* 직원이 자신의 스케줄을 볼 때만 버튼 표시 */}
         {userInfo?.role === 'STAFF' && item.user_id === userInfo.id && (
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenModal(item, 'LEAVE')}><Text style={styles.actionButtonText}>{t('requestLeave')}</Text></TouchableOpacity>

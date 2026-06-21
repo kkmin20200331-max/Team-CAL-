@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, RefreshControl, Animated, Image } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Animated, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { NotificationContext } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import Toast from 'react-native-toast-message';
-import { startOfWeek, endOfWeek, parseISO, format, isWithinInterval } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { Post } from '../../types/Post';
 import TodayShiftCard from '../../components/dashboard/TodayShiftCard';
@@ -14,32 +12,20 @@ import WeeklyStatsCard from '../../components/dashboard/WeeklyStatsCard';
 import SubstituteAlertCard from '../../components/dashboard/SubstituteAlertCard';
 import NoticeSection from '../../components/dashboard/NoticeSection';
 import { useApp } from '../../contexts/AppContext';
-import { useBoard } from '../../contexts/BoardContext';
-import { useSchedule } from '../../contexts/ScheduleContext';
+import { getMyShiftListAPI, getWeeklyStatsAPI, getSubstitutePostsAPI, getBoardPostsAPI } from '../../../api/auth';
 
-type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
-
-type Props = {
-  navigation: DashboardScreenNavigationProp;
-};
-
-const DashboardScreen = ({ navigation }: Props) => {
+const DashboardScreen = ({ navigation }: { navigation: any }) => {
   const { userInfo } = useApp();
-  const { posts } = useBoard();
-  const { shifts, employees } = useSchedule();
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
 
-  const userName = userInfo?.name || t('defaultUserName');
-  const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
-
-  const { unreadCount } = useContext(NotificationContext);
-
   const [todayShift, setTodayShift] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
   const [weeklyStats, setWeeklyStats] = useState({ totalHours: 0, expectedSalary: 0 });
-  const [isAlertVisible, setIsAlertVisible] = useState(true);
+  const [substituteCount, setSubstituteCount] = useState(0);
+  const [notices, setNotices] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0.4)).current;
   
@@ -52,89 +38,47 @@ const DashboardScreen = ({ navigation }: Props) => {
     ).start();
   }, [fadeAnim]);
 
-  const sortedDashboardPosts = [...posts].sort((a, b) => {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-  });
+  const fetchData = useCallback(async () => {
+    if (!userInfo || !userInfo.id || !userInfo.store_id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const boardId = userInfo.board_id || 'default_board_id';
+
+      const [shiftRes, statsRes, subRes, noticeRes] = await Promise.all([
+        getMyShiftListAPI(userInfo.id, todayStr, todayStr),
+        getWeeklyStatsAPI(userInfo.id, userInfo.store_id),
+        getSubstitutePostsAPI(userInfo.store_id),
+        getBoardPostsAPI(boardId),
+      ]);
+
+      setTodayShift(shiftRes.data.length > 0 ? shiftRes.data[0] : null);
+      setWeeklyStats(statsRes.data);
+      setSubstituteCount(subRes.data.filter((p: any) => p.requester_id !== userInfo.id).length);
+      setNotices(noticeRes.data.filter((p: Post) => p.category === 'NOTICE').slice(0, 5));
+
+    } catch (error) {
+      console.error("대시보드 데이터 조회 실패:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [userInfo]);
+
+  useFocusEffect(fetchData);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, [fetchData]);
 
   const handleOpenPost = (post: Post) => {
     navigation.navigate('BoardNavigator', { screen: 'BoardDetail', params: { postId: post.id } });
   };
 
-  const handleAcceptSubstitute = () => {
-    Alert.alert(
-      t('subReqConfirmTitle'),
-      t('subReqConfirmMsg'),
-      [
-        { text: t('cancel'), style: "cancel" },
-        { 
-          text: t('applyBtn'), 
-          onPress: () => {
-            setIsAlertVisible(false);
-            Toast.show({ type: 'success', text1: t('subApplySuccessTitle'), text2: t('subApplySuccessMsg') });
-          } 
-        }
-      ]
-    );
-  };
-
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
-
-  useEffect(() => {
-    if (userInfo && shifts && employees) {
-      setLoading(true);
-
-      const mySchedule = shifts
-        .filter(s => s.userId === userInfo.id)
-        .map(s => ({
-          ...s,
-          user: employees.find(e => e.id === s.userId)
-        }));
-
-      const now = new Date();
-      const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-
-      let calculatedMinutes = 0;
-      mySchedule.forEach(item => {
-        const shiftDate = parseISO(item.date);
-        if (isWithinInterval(shiftDate, { start: weekStart, end: weekEnd })) {
-          if (item.status !== 'OFF' && item.status !== 'SUBSTITUTE_REQ' && item.time && item.time.includes(' - ')) {
-            const [start, end] = item.time.split(' - ');
-            const [sH, sM] = start.split(':').map(Number);
-            const [eH, eM] = end.split(':').map(Number);
-            
-            let diff = (eH * 60 + eM) - (sH * 60 + sM);
-            if (diff < 0) diff += 24 * 60;
-            calculatedMinutes += diff;
-          }
-        }
-      });
-
-      const calculatedHours = calculatedMinutes / 60;
-      const stats = {
-        totalHours: calculatedHours,
-        expectedSalary: calculatedHours * (userInfo.payRate || 9860)
-      };
-      setWeeklyStats(stats);
-
-      const todayString = format(now, 'yyyy-MM-dd');
-      const shiftForToday = mySchedule.find(item => item.date === todayString);
-      
-      setTodayShift(shiftForToday || null);
-
-      setLoading(false);
-    }
-  }, [userInfo, shifts, employees]);
-
-  const handleNotification = () => navigation.navigate('Notifications');
-  const handleQRCheckIn = () => navigation.navigate('QRCheckIn');
-  
   const handleNavigateToWeeklyDetail = () => {
     if (!userInfo) return;
     navigation.navigate('WeeklyPayrollDetail', {
@@ -144,23 +88,14 @@ const DashboardScreen = ({ navigation }: Props) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      
       <View style={styles.header}>
-        <Image 
-          source={require('../../../assets/img/logo_2.png')} 
-          style={styles.headerLogo} 
-          resizeMode="contain" 
-        />
+        <Image source={require('../../../assets/img/logo_2.png')} style={styles.headerLogo} resizeMode="contain" />
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('SubstituteMatching', { initialTab: 'requests' })}>
-            <Text style={styles.headerButtonText}>{t('findSubstitute')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={handleQRCheckIn}>
+          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('QRCheckIn')}>
             <Text style={styles.headerButtonText}>{t('qrCheckIn')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}>
+          <TouchableOpacity style={styles.notificationButton} onPress={() => navigation.navigate('Notifications')}>
             <Text style={styles.notificationIcon}>🔔</Text>
-            {unreadCount > 0 && <View style={styles.badge} />}
           </TouchableOpacity>
         </View>
       </View>
@@ -168,49 +103,17 @@ const DashboardScreen = ({ navigation }: Props) => {
       <ScrollView 
         style={styles.contentContainer} 
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />}
       >
-        
         <View style={styles.greetingSection}>
-          <Text style={styles.greetingText}>{t('greeting')}, {userName}{t('suffixNim')}! 👋</Text>
-          <Text style={styles.greetingSubText}>{storeName} | {userInfo?.role === 'ADMIN' ? t('admin') : t('staff')}</Text>
+          <Text style={styles.greetingText}>{t('greeting')}, {userInfo?.name}{t('suffixNim')}! 👋</Text>
+          <Text style={styles.greetingSubText}>{userInfo?.store_name || '매장'} | {userInfo?.role === 'ADMIN' ? t('admin') : t('staff')}</Text>
         </View>
 
-        <TodayShiftCard 
-          loading={loading}
-          todayShift={todayShift}
-          fadeAnim={fadeAnim}
-          t={t}
-        />
-
-        <WeeklyStatsCard
-          weeklyStats={weeklyStats}
-          onPress={handleNavigateToWeeklyDetail}
-          t={t}
-        />
-
-        <SubstituteAlertCard
-          isAlertVisible={isAlertVisible}
-          navigation={navigation}
-          handleAcceptSubstitute={handleAcceptSubstitute}
-          setIsAlertVisible={setIsAlertVisible}
-          t={t}
-        />
-
-        <NoticeSection
-          posts={sortedDashboardPosts}
-          handleOpenPost={handleOpenPost}
-          navigation={navigation}
-          t={t}
-        />
-
+        <TodayShiftCard loading={loading} todayShift={todayShift} fadeAnim={fadeAnim} t={t} />
+        <WeeklyStatsCard weeklyStats={weeklyStats} onPress={handleNavigateToWeeklyDetail} t={t} />
+        <SubstituteAlertCard substituteCount={substituteCount} navigation={navigation} t={t} />
+        <NoticeSection posts={notices} handleOpenPost={handleOpenPost} navigation={navigation} t={t} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -224,7 +127,6 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   headerButtonText: { fontSize: 13, fontWeight: '600', color: colors.text },
   notificationButton: { padding: 4, position: 'relative' },
   notificationIcon: { fontSize: 22 },
-  badge: { position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.red, borderWidth: 1, borderColor: colors.card },
   contentContainer: { flex: 1, padding: 16 },
   greetingSection: { marginBottom: 20 },
   greetingText: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 4 },

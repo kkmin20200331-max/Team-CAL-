@@ -3,7 +3,7 @@ import { format, getDaysInMonth } from 'date-fns';
 import { Shift } from '../types/Schedule';
 import { User } from '../types/User';
 import { useApp } from './AppContext';
-import { getMyScheduleAPI, updateUserStatusAPI, applyForSubstituteAPI } from '../../api/auth';
+// import { getMyScheduleAPI, updateUserStatusAPI, applyForSubstituteAPI } from '../../api/auth'; // 사용하지 않는 API 호출 주석 처리
 
 const dummyEmployees: (User & { color: string, payType: 'HOURLY' | 'SALARY', payRate: number })[] = [
   { id: 'user_0', username: 'admin', name: '관리자', role: 'ADMIN', color: '#FF5A5F', payType: 'SALARY' as const, payRate: 4000000, status: 'ACTIVE' },
@@ -93,24 +93,24 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
   }, [userInfo]);
 
   const fetchSchedules = async () => {
-    if (userInfo?.id && userInfo.store_id) {
-      try {
-        const response = await getMyScheduleAPI(userInfo.id, userInfo.store_id);
-        setShifts(response.data);
-      } catch (error) {
-        console.error("스케줄 데이터 로딩 실패:", error);
-      }
-    }
+    // if (userInfo?.id && userInfo.store_id) {
+    //   try {
+    //     const response = await getMyScheduleAPI(userInfo.id, userInfo.store_id);
+    //     setShifts(response.data);
+    //   } catch (error) {
+    //     console.error("스케줄 데이터 로딩 실패:", error);
+    //   }
+    // }
   };
 
   const updateEmployeeStatus = async (employeeId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING') => {
-    try {
-      await updateUserStatusAPI(employeeId, newStatus);
-      setEmployees(prev => prev.map(emp => emp.id === employeeId ? { ...emp, status: newStatus } : emp));
-    } catch (error) {
-      console.error("직원 상태 업데이트 실패:", error);
-      throw error;
-    }
+    // try {
+    //   await updateUserStatusAPI(employeeId, newStatus);
+    //   setEmployees(prev => prev.map(emp => emp.id === employeeId ? { ...emp, status: newStatus } : emp));
+    // } catch (error) {
+    //   console.error("직원 상태 업데이트 실패:", error);
+    //   throw error;
+    // }
   };
 
   const removeEmployee = (employeeId: string) => {
@@ -131,19 +131,19 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
   };
 
   const applyForSubstitute = async (shiftId: string, applicantId: string) => {
-    try {
-      // await applyForSubstituteAPI(shiftId, applicantId);
-      setShifts(prev => prev.map(s => {
-        if (s.id === shiftId) {
-          const newApplicants = [...(s.applicants || []), { userId: applicantId, name: employees.find(e=>e.id === applicantId)?.name || '' }];
-          return { ...s, applicants: newApplicants };
-        }
-        return s;
-      }));
-    } catch (error) {
-      console.error("대타 지원 실패:", error);
-      throw error;
-    }
+    // try {
+    //   // await applyForSubstituteAPI(shiftId, applicantId);
+    //   setShifts(prev => prev.map(s => {
+    //     if (s.id === shiftId) {
+    //       const newApplicants = [...(s.applicants || []), { userId: applicantId, name: employees.find(e=>e.id === applicantId)?.name || '' }];
+    //       return { ...s, applicants: newApplicants };
+    //     }
+    //     return s;
+    //   }));
+    // } catch (error) {
+    //   console.error("대타 지원 실패:", error);
+    //   throw error;
+    // }
   };
   
   const value = {

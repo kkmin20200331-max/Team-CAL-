@@ -37,7 +37,8 @@ import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
 import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
 import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
 import SubstituteMatchingScreen from './src/screens/schedule/SubstituteMatchingScreen';
-import LeaveRequestManagementScreen from './src/screens/admin/LeaveRequestManagementScreen'; // 새로 추가
+import LeaveRequestManagementScreen from './src/screens/admin/LeaveRequestManagementScreen';
+import MySubstitutePostDetailScreen from './src/screens/schedule/MySubstitutePostDetailScreen'; // 새로 추가
 
 // Contexts
 import { AppProvider, useApp } from './src/contexts/AppContext';
@@ -176,6 +177,7 @@ function MainNavigator() {
       <MainStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
       <MainStack.Screen name="SubstituteManagement" component={SubstituteManagementScreen} />
       <MainStack.Screen name="LeaveRequestManagement" component={LeaveRequestManagementScreen} />
+      <MainStack.Screen name="MySubstitutePostDetail" component={MySubstitutePostDetailScreen} />
       <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
       <MainStack.Screen name="StoreEdit" component={StoreEditScreen} />
       <MainStack.Screen name="AttendanceRecord" component={AttendanceRecordScreen} />

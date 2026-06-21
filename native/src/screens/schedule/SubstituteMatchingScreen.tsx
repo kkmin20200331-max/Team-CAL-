@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useSchedule } from '../../contexts/ScheduleContext';
 import { useApp } from '../../contexts/AppContext';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { getSubstitutePostsAPI, getMySubstitutePostsAPI, getMySubstituteApplicationsAPI, applyForSubstituteAPI } from '../../../api/auth';
 
 const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, route: any }) => {
   const { initialTab = 'requests' } = route.params || {};
@@ -15,36 +16,58 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
   const { t } = useLanguage();
   const styles = getThemedStyles(colors);
   const { userInfo } = useApp();
-  const { shifts, employees, applyForSubstitute } = useSchedule();
 
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [loading, setLoading] = useState(true);
 
-  const substituteRequests = useMemo(() => 
-    shifts
-      .filter(s => s.status === 'SUBSTITUTE_REQ' && s.userId !== userInfo?.id)
-      .map(s => ({ ...s, user: employees.find(e => e.id === s.userId) })),
-    [shifts, employees, userInfo]
+  const [requests, setRequests] = useState<any[]>([]);
+  const [myPosts, setMyPosts] = useState<any[]>([]);
+  const [myApplications, setMyApplications] = useState<any[]>([]);
+
+  const fetchData = async () => {
+    if (!userInfo || !userInfo.id || !userInfo.store_id) return;
+    setLoading(true);
+    try {
+      if (activeTab === 'requests') {
+        const res = await getSubstitutePostsAPI(userInfo.store_id);
+        setRequests(res.data.filter((req: any) => req.requester_id !== userInfo.id));
+      } else {
+        const [postsRes, appsRes] = await Promise.all([
+          getMySubstitutePostsAPI(userInfo.id),
+          getMySubstituteApplicationsAPI(userInfo.id),
+        ]);
+        setMyPosts(postsRes.data);
+        setMyApplications(appsRes.data);
+      }
+    } catch (error) {
+      console.error(`${activeTab} 데이터 조회 실패:`, error);
+      Toast.show({ type: 'error', text1: '오류', text2: '데이터를 불러오는데 실패했습니다.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [userInfo, activeTab])
   );
 
-  const myRequests = useMemo(() =>
-    shifts.filter(s => s.status === 'SUBSTITUTE_REQ' && s.userId === userInfo?.id),
-    [shifts, userInfo]
-  );
-
-  const myApplications = useMemo(() =>
-    shifts.filter(s => s.applicants?.some(a => a.userId === userInfo?.id)),
-    [shifts, userInfo]
-  );
-
-  const handleApply = (shiftId: string) => {
+  const handleApply = (post: any) => {
     if (!userInfo) return;
     Alert.alert(t('substituteApplyTitle'), t('substituteApplyMsg'), [
       { text: t('cancel'), style: "cancel" },
       { text: t('applyBtn'), onPress: async () => {
         try {
-          await applyForSubstitute(shiftId, userInfo.id);
+          await applyForSubstituteAPI({
+            post_id: post.id,
+            applicant_id: userInfo.id,
+            status: 'PENDING',
+          });
           Toast.show({ type: 'success', text1: t('applySuccess') });
+          fetchData();
         } catch (error) {
+          console.error("대타 지원 실패:", error);
           Toast.show({ type: 'error', text1: t('error'), text2: t('errorApplySubstitute') });
         }
       }}
@@ -54,38 +77,74 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
   const renderRequestItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.dateText}>{format(new Date(item.date), 'M월 d일 (eee)', { locale: ko })}</Text>
-        <Text style={styles.timeText}>{item.time}</Text>
+        <Text style={styles.dateText}>{format(new Date(item.shift_start_time), 'M월 d일 (eee)', { locale: ko })}</Text>
+        <Text style={styles.timeText}>{`${format(new Date(item.shift_start_time), 'HH:mm')} - ${format(new Date(item.shift_end_time), 'HH:mm')}`}</Text>
       </View>
       <View style={styles.cardBody}>
         <View style={styles.userInfo}>
-          <View style={[styles.avatar, { backgroundColor: item.user?.color || colors.subText }]} />
-          <Text style={styles.userName}>{item.user?.name || t('unknown')}</Text>
+          <Text style={styles.userName}>{item.requester_name}</Text>
         </View>
         <Text style={styles.reasonText}>{item.reason}</Text>
       </View>
-      <TouchableOpacity style={styles.applyButton} onPress={() => handleApply(item.id)}>
+      <TouchableOpacity style={styles.applyButton} onPress={() => handleApply(item)}>
         <Text style={styles.applyButtonText}>{t('applyBtn')}</Text>
       </TouchableOpacity>
     </View>
   );
 
-  const renderHistoryItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.dateText}>{format(new Date(item.date), 'M월 d일 (eee)', { locale: ko })}</Text>
-        <Text style={styles.timeText}>{item.time}</Text>
+  const renderHistoryItem = ({ item }: { item: any }) => {
+    const isMyPost = item.requester_id === userInfo?.id;
+    const cardContent = (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.dateText}>{format(new Date(item.shift_start_time || item.created_at), 'M월 d일 (eee)', { locale: ko })}</Text>
+        </View>
+        <View style={styles.cardBody}>
+          <Text style={styles.reasonText}>{item.reason || `[${item.post_id}]에 지원함`}</Text>
+        </View>
+        <View style={styles.statusFooter}>
+          <Text style={styles.statusText}>
+            {isMyPost ? t('myRequest') : t('myApplication')} - {item.status}
+          </Text>
+        </View>
       </View>
-      <View style={styles.cardBody}>
-        <Text style={styles.reasonText}>{item.reason}</Text>
-      </View>
-      <View style={styles.statusFooter}>
-        <Text style={styles.statusText}>
-          {item.userId === userInfo?.id ? t('myRequest') : t('myApplication')}
-        </Text>
-      </View>
-    </View>
-  );
+    );
+
+    if (isMyPost) {
+      return (
+        <TouchableOpacity onPress={() => navigation.navigate('MySubstitutePostDetail', { post: item })}>
+          {cardContent}
+        </TouchableOpacity>
+      );
+    }
+    return cardContent;
+  };
+
+  const renderContent = () => {
+    if (loading) {
+      return <ActivityIndicator style={{ marginTop: 50 }} size="large" color={colors.primary} />;
+    }
+    if (activeTab === 'requests') {
+      return (
+        <FlatList
+          data={requests}
+          renderItem={renderRequestItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={<Text style={styles.emptyText}>{t('noSubstituteRequests')}</Text>}
+        />
+      );
+    }
+    return (
+      <FlatList
+        data={[...myPosts, ...myApplications].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())}
+        renderItem={renderHistoryItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={<Text style={styles.emptyText}>{t('noHistory')}</Text>}
+      />
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -111,24 +170,7 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
           <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>{t('history')}</Text>
         </TouchableOpacity>
       </View>
-
-      {activeTab === 'requests' ? (
-        <FlatList
-          data={substituteRequests}
-          renderItem={renderRequestItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={<Text style={styles.emptyText}>{t('noSubstituteRequests')}</Text>}
-        />
-      ) : (
-        <FlatList
-          data={[...myRequests, ...myApplications]}
-          renderItem={renderHistoryItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={<Text style={styles.emptyText}>{t('noHistory')}</Text>}
-        />
-      )}
+      {renderContent()}
     </SafeAreaView>
   );
 };
@@ -150,9 +192,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   timeText: { fontSize: 16, color: colors.subText },
   cardBody: { marginBottom: 16 },
   userInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  avatar: { width: 24, height: 24, borderRadius: 12, marginRight: 8 },
-  userName: { fontSize: 15, color: colors.text },
-  reasonText: { fontSize: 15, color: colors.subText, fontStyle: 'italic' },
+  userName: { fontSize: 15, color: colors.text, fontWeight: '600' },
+  reasonText: { fontSize: 15, color: colors.subText, fontStyle: 'italic', marginTop: 4 },
   applyButton: { backgroundColor: colors.primary, padding: 12, borderRadius: 8, alignItems: 'center' },
   applyButtonText: { color: colors.white, fontSize: 16, fontWeight: 'bold' },
   statusFooter: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 12 },

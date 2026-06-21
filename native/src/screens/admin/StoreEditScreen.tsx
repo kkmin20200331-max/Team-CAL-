@@ -6,7 +6,7 @@ import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
 import { useApp } from '../../contexts/AppContext';
 import { format } from 'date-fns';
-import { updateStoreInfoAPI } from '../../../api/auth';
+import { updateStoreAPI } from '../../../api/auth'; // API 함수 변경
 
 const STORE_CATEGORIES = ["카페", "음식점", "패스트푸드", "의류/잡화", "서비스", "기타"];
 
@@ -32,9 +32,10 @@ export default function StoreEditScreen({ navigation }: { navigation: any }) {
   const [inputs, setInputs] = useState({
     brandName: activeBranch?.brandName || "",
     branchName: activeBranch?.branchName || "",
+    address: activeBranch?.address || "",
     openTime: parseTime(activeBranch?.openTime || '09:00'),
     closeTime: parseTime(activeBranch?.closeTime || '22:00'),
-    maxCapacity: activeBranch?.maxCapacity?.toString() || "",
+    capacity: activeBranch?.capacity?.toString() || "",
   });
   const [storeCategory, setStoreCategory] = useState(activeBranch?.storeCategory || STORE_CATEGORIES[0]);
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -69,21 +70,23 @@ export default function StoreEditScreen({ navigation }: { navigation: any }) {
     }
 
     const storeData = {
-      ...inputs,
-      openTime: formatTime(inputs.openTime),
-      closeTime: formatTime(inputs.closeTime),
-      maxCapacity: parseInt(inputs.maxCapacity, 10) || 0,
-      storeCategory,
+      id: activeBranch.id,
+      name: `${inputs.brandName} ${inputs.branchName}`,
+      type: storeCategory,
+      address: inputs.address,
+      capacity: parseInt(inputs.capacity, 10) || 0,
+      open_time: formatTime(inputs.openTime),
+      close_time: formatTime(inputs.closeTime),
     };
 
     try {
-      await updateStoreInfoAPI(activeBranch.id, storeData);
+      await updateStoreAPI(storeData);
 
-      const updatedBranches = userInfo?.branches?.map(b =>
-        b.id === activeBranch.id ? { ...b, ...storeData } : b
-      );
-
-      login({ ...userInfo, branches: updatedBranches }, true);
+      // TODO: AppContext의 branches 상태 업데이트 로직 개선 필요
+      // const updatedBranches = userInfo?.branches?.map(b =>
+      //   b.id === activeBranch.id ? { ...b, ...storeData } : b
+      // );
+      // login({ ...userInfo, branches: updatedBranches }, true);
 
       Toast.show({
         type: 'success',
@@ -126,6 +129,9 @@ export default function StoreEditScreen({ navigation }: { navigation: any }) {
           
           <Text style={styles.inputLabel}>지점명</Text>
           <TextInput style={styles.input} placeholder="예: 미금점" value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
+
+          <Text style={styles.inputLabel}>주소</Text>
+          <TextInput style={styles.input} placeholder="매장 주소를 입력하세요" value={inputs.address} onChangeText={(text) => handleInputChange('address', text)} />
           
           <View style={styles.timeContainer}>
             <View style={styles.timeInputWrapper}>
@@ -143,7 +149,7 @@ export default function StoreEditScreen({ navigation }: { navigation: any }) {
           </View>
 
           <Text style={styles.inputLabel}>최대 수용 인원 (선택)</Text>
-          <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('maxCapacity', text)} keyboardType="number-pad" />
+          <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('capacity', text)} keyboardType="number-pad" />
 
           <TouchableOpacity style={styles.button} onPress={handleSave}>
             <Text style={styles.buttonText}>저장하기</Text>

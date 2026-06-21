@@ -5,7 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
-import { uploadEmploymentContractAPI } from '../../../api/auth';
+import { insertFileAPI } from '../../../api/auth'; // API 함수 변경
 
 const ContractScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
@@ -45,16 +45,20 @@ const ContractScreen = ({ navigation }: any) => {
     if (!selectedImage || !userInfo) return;
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: selectedImage,
-        name: `contract-${userInfo.id}.jpg`,
-        type: 'image/jpeg',
-      } as any);
-      formData.append('user_id', userInfo.id);
-      formData.append('store_id', userInfo.activeBranchId || '');
+      // FormData를 직접 사용하는 대신, 필요한 정보를 객체로 구성
+      // 파일 업로드는 별도의 API나 서비스(예: Supabase Storage)를 통해 처리하고,
+      // 그 결과로 받은 파일 URL을 DB에 저장하는 것이 일반적임.
+      // 현재는 파일 업로드 로직이 백엔드에 없으므로, 파일 정보를 DB에 저장하는 것만 구현.
+      const fileData = {
+        id: `file-${Date.now()}`,
+        user_id: userInfo.id,
+        file_name: `contract-${userInfo.id}.jpg`,
+        file_path: selectedImage, // 임시로 로컬 URI를 저장
+        file_type: 'CONTRACT', // 파일 타입 지정
+        status: 'PENDING',
+      };
 
-      await uploadEmploymentContractAPI(formData);
+      await insertFileAPI(fileData);
 
       setContractData({ ...contractData, status: 'pending' });
       setSelectedImage(null);

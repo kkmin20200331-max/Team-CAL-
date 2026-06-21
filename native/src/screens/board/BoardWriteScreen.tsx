@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Toast from 'react-native-toast-message';
-import * as Notifications from 'expo-notifications';
 import { useApp } from '../../contexts/AppContext';
-import { useBoard } from '../../contexts/BoardContext';
-import { Post } from '../../types/Post';
+import { createBoardPostAPI, updateBoardPostAPI } from '../../../api/auth';
 
 const BoardWriteScreen = ({ route, navigation }: any) => {
-  const { isEdit, postId } = route.params || {};
+  const { isEdit, post: postToEdit, onGoBack } = route.params || {};
   const { userInfo } = useApp();
-  const { posts, addPost, updatePost } = useBoard();
   
   const { t } = useLanguage();
   const { colors } = useTheme();
@@ -29,8 +26,6 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
     return predefinedCategories.find(c => c.dbValue === dbValue)?.key || 'notice';
   };
   
-  const postToEdit = isEdit ? posts.find(p => p.id === postId) : null;
-
   const [title, setTitle] = useState(isEdit && postToEdit ? postToEdit.title : '');
   const [content, setContent] = useState(isEdit && postToEdit ? postToEdit.content : '');
   const [categoryKey, setCategoryKey] = useState(isEdit && postToEdit ? getInitialCategoryKey(postToEdit.category) : 'notice'); 
@@ -40,49 +35,41 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       Toast.show({ type: 'error', text1: t('alert'), text2: t('titleContentRequired') });
       return;
     }
+    if (!userInfo || !userInfo.id || !userInfo.board_id) {
+      Alert.alert("오류", "사용자 또는 게시판 정보가 없습니다.");
+      return;
+    }
 
     const selectedCategory = predefinedCategories.find(c => c.key === categoryKey);
     const categoryDbValue = selectedCategory?.dbValue || 'NOTICE';
       
-    if (isEdit && postToEdit) {
-      const updatedPost: Post = {
-        ...postToEdit,
-        category: categoryDbValue,
-        title: title,
-        content: content,
-      };
-      updatePost(updatedPost);
-      Toast.show({ type: 'success', text1: t('success'), text2: t('postEditSuccess') });
-    } else {
-      const newPostData = {
-        category: categoryDbValue,
-        title: title,
-        content: content,
-        badge: 'badgeNew',
-        isPinned: false,
-      };
-      addPost(newPostData, userInfo?.username || 'unknown_user');
-      
-      if (categoryKey === 'notice') {
-        try {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: t('newNotice'),
-              body: `[${t('notice')}] ${title}`,
-              data: {
-                screen: 'Board',
-              }
-            },
-            trigger: null,
-          });
-        } catch (notifError) {
-          console.log("알림 발송 실패:", notifError);
-          Alert.alert(t('alertFailed'), t('pushAlertFailed'));
-        }
+    try {
+      if (isEdit && postToEdit) {
+        const updatedPostData = {
+          id: postToEdit.id,
+          title: title,
+          content: content,
+          category: categoryDbValue,
+        };
+        await updateBoardPostAPI(postToEdit.id, updatedPostData);
+        Toast.show({ type: 'success', text1: t('success'), text2: t('postEditSuccess') });
+      } else {
+        const newPostData = {
+          board_id: userInfo.board_id,
+          user_id: userInfo.id,
+          title: title,
+          content: content,
+          category: categoryDbValue,
+        };
+        await createBoardPostAPI(newPostData);
+        Toast.show({ type: 'success', text1: t('success'), text2: t('postCreateSuccess') });
       }
-      Toast.show({ type: 'success', text1: t('success'), text2: t('postCreateSuccess') });
+      if (onGoBack) onGoBack(); // 목록 새로고침 콜백 실행
+      navigation.goBack();
+    } catch (error) {
+      console.error("게시글 저장 실패:", error);
+      Alert.alert("오류", "게시글을 저장하는 데 실패했습니다.");
     }
-    navigation.goBack();
   };
 
   return (
