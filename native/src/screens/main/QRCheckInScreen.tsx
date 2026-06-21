@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useApp } from '../../contexts/AppContext';
+import { attendanceCheckAPI } from '../../../api/auth';
 
 type QRCheckInScreenNavigationProp = StackNavigationProp<any, 'QRCheckIn'>;
 
@@ -15,9 +17,11 @@ type Props = {
 const QRCheckInScreen = ({ navigation }: Props) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
+  const { userInfo } = useApp();
   
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   if (!permission) {
     return <View style={styles.container} />;
@@ -34,16 +38,36 @@ const QRCheckInScreen = ({ navigation }: Props) => {
     );
   }
 
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = async ({ data: storeId }: { data: string }) => {
+    if (!userInfo || !userInfo.id) {
+      Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
+      return;
+    }
+
     setScanned(true);
-    
-    Toast.show({
-      type: 'success',
-      text1: 'QR 인식 성공!',
-      text2: `스캔된 데이터: ${data}`,
-    });
-    
-    navigation.goBack();
+    setLoading(true);
+
+    try {
+      // URL: /api/attendance/check (POST)
+      // Body: { store_id: "...", user_id: "..." }
+      // DB: ATTENDANCE 테이블에서 마지막 기록을 확인하여 출근 또는 퇴근 처리
+      const response = await attendanceCheckAPI(storeId, userInfo.id);
+      
+      // 백엔드에서 "출근 처리되었습니다." 또는 "퇴근 처리되었습니다." 메시지를 반환
+      Alert.alert("처리 완료", response.data, [
+        { text: "확인", onPress: () => navigation.goBack() }
+      ]);
+
+    } catch (error: any) {
+      console.error("출퇴근 처리 오류:", error);
+      const errorMessage = error.response?.data || "출퇴근 처리에 실패했습니다.";
+      Alert.alert("오류", errorMessage, [
+        { text: "다시 시도", onPress: () => {
+          setScanned(false);
+          setLoading(false);
+        }}
+      ]);
+    }
   };
 
   return (
@@ -63,16 +87,24 @@ const QRCheckInScreen = ({ navigation }: Props) => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.targetFrame}>
-            <View style={[styles.corner, styles.topLeft]} />
-            <View style={[styles.corner, styles.topRight]} />
-            <View style={[styles.corner, styles.bottomLeft]} />
-            <View style={[styles.corner, styles.bottomRight]} />
-          </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>사각 영역 안에 QR 코드를 맞춰주세요.</Text>
-          </View>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.white} />
+              <Text style={styles.loadingText}>출퇴근 기록 처리 중...</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.targetFrame}>
+                <View style={[styles.corner, styles.topLeft]} />
+                <View style={[styles.corner, styles.topRight]} />
+                <View style={[styles.corner, styles.bottomLeft]} />
+                <View style={[styles.corner, styles.bottomRight]} />
+              </View>
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>사각 영역 안에 QR 코드를 맞춰주세요.</Text>
+              </View>
+            </>
+          )}
         </View>
       </CameraView>
     </SafeAreaView>
@@ -151,6 +183,16 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   topRight: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4 },
   bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4 },
   bottomRight: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: colors.white,
+    marginTop: 10,
+    fontSize: 16,
+  },
 });
 
 export default QRCheckInScreen;

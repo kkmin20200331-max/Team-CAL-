@@ -3,41 +3,84 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
+import { registerStoreAPI } from '../../../api/auth';
+import TimePickerModal from '../../components/common/TimePickerModal';
+import { format } from 'date-fns';
 
 const STORE_CATEGORIES = ["카페", "음식점", "패스트푸드", "의류/잡화", "서비스", "기타"];
 
 const AddBranchScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
-  const { userInfo, login } = useApp();
+  const { userInfo } = useApp();
 
-  const [brandName, setBrandName] = useState('');
-  const [branchName, setBranchName] = useState('');
+  const [inputs, setInputs] = useState({
+    brandName: '',
+    branchName: '',
+    address: '',
+    capacity: '',
+    openTime: new Date(),
+    closeTime: new Date(),
+  });
   const [storeCategory, setStoreCategory] = useState(STORE_CATEGORIES[0]);
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<'openTime' | 'closeTime'>('openTime');
 
-  const handleSave = () => {
-    if (!brandName.trim() || !branchName.trim()) {
-      Alert.alert("입력 오류", "브랜드명과 지점명을 모두 입력해주세요.");
+  const handleInputChange = (name: string, value: any) => {
+    setInputs(prev => ({ ...prev, [name]: value }));
+  };
+
+  const formatTime = (date: Date) => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const showTimepicker = (target: 'openTime' | 'closeTime') => {
+    setPickerTarget(target);
+    setTimePickerVisible(true);
+  };
+
+  const handleTimeConfirm = (selectedDate: Date) => {
+    handleInputChange(pickerTarget, selectedDate);
+    setTimePickerVisible(false);
+  };
+
+  const handleSave = async () => {
+    const { brandName, branchName, address, capacity, openTime, closeTime } = inputs;
+
+    if (!brandName.trim() || !branchName.trim() || !address.trim()) {
+      Alert.alert("입력 오류", "브랜드명, 지점명, 주소는 필수 항목입니다.");
+      return;
+    }
+    if (!userInfo) {
+      Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
       return;
     }
 
-    const newBranch = {
-      id: `branch_${Date.now()}`,
-      brandName,
-      branchName,
-      storeCategory,
-    };
-
-    if (userInfo) {
-      const updatedUserInfo = {
-        ...userInfo,
-        branches: [...(userInfo.branches || []), newBranch],
+    try {
+      const storeData = {
+        id: `store-${Date.now()}`,
+        name: `${brandName} ${branchName}`,
+        type: storeCategory,
+        address,
+        capacity: parseInt(capacity, 10) || 0,
+        open_time: formatTime(openTime),
+        close_time: formatTime(closeTime),
+        user_id: userInfo.id, // 매장을 생성한 관리자의 ID
       };
-      login(updatedUserInfo, true);
-    }
 
-    navigation.goBack();
+      await registerStoreAPI(storeData);
+      
+      Alert.alert("성공", "새로운 매장이 등록되었습니다.");
+      // TODO: 매장 목록을 새로고침하는 로직 필요 (예: AppContext에 함수 추가)
+      navigation.goBack();
+
+    } catch (error) {
+      console.error("매장 등록 실패:", error);
+      Alert.alert("오류", "매장 등록 중 문제가 발생했습니다.");
+    }
   };
 
   return (
@@ -52,20 +95,13 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
 
       <ScrollView style={styles.content}>
         <Text style={styles.label}>브랜드명</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="예: 컴포즈커피"
-          value={brandName}
-          onChangeText={setBrandName}
-        />
-
+        <TextInput style={styles.input} placeholder="예: 컴포즈커피" value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
+        
         <Text style={styles.label}>지점명</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="예: 서현점"
-          value={branchName}
-          onChangeText={setBranchName}
-        />
+        <TextInput style={styles.input} placeholder="예: 서현점" value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
+
+        <Text style={styles.label}>주소</Text>
+        <TextInput style={styles.input} placeholder="매장 주소를 입력하세요" value={inputs.address} onChangeText={(text) => handleInputChange('address', text)} />
 
         <Text style={styles.label}>업종 카테고리</Text>
         <TouchableOpacity style={styles.pickerButton} onPress={() => setCategoryModalVisible(true)}>
@@ -73,129 +109,73 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
           <Text style={styles.pickerButtonIcon}>▼</Text>
         </TouchableOpacity>
 
+        <View style={styles.timeContainer}>
+          <View style={styles.timeInputWrapper}>
+            <Text style={styles.label}>오픈 시간</Text>
+            <TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('openTime')}>
+              <Text style={styles.timeText}>{formatTime(inputs.openTime)}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.timeInputWrapper}>
+            <Text style={styles.label}>마감 시간</Text>
+            <TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('closeTime')}>
+              <Text style={styles.timeText}>{formatTime(inputs.closeTime)}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={styles.label}>최대 수용 인원 (선택)</Text>
+        <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.capacity} onChangeText={(text) => handleInputChange('capacity', text)} keyboardType="number-pad" />
+
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveButtonText}>저장</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isCategoryModalVisible}
-        onRequestClose={() => setCategoryModalVisible(false)}
-      >
+      <Modal animationType="fade" transparent={true} visible={isCategoryModalVisible} onRequestClose={() => setCategoryModalVisible(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setCategoryModalVisible(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>업종 선택</Text>
             {STORE_CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[styles.modalOption, storeCategory === cat && styles.modalOptionSelected]}
-                onPress={() => {
-                  setStoreCategory(cat);
-                  setCategoryModalVisible(false);
-                }}
-              >
+              <TouchableOpacity key={cat} style={[styles.modalOption, storeCategory === cat && styles.modalOptionSelected]} onPress={() => { setStoreCategory(cat); setCategoryModalVisible(false); }}>
                 <Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>{cat}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </Pressable>
       </Modal>
+
+      {isTimePickerVisible && (
+        <TimePickerModal isVisible={isTimePickerVisible} initialDate={pickerTarget === 'openTime' ? inputs.openTime : inputs.closeTime} onClose={() => setTimePickerVisible(false)} onConfirm={handleTimeConfirm} />
+      )}
     </SafeAreaView>
   );
 };
 
 const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
   backButton: { fontSize: 24, color: colors.primary, width: 40 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   content: { padding: 20 },
   label: { fontSize: 16, color: colors.subText, marginBottom: 8, marginLeft: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 24,
-    backgroundColor: colors.card,
-    fontSize: 18,
-    color: colors.text,
-  },
-  saveButton: {
-    backgroundColor: '#6EE7B7', // 에메랄드 색상
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  saveButtonText: {
-    color: '#000000', // 검은색
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  pickerButton: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 24,
-    backgroundColor: colors.card,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  pickerButtonText: {
-    fontSize: 18,
-    color: colors.text,
-  },
-  pickerButtonIcon: {
-    fontSize: 16,
-    color: colors.subText,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-    color: colors.text,
-  },
-  modalOption: {
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  modalOptionSelected: {
-    backgroundColor: colors.primaryLight,
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: colors.text,
-  },
-  modalOptionTextSelected: {
-    color: colors.primary,
-    fontWeight: 'bold',
-  },
+  input: { borderWidth: 1, borderColor: colors.border, padding: 16, borderRadius: 8, marginBottom: 24, backgroundColor: colors.card, fontSize: 18, color: colors.text },
+  saveButton: { backgroundColor: '#6EE7B7', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
+  saveButtonText: { color: '#000000', fontSize: 16, fontWeight: 'bold' },
+  pickerButton: { borderWidth: 1, borderColor: colors.border, padding: 16, borderRadius: 8, marginBottom: 24, backgroundColor: colors.card, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  pickerButtonText: { fontSize: 18, color: colors.text },
+  pickerButtonIcon: { fontSize: 16, color: colors.subText },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '80%', backgroundColor: colors.card, borderRadius: 12, padding: 20 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: colors.text },
+  modalOption: { paddingVertical: 14, alignItems: 'center', borderRadius: 8 },
+  modalOptionSelected: { backgroundColor: colors.primaryLight },
+  modalOptionText: { fontSize: 16, color: colors.text },
+  modalOptionTextSelected: { color: colors.primary, fontWeight: 'bold' },
+  timeContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, gap: 16 },
+  timeInputWrapper: { flex: 1 },
+  timeButton: { borderWidth: 1, borderColor: colors.border, padding: 16, borderRadius: 8, backgroundColor: colors.card, alignItems: 'center' },
+  timeText: { color: colors.text, fontSize: 16, fontWeight: '600' },
 });
 
 export default AddBranchScreen;

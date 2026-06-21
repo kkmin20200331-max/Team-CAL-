@@ -8,6 +8,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useSchedule } from '../../contexts/ScheduleContext';
 import TodayScheduleCard from '../../components/admin/TodayScheduleCard';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { getLeaveRequestsAPI } from '../../../api/auth'; // API import
 
 const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const { colors, isDarkMode } = useTheme();
@@ -16,7 +17,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const isFocused = useIsFocused();
 
   const { userInfo, setActiveBranch } = useApp();
-  const { shifts, employees } = useSchedule();
+  const { shifts, employees } = useSchedule(); // TodayScheduleCard는 Context 기반이므로 유지
 
   const [currentlyWorking, setCurrentlyWorking] = useState(0);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
@@ -29,8 +30,24 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   }, [userInfo]);
 
   useEffect(() => {
-    if (!isFocused || !userInfo || !shifts || !employees) return;
+    if (!isFocused || !userInfo) return;
 
+    // --- 휴무 신청 건수 API 연동 ---
+    const fetchPendingRequests = async () => {
+      if (!userInfo.store_id) return;
+      try {
+        // URL: /api/leave_request?store_id={store_id}
+        // DB: LEAVE_REQUESTS 테이블에서 status가 'PENDING'인 요청 조회
+        const res = await getLeaveRequestsAPI(userInfo.store_id);
+        setPendingRequestCount(res.data.length);
+      } catch (error) {
+        console.error("휴무 신청 목록 조회 실패:", error);
+        setPendingRequestCount(0);
+      }
+    };
+    fetchPendingRequests();
+    
+    // --- 기존 대시보드 로직 (오늘 근무 현황 등) ---
     const now = new Date();
     const todayStr = format(now, 'yyyy-MM-dd');
 
@@ -40,7 +57,6 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
         const user = employees.find(e => e.id === s.userId);
         return { ...s, user: { name: user?.name || 'N/A', color: user?.color || '#A1A1AA' } };
       });
-    
     setTodayShifts(processedTodayShifts);
 
     const scheduleByTime: any = { morning: [], afternoon: [], closing: [] };
@@ -48,48 +64,29 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
       if (!shift.time || !shift.time.includes(' - ')) return;
       const timeParts = shift.time.split(' - ');
       if (timeParts.length < 2) return;
-      
       const startTime = timeParts[0];
       if (!startTime || !startTime.includes(':')) return;
       const startHourNum = parseInt(startTime.split(':')[0], 10);
       if (isNaN(startHourNum)) return;
-
-      if (startHourNum < 12) {
-        scheduleByTime.morning.push(shift);
-      } else if (startHourNum >= 12 && startHourNum < 18) {
-        scheduleByTime.afternoon.push(shift);
-      } else {
-        scheduleByTime.closing.push(shift);
-      }
+      if (startHourNum < 12) scheduleByTime.morning.push(shift);
+      else if (startHourNum >= 12 && startHourNum < 18) scheduleByTime.afternoon.push(shift);
+      else scheduleByTime.closing.push(shift);
     });
     setTodaySchedule(scheduleByTime);
 
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    
     const workingNowCount = processedTodayShifts.filter(shift => {
       if (!shift.time || !shift.time.includes(' - ')) return false;
-      const timeParts = shift.time.split(' - ');
-      if (timeParts.length < 2) return false;
-
-      const [startStr, endStr] = timeParts;
+      const [startStr, endStr] = shift.time.split(' - ');
       if (!startStr || !endStr || !startStr.includes(':') || !endStr.includes(':')) return false;
-
-      const startParts = startStr.split(':');
-      const endParts = endStr.split(':');
-      if (startParts.length < 2 || endParts.length < 2) return false;
-
-      const [startH, startM] = startParts.map(Number);
-      const [endH, endM] = endParts.map(Number);
+      const [startH, startM] = startStr.split(':').map(Number);
+      const [endH, endM] = endStr.split(':').map(Number);
       if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return false;
-
       const startMinutes = startH * 60 + startM;
       const endMinutes = endH * 60 + endM;
       return currentMinutes >= startMinutes && currentMinutes < endMinutes;
     }).length;
     setCurrentlyWorking(workingNowCount);
-
-    const requestCount = shifts.filter(s => s.status === 'SUBSTITUTE_REQ' || s.status === 'LEAVE_REQ').length;
-    setPendingRequestCount(requestCount);
     
   }, [isFocused, userInfo, shifts, employees]);
 
@@ -125,7 +122,8 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
             <Text style={styles.summaryValue}>{currentlyWorking}명</Text>
             <Text style={styles.summaryLabel}>{t('currentlyWorking')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.summaryBox} onPress={() => navigation.navigate('SubstituteManagement')}>
+          {/* "처리할 요청" 카드 클릭 시 휴무 신청 관리 화면으로 이동 */}
+          <TouchableOpacity style={styles.summaryBox} onPress={() => navigation.navigate('LeaveRequestManagement')}>
             <Text style={styles.summaryValue}>{pendingRequestCount}건</Text>
             <Text style={styles.summaryLabel}>{t('requestProcessing')}</Text>
           </TouchableOpacity>

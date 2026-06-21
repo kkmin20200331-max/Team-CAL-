@@ -1,22 +1,51 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useSchedule } from '../../contexts/ScheduleContext';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { useApp } from '../../contexts/AppContext';
+import { approveStaffAPI } from '../../../api/auth'; // 경로 수정
 
 const EmployeeDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
-  const { employee } = route.params;
+  const { employee, onGoBack } = route.params;
   const { colors } = useTheme();
+  const { userInfo } = useApp();
   const styles = getThemedStyles(colors);
-  const { shifts, updateEmployeeStatus } = useSchedule();
 
-  const employeeShifts = useMemo(() => {
-    return shifts.filter(s => s.userId === employee.id && s.status !== 'OFF');
-  }, [shifts, employee.id]);
+  const handleApprove = () => {
+    if (!userInfo || !userInfo.store_id) {
+      Alert.alert("오류", "매장 정보가 없습니다.");
+      return;
+    }
+
+    Alert.alert(
+      "직원 승인",
+      `${employee.name} 님의 근무 신청을 승인하시겠습니까?`,
+      [
+        { text: "취소", style: "cancel" },
+        { 
+          text: "확인", 
+          onPress: async () => {
+            try {
+              // URL: /api/store_member?user_id={user_id}&store_id={store_id} (PUT)
+              // DB: STORE_MEMBER 테이블에서 해당 직원의 status를 'ACTIVE'로 변경
+              await approveStaffAPI(employee.id, userInfo.store_id);
+              Alert.alert("성공", "직원이 성공적으로 승인되었습니다.");
+              if (onGoBack) onGoBack(); // 목록 새로고침 콜백 실행
+              navigation.goBack();
+            } catch (error) {
+              console.error("직원 승인 중 오류 발생:", error);
+              Alert.alert("오류", "직원 승인 중 문제가 발생했습니다.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const handleStatusChange = () => {
+    // TODO: 추후 백엔드에 직원 비활성화 API (updateUserStatusAPI) 구현 시 아래 로직 활성화
+    Alert.alert("준비 중인 기능", "직원 비활성화 기능은 현재 준비 중입니다.");
+    /*
     const newStatus = employee.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     const statusText = newStatus === 'ACTIVE' ? '활성' : '비활성';
     Alert.alert(
@@ -25,19 +54,27 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any, navigation: a
       [
         { text: "취소", style: "cancel" },
         { text: "확인", onPress: () => {
-          updateEmployeeStatus(employee.id, newStatus);
+          // await updateUserStatusAPI(employee.id, newStatus);
+          if (onGoBack) onGoBack();
           navigation.goBack();
         }}
       ]
     );
+    */
+  };
+  
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return { text: '활동중', style: styles.activeBadge, textStyle: styles.activeStatusText };
+      case 'PENDING':
+        return { text: '승인대기', style: styles.pendingBadge, textStyle: styles.pendingStatusText };
+      default:
+        return { text: '비활성', style: styles.inactiveBadge, textStyle: styles.inactiveStatusText };
+    }
   };
 
-  const renderShiftItem = (shift: any) => (
-    <View key={shift.id} style={styles.shiftItem}>
-      <Text style={styles.shiftDate}>{format(new Date(shift.date), 'M/d (eee)', { locale: ko })}</Text>
-      <Text style={styles.shiftTime}>{shift.time}</Text>
-    </View>
-  );
+  const statusInfo = getStatusInfo(employee.status);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -51,13 +88,13 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any, navigation: a
 
       <ScrollView style={styles.content}>
         <View style={styles.profileSection}>
-          <View style={[styles.avatar, { backgroundColor: employee.color || '#A1A1AA' }]}>
+          <View style={[styles.avatar, { backgroundColor: '#A1A1AA' }]}>
             <Text style={styles.avatarText}>{employee.name.substring(0, 1)}</Text>
           </View>
           <Text style={styles.name}>{employee.name}</Text>
-          <Text style={styles.role}>{employee.role}</Text>
-          <View style={[styles.statusBadge, employee.status === 'ACTIVE' ? styles.activeBadge : styles.inactiveBadge]}>
-            <Text style={styles.statusText}>{employee.status === 'ACTIVE' ? '활동중' : '비활성'}</Text>
+          <Text style={styles.role}>{employee.nickname}</Text>
+          <View style={[styles.statusBadge, statusInfo.style]}>
+            <Text style={statusInfo.textStyle}>{statusInfo.text}</Text>
           </View>
         </View>
 
@@ -73,28 +110,29 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any, navigation: a
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>근태 관리</Text>
-          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AttendanceRecord', { employeeId: employee.id, employeeName: employee.name })}>
-            <Text style={styles.menuItemText}>📅 출퇴근 기록 보기</Text>
-            <Text style={styles.arrow}>〉</Text>
+        {/* 직원이 승인된 상태일 때만 다른 메뉴들을 보여줌 */}
+        {employee.status === 'ACTIVE' && (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>근태 관리</Text>
+              <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AttendanceRecord', { employeeId: employee.id, employeeName: employee.name })}>
+                <Text style={styles.menuItemText}>📅 출퇴근 기록 보기</Text>
+                <Text style={styles.arrow}>〉</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.statusButton} onPress={handleStatusChange}>
+              <Text style={styles.statusButtonText}>직원 비활성화</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* 직원이 승인 대기 상태일 때 승인 버튼을 보여줌 */}
+        {employee.status === 'PENDING' && (
+          <TouchableOpacity style={styles.approveButton} onPress={handleApprove}>
+            <Text style={styles.approveButtonText}>근무 신청 승인하기</Text>
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>근무 기록 ({employeeShifts.length}건)</Text>
-          {employeeShifts.length > 0 ? (
-            employeeShifts.slice(0, 5).map(renderShiftItem)
-          ) : (
-            <Text style={styles.noShiftsText}>예정된 근무가 없습니다.</Text>
-          )}
-        </View>
-
-        <TouchableOpacity style={styles.statusButton} onPress={handleStatusChange}>
-          <Text style={styles.statusButtonText}>
-            {employee.status === 'ACTIVE' ? '직원 비활성화' : '직원 활성화'}
-          </Text>
-        </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -113,19 +151,20 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   role: { fontSize: 16, color: colors.subText, marginTop: 4 },
   statusBadge: { borderRadius: 12, paddingVertical: 4, paddingHorizontal: 10, marginTop: 12 },
   activeBadge: { backgroundColor: colors.greenLight },
+  activeStatusText: { fontSize: 12, fontWeight: 'bold', color: colors.green },
+  pendingBadge: { backgroundColor: colors.yellowLight },
+  pendingStatusText: { fontSize: 12, fontWeight: 'bold', color: colors.yellow },
   inactiveBadge: { backgroundColor: colors.gray },
-  statusText: { fontSize: 12, fontWeight: 'bold', color: colors.green },
+  inactiveStatusText: { fontSize: 12, fontWeight: 'bold', color: colors.subText },
   section: { backgroundColor: colors.card, borderRadius: 12, padding: 20, marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: colors.text, marginBottom: 16 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   infoLabel: { fontSize: 15, color: colors.subText },
   infoValue: { fontSize: 15, color: colors.text, fontWeight: '500' },
-  shiftItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
-  shiftDate: { fontSize: 15, color: colors.text },
-  shiftTime: { fontSize: 15, color: colors.subText },
-  noShiftsText: { color: colors.subText, textAlign: 'center', paddingVertical: 10 },
   statusButton: { backgroundColor: colors.redLight, padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 10 },
   statusButtonText: { color: colors.red, fontSize: 16, fontWeight: 'bold' },
+  approveButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 10 },
+  approveButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
   menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12 },
   menuItemText: { fontSize: 16, color: colors.text },
   arrow: { fontSize: 20, color: colors.subText },

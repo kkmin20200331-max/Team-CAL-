@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Platform, View, Text, StyleSheet } from 'react-native';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -37,6 +37,7 @@ import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
 import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
 import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
 import SubstituteMatchingScreen from './src/screens/schedule/SubstituteMatchingScreen';
+import LeaveRequestManagementScreen from './src/screens/admin/LeaveRequestManagementScreen'; // 새로 추가
 
 // Contexts
 import { AppProvider, useApp } from './src/contexts/AppContext';
@@ -174,6 +175,7 @@ function MainNavigator() {
       <MainStack.Screen name="ShiftEditor" component={ShiftEditorScreen} />
       <MainStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
       <MainStack.Screen name="SubstituteManagement" component={SubstituteManagementScreen} />
+      <MainStack.Screen name="LeaveRequestManagement" component={LeaveRequestManagementScreen} />
       <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
       <MainStack.Screen name="StoreEdit" component={StoreEditScreen} />
       <MainStack.Screen name="AttendanceRecord" component={AttendanceRecordScreen} />

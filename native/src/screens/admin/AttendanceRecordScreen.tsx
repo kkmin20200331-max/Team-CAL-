@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { format, addMonths, startOfMonth, getDaysInMonth, startOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
@@ -22,22 +22,25 @@ const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation:
       setLoading(true);
       try {
         const monthStr = format(currentMonth, 'yyyy-MM');
-        // const { data } = await getAttendanceRecordsAPI(employeeId, monthStr);
-        // setRecords(data);
         
-        // --- Dummy Data for UI Test ---
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const dummyData = [
-          { date: `${monthStr}-02`, checkIn: '08:55', checkOut: '17:05', status: 'ON_TIME' },
-          { date: `${monthStr}-03`, checkIn: '09:10', checkOut: '17:00', status: 'LATE' },
-          { date: `${monthStr}-04`, checkIn: '09:00', checkOut: '16:30', status: 'EARLY_LEAVE' },
-          { date: `${monthStr}-05`, status: 'ABSENT' },
-        ];
-        setRecords(dummyData);
-        // --- End of Dummy Data ---
+        // 백엔드 API 호출 활성화
+        // 가정: 백엔드는 { date, check_in, check_out, status } 형태의 배열을 반환
+        const { data } = await getAttendanceRecordsAPI(employeeId, monthStr);
+        
+        // 백엔드 데이터(snake_case)를 프론트엔드(camelCase)에 맞게 변환
+        const formattedData = data.map((item: any) => ({
+          date: item.date,
+          checkIn: item.check_in,
+          checkOut: item.check_out,
+          status: item.status,
+        }));
+        setRecords(formattedData);
 
       } catch (error) {
-        console.error("Failed to fetch attendance records:", error);
+        console.error("출퇴근 기록 조회 실패:", error);
+        // 백엔드 API가 아직 구현되지 않았을 경우를 대비한 에러 메시지
+        Alert.alert("오류", "출퇴근 기록을 불러오는 데 실패했습니다. API가 구현되었는지 확인해주세요.");
+        setRecords([]); // 에러 발생 시 목록을 비움
       } finally {
         setLoading(false);
       }

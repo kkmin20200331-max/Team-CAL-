@@ -1,42 +1,80 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useSchedule } from '../../contexts/ScheduleContext';
+import { useApp } from '../../contexts/AppContext';
+import { getStaffListAPI, getGuestListAPI } from '../../../api/auth';
+import { useFocusEffect } from '@react-navigation/native';
 
 const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
-  const { employees } = useSchedule();
+  const { userInfo } = useApp();
 
-  const sections = useMemo(() => {
-    const pending = employees.filter(emp => emp.status === 'PENDING');
-    const active = employees.filter(emp => emp.status === 'ACTIVE');
-    const sectionsData = [];
+  const [activeEmployees, setActiveEmployees] = useState([]);
+  const [pendingEmployees, setPendingEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    if (pending.length > 0) {
-      sectionsData.push({ title: '승인 대기', data: pending });
+  const fetchEmployees = async () => {
+    if (!userInfo || !userInfo.store_id) return;
+
+    setLoading(true);
+    try {
+      // 1. 활동 중인 직원 목록 API 호출
+      // URL: /api/users?store_id={store_id}
+      // DB: STORE_MEMBER 테이블에서 status가 'ACTIVE'인 직원을 USERS 테이블과 조인하여 조회
+      const activeRes = await getStaffListAPI(userInfo.store_id);
+      setActiveEmployees(activeRes.data);
+
+      // 2. 승인 대기 직원 목록 API 호출
+      // URL: /api/users/guest?store_id={store_id}&role=GUEST
+      // DB: STORE_MEMBER 테이블에서 status가 'PENDING'인 직원을 USERS 테이블과 조인하여 조회
+      const pendingRes = await getGuestListAPI(userInfo.store_id, 'GUEST');
+      setPendingEmployees(pendingRes.data);
+
+    } catch (error) {
+      console.error("직원 목록을 불러오는 중 오류 발생:", error);
+    } finally {
+      setLoading(false);
     }
-    if (active.length > 0) {
-      sectionsData.push({ title: '활동 중인 직원', data: active });
-    }
-    return sectionsData;
-  }, [employees]);
+  };
+
+  // 화면에 들어올 때마다 데이터를 새로고침
+  useFocusEffect(
+    useCallback(() => {
+      fetchEmployees();
+    }, [userInfo])
+  );
+
+  const sections = [
+    { title: '승인 대기', data: pendingEmployees },
+    { title: '활동 중인 직원', data: activeEmployees },
+  ].filter(section => section.data.length > 0);
 
   const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('EmployeeDetail', { employee: item })}>
+    <TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('EmployeeDetail', { employee: item, onGoBack: fetchEmployees })}>
       <View style={styles.itemInfo}>
-        <View style={[styles.colorDot, { backgroundColor: item.color || '#A1A1AA' }]} />
         <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemRole}>{item.role}</Text>
+        <Text style={styles.itemRole}>{item.nickname}</Text>
       </View>
       <Text style={styles.arrow}>〉</Text>
     </TouchableOpacity>
   );
 
   const renderSectionHeader = ({ section: { title } }: { section: { title: string } }) => (
-    <Text style={styles.sectionHeader}>{title}</Text>
+    <Text style={styles.sectionHeader}>{title} ({section.data.length})</Text>
   );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>직원 목록을 불러오는 중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -49,11 +87,16 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
       </View>
       <SectionList
         sections={sections}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         renderSectionHeader={renderSectionHeader}
         contentContainerStyle={styles.listContainer}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListEmptyComponent={() => (
+          <View style={styles.centered}>
+            <Text style={styles.emptyText}>소속된 직원이 없습니다.</Text>
+          </View>
+        )}
       />
     </SafeAreaView>
   );
@@ -61,6 +104,9 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
 
 const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 10, color: colors.text },
+  emptyText: { fontSize: 16, color: colors.subText },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -92,12 +138,6 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  colorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 12,
-  },
   itemName: {
     fontSize: 16,
     fontWeight: '600',
@@ -115,7 +155,6 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   separator: {
     height: 1,
     backgroundColor: colors.border,
-    marginLeft: 16,
   },
 });
 
