@@ -1,38 +1,34 @@
 import axios from 'axios';
 
-// ✅ [수정] baseURL을 다시 내부 IP 주소로 변경합니다.
-const NGROK_URL = 'https://imitate-flock-specimen.ngrok-free.dev/api'; // ngrok 주소 주석 처리
-// const LOCAL_URL = 'http://172.30.1.62:8080/api';
+const NGROK_URL = 'https://imitate-flock-specimen.ngrok-free.dev/api';
+const LOCAL_URL = 'http://10.100.0.153:8080/api';
 
-// ✅ [수정] API 인스턴스를 다른 파일에서 import할 수 있도록 export합니다.
 export const API = axios.create({
-  // baseURL: LOCAL_URL,
-  baseURL: NGROK_URL,
-  timeout: 10000, // ✅ [추가] 10초 이상 서버 응답이 없으면 에러로 처리 (무한 로딩 방지)
+  baseURL: LOCAL_URL, // 로컬 IP 주소 사용으로 변경
+  // baseURL: NGROK_URL,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// ✅ [추가] 요청(Request) 인터셉터: 프론트엔드에서 백엔드로 데이터를 보내기 "직전"에 실행됨
 API.interceptors.request.use(
   (config) => {
     console.log(`[API 요청] ${config.method?.toUpperCase()} ${config.url}`);
-    // 💡 나중에 JWT 로그인 토큰을 사용하게 되면 여기서 AsyncStorage에서 토큰을 꺼내 헤더에 자동으로 붙여줍니다.
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// ✅ [추가] 응답(Response) 인터셉터: 백엔드에서 응답이 화면(컴포넌트)으로 가기 "직전"에 가로챔
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error(`[API 에러] ${error.config?.url}:`, error.message);
-    // 💡 예: error.response?.status === 401(권한 없음)일 때 강제 로그아웃 시키는 등의 전역 에러 처리를 여기서 합니다.
     return Promise.reject(error);
   }
 );
+
+// ... (이하 모든 API 함수 정의는 동일)
 
 // =========================================================
 // API 함수 정의

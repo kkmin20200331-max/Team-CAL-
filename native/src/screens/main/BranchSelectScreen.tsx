@@ -8,7 +8,7 @@ import { getAllStoresAPI, applyForStoreAPI } from '../../../api/auth';
 const BranchSelectScreen = () => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
-  const { userInfo, login, logout } = useApp(); // login 함수 가져오기
+  const { userInfo, login, logout } = useApp();
 
   const [stores, setStores] = useState<any[]>([]);
   const [selectedStore, setSelectedStore] = useState<any>(null);
@@ -64,10 +64,9 @@ const BranchSelectScreen = () => {
                 pay_amount: 0,
               });
               
-              // --- 여기가 수정된 부분 ---
-              // 로그아웃 대신, 사용자의 상태를 'PENDING'으로 업데이트하고 앱의 상태를 갱신합니다.
+              // 사용자의 상태를 'PENDING'으로 업데이트하고 앱의 상태를 갱신
               const updatedUserInfo = { ...userInfo, status: 'PENDING' };
-              login(updatedUserInfo, false); // hasSelectedBranch는 false로 유지하여 PendingScreen으로 유도
+              login(updatedUserInfo, false);
 
             } catch (error) {
               console.error("근무 신청 실패:", error);

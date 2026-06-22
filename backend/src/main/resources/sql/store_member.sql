@@ -30,4 +30,5 @@ ALTER TABLE store_member
         );
 ALTER TABLE STORE_MEMBER
     ADD AVAILABLE_DAYS VARCHAR2(20);
+
 select * from store_member;

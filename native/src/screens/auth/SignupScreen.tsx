@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ScrollView, Switch, KeyboardAvoidingView, Platform, Modal, Pressable, ActivityIndicator } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { signupAPI } from '../../../api/auth';
+import { signupAPI, registerStoreAPI } from '../../../api/auth';
 import axios from 'axios';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
 import { useApp } from '../../contexts/AppContext';
+import { format } from 'date-fns';
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -81,38 +82,37 @@ export default function SignupScreen({ navigation, route }: Props) {
 
     setLoading(true);
     try {
+      // 1. 사용자 정보 생성
       const tempUserId = `local-${Date.now()}`;
-      const signupData: any = {
-        id: tempUserId,
-        username,
-        password,
-        name,
-        phone,
-        role,
-        status: 'ACTIVE', // 가입 시 일단 ACTIVE, 직원은 매장 선택 후 PENDING으로 변경됨
-      };
-
-      if (role === 'ADMIN') {
-        signupData.brandName = brandName;
-        signupData.branchName = branchName;
-        signupData.address = address;
-        signupData.type = storeCategory;
-        signupData.open_time = formatTime(openTime);
-        signupData.close_time = formatTime(closeTime);
-        signupData.capacity = parseInt(capacity, 10) || 0;
-      }
+      const signupData = { id: tempUserId, username, password, name, phone, role, status: 'ACTIVE' };
       
-      const response = await signupAPI(signupData);
+      await signupAPI(signupData);
 
-      Toast.show({ type: 'success', text1: '가입 성공', text2: `${name}님 환영합니다!` });
-
+      // 2. 역할에 따른 후속 처리
       if (role === 'ADMIN') {
-        const userInfoForLogin = { ...signupData, store_id: response.data?.store_id };
+        // 2-1. 관리자: 매장 생성 API를 별도로 호출
+        const storeId = `store-${Date.now()}`;
+        const storeData = {
+          id: storeId,
+          name: `${brandName} ${branchName}`,
+          type: storeCategory,
+          address,
+          capacity: parseInt(capacity, 10) || 0,
+          open_time: formatTime(openTime),
+          close_time: formatTime(closeTime),
+          user_id: tempUserId,
+        };
+        await registerStoreAPI(storeData);
+        
+        const userInfoForLogin = { ...signupData, store_id: storeId };
         login(userInfoForLogin, true);
+
       } else { // role === 'STAFF'
+        // 2-2. 직원: 가입 완료 후 로그인 화면으로 이동
         Alert.alert("가입 완료", "이제 로그인 후 근무할 매장을 선택해주세요.");
         navigation.navigate('Login');
       }
+      Toast.show({ type: 'success', text1: '가입 성공', text2: `${name}님 환영합니다!` });
 
     } catch (error) {
       console.error('회원가입 에러:', error);
