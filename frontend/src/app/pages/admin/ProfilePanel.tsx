@@ -120,19 +120,30 @@ export default function ProfilePanel() {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => localStorage.getItem('admin_profile_image') || ''
+    () => currentUser.profile_image || localStorage.getItem('admin_profile_image') || ''
   );
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
-      localStorage.setItem('admin_profile_image', base64);
-      setProfileImage(base64);
-    };
-    reader.readAsDataURL(file);
+    if (!file || !currentUser.id) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch(`http://localhost:8080/api/users/${currentUser.id}/profile-image`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('업로드 실패');
+      const data = await res.json();
+      const url: string = data.profile_image;
+      setProfileImage(url);
+      // localStorage의 user 객체도 갱신
+      const updatedUser = { ...currentUser, profile_image: url };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.removeItem('admin_profile_image');
+    } catch (err) {
+      console.error('프로필 이미지 업로드 실패:', err);
+    }
   };
 
   // ── 직원 가입 승인 대기 ──
@@ -365,30 +376,56 @@ export default function ProfilePanel() {
   return (
     <>
       {/* 프로필 아이콘 */}
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          position: 'relative', borderRadius: '50%',
-          border: '3px solid #E6F5C8',
-          width: 64, height: 64, overflow: 'hidden',
-          background: '#80D180', cursor: 'pointer', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        {profileImage
-          ? <img src={profileImage} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{currentUser?.name?.[0] ?? '?'}</span>
-        }
+      <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
+        <button
+          onClick={() => setOpen(true)}
+          style={{
+            borderRadius: '50%',
+            border: '3px solid #E6F5C8',
+            width: 64, height: 64, overflow: 'hidden',
+            background: '#80D180', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {profileImage
+            ? <img src={profileImage} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{currentUser?.name?.[0] ?? '?'}</span>
+          }
+        </button>
         {totalBadge > 0 && (
-          <span style={{ position: 'absolute', top: 2, right: 2, width: 12, height: 12, background: '#e53e3e', borderRadius: '50%', border: '2px solid #fff' }} />
+          <span style={{
+            position: 'absolute', top: 0, right: 0,
+            minWidth: 18, height: 18, padding: '0 4px',
+            background: '#e53e3e', borderRadius: 9,
+            border: '2px solid #fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 10, color: '#fff', fontWeight: 700, lineHeight: 1,
+          }}>
+            {totalBadge > 9 ? '9+' : totalBadge}
+          </span>
         )}
-      </button>
+      </div>
+
+      {/* 슬라이드 패널 오버레이 */}
+      {open && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.35)' }}
+          onClick={() => setOpen(false)}
+        />
+      )}
 
       {/* 슬라이드 패널 */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0" onClick={() => setOpen(false)} />
-          <div className="relative z-50 w-[420px] h-full shadow-2xl flex flex-col" style={{ background: panelBg }}>
+      <div
+        style={{
+          position: 'fixed', top: 0, right: 0, height: '100%', width: 420,
+          background: panelBg, zIndex: 50,
+          boxShadow: '-4px 0 32px rgba(0,0,0,0.24)',
+          display: 'flex', flexDirection: 'column',
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.3s ease',
+        }}
+      >
+        <div className="flex flex-col h-full">
 
             {/* 헤더 */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '2.5px solid #18A022', background: panelBg }}>
@@ -697,7 +734,6 @@ export default function ProfilePanel() {
 
           </div>
         </div>
-      )}
     </>
   );
 }

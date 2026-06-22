@@ -3,17 +3,32 @@ package com.dm.backend.service;
 import com.dm.backend.mapper.UserMapper;
 import com.dm.backend.vo.UserVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-// 경민 수정 5/28 17:30
-import java.util.UUID;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class UserService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${supabase.project.url}")
+    private String supabaseUrl;
+
+    @Value("${supabase.project.key}")
+    private String supabaseKey;
+
+    private static final String BUCKET = "documents";
 
     // =========================
     // [공통]
@@ -92,6 +107,34 @@ public class UserService {
             return userMapper.getGuest(store_id);
         }
         return null;
+    }
+
+    // =========================
+    // [프로필 이미지]
+    // =========================
+
+    public String uploadProfileImage(String userId, MultipartFile file) throws Exception {
+        String ext = "";
+        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "profile";
+        int dotIdx = originalName.lastIndexOf('.');
+        if (dotIdx >= 0) ext = originalName.substring(dotIdx);
+
+        String path = "profile/" + userId + ext;
+        String apiUrl = supabaseUrl.replaceAll("/$", "") + "/storage/v1/object/" + BUCKET + "/" + path;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + supabaseKey);
+        headers.set("x-upsert", "true");
+        headers.setContentType(MediaType.parseMediaType(
+                file.getContentType() != null ? file.getContentType() : "application/octet-stream"
+        ));
+
+        restTemplate.exchange(apiUrl, HttpMethod.POST, new HttpEntity<>(file.getBytes(), headers), Map.class);
+
+        // 공개 URL 생성
+        String publicUrl = supabaseUrl.replaceAll("/$", "") + "/storage/v1/object/public/" + BUCKET + "/" + path;
+        userMapper.updateProfileImage(userId, publicUrl);
+        return publicUrl;
     }
 
 }

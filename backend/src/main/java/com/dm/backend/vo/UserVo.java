@@ -18,4 +18,6 @@ public class UserVo {
     private String role;
     private String status;
     private LocalDateTime created_at;
+
+    private String profile_image;
 }

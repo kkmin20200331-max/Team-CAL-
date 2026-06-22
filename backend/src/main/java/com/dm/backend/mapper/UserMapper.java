@@ -2,6 +2,7 @@ package com.dm.backend.mapper;
 
 import com.dm.backend.vo.UserVo;
 import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -50,4 +51,8 @@ public interface UserMapper {
     // 직원 승인 (GUEST → STAFF)
     @Update("UPDATE users SET role = 'STAFF' WHERE id = #{id}")
     void approveUser(String id);
+
+    // 프로필 이미지 URL 업데이트
+    @Update("UPDATE users SET profile_image = #{profile_image} WHERE id = #{id}")
+    void updateProfileImage(@Param("id") String id, @Param("profile_image") String profileImage);
 }

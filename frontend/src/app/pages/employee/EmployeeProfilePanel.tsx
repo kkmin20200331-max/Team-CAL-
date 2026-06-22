@@ -122,20 +122,30 @@ export default function EmployeeProfilePanel() {
   const storeName = sessionStorage.getItem("store_name") || "";
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => sessionStorage.getItem("employee_profile_image") || "",
+    () => currentUser?.profile_image || sessionStorage.getItem("employee_profile_image") || "",
   );
   const [open, setOpen] = useState(false);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
-      sessionStorage.setItem("employee_profile_image", base64);
-      setProfileImage(base64);
-    };
-    reader.readAsDataURL(file);
+    if (!file || !currentUser?.id) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch(`http://localhost:8080/api/users/${currentUser.id}/profile-image`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('업로드 실패');
+      const data = await res.json();
+      const url: string = data.profile_image;
+      setProfileImage(url);
+      const updatedUser = { ...currentUser, profile_image: url };
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      sessionStorage.removeItem('employee_profile_image');
+    } catch (err) {
+      console.error('프로필 이미지 업로드 실패:', err);
+    }
   };
 
   const handleLogout = () => {

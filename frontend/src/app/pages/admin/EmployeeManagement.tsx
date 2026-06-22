@@ -18,6 +18,7 @@ import {
   MessageSquare,
   BarChart3,
   Video,
+  ChevronRight,
 } from "lucide-react";
 import AdminHeader from "./AdminHeader";
 import { useTheme } from "next-themes";
@@ -264,8 +265,13 @@ export default function EmployeeManagement() {
         {/* 메인 카드 */}
         <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
           <div style={{ marginBottom: 24 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN }}>직원 관리</h1>
-            <p style={{ fontSize: 14, color: subTextColor, marginTop: 4 }}>{storeName}</p>
+            <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+              {currentBranch} <ChevronRight size={12} /> 직원 관리
+            </div>
+            <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Users size={26} />직원 현황 및 승인 관리
+            </h1>
+            <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>소속 직원 목록과 가입 승인을 관리합니다.</p>
           </div>
         {/* 통계 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>

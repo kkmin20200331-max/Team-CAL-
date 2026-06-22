@@ -4,7 +4,7 @@ import {
   Plus, Search, Edit, Trash2, Pin, Eye, MessageSquare,
   Calendar, User, AlertCircle, CheckCircle, Bell,
   FileText, Paperclip, UserPlus, Users, Wallet, BarChart3,
-  Video, X, Send, ChevronLeft,
+  Video, X, Send, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
 import { useTheme } from 'next-themes';
@@ -150,7 +150,11 @@ const BoardManagement: React.FC = () => {
       } else if (selectedBoardId === '__all__') {
         const results = await Promise.all(boards.map(b => fetch(`${API}/board/post?board_id=${b.id}`).then(r => r.json())));
         results.forEach(r => { if (Array.isArray(r)) data.push(...r); });
-        data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        data.sort((a, b) => {
+          if (a.is_pinned === 'Y' && b.is_pinned !== 'Y') return -1;
+          if (a.is_pinned !== 'Y' && b.is_pinned === 'Y') return 1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
       } else {
         const res = await fetch(`${API}/board/post?board_id=${selectedBoardId}`);
         data = await res.json();
@@ -370,8 +374,13 @@ const BoardManagement: React.FC = () => {
           {/* 헤더 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <div>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: 0 }}>게시판 관리</h1>
-              <p style={{ fontSize: 14, color: subText, marginTop: 4 }}>{currentBranch}</p>
+              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {currentBranch} <ChevronRight size={12} /> 게시판
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <MessageSquare size={26} />공지사항 및 게시글 관리
+              </h1>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>매장 공지, 직원 소통 게시글을 관리합니다.</p>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowPushModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>

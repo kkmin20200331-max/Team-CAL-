@@ -230,10 +230,13 @@ export default function WeeklySchedule() {
         <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN }}>{t.title}</h1>
-              <p style={{ fontSize: 14, color: subTextColor, marginTop: 4 }}>
-                {format(weekDates[0], "yyyy년 M월 d일", { locale: ko })} - {format(weekDates[6], "M월 d일", { locale: ko })}
-              </p>
+              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {currentBranch} <ChevronRight size={12} /> 근무표 관리
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Calendar size={26} />주간 근무 일정 관리
+              </h1>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>이번 주 직원별 근무 일정을 관리합니다.</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button onClick={() => setCurrentWeek(prev => addDays(prev, -7))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronLeft size={18} /></button>

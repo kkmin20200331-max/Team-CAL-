@@ -28,4 +28,7 @@ public class FileVO {
     private Date created_at;
 
     private Date updated_at;
+
+    // SELECT 시 JOIN으로 채워지는 필드 (DB 컬럼 아님)
+    private String user_name;
 }

@@ -16,6 +16,7 @@ import {
   MessageSquare,
   BarChart3,
   Video,
+  ChevronRight,
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -274,8 +275,13 @@ const SubstituteManagement: React.FC = () => {
         <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <div>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN }}>{t.title}</h1>
-              <p style={{ fontSize: 14, color: subTextColor, marginTop: 4 }}>{t.subtitle}</p>
+              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {currentBranch} <ChevronRight size={12} /> 대타 모집
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <UserPlus size={26} />대타 모집 및 지원 현황
+              </h1>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>빈 근무를 채울 대타를 모집하고 지원자를 관리합니다.</p>
             </div>
             <button onClick={openModal} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: GREEN, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
               <Plus size={16} />{t.createRequest}
