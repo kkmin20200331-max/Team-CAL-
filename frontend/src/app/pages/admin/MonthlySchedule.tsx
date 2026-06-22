@@ -3,7 +3,8 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   ChevronLeft, ChevronRight, Calendar,
-  UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3, Video
+  UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3, Video,
+  Sparkles, X
 } from "lucide-react";
 import {
   format, addMonths, startOfMonth, endOfMonth,
@@ -65,6 +66,20 @@ interface ShiftVO {
   status: string;
 }
 
+interface Employee {
+  id: string;
+  name: string;
+}
+
+interface AiSchedulePreview {
+  shifts: ShiftVO[];
+  reasons?: { shift_id: string; reason: string }[];
+  total_count: number;
+  closer_count: number;
+  newbie_solo_avoided_count: number;
+  conflict_excluded_count: number;
+}
+
 export default function MonthlySchedule() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -101,11 +116,18 @@ export default function MonthlySchedule() {
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [shifts, setShifts] = useState<ShiftVO[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPreview, setAiPreview] = useState<AiSchedulePreview | null>(null);
 
   useEffect(() => {
     if (branchId) fetchShifts();
   }, [currentMonth, branchId]);
+
+  useEffect(() => {
+    if (branchId) fetchEmployees();
+  }, [branchId]);
 
   const fetchShifts = async () => {
     setLoading(true);
@@ -120,6 +142,15 @@ export default function MonthlySchedule() {
       console.error("근무 조회 실패:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await API.get("/users", { params: { store_id: branchId } });
+      setEmployees(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("직원 조회 실패:", err);
     }
   };
 
@@ -140,6 +171,62 @@ export default function MonthlySchedule() {
   const getShiftsForDate = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
     return shifts.filter((s) => getWorkDateStr(s) === dateStr);
+  };
+
+  const getEmployeeName = (userId: string) =>
+    employees.find((employee) => employee.id === userId)?.name || userId;
+
+  const getShiftReason = (shiftId: string) =>
+    aiPreview?.reasons?.find((item) => item.shift_id === shiftId)?.reason || "";
+
+  const formatShiftTime = (value: string) => {
+    if (!value) return "";
+    if (value.includes("T")) return value.split("T")[1].substring(0, 5);
+    if (value.includes(" ")) return value.split(" ")[1].substring(0, 5);
+    return value.substring(0, 5);
+  };
+
+  const handleAiPreview = async () => {
+    if (!branchId) return;
+    setAiLoading(true);
+    try {
+      const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+      const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+      const res = await API.post("/shift/ai-preview", {
+        store_id: branchId,
+        start_date: start,
+        end_date: end,
+      });
+      setAiPreview(res.data);
+    } catch (err) {
+      console.error("AI 스케줄 생성 실패:", err);
+      alert("AI 스케줄 생성 중 오류가 발생했습니다.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAiApply = async () => {
+    if (!branchId || !aiPreview) return;
+    setAiLoading(true);
+    try {
+      const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+      const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+      await API.post("/shift/ai-apply", {
+        store_id: branchId,
+        start_date: start,
+        end_date: end,
+        shifts: aiPreview.shifts,
+      });
+      setAiPreview(null);
+      await fetchShifts();
+      alert("AI 스케줄이 근무표에 반영되었습니다.");
+    } catch (err) {
+      console.error("AI 스케줄 반영 실패:", err);
+      alert("AI 스케줄 반영 중 오류가 발생했습니다. 기존 근무와 중복된 항목이 있는지 확인해주세요.");
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const calendarDates = getCalendarDates();
@@ -200,6 +287,13 @@ export default function MonthlySchedule() {
               <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>한 달 단위 근무 스케줄을 관리합니다.</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                onClick={handleAiPreview}
+                disabled={aiLoading}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, padding: '8px 18px', fontSize: 14, fontWeight: 700, color: '#fff', cursor: aiLoading ? 'default' : 'pointer', opacity: aiLoading ? 0.65 : 1 }}
+              >
+                <Sparkles size={16} />{aiLoading ? '생성 중...' : 'AI 스케줄 생성'}
+              </button>
               <button onClick={() => setCurrentMonth(prev => addMonths(prev, -1))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronLeft size={16} /></button>
               <button onClick={() => setCurrentMonth(new Date())} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, padding: '6px 16px', fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.today}</button>
               <button onClick={() => setCurrentMonth(prev => addMonths(prev, 1))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronRight size={16} /></button>
@@ -309,6 +403,74 @@ export default function MonthlySchedule() {
 
         </div>
       </div>
+      {aiPreview && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => !aiLoading && setAiPreview(null)} />
+          <div style={{ position: 'relative', width: '100%', maxWidth: 620, margin: '0 16px', background: isDark ? '#2c2c2e' : '#fff', borderRadius: 24, border: `1px solid ${BORDER_GREEN}`, boxShadow: '0 12px 40px rgba(0,0,0,0.2)', padding: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 18, background: LIGHT_GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Sparkles size={18} color={DARK_GREEN} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: textColor }}>AI 스케줄 생성 결과</h2>
+                  <p style={{ fontSize: 13, color: subTextColor, marginTop: 2 }}>{format(currentMonth, "yyyy년 M월", { locale: ko })}</p>
+                </div>
+              </div>
+              <button onClick={() => setAiPreview(null)} disabled={aiLoading} style={{ background: 'none', border: 'none', cursor: aiLoading ? 'default' : 'pointer', color: subTextColor }}>
+                <X size={22} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
+              {[
+                { label: '생성 근무', value: aiPreview.total_count },
+                { label: '마감 배치', value: aiPreview.closer_count },
+                { label: '신입 보조', value: aiPreview.newbie_solo_avoided_count },
+                { label: '중복 제외', value: aiPreview.conflict_excluded_count },
+              ].map((item) => (
+                <div key={item.label} style={{ background: isDark ? '#3a3a3c' : '#f8fff4', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '12px 10px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 12, color: subTextColor, marginBottom: 4 }}>{item.label}</p>
+                  <p style={{ fontSize: 24, fontWeight: 800, color: DARK_GREEN }}>{item.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ maxHeight: 260, overflowY: 'auto', border: `1px solid ${isDark ? '#3a3a3c' : '#e8f5e9'}`, borderRadius: 16 }}>
+              {aiPreview.shifts.length === 0 ? (
+                <p style={{ textAlign: 'center', padding: '34px 0', color: subTextColor }}>생성된 근무가 없습니다.</p>
+              ) : (
+                aiPreview.shifts.slice(0, 20).map((shift) => (
+                  <div key={shift.id} style={{ padding: '12px 14px', borderBottom: `1px solid ${isDark ? '#3a3a3c' : '#e8f5e9'}` }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr 120px', gap: 12, alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>{getWorkDateStr(shift)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: textColor }}>{getEmployeeName(shift.user_id)}</span>
+                      <span style={{ fontSize: 13, color: subTextColor, textAlign: 'right' }}>{formatShiftTime(shift.start_at)} - {formatShiftTime(shift.end_at)}</span>
+                    </div>
+                    {getShiftReason(shift.id) && (
+                      <p style={{ marginTop: 8, padding: '8px 10px', borderRadius: 10, background: isDark ? '#242426' : '#f1fae8', fontSize: 12, lineHeight: 1.5, color: subTextColor }}>
+                        {getShiftReason(shift.id)}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
+              {aiPreview.shifts.length > 20 && (
+                <p style={{ padding: '10px 14px', fontSize: 12, color: subTextColor, textAlign: 'center' }}>외 {aiPreview.shifts.length - 20}건 더 생성됨</p>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+              <button onClick={handleAiPreview} disabled={aiLoading} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 700, cursor: aiLoading ? 'default' : 'pointer', opacity: aiLoading ? 0.65 : 1 }}>
+                다시 생성
+              </button>
+              <button onClick={handleAiApply} disabled={aiLoading || aiPreview.shifts.length === 0} style={{ flex: 1, padding: '12px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 700, cursor: aiLoading || aiPreview.shifts.length === 0 ? 'default' : 'pointer', opacity: aiLoading || aiPreview.shifts.length === 0 ? 0.65 : 1 }}>
+                {aiLoading ? '처리 중...' : '근무표에 반영'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
