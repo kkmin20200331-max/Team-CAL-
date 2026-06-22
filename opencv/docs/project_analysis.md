@@ -180,6 +180,20 @@ AI 인사이트는 `AiInsightService`가 담당합니다.
 
 `StreamVideoSource`는 별도 reader Thread에서 최신 프레임만 계속 갱신합니다. 추론 루프는 샘플링 시점마다 최신 프레임을 복사해 사용합니다.
 
+입력 방식은 다음처럼 OpenCV `VideoCapture`로 통일됩니다.
+
+```text
+WEBCAM
+  source="0"
+  cv2.VideoCapture(0)
+
+RTSP
+  source="rtsp://..."
+  cv2.VideoCapture("rtsp://...")
+```
+
+reader Thread는 `capture.read()`를 반복하면서 `_latest_frame`을 갱신합니다. 분석 루프는 `intervalSec`마다 최신 프레임을 가져가 YOLO 추론을 수행하고, 프리뷰 스트림은 `/api/v1/camera/stream`에서 최신 프레임을 JPEG로 인코딩해 MJPEG 형태로 브라우저에 전달합니다.
+
 이 방식은 실시간 스트림에서 오래된 프레임이 누적되는 문제를 줄이는 데 유리합니다.
 
 ## 8. Spring Boot 연동

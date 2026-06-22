@@ -65,6 +65,18 @@ Input Source
 - 추론 루프는 샘플링 시점에 최신 프레임을 복사해서 사용합니다.
 - 오래된 프레임이 큐에 쌓이는 문제를 줄입니다.
 
+웹캠과 RTSP 모두 OpenCV `VideoCapture`로 열립니다.
+
+```text
+sourceType=WEBCAM, source="0"
+  -> cv2.VideoCapture(0)
+
+sourceType=RTSP, source="rtsp://..."
+  -> cv2.VideoCapture("rtsp://...")
+```
+
+화면 프리뷰는 `/api/v1/camera/stream`에서 최신 프레임을 JPEG로 인코딩해 `multipart/x-mixed-replace` MJPEG 스트림으로 내려줍니다. 따라서 YOLO 분석은 `intervalSec` 기준으로 샘플링하고, 화면 표시는 `PREVIEW_STREAM_FPS` 기준으로 별도 제어할 수 있습니다.
+
 ## Spring Boot 전송 Payload
 
 Spring Boot에는 개별 프레임 결과가 아니라 1분 단위 집계 데이터를 전송합니다.
