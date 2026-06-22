@@ -13,6 +13,7 @@ import {
   Calendar,
   UserPlus,
   Wallet,
+  Video,
   FileText,
   MessageSquare,
   BarChart3,
@@ -780,7 +781,7 @@ export default function AdminDashboard() {
             { icon: CalendarDays, label: t.viewSchedule, path: `/admin/schedule/monthly/${branchId}` },
             { icon: UserPlus, label: t.recruitSubNav, path: `/admin/substitute/${branchId}` },
             { icon: BarChart3, label: t.customerAnalytics, path: `/admin/analytics/${branchId}` },
-            { icon: Wallet, label: t.payrollManagement, path: `/admin/cctv/${branchId}` },
+            { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
           ].map(({ icon: Icon, label, path }) => (
             <button key={label} onClick={() => navigate(path)} style={{ height: 96, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: DARK_GREEN, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
               <Icon size={22} color={GREEN} />
