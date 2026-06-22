@@ -356,16 +356,20 @@ export default function ProfilePanel() {
       {/* 프로필 아이콘 */}
       <button
         onClick={() => setOpen(true)}
-        className="relative rounded-full hover:opacity-80 transition-opacity flex-shrink-0"
+        style={{
+          position: 'relative', borderRadius: '50%',
+          border: '3px solid #E6F5C8',
+          width: 64, height: 64, overflow: 'hidden',
+          background: '#80D180', cursor: 'pointer', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
       >
-        <Avatar className="w-10 h-10 border-2 border-blue-200 bg-white">
-          <AvatarImage src={profileImage} className="object-cover" />
-          <AvatarFallback className="bg-blue-600 text-white font-bold text-sm">
-            {currentUser?.name?.[0] ?? '?'}
-          </AvatarFallback>
-        </Avatar>
+        {profileImage
+          ? <img src={profileImage} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{currentUser?.name?.[0] ?? '?'}</span>
+        }
         {totalBadge > 0 && (
-          <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
+          <span style={{ position: 'absolute', top: 2, right: 2, width: 12, height: 12, background: '#e53e3e', borderRadius: '50%', border: '2px solid #fff' }} />
         )}
       </button>
 
@@ -446,12 +450,12 @@ export default function ProfilePanel() {
                     style={{ border: `1px solid ${cardBorder}`, background: cardBg }}
                   >
                     {/* 지점명 */}
-                    <div className="flex items-center gap-1 text-xs text-blue-600 font-semibold">
+                    <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: '#18A022' }}>
                       <Store className="w-3 h-3" />{emp.store_name}
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4 text-blue-600" />
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: '#E6F5C8' }}>
+                        <User className="w-4 h-4" style={{ color: '#07790F' }} />
                       </div>
                       <div>
                         <p className="font-semibold text-xs" style={{ color: textMain }}>{emp.name}</p>
@@ -462,7 +466,7 @@ export default function ProfilePanel() {
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-1 text-xs h-7"
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1 text-xs h-7"
                         onClick={() => handleApprove(emp)}
                       >
                         <CheckCircle className="w-3 h-3" />승인

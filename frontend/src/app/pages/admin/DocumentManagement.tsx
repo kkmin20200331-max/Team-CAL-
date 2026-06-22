@@ -1,7 +1,6 @@
-import React, { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
-  ArrowLeft,
   Upload,
   FileText,
   Image,
@@ -11,32 +10,30 @@ import {
   Download,
   Eye,
   Trash2,
-  Filter,
   Search,
   AlertCircle,
   User,
   Calendar,
   FileCheck,
   Scan,
+  UserPlus,
+  Users,
+  Wallet,
+  MessageSquare,
+  BarChart3,
 } from "lucide-react";
-import { Button } from "../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import ProfilePanel from "./ProfilePanel";
+import AdminHeader from "./AdminHeader";
+import { useTheme } from "next-themes";
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 interface Document {
   id: string;
-  type:
-    | "health_certificate"
-    | "contract"
-    | "id_card"
-    | "bank_account"
-    | "other";
+  type: "health_certificate" | "contract" | "id_card" | "bank_account" | "other";
   employeeId: string;
   employeeName: string;
   fileName: string;
@@ -59,15 +56,46 @@ interface Document {
 
 const DocumentManagement: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { branchId } = useParams();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(
-    null,
-  );
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+
+  const pageBg = isDark
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
+  const textColor = isDark ? '#fff' : '#111';
+
+  const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+      .then(r => r.json())
+      .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
+      .catch(() => {});
+  }, []);
+
+  const menuItems = [
+    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
+    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
+    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
+    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
+    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
+    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
+    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+  ];
 
   // Mock data - 문서 목록
   const [documents, setDocuments] = useState<Document[]>([
@@ -82,12 +110,7 @@ const DocumentManagement: React.FC = () => {
       expiryDate: "2025-01-15",
       status: "verified",
       ocrStatus: "completed",
-      extractedData: {
-        name: "김민수",
-        issueDate: "2024-01-10",
-        expiryDate: "2025-01-10",
-        certificateNumber: "HC-2024-001234",
-      },
+      extractedData: { name: "김민수", issueDate: "2024-01-10", expiryDate: "2025-01-10", certificateNumber: "HC-2024-001234" },
     },
     {
       id: "DOC002",
@@ -99,12 +122,7 @@ const DocumentManagement: React.FC = () => {
       uploadDate: "2023-01-15",
       status: "verified",
       ocrStatus: "completed",
-      extractedData: {
-        name: "김민수",
-        startDate: "2023-01-15",
-        position: "주방장",
-        salary: "3,500,000원",
-      },
+      extractedData: { name: "김민수", startDate: "2023-01-15", position: "주방장", salary: "3,500,000원" },
     },
     {
       id: "DOC003",
@@ -117,12 +135,7 @@ const DocumentManagement: React.FC = () => {
       expiryDate: "2024-04-15",
       status: "expired",
       ocrStatus: "completed",
-      extractedData: {
-        name: "이지은",
-        issueDate: "2023-04-10",
-        expiryDate: "2024-04-10",
-        certificateNumber: "HC-2023-005678",
-      },
+      extractedData: { name: "이지은", issueDate: "2023-04-10", expiryDate: "2024-04-10", certificateNumber: "HC-2023-005678" },
       notes: "갱신 필요",
     },
     {
@@ -147,11 +160,7 @@ const DocumentManagement: React.FC = () => {
       uploadDate: "2024-03-12",
       status: "verified",
       ocrStatus: "completed",
-      extractedData: {
-        name: "최영희",
-        idNumber: "950325-2******",
-        address: "서울시 용산구",
-      },
+      extractedData: { name: "최영희", idNumber: "950325-2******", address: "서울시 용산구" },
     },
     {
       id: "DOC006",
@@ -196,33 +205,13 @@ const DocumentManagement: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "verified":
-        return (
-          <Badge className="bg-green-500">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            확인완료
-          </Badge>
-        );
+        return <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />확인완료</Badge>;
       case "pending":
-        return (
-          <Badge className="bg-yellow-500">
-            <Clock className="w-3 h-3 mr-1" />
-            대기중
-          </Badge>
-        );
+        return <Badge className="bg-yellow-500"><Clock className="w-3 h-3 mr-1" />대기중</Badge>;
       case "rejected":
-        return (
-          <Badge className="bg-red-500">
-            <XCircle className="w-3 h-3 mr-1" />
-            반려
-          </Badge>
-        );
+        return <Badge className="bg-red-500"><XCircle className="w-3 h-3 mr-1" />반려</Badge>;
       case "expired":
-        return (
-          <Badge className="bg-gray-500">
-            <AlertCircle className="w-3 h-3 mr-1" />
-            만료
-          </Badge>
-        );
+        return <Badge className="bg-gray-500"><AlertCircle className="w-3 h-3 mr-1" />만료</Badge>;
       default:
         return null;
     }
@@ -231,33 +220,13 @@ const DocumentManagement: React.FC = () => {
   const getOCRStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
-        return (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            <FileCheck className="w-3 h-3 mr-1" />
-            OCR 완료
-          </Badge>
-        );
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700"><FileCheck className="w-3 h-3 mr-1" />OCR 완료</Badge>;
       case "processing":
-        return (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
-            <Scan className="w-3 h-3 mr-1" />
-            처리중
-          </Badge>
-        );
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700"><Scan className="w-3 h-3 mr-1" />처리중</Badge>;
       case "pending":
-        return (
-          <Badge variant="outline" className="bg-gray-50 text-gray-700">
-            <Clock className="w-3 h-3 mr-1" />
-            대기
-          </Badge>
-        );
+        return <Badge variant="outline" className="bg-gray-50 text-gray-700"><Clock className="w-3 h-3 mr-1" />대기</Badge>;
       case "failed":
-        return (
-          <Badge variant="outline" className="bg-red-50 text-red-700">
-            <XCircle className="w-3 h-3 mr-1" />
-            실패
-          </Badge>
-        );
+        return <Badge variant="outline" className="bg-red-50 text-red-700"><XCircle className="w-3 h-3 mr-1" />실패</Badge>;
       default:
         return null;
     }
@@ -285,310 +254,285 @@ const DocumentManagement: React.FC = () => {
     const pending = documents.filter((d) => d.status === "pending").length;
     const verified = documents.filter((d) => d.status === "verified").length;
     const expired = documents.filter((d) => d.status === "expired").length;
-    const ocrProcessing = documents.filter(
-      (d) => d.ocrStatus === "processing",
-    ).length;
-
+    const ocrProcessing = documents.filter((d) => d.ocrStatus === "processing").length;
     return { total, pending, verified, expired, ocrProcessing };
   };
 
   const stats = calculateStats();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(`/admin/dashboard/${branchId}`)}
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader />
+
+      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
+        {/* Sidebar */}
+        <aside style={{
+          width: 220, flexShrink: 0,
+          background: sidebarBg,
+          border: `1px solid ${sidebarBorder}`,
+          borderRadius: 20, padding: '20px 12px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.07)',
+          position: 'sticky', top: 140,
+          maxHeight: 'calc(100vh - 160px)',
+          overflowY: 'auto',
+        }}>
+          <div style={{ position: 'relative', marginBottom: 18 }}>
+            <button
+              onClick={() => setBranchDropdownOpen(o => !o)}
+              style={{
+                width: '100%', padding: '10px 14px',
+                background: isDark ? 'rgba(255,255,255,0.06)' : LIGHT_GREEN,
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : BORDER_GREEN}`,
+                borderRadius: 12, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
+                color: isDark ? '#fff' : DARK_GREEN, fontSize: 12, fontWeight: 700,
+              }}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              대시보드로 돌아가기
-            </Button>
-            <ProfilePanel />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ flexShrink: 0, transform: branchDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                <path d="M1 1L5 5L9 1" stroke={isDark ? 'white' : DARK_GREEN} strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+            {branchDropdownOpen && stores.length > 0 && (
+              <div style={{
+                position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50,
+                background: isDark ? '#1c1c1e' : '#fff',
+                border: `1px solid ${isDark ? '#3a3a3c' : BORDER_GREEN}`,
+                borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+              }}>
+                {stores.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      sessionStorage.setItem('store_id', s.id);
+                      sessionStorage.setItem('store_name', s.name);
+                      setBranchDropdownOpen(false);
+                      navigate(`/admin/dashboard/${s.id}`);
+                    }}
+                    style={{
+                      display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left',
+                      background: s.id === branchId ? LIGHT_GREEN : 'transparent',
+                      border: 'none', cursor: 'pointer',
+                      color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600,
+                    }}
+                    onMouseOver={e => { e.currentTarget.style.background = LIGHT_GREEN; }}
+                    onMouseOut={e => { e.currentTarget.style.background = s.id === branchId ? LIGHT_GREEN : 'transparent'; }}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+                <div style={{ borderTop: `1px solid ${isDark ? '#3a3a3c' : '#e5e7eb'}` }} />
+                <button
+                  onClick={() => { setBranchDropdownOpen(false); navigate('/admin/branch-selection'); }}
+                  style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#888' : '#aaa', fontSize: 12 }}
+                  onMouseOver={e => { e.currentTarget.style.background = isDark ? '#2c2c2e' : '#f5f5f5'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  + 지점 선택 페이지로
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">문서 관리</h1>
-              <p className="text-gray-600 mt-1">
-                보건증 및 계약서 OCR 자동 추출
-              </p>
-            </div>
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  width: '100%', padding: '11px 14px', marginBottom: 4,
+                  background: isActive ? GREEN : 'transparent',
+                  border: 'none',
+                  borderRadius: 12, cursor: 'pointer',
+                  color: isActive ? '#fff' : (isDark ? '#ccc' : DARK_GREEN),
+                  fontSize: 14, fontWeight: 600, textAlign: 'left',
+                  transition: 'all 0.15s',
+                  boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none',
+                }}
+                onMouseOver={e => { if (!isActive) { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : LIGHT_GREEN; } }}
+                onMouseOut={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; } }}
+              >
+                <item.icon size={16} color={isActive ? '#fff' : GREEN} />
+                {item.label}
+              </button>
+            );
+          })}
+        </aside>
 
-            <div className="flex gap-3">
-              <Button variant="outline">
-                <Scan className="w-4 h-4 mr-2" />
-                일괄 OCR
-              </Button>
-              <Button onClick={() => setUploadModalOpen(true)}>
-                <Upload className="w-4 h-4 mr-2" />
-                문서 업로드
-              </Button>
+        {/* Main white card */}
+        <div style={{
+          flex: 1, minWidth: 0,
+          background: 'rgba(255,255,255,0.97)',
+          borderRadius: 24,
+          padding: '28px 28px 32px',
+          boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
+        }}>
+          {/* Page title row */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 24, justifyContent: 'space-between' }}>
+            <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: 0 }}>문서 관리</h1>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                <Scan size={16} />일괄 OCR
+              </button>
+              <button onClick={() => setUploadModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <Upload size={16} />문서 업로드
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">전체 문서</p>
-                  <p className="text-3xl font-bold text-gray-900">
-                    {stats.total}
-                  </p>
+          {/* Statistics Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
+            {[
+              { label: '전체 문서', value: stats.total, icon: <FileText size={20} color={DARK_GREEN} /> },
+              { label: '확인완료', value: stats.verified, icon: <CheckCircle size={20} color={GREEN} /> },
+              { label: '대기중', value: stats.pending, icon: <Clock size={20} color="#F59E0B" /> },
+              { label: '만료', value: stats.expired, icon: <AlertCircle size={20} color="#EF4444" /> },
+              { label: 'OCR 처리중', value: stats.ocrProcessing, icon: <Scan size={20} color="#3B82F6" /> },
+            ].map(({ label, value, icon }) => (
+              <div key={label} style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#8BA68D', margin: 0 }}>{label}</p>
+                  {icon}
                 </div>
-                <FileText className="w-8 h-8 text-gray-400" />
+                <p style={{ fontSize: 26, fontWeight: 800, color: DARK_GREEN, margin: 0 }}>{value}</p>
               </div>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">확인완료</p>
-                  <p className="text-3xl font-bold text-green-600">
-                    {stats.verified}
-                  </p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">대기중</p>
-                  <p className="text-3xl font-bold text-yellow-600">
-                    {stats.pending}
-                  </p>
-                </div>
-                <Clock className="w-8 h-8 text-yellow-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">만료</p>
-                  <p className="text-3xl font-bold text-red-600">
-                    {stats.expired}
-                  </p>
-                </div>
-                <AlertCircle className="w-8 h-8 text-red-400" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">OCR 처리중</p>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {stats.ocrProcessing}
-                  </p>
-                </div>
-                <Scan className="w-8 h-8 text-blue-400" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search and Filters */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex gap-4 items-center">
-              <div className="flex-1 relative">
-                <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          {/* Search and Filters */}
+          <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, position: 'relative', minWidth: 200 }}>
+                <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8BA68D' }} />
                 <input
                   type="text"
                   placeholder="직원명 또는 파일명으로 검색..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border rounded-lg"
+                  style={{ width: '100%', paddingLeft: 36, paddingRight: 14, paddingTop: 10, paddingBottom: 10, borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, background: 'rgba(255,255,255,0.8)', outline: 'none', color: textColor, boxSizing: 'border-box' }}
                 />
               </div>
-
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="border rounded-lg px-3 py-2"
+                style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, background: 'rgba(255,255,255,0.8)', outline: 'none', color: textColor }}
               >
                 {documentTypes.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
+                  <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
               </select>
-
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="border rounded-lg px-3 py-2"
+                style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, background: 'rgba(255,255,255,0.8)', outline: 'none', color: textColor }}
               >
                 {statuses.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
+                  <option key={status.value} value={status.value}>{status.label}</option>
                 ))}
               </select>
-
-              <Button variant="outline">
-                <Filter className="w-4 h-4 mr-2" />
-                필터
-              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Documents Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredDocuments.map((doc) => (
-            <Card key={doc.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      {doc.type === "health_certificate" && (
-                        <FileCheck className="w-6 h-6 text-blue-600" />
-                      )}
-                      {doc.type === "contract" && (
-                        <FileText className="w-6 h-6 text-blue-600" />
-                      )}
-                      {doc.type === "id_card" && (
-                        <User className="w-6 h-6 text-blue-600" />
-                      )}
-                      {doc.type === "bank_account" && (
-                        <Image className="w-6 h-6 text-blue-600" />
-                      )}
-                      {doc.type === "other" && (
-                        <FileText className="w-6 h-6 text-blue-600" />
-                      )}
+          {/* Documents Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            {filteredDocuments.map((doc) => (
+              <div key={doc.id} style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 44, height: 44, background: LIGHT_GREEN, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {doc.type === "health_certificate" && <FileCheck size={22} color={DARK_GREEN} />}
+                      {doc.type === "contract" && <FileText size={22} color={DARK_GREEN} />}
+                      {doc.type === "id_card" && <User size={22} color={DARK_GREEN} />}
+                      {doc.type === "bank_account" && <Image size={22} color={DARK_GREEN} />}
+                      {doc.type === "other" && <FileText size={22} color={DARK_GREEN} />}
                     </div>
                     <div>
-                      <Badge variant="outline" className="mb-1">
-                        {getDocumentTypeLabel(doc.type)}
-                      </Badge>
-                      <p className="text-sm font-medium">{doc.employeeName}</p>
+                      <span style={{ fontSize: 12, background: LIGHT_GREEN, color: DARK_GREEN, borderRadius: 6, padding: '2px 8px', fontWeight: 600 }}>{getDocumentTypeLabel(doc.type)}</span>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: textColor, margin: '4px 0 0' }}>{doc.employeeName}</p>
                     </div>
                   </div>
                   {getStatusBadge(doc.status)}
                 </div>
 
-                <div className="space-y-2 mb-4">
-                  <p className="text-sm font-medium truncate">{doc.fileName}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: textColor, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.fileName}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#8BA68D' }}>
                     <span>{formatFileSize(doc.fileSize)}</span>
                     <span>{doc.uploadDate}</span>
                   </div>
                   {doc.expiryDate && (
-                    <div className="flex items-center gap-1 text-xs">
-                      <Calendar className="w-3 h-3" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: '#8BA68D', marginTop: 4 }}>
+                      <Calendar size={12} />
                       <span>만료일: {doc.expiryDate}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="mb-4">{getOCRStatusBadge(doc.ocrStatus)}</div>
+                <div style={{ marginBottom: 12 }}>{getOCRStatusBadge(doc.ocrStatus)}</div>
 
-                {doc.extractedData &&
-                  Object.keys(doc.extractedData).length > 0 && (
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs font-medium text-gray-700 mb-2">
-                        OCR 추출 정보
-                      </p>
-                      <div className="space-y-1">
-                        {Object.entries(doc.extractedData).map(
-                          ([key, value]) =>
-                            value && (
-                              <div key={key} className="text-xs">
-                                <span className="text-gray-600">{key}: </span>
-                                <span className="font-medium">{value}</span>
-                              </div>
-                            ),
-                        )}
-                      </div>
-                    </div>
-                  )}
+                {doc.extractedData && Object.keys(doc.extractedData).length > 0 && (
+                  <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 8, padding: '10px 12px', marginBottom: 10 }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: DARK_GREEN, marginBottom: 6 }}>OCR 추출 정보</p>
+                    {Object.entries(doc.extractedData).map(([key, value]) =>
+                      value && (
+                        <div key={key} style={{ fontSize: 12, color: textColor, marginBottom: 2 }}>
+                          <span style={{ color: '#8BA68D' }}>{key}: </span>
+                          <span style={{ fontWeight: 600 }}>{value}</span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
 
                 {doc.notes && (
-                  <div className="mb-4 p-2 bg-yellow-50 rounded text-xs text-gray-700">
-                    <AlertCircle className="w-3 h-3 inline mr-1" />
+                  <div style={{ background: '#fef9c3', borderRadius: 8, padding: '8px 10px', marginBottom: 10, fontSize: 12, color: '#713f12', display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                    <AlertCircle size={12} style={{ marginTop: 2, flexShrink: 0 }} />
                     {doc.notes}
                   </div>
                 )}
 
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      setSelectedDocument(doc);
-                      setShowDetailModal(true);
-                    }}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => { setSelectedDocument(doc); setShowDetailModal(true); }}
                   >
-                    <Eye className="w-4 h-4 mr-1" />
-                    보기
-                  </Button>
-                  <Button size="sm" variant="outline" className="flex-1">
-                    <Download className="w-4 h-4 mr-1" />
-                    다운로드
-                  </Button>
+                    <Eye size={14} />보기
+                  </button>
+                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <Download size={14} />다운로드
+                  </button>
                   {doc.status === "pending" && (
-                    <Button size="sm" className="flex-1">
+                    <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: GREEN, border: 'none', color: '#fff', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       승인
-                    </Button>
+                    </button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            ))}
+          </div>
 
-        {/* Upload Modal */}
-        {uploadModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <Card className="max-w-2xl w-full">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>문서 업로드</CardTitle>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setUploadModalOpen(false)}
-                  >
-                    <XCircle className="w-5 h-5" />
-                  </Button>
+          {/* Upload Modal */}
+          {uploadModalOpen && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+              <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 560 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>문서 업로드</p>
+                  <button onClick={() => setUploadModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8BA68D' }}><XCircle size={22} /></button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div>
-                    <label className="block text-sm font-medium mb-2">
-                      직원 선택
-                    </label>
-                    <select className="w-full border rounded-lg px-3 py-2">
+                    <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>직원 선택</label>
+                    <select style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor }}>
                       <option>김민수 (EMP001)</option>
                       <option>이지은 (EMP002)</option>
                       <option>박철수 (EMP003)</option>
                     </select>
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium mb-2">
-                      문서 유형
-                    </label>
-                    <select className="w-full border rounded-lg px-3 py-2">
+                    <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>문서 유형</label>
+                    <select style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor }}>
                       <option value="health_certificate">보건증</option>
                       <option value="contract">근로계약서</option>
                       <option value="id_card">신분증</option>
@@ -596,170 +540,104 @@ const DocumentManagement: React.FC = () => {
                       <option value="other">기타</option>
                     </select>
                   </div>
-
-                  <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-sm text-gray-600 mb-2">
-                      파일을 드래그하거나 클릭하여 업로드
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      JPG, PNG, PDF (최대 10MB)
-                    </p>
-                    <Button className="mt-4">파일 선택</Button>
+                  <div style={{ border: `2px dashed ${BORDER_GREEN}`, borderRadius: 12, padding: 28, textAlign: 'center' }}>
+                    <Upload size={40} color={DARK_GREEN} style={{ margin: '0 auto 12px' }} />
+                    <p style={{ fontSize: 14, color: '#8BA68D', marginBottom: 6 }}>파일을 드래그하거나 클릭하여 업로드</p>
+                    <p style={{ fontSize: 12, color: '#8BA68D' }}>JPG, PNG, PDF (최대 10MB)</p>
+                    <button style={{ marginTop: 12, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>파일 선택</button>
                   </div>
-
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <div className="flex items-start gap-2">
-                      <Scan className="w-5 h-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-blue-900">
-                          OCR 자동 추출
-                        </p>
-                        <p className="text-xs text-blue-700 mt-1">
-                          업로드된 문서에서 자동으로 정보를 추출합니다. 보건증,
-                          신분증, 계약서의 주요 정보를 인식합니다.
-                        </p>
-                      </div>
+                  <div style={{ background: LIGHT_GREEN, borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10 }}>
+                    <Scan size={20} color={DARK_GREEN} style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>OCR 자동 추출</p>
+                      <p style={{ fontSize: 13, color: DARK_GREEN, marginTop: 4 }}>업로드된 문서에서 자동으로 정보를 추출합니다. 보건증, 신분증, 계약서의 주요 정보를 인식합니다.</p>
                     </div>
                   </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <Button className="flex-1">
-                      <Upload className="w-4 h-4 mr-2" />
-                      업로드 및 OCR 실행
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setUploadModalOpen(false)}
-                    >
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                      <Upload size={16} />업로드 및 OCR 실행
+                    </button>
+                    <button onClick={() => setUploadModalOpen(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                       취소
-                    </Button>
+                    </button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              </div>
+            </div>
+          )}
 
-        {/* Detail Modal */}
-        {showDetailModal && selectedDocument && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <Card className="max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>문서 상세 정보</CardTitle>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setShowDetailModal(false)}
-                  >
-                    <XCircle className="w-5 h-5" />
-                  </Button>
+          {/* Detail Modal */}
+          {showDetailModal && selectedDocument && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+              <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                  <p style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>문서 상세 정보</p>
+                  <button onClick={() => setShowDetailModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8BA68D' }}><XCircle size={22} /></button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm text-gray-600">문서 유형</label>
-                      <p className="font-medium">
-                        {getDocumentTypeLabel(selectedDocument.type)}
-                      </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                  {[
+                    { label: '문서 유형', value: getDocumentTypeLabel(selectedDocument.type) },
+                    { label: '직원명', value: selectedDocument.employeeName },
+                    { label: '파일명', value: selectedDocument.fileName },
+                    { label: '파일 크기', value: formatFileSize(selectedDocument.fileSize) },
+                    { label: '업로드일', value: selectedDocument.uploadDate },
+                    ...(selectedDocument.expiryDate ? [{ label: '만료일', value: selectedDocument.expiryDate }] : []),
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 4 }}>{label}</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: textColor, margin: 0 }}>{value}</p>
                     </div>
-                    <div>
-                      <label className="text-sm text-gray-600">직원명</label>
-                      <p className="font-medium">
-                        {selectedDocument.employeeName}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600">파일명</label>
-                      <p className="font-medium">{selectedDocument.fileName}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600">파일 크기</label>
-                      <p className="font-medium">
-                        {formatFileSize(selectedDocument.fileSize)}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600">업로드일</label>
-                      <p className="font-medium">
-                        {selectedDocument.uploadDate}
-                      </p>
-                    </div>
-                    {selectedDocument.expiryDate && (
-                      <div>
-                        <label className="text-sm text-gray-600">만료일</label>
-                        <p className="font-medium">
-                          {selectedDocument.expiryDate}
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <label className="text-sm text-gray-600">상태</label>
-                      <div className="mt-1">
-                        {getStatusBadge(selectedDocument.status)}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-600">OCR 상태</label>
-                      <div className="mt-1">
-                        {getOCRStatusBadge(selectedDocument.ocrStatus)}
-                      </div>
+                  ))}
+                  <div>
+                    <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6 }}>상태</p>
+                    {getStatusBadge(selectedDocument.status)}
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6 }}>OCR 상태</p>
+                    {getOCRStatusBadge(selectedDocument.ocrStatus)}
+                  </div>
+                </div>
+                {selectedDocument.extractedData && (
+                  <div style={{ marginBottom: 20 }}>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: DARK_GREEN, marginBottom: 12 }}>OCR 추출 정보</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, background: LIGHT_GREEN, borderRadius: 12, padding: '14px 16px' }}>
+                      {Object.entries(selectedDocument.extractedData).map(([key, value]) =>
+                        value && (
+                          <div key={key}>
+                            <p style={{ fontSize: 12, color: '#8BA68D', margin: 0 }}>{key}</p>
+                            <p style={{ fontSize: 14, fontWeight: 600, color: textColor, margin: 0 }}>{value}</p>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
-
-                  {selectedDocument.extractedData && (
-                    <div>
-                      <h3 className="font-semibold mb-3">OCR 추출 정보</h3>
-                      <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                        {Object.entries(selectedDocument.extractedData).map(
-                          ([key, value]) =>
-                            value && (
-                              <div key={key}>
-                                <label className="text-sm text-gray-600">
-                                  {key}
-                                </label>
-                                <p className="font-medium">{value}</p>
-                              </div>
-                            ),
-                        )}
-                      </div>
-                    </div>
+                )}
+                <div style={{ background: LIGHT_GREEN, borderRadius: 12, padding: 20, textAlign: 'center', marginBottom: 16 }}>
+                  <Image size={48} color={DARK_GREEN} style={{ margin: '0 auto 8px' }} />
+                  <p style={{ fontSize: 14, color: '#8BA68D', margin: 0 }}>문서 미리보기</p>
+                </div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                    <Download size={16} />다운로드
+                  </button>
+                  {selectedDocument.status === "pending" && (
+                    <>
+                      <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                        <CheckCircle size={16} />승인
+                      </button>
+                      <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                        <XCircle size={16} />반려
+                      </button>
+                    </>
                   )}
-
-                  <div className="border rounded-lg p-4 bg-gray-100 text-center">
-                    <Image className="w-16 h-16 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">문서 미리보기</p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button className="flex-1">
-                      <Download className="w-4 h-4 mr-2" />
-                      다운로드
-                    </Button>
-                    {selectedDocument.status === "pending" && (
-                      <>
-                        <Button className="flex-1">
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          승인
-                        </Button>
-                        <Button variant="outline" className="flex-1">
-                          <XCircle className="w-4 h-4 mr-2" />
-                          반려
-                        </Button>
-                      </>
-                    )}
-                    <Button variant="outline">
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      삭제
-                    </Button>
-                  </div>
+                  <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid #EF4444`, color: '#EF4444', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                    <Trash2 size={16} />삭제
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

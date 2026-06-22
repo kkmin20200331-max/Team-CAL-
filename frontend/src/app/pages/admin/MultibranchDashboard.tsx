@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   MapPin,
   TrendingUp,
   TrendingDown,
@@ -45,6 +46,11 @@ import {
   ComposedChart,
   Area,
 } from "recharts";
+import AdminHeader from "./AdminHeader";
+import { useTheme } from "next-themes";
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
 
 interface BranchMetrics {
   id: string;
@@ -82,6 +88,8 @@ interface BranchMetrics {
 
 const MultibranchDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [selectedMetric, setSelectedMetric] = useState<
     "revenue" | "customers" | "employees"
   >("revenue");
@@ -349,40 +357,27 @@ const MultibranchDashboard: React.FC = () => {
   const totalStats = calculateTotalStats();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/admin/branch-selection")}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            대시보드로 돌아가기
-          </Button>
-
-          <div className="flex items-center justify-between">
+    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button onClick={() => navigate("/admin/branch-selection")} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}><ChevronLeft size={20} /></button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                <BarChart3 className="w-8 h-8 text-blue-500" />
-                다중 매장 대시보드
-              </h1>
-              <p className="text-gray-600 mt-1">전체 매장 실시간 비교 분석</p>
-            </div>
-
-            <div className="flex gap-3">
-              <Button variant="outline">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                새로고침
-              </Button>
-              <Button variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                리포트 다운로드
-              </Button>
+              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#F2F5EB', display: 'flex', alignItems: 'center', gap: 10 }}><BarChart3 size={28} />다중 매장 대시보드</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>전체 매장 실시간 비교 분석</p>
             </div>
           </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 54, border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer', fontSize: 14 }}>
+              <RefreshCw size={16} />새로고침
+            </button>
+            <button style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 54, border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer', fontSize: 14 }}>
+              <Download size={16} />리포트 다운로드
+            </button>
+          </div>
         </div>
+      </AdminHeader>
+      <div className="max-w-7xl mx-auto p-6">
 
         {/* Total Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">

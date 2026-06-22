@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useLocation } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
@@ -351,6 +351,7 @@ const mapAiRecommendations = (
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { branchId } = useParams();
   const language = useLanguage();
   const t = translations.adminDashboard[language];
@@ -358,8 +359,11 @@ export default function AdminDashboard() {
   const isDark = theme === 'dark';
 
   const currentBranch = sessionStorage.getItem("store_name") || "지점 선택";
+  const currentUser = JSON.parse(sessionStorage.getItem("user") || "{}");
 
   // ── 상태 ──
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [todayShifts, setTodayShifts] = useState<ShiftVO[]>([]);
   const [employeeMap, setEmployeeMap] = useState<Record<string, UserVO>>({});
@@ -370,6 +374,14 @@ export default function AdminDashboard() {
     useState<CustomerTrendRow[]>(customerData);
   const [customerTrendSyncedAt, setCustomerTrendSyncedAt] = useState("");
   const [aiInsight, setAiInsight] = useState<AiInsightResponse | null>(null);
+
+  // 관리 매장 목록 (드롭다운용)
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    API.get('/store', { params: { user_id: currentUser.id } })
+      .then(res => setStores(Array.isArray(res.data) ? res.data.map((s: any) => ({ id: s.id, name: s.name })) : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!branchId) return;
@@ -597,10 +609,13 @@ export default function AdminDashboard() {
     return t.statusBeforeWork;
   };
 
-  const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const cardBg = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const pageBg = isDark
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
   const textColor = isDark ? '#fff' : '#111';
-  const subTextColor = isDark ? '#aaa' : '#555';
+  const subTextColor = isDark ? '#aaa' : '#666';
+  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
 
   const getStatusBadgeStyle = (status: string) => {
     const s = (status || "").toUpperCase();
@@ -622,173 +637,259 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
-      <AdminHeader>
-        <div>
-          <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB' }}>{t.mainDashboard}</h1>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
-            {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
-          </p>
-        </div>
-      </AdminHeader>
+      <AdminHeader />
 
-      {/* Nav shortcuts */}
-      <div style={{ background: isDark ? '#2c2c2e' : 'rgba(255,255,255,0.7)', borderBottom: `1px solid ${BORDER_GREEN}`, overflowX: 'auto' }}>
-        <div style={{ display: 'flex', gap: 0, maxWidth: 1200, margin: '0 auto', padding: '0 40px' }}>
-          {menuItems.map((item) => (
-            <button key={item.label} onClick={() => navigate(item.path)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: DARK_GREEN, whiteSpace: 'nowrap' }}>
-              <item.icon size={15} />{item.label}
+      {/* ── 바디: 사이드바 + 메인 카드 ── */}
+      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
+
+        {/* ── 사이드바 ── */}
+        <aside style={{
+          width: 220, flexShrink: 0,
+          background: sidebarBg,
+          border: `1px solid ${sidebarBorder}`,
+          borderRadius: 20, padding: '20px 12px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.07)',
+          position: 'sticky', top: 140,
+          maxHeight: 'calc(100vh - 160px)',
+          overflowY: 'auto',
+        }}>
+
+          {/* 지점 드롭다운 */}
+          <div style={{ position: 'relative', marginBottom: 18 }}>
+            <button
+              onClick={() => setBranchDropdownOpen(o => !o)}
+              style={{
+                width: '100%', padding: '10px 14px',
+                background: isDark ? 'rgba(255,255,255,0.06)' : LIGHT_GREEN,
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : BORDER_GREEN}`,
+                borderRadius: 12, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
+                color: isDark ? '#fff' : DARK_GREEN, fontSize: 12, fontWeight: 700,
+              }}
+            >
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ flexShrink: 0, transform: branchDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                <path d="M1 1L5 5L9 1" stroke={isDark ? 'white' : DARK_GREEN} strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
             </button>
-          ))}
-        </div>
-      </div>
-
-      <main style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 40px' }}>
-        {/* Summary Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-          {[
-            { label: t.todayStaff, value: loading ? null : todayShifts.length, sub: loading ? null : t.checkedInCount(checkedIn), icon: <Users size={18} color={GREEN} />, subColor: subTextColor },
-            { label: t.registeredStaff, value: loading ? null : totalEmployees, sub: loading ? null : t.allStaffThisBranch, icon: <TrendingUp size={18} color={GREEN} />, subColor: GREEN },
-            { label: t.substituteRecruiting, value: loading ? null : substituteCount, sub: loading ? null : (substituteCount > 0 ? t.waitingForApplicants : t.noOpenings), icon: <AlertCircle size={18} color={substituteCount > 0 ? '#f59e0b' : GREEN} />, subColor: subTextColor },
-            { label: t.estimatedLaborCost, value: loading ? null : `₩${estimatedPay.toLocaleString("ko-KR")}`, sub: loading ? null : t.hourlyBasis, icon: <DollarSign size={18} color={DARK_GREEN} />, subColor: subTextColor },
-          ].map(({ label, value, sub, icon, subColor }) => (
-            <div key={label} style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, padding: '16px 20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <p style={{ fontSize: 12, color: subTextColor }}>{label}</p>
-                {icon}
-              </div>
-              {value === null ? <Loader2 size={18} style={{ color: subTextColor }} /> : (
-                <>
-                  <p style={{ fontSize: 24, fontWeight: 700, color: textColor }}>{value}</p>
-                  <p style={{ fontSize: 11, color: subColor, marginTop: 4 }}>{sub}</p>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 24 }}>
-          {/* 실시간 추이 */}
-          <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 16, fontWeight: 700, color: textColor }}>
-              {t.realtimeTrend}
-              <span style={{ fontSize: 11, color: subTextColor, fontWeight: 400 }}>{t.sampleData}</span>
-            </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={customerTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#3a3a3c' : '#e5e7eb'} />
-                <XAxis dataKey="time" tick={{ fill: subTextColor, fontSize: 11 }} />
-                <YAxis tick={{ fill: subTextColor, fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="customers" stroke={GREEN} name={t.customers} strokeWidth={2} />
-                <Line type="monotone" dataKey="staff" stroke={DARK_GREEN} name={t.workingStaff} strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* 운영 알림 */}
-          <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
-            <p style={{ fontSize: 16, fontWeight: 700, color: textColor, marginBottom: 14 }}>{t.todayAlerts}</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {!loading && substituteCount > 0 && (
-                <div style={{ padding: '10px 14px', borderRadius: 12, background: '#fef3c7', border: '1px solid #fcd34d' }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 2 }}>{t.substituteAlert(substituteCount)}</p>
-                  <p style={{ fontSize: 11, color: '#b45309' }}>{t.checkApplicants}</p>
-                </div>
-              )}
-              {!loading && checkedIn < todayShifts.length && todayShifts.length > 0 && (
-                <div style={{ padding: '10px 14px', borderRadius: 12, background: LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}` }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, marginBottom: 2 }}>{t.absentAlert(todayShifts.length - checkedIn)}</p>
-                  <p style={{ fontSize: 11, color: DARK_GREEN }}>{t.checkAttendance}</p>
-                </div>
-              )}
-              {!loading && todayShifts.length === 0 && (
-                <div style={{ padding: '10px 14px', borderRadius: 12, background: isDark ? '#3a3a3c' : '#f9fafb', border: `1px solid ${isDark ? '#555' : '#e5e7eb'}` }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: textColor, marginBottom: 2 }}>{t.noWorkToday}</p>
-                  <p style={{ fontSize: 11, color: subTextColor }}>{t.checkSchedule}</p>
-                </div>
-              )}
-              <div style={{ padding: '10px 14px', borderRadius: 12, background: '#fef3c7', border: '1px solid #fcd34d' }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#92400e', marginBottom: 2 }}>{t.healthCertExpiry}</p>
-                <p style={{ fontSize: 11, color: '#b45309' }}>{t.checkDocuments}</p>
-              </div>
-              <div style={{ padding: '10px 14px', borderRadius: 12, background: LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}` }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, marginBottom: 2 }}>{t.nextWeekSchedule}</p>
-                <p style={{ fontSize: 11, color: DARK_GREEN }}>{t.writeInSchedule}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 오늘 근무자 + AI 추천 */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-          <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
-            <p style={{ fontSize: 16, fontWeight: 700, color: textColor, marginBottom: 14 }}>{t.todayWorkerList}</p>
-            {loading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}><Loader2 size={24} style={{ color: subTextColor }} /></div>
-            ) : todayShifts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '32px 0', color: subTextColor, fontSize: 13 }}>{t.noWorkersToday}</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {todayShifts.map((shift) => {
-                  const emp = employeeMap[shift.user_id];
-                  const name = emp?.name || t.unknown;
-                  const bs = getStatusBadgeStyle(shift.status);
-                  return (
-                    <div key={shift.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, borderRadius: 14 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{name[0]}</div>
-                        <div>
-                          <p style={{ fontWeight: 600, fontSize: 13, color: textColor }}>{name}</p>
-                          <p style={{ fontSize: 11, color: subTextColor, display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={10} />{fmt(shift.start_at)} ~ {fmt(shift.end_at)}</p>
-                        </div>
-                      </div>
-                      <span style={{ ...bs, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600 }}>{getStatusLabel(shift.status)}</span>
-                    </div>
-                  );
-                })}
+            {branchDropdownOpen && stores.length > 0 && (
+              <div style={{
+                position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50,
+                background: isDark ? '#1c1c1e' : '#fff',
+                border: `1px solid ${isDark ? '#3a3a3c' : BORDER_GREEN}`,
+                borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+              }}>
+                {stores.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      sessionStorage.setItem('store_id', s.id);
+                      sessionStorage.setItem('store_name', s.name);
+                      setBranchDropdownOpen(false);
+                      navigate(`/admin/dashboard/${s.id}`);
+                    }}
+                    style={{
+                      display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left',
+                      background: s.id === branchId ? LIGHT_GREEN : 'transparent',
+                      border: 'none', cursor: 'pointer',
+                      color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600,
+                    }}
+                    onMouseOver={e => { e.currentTarget.style.background = LIGHT_GREEN; }}
+                    onMouseOut={e => { e.currentTarget.style.background = s.id === branchId ? LIGHT_GREEN : 'transparent'; }}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+                <div style={{ borderTop: `1px solid ${isDark ? '#3a3a3c' : '#e5e7eb'}` }} />
+                <button
+                  onClick={() => { setBranchDropdownOpen(false); navigate('/admin/branch-selection'); }}
+                  style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#888' : '#aaa', fontSize: 12 }}
+                  onMouseOver={e => { e.currentTarget.style.background = isDark ? '#2c2c2e' : '#f5f5f5'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  + 지점 선택 페이지로
+                </button>
               </div>
             )}
           </div>
 
-          {/* AI 운영 추천 */}
-          <div style={{ background: isDark ? '#2c2c2e' : 'rgba(230,245,200,0.5)', border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontSize: 16, fontWeight: 700, color: textColor }}>
-              <BarChart3 size={18} color={DARK_GREEN} />{t.aiRecommendation}
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  width: '100%', padding: '11px 14px', marginBottom: 4,
+                  background: isActive ? GREEN : 'transparent',
+                  border: 'none',
+                  borderRadius: 12, cursor: 'pointer',
+                  color: isActive ? '#fff' : (isDark ? '#ccc' : DARK_GREEN),
+                  fontSize: 14, fontWeight: 600, textAlign: 'left',
+                  transition: 'all 0.15s',
+                  boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none',
+                }}
+                onMouseOver={e => { if (!isActive) { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : LIGHT_GREEN; } }}
+                onMouseOut={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; } }}
+              >
+                <item.icon size={16} color={isActive ? '#fff' : GREEN} />
+                {item.label}
+              </button>
+            );
+          })}
+        </aside>
+
+        {/* ── 메인: 하나의 큰 흰 카드 ── */}
+        <div style={{
+          flex: 1, minWidth: 0,
+          background: 'rgba(255,255,255,0.97)',
+          borderRadius: 24,
+          padding: '28px 28px 32px',
+          boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
+        }}>
+
+          {/* 타이틀 행 */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 24 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: 0 }}>{t.mainDashboard}</h1>
+            <span style={{ fontSize: 15, color: '#8BA68D', fontWeight: 500 }}>
+              {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
+            </span>
+          </div>
+
+          {/* Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+            {[
+              { label: t.todayStaff, value: loading ? null : todayShifts.length, sub: loading ? null : t.checkedInCount(checkedIn), icon: <Users size={20} color={GREEN} />, subColor: GREEN, isAlert: false },
+              { label: t.registeredStaff, value: loading ? null : totalEmployees, sub: loading ? null : t.allStaffThisBranch, icon: <TrendingUp size={20} color={GREEN} />, subColor: GREEN, isAlert: false },
+              { label: t.substituteRecruiting, value: loading ? null : substituteCount, sub: loading ? null : (substituteCount > 0 ? t.waitingForApplicants : t.noOpenings), icon: <AlertCircle size={20} color={substituteCount > 0 ? '#A20000' : GREEN} />, subColor: substituteCount > 0 ? '#A20000' : subTextColor, isAlert: substituteCount > 0 },
+              { label: t.estimatedLaborCost, value: loading ? null : `₩${estimatedPay.toLocaleString("ko-KR")}`, sub: loading ? null : t.hourlyBasis, icon: <DollarSign size={20} color={GREEN} />, subColor: subTextColor, isAlert: false },
+            ].map(({ label, value, sub, icon, subColor, isAlert }) => (
+              <div key={label} style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#8BA68D' }}>{label}</p>
+                  <div style={{ width: 34, height: 34, borderRadius: 9, background: 'transparent', border: `1.5px solid ${isAlert ? '#A20000' : BORDER_GREEN}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+                </div>
+                {value === null ? <Loader2 size={20} style={{ color: subTextColor }} /> : (
+                  <>
+                    <p style={{ fontSize: 28, fontWeight: 800, color: isAlert ? '#A20000' : DARK_GREEN, lineHeight: 1 }}>{value}</p>
+                    <p style={{ fontSize: 13, color: subColor, marginTop: 6 }}>{sub}</p>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 차트 — 단독 행 */}
+          <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 18, padding: '22px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN }}>{t.realtimeTrend}</span>
+              <span style={{ fontSize: 12, color: '#8BA68D', background: LIGHT_GREEN, padding: '3px 12px', borderRadius: 20 }}>{t.sampleData}</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ background: isDark ? '#3a3a3c' : '#fff', borderRadius: 14, padding: '14px', border: `2px solid ${DARK_GREEN}` }}>
-                <h4 style={{ fontWeight: 700, fontSize: 14, color: DARK_GREEN, marginBottom: 6 }}>{t.staffingRecommendation}</h4>
-                <p style={{ fontSize: 12, color: subTextColor, marginBottom: 10 }}>{t.staffingBody}</p>
-                <button onClick={() => navigate(`/admin/substitute/${branchId}`)} style={{ width: '100%', padding: '8px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{t.recruitSubstitute}</button>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={customerTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#d4e8d4" />
+                <XAxis dataKey="time" tick={{ fill: '#8BA68D', fontSize: 12 }} />
+                <YAxis tick={{ fill: '#8BA68D', fontSize: 12 }} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 13 }} />
+                <Line type="monotone" dataKey="customers" stroke={GREEN} name={t.customers} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="staff" stroke={DARK_GREEN} name={t.workingStaff} strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 오늘의 운영 알림 — 단독 행, 가로 나열 */}
+          <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 18, padding: '20px 22px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 14 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 14 }}>{t.todayAlerts}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+              {!loading && substituteCount > 0 && (
+                <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1.5px solid #A20000` }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: '#A20000', marginBottom: 4 }}>{t.substituteAlert(substituteCount)}</p>
+                  <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.checkApplicants}</p>
+                </div>
+              )}
+              {!loading && checkedIn < todayShifts.length && todayShifts.length > 0 && (
+                <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1.5px solid ${BORDER_GREEN}` }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN, marginBottom: 4 }}>{t.absentAlert(todayShifts.length - checkedIn)}</p>
+                  <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.checkAttendance}</p>
+                </div>
+              )}
+              {!loading && todayShifts.length === 0 && (
+                <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${LIGHT_GREEN}` }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN, marginBottom: 4 }}>{t.noWorkToday}</p>
+                  <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.checkSchedule}</p>
+                </div>
+              )}
+              <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${LIGHT_GREEN}` }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN, marginBottom: 4 }}>{t.healthCertExpiry}</p>
+                <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.checkDocuments}</p>
               </div>
-              <div style={{ background: isDark ? '#3a3a3c' : '#fff', borderRadius: 14, padding: '14px', border: `1px solid ${BORDER_GREEN}` }}>
-                <h4 style={{ fontWeight: 700, fontSize: 14, color: textColor, marginBottom: 6 }}>{t.menuRecommendation}</h4>
-                <p style={{ fontSize: 12, color: subTextColor }}>{t.menuBody}</p>
-              </div>
-              <div style={{ background: isDark ? '#3a3a3c' : '#fff', borderRadius: 14, padding: '14px', border: `1px solid ${BORDER_GREEN}` }}>
-                <h4 style={{ fontWeight: 700, fontSize: 14, color: textColor, marginBottom: 6 }}>{t.idleTimeTask}</h4>
-                <p style={{ fontSize: 12, color: subTextColor }}>{t.idleBody}</p>
+              <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1.5px solid ${BORDER_GREEN}` }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN, marginBottom: 4 }}>{t.nextWeekSchedule}</p>
+                <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.writeInSchedule}</p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Quick Actions */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-          {[
-            { icon: CalendarDays, label: t.viewSchedule, path: `/admin/schedule/monthly/${branchId}` },
-            { icon: UserPlus, label: t.recruitSubNav, path: `/admin/substitute/${branchId}` },
-            { icon: BarChart3, label: t.customerAnalytics, path: `/admin/analytics/${branchId}` },
-            { icon: Wallet, label: t.payrollManagement, path: `/admin/cctv/${branchId}` },
-          ].map(({ icon: Icon, label, path }) => (
-            <button key={label} onClick={() => navigate(path)} style={{ height: 96, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: DARK_GREEN, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
-              <Icon size={22} color={GREEN} />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-      </main>
+          {/* 오늘 근무자 + AI 추천 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 18, padding: '22px', border: `1px solid ${LIGHT_GREEN}` }}>
+              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 14 }}>{t.todayWorkerList}</p>
+              {loading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}><Loader2 size={24} style={{ color: '#8BA68D' }} /></div>
+              ) : todayShifts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px 0', color: '#8BA68D', fontSize: 15 }}>{t.noWorkersToday}</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {todayShifts.map((shift) => {
+                    const emp = employeeMap[shift.user_id];
+                    const name = emp?.name || t.unknown;
+                    const bs = getStatusBadgeStyle(shift.status);
+                    return (
+                      <div key={shift.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', background: 'rgba(230,245,200,0.5)', borderRadius: 14, border: `1px solid ${LIGHT_GREEN}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 38, height: 38, borderRadius: '50%', background: `linear-gradient(135deg, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>{name[0]}</div>
+                          <div>
+                            <p style={{ fontWeight: 700, fontSize: 15, color: DARK_GREEN }}>{name}</p>
+                            <p style={{ fontSize: 13, color: '#8BA68D', display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={11} />{fmt(shift.start_at)} ~ {fmt(shift.end_at)}</p>
+                          </div>
+                        </div>
+                        <span style={{ ...bs, padding: '4px 11px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>{getStatusLabel(shift.status)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 18, padding: '22px', border: `1px solid ${LIGHT_GREEN}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 9, background: 'transparent', border: `1.5px solid ${BORDER_GREEN}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <BarChart3 size={17} color={GREEN} />
+                </div>
+                <span style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN }}>{t.aiRecommendation}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ borderRadius: 14, padding: '15px', background: 'rgba(230,245,200,0.6)', border: `1.5px solid ${BORDER_GREEN}` }}>
+                  <h4 style={{ fontWeight: 700, fontSize: 15, color: DARK_GREEN, marginBottom: 6 }}>{t.staffingRecommendation}</h4>
+                  <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 11 }}>{t.staffingBody}</p>
+                  <button onClick={() => navigate(`/admin/substitute/${branchId}`)} style={{ width: '100%', padding: '10px 0', background: GREEN, border: 'none', borderRadius: 50, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{t.recruitSubstitute}</button>
+                </div>
+                <div style={{ borderRadius: 14, padding: '15px', background: 'rgba(230,245,200,0.3)', border: `1px solid ${LIGHT_GREEN}` }}>
+                  <h4 style={{ fontWeight: 700, fontSize: 15, color: DARK_GREEN, marginBottom: 5 }}>{t.menuRecommendation}</h4>
+                  <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.menuBody}</p>
+                </div>
+                <div style={{ borderRadius: 14, padding: '15px', background: 'rgba(230,245,200,0.3)', border: `1px solid ${LIGHT_GREEN}` }}>
+                  <h4 style={{ fontWeight: 700, fontSize: 15, color: DARK_GREEN, marginBottom: 5 }}>{t.idleTimeTask}</h4>
+                  <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.idleBody}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>{/* end 메인 카드 */}
+      </div>{/* end 바디 */}
     </div>
   );
 }
