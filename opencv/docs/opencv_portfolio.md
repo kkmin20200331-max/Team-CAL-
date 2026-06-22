@@ -83,11 +83,24 @@ OpenCV의 `CAP_PROP_POS_MSEC`를 사용해 `0초`, `10초`, `20초`처럼 지정
 
 백그라운드 reader thread가 계속 프레임을 읽고, 추론 루프는 샘플링 시점마다 최신 프레임을 복사해 사용합니다.
 
+웹캠과 RTSP는 같은 `StreamVideoSource` 경로를 사용합니다. 차이는 OpenCV에 넘기는 `source` 값입니다.
+
+```text
+WEBCAM source="0"
+  -> cv2.VideoCapture(0)
+
+RTSP source="rtsp://..."
+  -> cv2.VideoCapture("rtsp://...")
+```
+
+`StreamVideoSource`는 `capture.read()`를 반복하는 reader thread를 실행하고, 성공적으로 읽은 프레임을 `_latest_frame`에 갱신합니다. YOLO 추론 루프는 `intervalSec`마다 이 최신 프레임을 샘플링하고, CCTV 화면 프리뷰는 `/api/v1/camera/stream`에서 같은 최신 프레임을 JPEG로 인코딩해 MJPEG 스트림으로 송출합니다.
+
 이 방식의 장점:
 
 - 오래된 프레임이 큐에 쌓이는 문제를 줄입니다.
 - 실시간 영상에서 현재 상황에 가까운 프레임을 분석할 수 있습니다.
 - RTSP CCTV 확장에 필요한 기반 구조를 갖출 수 있습니다.
+- 분석 주기와 화면 표시 FPS를 분리해 추론 부하를 줄이면서도 프리뷰는 부드럽게 보여줄 수 있습니다.
 
 ### 6.4 고객 수 집계
 
