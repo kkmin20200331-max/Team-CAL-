@@ -5,7 +5,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import {
   ChevronLeft, ChevronRight, Search, Calendar,
-  UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3
+  UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3, Video
 } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -117,6 +117,7 @@ export default function WeeklySchedule() {
     { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
     { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
     { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
   ];
 
   useEffect(() => {
