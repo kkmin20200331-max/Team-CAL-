@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Activity,
-  ArrowLeft,
   BarChart3,
   Brain,
   Calendar,
@@ -17,6 +16,9 @@ import {
   Users,
   Wallet,
   Zap,
+  FileText,
+  UserPlus,
+  MessageSquare,
 } from "lucide-react";
 import {
   Area,
@@ -32,12 +34,13 @@ import {
 } from "recharts";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
+import AdminHeader from "./AdminHeader";
+import { useTheme } from "next-themes";
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 type TabKey = "live" | "pattern" | "insight" | "schedule";
 
@@ -269,7 +272,10 @@ const severityClass = (severity?: string) => {
 
 export default function CustomerAnalytics() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { branchId } = useParams();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [activeTab, setActiveTab] = useState<TabKey>("live");
   const [peopleLogs, setPeopleLogs] = useState<PeopleLog[]>([]);
   const [weeklyLogs, setWeeklyLogs] = useState<PeopleLog[]>([]);
@@ -279,12 +285,42 @@ export default function CustomerAnalytics() {
   const [lastSyncedAt, setLastSyncedAt] = useState("-");
   const [syncError, setSyncError] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
 
-  const storeId = resolveStoreId(branchId);
+  const pageBg = isDark
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
+  const textColor = isDark ? '#fff' : '#111';
+
   const currentBranch =
     branchNames[branchId || "migeum"] ||
     sessionStorage.getItem("store_name") ||
     "선택 매장";
+
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+      .then(r => r.json())
+      .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
+      .catch(() => {});
+  }, []);
+
+  const menuItems = [
+    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
+    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
+    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
+    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
+    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
+    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
+    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+  ];
+
+  const storeId = resolveStoreId(branchId);
   const trafficByHour = useMemo(
     () => buildTrafficByHour(peopleLogs),
     [peopleLogs],
@@ -310,41 +346,6 @@ export default function CustomerAnalytics() {
   const avgCount = aggregate?.aggregate?.avgCustomerCount ?? 0;
   const maxCount = aggregate?.aggregate?.maxCustomerCount ?? peakHour.visitors;
 
-  /*
-  Previous client-side AI payload builder removed.
-    storeId,
-    storeName: currentBranch,
-    storeType: 'CAFE',
-    storeTypeLabel: '카페',
-    date: toDateText(new Date()),
-    current: {
-      currentCustomerCount: currentCount,
-      todayTotalVisitors,
-      conversionRate: 0,
-      processedFrames: metrics?.processedFrames ?? 0,
-      confidenceAvg: metrics?.lastConfidenceAvg ?? 0
-    },
-    cameraAggregates: [],
-    historicalBaseline: {
-      sameDayAverageVisitors: Math.max(todayTotalVisitors, 1),
-      averagePeakCustomerCount: Math.max(maxCount, 1)
-    },
-    pos: {
-      conversionRate: 0,
-      hourlyOrders: trafficByHour.map((row) => ({
-        time: row.time,
-        orderCount: 0,
-        conversionRate: 0
-      }))
-    },
-    staffSchedule: [],
-    externalFactors: {
-      source: 'cctv-metrics-people-log',
-      aggregate
-    }
-  });
-
-  */
   const fallbackInsights = [
     {
       label: "혼잡도",
@@ -398,14 +399,14 @@ export default function CustomerAnalytics() {
       value: `${currentCount}명`,
       delta: `${metrics?.running ? "분석 실행 중" : "분석 대기"} | ${lastSyncedAt}`,
       icon: Users,
-      tone: "text-blue-600",
+      tone: GREEN,
     },
     {
       title: "오늘 누적 로그",
       value: `${todayTotalVisitors}명`,
       delta: `people_log ${peopleLogs.length}건`,
       icon: Activity,
-      tone: "text-emerald-600",
+      tone: GREEN,
     },
     {
       title: "AI 응답 출처",
@@ -414,14 +415,14 @@ export default function CustomerAnalytics() {
         ? `risk ${aiResult.summary.riskLevel}`
         : "새로고침으로 분석",
       icon: Brain,
-      tone: "text-orange-600",
+      tone: '#F59E0B',
     },
     {
       title: "AI 처리 프레임",
       value: `${metrics?.processedFrames ?? 0}`,
       delta: `confidence ${metrics?.lastConfidenceAvg ?? 0}`,
       icon: Wallet,
-      tone: "text-violet-600",
+      tone: '#8B5CF6',
     },
   ];
 
@@ -430,25 +431,25 @@ export default function CustomerAnalytics() {
       label: "혼잡도",
       value: riskLevel(currentCount),
       width: `${Math.min(100, currentCount * 3)}%`,
-      color: "bg-orange-500",
+      color: "#F97316",
     },
     {
       label: "분석 신뢰도",
       value: String(metrics?.lastConfidenceAvg ?? 0),
       width: `${Math.round((metrics?.lastConfidenceAvg ?? 0) * 100)}%`,
-      color: "bg-blue-500",
+      color: "#3B82F6",
     },
     {
       label: "처리 프레임",
       value: String(metrics?.processedFrames ?? 0),
       width: `${Math.min(100, (metrics?.processedFrames ?? 0) / 10)}%`,
-      color: "bg-emerald-500",
+      color: GREEN,
     },
     {
       label: "전송 샘플",
       value: String(aggregate?.aggregate?.sampleCount ?? 0),
       width: `${Math.min(100, (aggregate?.aggregate?.sampleCount ?? 0) * 8)}%`,
-      color: "bg-violet-500",
+      color: "#8B5CF6",
     },
   ];
 
@@ -476,12 +477,7 @@ export default function CustomerAnalytics() {
         fetch(`${API_BASE}/people_log?${weeklyQuery.toString()}`),
       ]);
 
-    if (
-      !logsRes.ok ||
-      !metricsRes.ok ||
-      !aggregateRes.ok ||
-      !weeklyLogsRes.ok
-    ) {
+    if (!logsRes.ok || !metricsRes.ok || !aggregateRes.ok || !weeklyLogsRes.ok) {
       throw new Error("실시간 분석 데이터를 불러오지 못했습니다.");
     }
 
@@ -571,342 +567,345 @@ export default function CustomerAnalytics() {
   }, [storeId]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 md:flex-row md:items-center md:justify-between md:px-6">
-          <div className="flex items-start gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                navigate(`/admin/dashboard/${branchId || "migeum"}`)
-              }
-              aria-label="대시보드로 돌아가기"
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader />
+
+      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
+        {/* Sidebar */}
+        <aside style={{
+          width: 220, flexShrink: 0,
+          background: sidebarBg,
+          border: `1px solid ${sidebarBorder}`,
+          borderRadius: 20, padding: '20px 12px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.07)',
+          position: 'sticky', top: 140,
+          maxHeight: 'calc(100vh - 160px)',
+          overflowY: 'auto',
+        }}>
+          <div style={{ position: 'relative', marginBottom: 18 }}>
+            <button
+              onClick={() => setBranchDropdownOpen(o => !o)}
+              style={{
+                width: '100%', padding: '10px 14px',
+                background: isDark ? 'rgba(255,255,255,0.06)' : LIGHT_GREEN,
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : BORDER_GREEN}`,
+                borderRadius: 12, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
+                color: isDark ? '#fff' : DARK_GREEN, fontSize: 12, fontWeight: 700,
+              }}
             >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                <span>{currentBranch}</span>
-                <ChevronRight className="h-4 w-4" />
-                <span>AI 고객 분석</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ flexShrink: 0, transform: branchDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                <path d="M1 1L5 5L9 1" stroke={isDark ? 'white' : DARK_GREEN} strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </button>
+            {branchDropdownOpen && stores.length > 0 && (
+              <div style={{
+                position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50,
+                background: isDark ? '#1c1c1e' : '#fff',
+                border: `1px solid ${isDark ? '#3a3a3c' : BORDER_GREEN}`,
+                borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+              }}>
+                {stores.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      sessionStorage.setItem('store_id', s.id);
+                      sessionStorage.setItem('store_name', s.name);
+                      setBranchDropdownOpen(false);
+                      navigate(`/admin/dashboard/${s.id}`);
+                    }}
+                    style={{
+                      display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left',
+                      background: s.id === branchId ? LIGHT_GREEN : 'transparent',
+                      border: 'none', cursor: 'pointer',
+                      color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600,
+                    }}
+                    onMouseOver={e => { e.currentTarget.style.background = LIGHT_GREEN; }}
+                    onMouseOut={e => { e.currentTarget.style.background = s.id === branchId ? LIGHT_GREEN : 'transparent'; }}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+                <div style={{ borderTop: `1px solid ${isDark ? '#3a3a3c' : '#e5e7eb'}` }} />
+                <button
+                  onClick={() => { setBranchDropdownOpen(false); navigate('/admin/branch-selection'); }}
+                  style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#888' : '#aaa', fontSize: 12 }}
+                  onMouseOver={e => { e.currentTarget.style.background = isDark ? '#2c2c2e' : '#f5f5f5'; }}
+                  onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  + 지점 선택 페이지로
+                </button>
               </div>
-              <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-950 md:text-3xl">
-                <Brain className="h-7 w-7 text-blue-600" />
-                실시간 고객 행동 분석 및 인사이트
+            )}
+          </div>
+
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  width: '100%', padding: '11px 14px', marginBottom: 4,
+                  background: isActive ? GREEN : 'transparent',
+                  border: 'none',
+                  borderRadius: 12, cursor: 'pointer',
+                  color: isActive ? '#fff' : (isDark ? '#ccc' : DARK_GREEN),
+                  fontSize: 14, fontWeight: 600, textAlign: 'left',
+                  transition: 'all 0.15s',
+                  boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none',
+                }}
+                onMouseOver={e => { if (!isActive) { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : LIGHT_GREEN; } }}
+                onMouseOut={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; } }}
+              >
+                <item.icon size={16} color={isActive ? '#fff' : GREEN} />
+                {item.label}
+              </button>
+            );
+          })}
+        </aside>
+
+        {/* Main white card */}
+        <div style={{
+          flex: 1, minWidth: 0,
+          background: 'rgba(255,255,255,0.97)',
+          borderRadius: 24,
+          padding: '28px 28px 32px',
+          boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
+        }}>
+          {/* Page title row */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {currentBranch} <ChevronRight size={12} /> AI 고객 분석
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Brain size={26} />실시간 고객 행동 분석 및 인사이트
               </h1>
-              <p className="mt-1 text-sm text-slate-600">
-                운영 데이터는 5초마다 동기화하고, 새로고침 버튼은 OpenAI/LLM
-                인사이트 분석까지 실행합니다.
-              </p>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>운영 데이터는 5초마다 동기화하고, 새로고침 버튼은 OpenAI/LLM 인사이트 분석까지 실행합니다.</p>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={runAiAnalysis}
+                disabled={aiLoading}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: aiLoading ? 'not-allowed' : 'pointer', opacity: aiLoading ? 0.7 : 1 }}
+              >
+                <RefreshCw size={16} style={{ animation: aiLoading ? 'spin 1s linear infinite' : 'none' }} />
+                {aiLoading ? "AI 분석 중" : "새로고침"}
+              </button>
+              <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <Download size={16} />리포트
+              </button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={runAiAnalysis}
-              disabled={aiLoading}
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${aiLoading ? "animate-spin" : ""}`}
-              />
-              {aiLoading ? "AI 분석 중" : "새로고침"}
-            </Button>
-            <Button className="gap-2">
-              <Download className="h-4 w-4" />
-              리포트
-            </Button>
-          </div>
-        </div>
-      </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
-        {syncError && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {syncError}
-          </div>
-        )}
+          {/* Sync error */}
+          {syncError && (
+            <div style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #fca5a5', background: '#fef2f2', padding: '12px 16px', fontSize: 14, color: '#b91c1c' }}>
+              {syncError}
+            </div>
+          )}
 
-        {aiResult?.summary && (
-          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-            <span className="font-semibold">
-              {aiResult.source === "llm" ? "OpenAI 분석" : "AI fallback 분석"}:
-            </span>{" "}
-            {aiResult.summary.mainMessage}
-          </div>
-        )}
+          {/* AI summary banner */}
+          {aiResult?.summary && (
+            <div style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #bfdbfe', background: '#eff6ff', padding: '12px 16px', fontSize: 14, color: '#1e40af' }}>
+              <span style={{ fontWeight: 700 }}>{aiResult.source === "llm" ? "OpenAI 분석" : "AI fallback 분석"}: </span>
+              {aiResult.summary.mainMessage}
+            </div>
+          )}
 
-        <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {kpis.map((item) => (
-            <Card key={item.title} className="rounded-lg">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between gap-3">
+          {/* KPI Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
+            {kpis.map((item) => (
+              <div key={item.title} style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                   <div>
-                    <p className="text-sm text-slate-500">{item.title}</p>
-                    <p className="mt-2 text-3xl font-bold text-slate-950">
-                      {item.value}
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500">{item.delta}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#8BA68D', margin: '0 0 8px' }}>{item.title}</p>
+                    <p style={{ fontSize: 26, fontWeight: 800, color: DARK_GREEN, margin: '0 0 6px' }}>{item.value}</p>
+                    <p style={{ fontSize: 12, color: '#8BA68D', margin: 0 }}>{item.delta}</p>
                   </div>
-                  <item.icon className={`h-6 w-6 ${item.tone}`} />
+                  <item.icon size={22} color={item.tone} style={{ flexShrink: 0 }} />
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </section>
+              </div>
+            ))}
+          </div>
 
-        <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="rounded-lg lg:col-span-2">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <LineChartIcon className="h-5 w-5 text-blue-600" />
-                  시간대별 방문 흐름
-                </CardTitle>
-                <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 text-sm md:grid-cols-4">
+          {/* Main charts area */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 20 }}>
+            {/* Traffic chart */}
+            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <LineChartIcon size={18} color={DARK_GREEN} />
+                  <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>시간대별 방문 흐름</p>
+                </div>
+                <div style={{ display: 'flex', gap: 4, background: LIGHT_GREEN, borderRadius: 10, padding: 4 }}>
                   {tabLabels.map(([value, label]) => (
                     <button
                       key={value}
-                      type="button"
                       onClick={() => setActiveTab(value)}
-                      className={`rounded-md px-3 py-2 font-medium transition ${
-                        activeTab === value
-                          ? "bg-white text-blue-700 shadow-sm"
-                          : "text-slate-600"
-                      }`}
+                      style={{
+                        padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
+                        background: activeTab === value ? '#fff' : 'transparent',
+                        color: activeTab === value ? DARK_GREEN : '#8BA68D',
+                        boxShadow: activeTab === value ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                      }}
                     >
                       {label}
                     </button>
                   ))}
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[330px]">
+              <div style={{ height: 300 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={trafficByHour}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis
-                      dataKey="time"
-                      tick={{ fill: "#64748b", fontSize: 12 }}
-                    />
-                    <YAxis tick={{ fill: "#64748b", fontSize: 12 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={LIGHT_GREEN} />
+                    <XAxis dataKey="time" tick={{ fill: '#8BA68D', fontSize: 12 }} />
+                    <YAxis tick={{ fill: '#8BA68D', fontSize: 12 }} />
                     <Tooltip />
-                    <Bar
-                      dataKey="visitors"
-                      name="방문 인원"
-                      fill="#2563eb"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Line
-                      dataKey="recommended"
-                      name="추천 인원"
-                      stroke="#f97316"
-                      strokeWidth={3}
-                      strokeDasharray="5 5"
-                    />
-                    <Line
-                      dataKey="wait"
-                      name="예상 대기"
-                      stroke="#7c3aed"
-                      strokeWidth={2}
-                      dot={false}
-                    />
+                    <Bar dataKey="visitors" name="방문 인원" fill={GREEN} radius={[4, 4, 0, 0]} />
+                    <Line dataKey="recommended" name="추천 인원" stroke="#F97316" strokeWidth={3} strokeDasharray="5 5" />
+                    <Line dataKey="wait" name="예상 대기" stroke="#8B5CF6" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-orange-500" />
-                현재 진단
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
-                <p className="text-sm font-medium text-orange-700">
-                  가장 혼잡한 시간
-                </p>
-                <p className="mt-1 text-3xl font-bold text-orange-950">
-                  {peakHour.time}
-                </p>
-                <p className="mt-2 text-sm text-orange-800">
-                  방문 {peakHour.visitors}명, 추천 배치 {peakHour.recommended}
-                  명, 예상 대기 {peakHour.wait}분
+            {/* Current diagnosis */}
+            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <Zap size={18} color="#F97316" />
+                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>현재 진단</p>
+              </div>
+              <div style={{ background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', padding: '14px 16px', marginBottom: 12 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#c2410c', marginBottom: 4 }}>가장 혼잡한 시간</p>
+                <p style={{ fontSize: 28, fontWeight: 800, color: '#7c2d12', margin: '0 0 8px' }}>{peakHour.time}</p>
+                <p style={{ fontSize: 13, color: '#c2410c', margin: 0 }}>
+                  방문 {peakHour.visitors}명, 추천 배치 {peakHour.recommended}명, 예상 대기 {peakHour.wait}분
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border p-3">
-                  <Calendar className="mb-2 h-5 w-5 text-blue-600" />
-                  <p className="text-sm text-slate-500">마지막 분석</p>
-                  <p className="font-semibold">
-                    {metrics?.lastMeasuredAt
-                      ? metrics.lastMeasuredAt.slice(11, 19)
-                      : "-"}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${LIGHT_GREEN}` }}>
+                  <Calendar size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
+                  <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>마지막 분석</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>
+                    {metrics?.lastMeasuredAt ? metrics.lastMeasuredAt.slice(11, 19) : "-"}
                   </p>
                 </div>
-                <div className="rounded-lg border p-3">
-                  <Wallet className="mb-2 h-5 w-5 text-blue-600" />
-                  <p className="text-sm text-slate-500">AI 출처</p>
-                  <p className="font-semibold">{aiResult?.source || "대기"}</p>
+                <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${LIGHT_GREEN}` }}>
+                  <Wallet size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
+                  <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>AI 출처</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>{aiResult?.source || "대기"}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </section>
+            </div>
+          </div>
 
-        {activeTab === "pattern" && (
-          <Card className="mb-6 rounded-lg">
-            <CardHeader>
-              <CardTitle>요일별 방문 패턴</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
+          {/* Weekly pattern tab */}
+          {activeTab === "pattern" && (
+            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 20 }}>
+              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 16 }}>요일별 방문 패턴</p>
+              <div style={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={weeklyPattern}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
+                    <CartesianGrid strokeDasharray="3 3" stroke={LIGHT_GREEN} />
+                    <XAxis dataKey="day" tick={{ fill: '#8BA68D' }} />
+                    <YAxis tick={{ fill: '#8BA68D' }} />
                     <Tooltip />
-                    <Area
-                      dataKey="morning"
-                      stackId="1"
-                      name="오전"
-                      stroke="#60a5fa"
-                      fill="#93c5fd"
-                    />
-                    <Area
-                      dataKey="lunch"
-                      stackId="1"
-                      name="점심"
-                      stroke="#22c55e"
-                      fill="#86efac"
-                    />
-                    <Area
-                      dataKey="evening"
-                      stackId="1"
-                      name="저녁"
-                      stroke="#f97316"
-                      fill="#fdba74"
-                    />
+                    <Area dataKey="morning" stackId="1" name="오전" stroke="#60a5fa" fill="#93c5fd" />
+                    <Area dataKey="lunch" stackId="1" name="점심" stroke="#22c55e" fill="#86efac" />
+                    <Area dataKey="evening" stackId="1" name="저녁" stroke="#f97316" fill="#fdba74" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )}
 
-        <section className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="rounded-lg lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-blue-600" />
-                AI 인사이트
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {renderedInsights.map((insight) => (
-                <div key={insight.title} className="rounded-lg border p-4">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <Badge variant="outline">{insight.label}</Badge>
-                        <Badge className={severityClass(insight.impact)}>
-                          {insight.impact}
-                        </Badge>
+          {/* AI Insights + Operating Metrics */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 20 }}>
+            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <Sparkles size={18} color={DARK_GREEN} />
+                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>AI 인사이트</p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {renderedInsights.map((insight) => (
+                  <div key={insight.title} style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '14px 16px', border: `1px solid ${LIGHT_GREEN}` }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                          <Badge variant="outline">{insight.label}</Badge>
+                          <Badge className={severityClass(insight.impact)}>{insight.impact}</Badge>
+                        </div>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: '0 0 4px' }}>{insight.title}</p>
+                        <p style={{ fontSize: 13, color: '#8BA68D', margin: 0, lineHeight: 1.5 }}>{insight.body}</p>
                       </div>
-                      <h3 className="font-semibold text-slate-950">
-                        {insight.title}
-                      </h3>
-                      <p className="mt-1 text-sm leading-6 text-slate-600">
-                        {insight.body}
-                      </p>
+                      <Button variant="outline" style={{ border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 8, fontSize: 13, flexShrink: 0 }}>
+                        <CheckCircle2 size={14} style={{ marginRight: 4 }} />
+                        {insight.action}
+                      </Button>
                     </div>
-                    <Button variant="outline" className="shrink-0 gap-2">
-                      <CheckCircle2 className="h-4 w-4" />
-                      {insight.action}
-                    </Button>
                   </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                ))}
+              </div>
+            </div>
 
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-emerald-600" />
-                운영 지표
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {operatingMetrics.map((metric) => (
-                <div key={metric.label}>
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="text-slate-600">{metric.label}</span>
-                    <span className="font-medium text-slate-950">
-                      {metric.value}
-                    </span>
+            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <BarChart3 size={18} color={GREEN} />
+                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>운영 지표</p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {operatingMetrics.map((metric) => (
+                  <div key={metric.label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+                      <span style={{ color: '#8BA68D' }}>{metric.label}</span>
+                      <span style={{ fontWeight: 700, color: textColor }}>{metric.value}</span>
+                    </div>
+                    <div style={{ height: 8, borderRadius: 999, background: LIGHT_GREEN }}>
+                      <div style={{ height: 8, borderRadius: 999, background: metric.color, width: metric.width }} />
+                    </div>
                   </div>
-                  <div className="h-2 rounded-full bg-slate-100">
-                    <div
-                      className={`h-2 rounded-full ${metric.color}`}
-                      style={{ width: metric.width }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </section>
+                ))}
+              </div>
+            </div>
+          </div>
 
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-orange-600" />
-              AI 스케줄 추천
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
-                <thead className="border-b text-slate-500">
-                  <tr>
-                    <th className="py-3 font-medium">시간대</th>
-                    <th className="py-3 font-medium">현재 인원</th>
-                    <th className="py-3 font-medium">추천 배치</th>
-                    <th className="py-3 font-medium">상태</th>
-                    <th className="py-3 font-medium">추천 이유</th>
+          {/* Schedule Recommendations Table */}
+          <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <TrendingUp size={18} color="#F97316" />
+              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>AI 스케줄 추천</p>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
+                <thead>
+                  <tr style={{ background: LIGHT_GREEN }}>
+                    {['시간대', '현재 인원', '추천 배치', '상태', '추천 이유'].map(col => (
+                      <th key={col} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>{col}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {scheduleRecommendations.map((row) => (
-                    <tr key={row.time} className="border-b last:border-0">
-                      <td className="py-4 font-semibold text-slate-950">
-                        {row.time}
+                  {scheduleRecommendations.map((row, idx) => (
+                    <tr key={row.time} style={{ borderBottom: `1px solid ${LIGHT_GREEN}`, background: idx % 2 === 0 ? 'rgba(230,245,200,0.2)' : 'transparent' }}>
+                      <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 700, color: textColor }}>{row.time}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 14, color: '#8BA68D' }}>{row.current}명</td>
+                      <td style={{ padding: '12px 16px', fontSize: 14, color: textColor, fontWeight: 600 }}>{row.recommended}명</td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <Badge className={severityClass(row.status)}>{row.status}</Badge>
                       </td>
-                      <td className="py-4 text-slate-600">{row.current}명</td>
-                      <td className="py-4 text-slate-950">
-                        {row.recommended}명
-                      </td>
-                      <td className="py-4">
-                        <Badge className={severityClass(row.status)}>
-                          {row.status}
-                        </Badge>
-                      </td>
-                      <td className="py-4 text-slate-600">{row.reason}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#8BA68D' }}>{row.reason}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </CardContent>
-        </Card>
-      </main>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

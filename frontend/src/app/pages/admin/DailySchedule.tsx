@@ -4,12 +4,14 @@ import axios from "axios";
 import {
   Calendar, Clock, User,
   AlertCircle, CheckCircle, XCircle,
-  Plus, Phone, Trash2, X, ChevronLeft
+  Plus, Phone, Trash2, X,
+  UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { useTheme } from 'next-themes';
+import { useLocation } from 'react-router-dom';
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
@@ -37,11 +39,35 @@ interface Employee {
 
 const DailySchedule: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { branchId, date } = useParams<{ branchId: string; date: string }>();
   const language = useLanguage();
   const t = translations.dailySchedule[language];
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+
+  const menuItems = [
+    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
+    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
+    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
+    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
+    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
+    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
+    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+  ];
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+      .then(r => r.json())
+      .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
+      .catch(() => {});
+  }, []);
 
   const [selectedDate, setSelectedDate] = useState(
     date || new Date().toISOString().split("T")[0],
@@ -49,6 +75,7 @@ const DailySchedule: React.FC = () => {
   const [shifts, setShifts] = useState<ShiftVO[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [storeHours, setStoreHours] = useState({ open: '09:00', close: '22:00' });
 
   // 모달 상태
   const [modalOpen, setModalOpen] = useState(false);
@@ -92,6 +119,16 @@ const DailySchedule: React.FC = () => {
       setEmployees(Array.isArray(res.data) ? res.data : []);
     } catch {}
   };
+
+  useEffect(() => {
+    if (!branchId) return;
+    API.get(`/store/${branchId}`)
+      .then(res => {
+        const d = res.data || {};
+        if (d.open_time && d.close_time) setStoreHours({ open: d.open_time, close: d.close_time });
+      })
+      .catch(() => {});
+  }, [branchId]);
 
   const getEmployeeName = (user_id: string) =>
     employees.find(e => e.id === user_id)?.name ?? t.unknown;
@@ -177,22 +214,6 @@ const DailySchedule: React.FC = () => {
     else alert(t.noPhone);
   };
 
-  // 시간별 그룹화
-  const groupByHour = () => {
-    const hours: { [key: string]: ShiftVO[] } = {};
-    for (let i = 0; i < 24; i++) {
-      const hour = i.toString().padStart(2, "0") + ":00";
-      hours[hour] = shifts.filter((s) => {
-        const startHour = parseInt(formatTime(s.start_at).split(":")[0]);
-        const endHour = parseInt(formatTime(s.end_at).split(":")[0]);
-        return i >= startHour && i < endHour;
-      });
-    }
-    return hours;
-  };
-
-  const hourlySchedule = groupByHour();
-
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; icon: React.ReactNode }> = {
       confirmed: { bg: GREEN, icon: <CheckCircle size={11} /> },
@@ -222,37 +243,117 @@ const DailySchedule: React.FC = () => {
       }, 0),
   };
 
+  // 타임테이블 레이아웃 계산
+  const toMin = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+  const HOUR_HEIGHT = 80;
+  let openMin = toMin(storeHours.open);
+  let closeMin = toMin(storeHours.close);
+  if (closeMin <= openMin) closeMin = openMin + 60; // 안전장치
+  // 근무가 영업시간 밖이면 범위 확장
+  shifts.forEach((s) => {
+    const sm = toMin(formatTime(s.start_at));
+    const em = toMin(formatTime(s.end_at));
+    if (sm < openMin) openMin = sm;
+    if (em > closeMin) closeMin = em;
+  });
+  openMin = Math.floor(openMin / 60) * 60;
+  closeMin = Math.ceil(closeMin / 60) * 60;
+  const hourCount = Math.max(1, Math.round((closeMin - openMin) / 60));
+  const timelineHeight = hourCount * HOUR_HEIGHT;
+  const hourLabels = Array.from({ length: hourCount + 1 }, (_, i) => openMin + i * 60);
+
+  // 겹치는 근무를 옆으로 배치 (lane packing)
+  type Positioned = { shift: typeof shifts[number]; startMin: number; endMin: number; lane: number; lanes: number };
+  const positioned: Positioned[] = (() => {
+    const sorted = [...shifts]
+      .map((s) => ({ shift: s, startMin: toMin(formatTime(s.start_at)), endMin: toMin(formatTime(s.end_at)) }))
+      .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+    const result: Positioned[] = [];
+    let cluster: typeof sorted = [];
+    let clusterEnd = -1;
+    const flush = () => {
+      if (cluster.length === 0) return;
+      const laneEnds: number[] = [];
+      const assigned = cluster.map((c) => {
+        let lane = laneEnds.findIndex((end) => end <= c.startMin);
+        if (lane === -1) { lane = laneEnds.length; laneEnds.push(c.endMin); }
+        else laneEnds[lane] = c.endMin;
+        return { ...c, lane };
+      });
+      const lanes = laneEnds.length;
+      assigned.forEach((a) => result.push({ ...a, lanes }));
+      cluster = [];
+      clusterEnd = -1;
+    };
+    sorted.forEach((c) => {
+      if (cluster.length > 0 && c.startMin >= clusterEnd) flush();
+      cluster.push(c);
+      clusterEnd = Math.max(clusterEnd, c.endMin);
+    });
+    flush();
+    return result;
+  })();
+
   const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const cardBg = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const cardBg = isDark ? '#2c2c2e' : 'rgba(230,245,200,0.35)';
   const textColor = isDark ? '#fff' : '#111';
   const subTextColor = isDark ? '#aaa' : '#555';
+  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
   const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? '#3a3a3c' : '#fff', color: textColor, fontSize: 14, boxSizing: 'border-box' as const };
 
   return (
     <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
-      <AdminHeader>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button onClick={() => navigate(-1)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
-              <ChevronLeft size={20} />
+      <AdminHeader />
+      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
+        {/* 사이드바 */}
+        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: sidebarBg, borderRadius: 20, border: `1px solid ${sidebarBorder}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
+          <div style={{ marginBottom: 16, position: 'relative' }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
+              <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
-            <div>
-              <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB' }}>{t.title}</h1>
-              <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{t.subtitle}</p>
-            </div>
+            {branchDropdownOpen && (
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+                {stores.map(s => (
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#3a3a3c' : LIGHT_GREEN}` }}>
+                    {s.name}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <button onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-            <Plus size={16} />{t.addShift}
-          </button>
+          {menuItems.map(({ icon: Icon, label, path }) => {
+            const isActive = path.includes('/schedule/') ? location.pathname.includes('/admin/schedule/') : (location.pathname === path || location.pathname.startsWith(path));
+            return (
+              <button key={label} onClick={() => navigate(path)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, border: 'none', marginBottom: 4, cursor: 'pointer', fontSize: 14, fontWeight: isActive ? 700 : 500, background: isActive ? GREEN : 'transparent', color: isActive ? '#fff' : textColor, transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}>
+                <Icon size={16} />
+                {label}
+              </button>
+            );
+          })}
         </div>
-      </AdminHeader>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 40px' }}>
+        {/* 메인 카드 */}
+        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN }}>{t.title}</h1>
+              <p style={{ fontSize: 14, color: subTextColor, marginTop: 4 }}>{t.subtitle}</p>
+            </div>
+            <button onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: GREEN, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              <Plus size={16} />{t.addShift}
+            </button>
+          </div>
         {/* 날짜 + 뷰전환 */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+          <style>{`#ds-date-input::-webkit-calendar-picker-indicator{display:none;-webkit-appearance:none;}`}</style>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '10px 16px' }}>
-            <Calendar size={18} color={DARK_GREEN} />
-            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ border: 'none', background: 'transparent', fontSize: 14, color: textColor, outline: 'none' }} />
+            <Calendar size={18} color={DARK_GREEN} style={{ cursor: 'pointer' }} onClick={() => { const el = document.getElementById('ds-date-input') as HTMLInputElement | null; el?.showPicker?.(); }} />
+            <input id="ds-date-input" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ border: 'none', background: 'transparent', fontSize: 14, color: textColor, outline: 'none' }} />
           </div>
           <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}>
             {t.monthlyView}
@@ -294,45 +395,70 @@ const DailySchedule: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {Object.entries(hourlySchedule).map(([hour, assignments]) => {
-                if (assignments.length === 0) return null;
-                return (
-                  <div key={hour} style={{ borderLeft: `4px solid ${DARK_GREEN}`, paddingLeft: 16, paddingTop: 4, paddingBottom: 4 }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 10 }}>{hour}</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
-                      {assignments.map((shift) => (
-                        <div key={shift.id} style={{ background: isDark ? '#3a3a3c' : '#f8fff4', border: `1px solid ${BORDER_GREEN}`, borderRadius: 16, padding: 16 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <User size={14} color={subTextColor} />
-                              <span style={{ fontWeight: 700, fontSize: 14, color: textColor }}>{getEmployeeName(shift.user_id)}</span>
-                            </div>
-                            {getStatusBadge(shift.status)}
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: subTextColor, marginBottom: 12 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={12} />{formatTime(shift.start_at)} - {formatTime(shift.end_at)}</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Phone size={12} />{getEmployeePhone(shift.user_id) || '-'}</div>
-                          </div>
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button onClick={() => openEditModal(shift)} style={{ flex: 1, padding: '8px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, fontSize: 12, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.editBtn}</button>
-                            <button onClick={() => handleContact(shift.user_id)} style={{ flex: 1, padding: '8px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, fontSize: 12, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.contactBtn}</button>
-                            <button onClick={() => handleDelete(shift.id)} style={{ padding: '8px 12px', background: 'none', border: '1px solid #fca5a5', borderRadius: 10, color: '#ef4444', cursor: 'pointer' }}><Trash2 size={12} /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+            <div style={{ display: 'flex', position: 'relative', width: '100%', minHeight: timelineHeight, paddingBottom: 24 }}>
+              {/* 시간 눈금 */}
+              <div style={{ width: 56, flexShrink: 0, position: 'relative' }}>
+                {hourLabels.map((m, i) => (
+                  <div key={m} style={{ position: 'absolute', top: i * HOUR_HEIGHT - 8, right: 8, fontSize: 13, fontWeight: 600, color: subTextColor }}>
+                    {String(Math.floor(m / 60) % 24).padStart(2, '0')}:{String(m % 60).padStart(2, '0')}
                   </div>
-                );
-              })}
+                ))}
+              </div>
+              {/* 타임라인 */}
+              <div style={{ flex: 1, position: 'relative', height: timelineHeight }}>
+                {/* 시간선 */}
+                {hourLabels.map((m, i) => (
+                  <div key={m} style={{ position: 'absolute', top: i * HOUR_HEIGHT, left: 0, right: 0, borderTop: `1px dashed ${isDark ? '#3a3a3c' : '#d6e8c0'}` }} />
+                ))}
+                {/* 근무 카드 */}
+                {positioned.map(({ shift, startMin, endMin, lane }) => {
+                  const CARD_WIDTH = 190;
+                  const LANE_GAP = 8;
+                  const top = ((startMin - openMin) / 60) * HOUR_HEIGHT;
+                  const height = Math.max(132, ((endMin - startMin) / 60) * HOUR_HEIGHT - 4);
+                  const accent = BORDER_GREEN;
+                  return (
+                    <div
+                      key={shift.id}
+                      onClick={() => openEditModal(shift)}
+                      style={{
+                        position: 'absolute',
+                        top: top + 2,
+                        left: 6 + lane * (CARD_WIDTH + LANE_GAP),
+                        width: CARD_WIDTH,
+                        height,
+                        background: isDark ? '#3a3a3c' : '#f8fff4',
+                        border: `1px solid ${accent}`,
+                        borderRadius: 12,
+                        padding: '8px 10px',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, flex: 1 }}>
+                          <User size={14} color={accent} style={{ flexShrink: 0 }} />
+                          <span style={{ fontWeight: 700, fontSize: 15, color: textColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{getEmployeeName(shift.user_id)}</span>
+                        </div>
+                        <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{getStatusBadge(shift.status)}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: subTextColor, marginTop: 4 }}>
+                        <Clock size={13} />{formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); openEditModal(shift); }} style={{ width: '100%', marginTop: 8, padding: '6px 0', background: GREEN, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>{t.editBtn}</button>
+                      <div style={{ position: 'absolute', left: 10, right: 10, bottom: 8, display: 'flex', gap: 6 }}>
+                        <button onClick={(e) => { e.stopPropagation(); handleContact(shift.user_id); }} style={{ flex: 1, padding: '5px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, fontSize: 13, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.contactBtn}</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(shift.id); }} style={{ padding: '5px 9px', background: 'none', border: '1px solid #fca5a5', borderRadius: 8, color: '#ef4444', cursor: 'pointer' }}><Trash2 size={13} /></button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
 
-        <div style={{ marginTop: 24 }}>
-          <button style={{ width: '100%', padding: '14px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer' }} onClick={() => navigate(`/admin/substitute/${branchId}`)}>
-            {t.substituteManagement}
-          </button>
         </div>
       </div>
 

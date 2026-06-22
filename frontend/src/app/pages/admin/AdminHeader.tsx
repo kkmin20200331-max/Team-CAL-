@@ -48,7 +48,10 @@ export default function AdminHeader({ children }: Props) {
         <img
           src={logoMap[language]} alt="logo"
           style={{ height: 60, width: 'auto', objectFit: 'contain', cursor: 'pointer' }}
-          onClick={() => navigate('/admin/branch-selection')}
+          onClick={() => {
+            const storeId = sessionStorage.getItem('store_id');
+            navigate(storeId ? `/admin/dashboard/${storeId}` : '/admin/branch-selection');
+          }}
         />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
@@ -76,7 +79,7 @@ export default function AdminHeader({ children }: Props) {
       {children && (
         <div style={{
           background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`,
-          padding: '36px 40px 48px',
+          padding: '24px 40px 28px',
           color: '#fff',
         }}>
           {children}
