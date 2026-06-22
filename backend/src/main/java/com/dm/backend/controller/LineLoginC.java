@@ -4,7 +4,6 @@ import com.dm.backend.service.LineLoginService;
 import com.dm.backend.service.UserLineService;
 import com.dm.backend.vo.LineProfileVO;
 import com.dm.backend.vo.UserLineVO;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.view.RedirectView;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/line")
@@ -35,22 +37,24 @@ public class LineLoginC {
 
     @GetMapping("/login")
     public RedirectView lineLogin(
-            @RequestParam String userId,
-            HttpSession session
+            @RequestParam String userId
     ) {
-
-        session.setAttribute(
-                "line_link_user_id",
-                userId
-        );
-
 
         String url =
                 "https://access.line.me/oauth2/v2.1/authorize"
                         + "?response_type=code"
                         + "&client_id=" + clientId
-                        + "&redirect_uri=" + redirectUri
+                        + "&redirect_uri="
+                        + URLEncoder.encode(
+                        redirectUri,
+                        StandardCharsets.UTF_8
+                )
+                        + "&state=" + userId
                         + "&scope=profile%20openid";
+
+        System.out.println(
+                "LINE LOGIN URL = " + url
+        );
 
         return new RedirectView(url);
     }
@@ -61,74 +65,133 @@ public class LineLoginC {
 
     @GetMapping("/callback")
     public RedirectView callback(
-            @RequestParam String code,
-            HttpSession session
+
+            @RequestParam(required = false)
+            String code,
+
+            @RequestParam(required = false)
+            String state,
+
+            @RequestParam(required = false)
+            String error,
+
+            @RequestParam(required = false)
+            String error_description
+
     ) {
 
+        System.out.println(
+                "CODE = " + code
+        );
+
+        System.out.println(
+                "STATE(USER_ID) = " + state
+        );
+
+        System.out.println(
+                "ERROR = " + error
+        );
+
+        System.out.println(
+                "ERROR_DESCRIPTION = "
+                        + error_description
+        );
+
         // =========================
-        // 현재 로그인 사용자
+        // 로그인 취소
         // =========================
 
-        String userId =
-                (String) session.getAttribute(
-                        "line_link_user_id"
-                );
-
-        if(userId == null){
+        if (code == null) {
 
             return new RedirectView(
-                    "http://localhost:5173/auth/login"
+                    "http://localhost:5173/line/error?message="
+                            + URLEncoder.encode(
+                            "LINE 로그인이 취소되었습니다.",
+                            StandardCharsets.UTF_8
+                    )
             );
         }
 
-        // =========================
-        // 1. Access Token 발급
-        // =========================
+        String userId = state;
 
-        String accessToken =
-                lineLoginService.getAccessToken(
-                        code
-                );
+        if (userId == null) {
 
-        // =========================
-        // 2. Profile 조회
-        // =========================
+            return new RedirectView(
+                    "http://localhost:5173/line/error?message="
+                            + URLEncoder.encode(
+                            "사용자 정보를 찾을 수 없습니다.",
+                            StandardCharsets.UTF_8
+                    )
+            );
+        }
 
-        LineProfileVO profile =
-                lineLoginService.getProfile(
-                        accessToken
-                );
+        try {
 
-        System.out.println(
-                "LINE USER ID = "
-                        + profile.getUserId()
-        );
+            // =========================
+            // Access Token 발급
+            // =========================
 
-        // =========================
-        // 3. USER_LINE 저장
-        // =========================
+            String accessToken =
+                    lineLoginService.getAccessToken(
+                            code
+                    );
 
-        UserLineVO vo =
-                new UserLineVO();
+            // =========================
+            // Profile 조회
+            // =========================
 
-        vo.setUser_id(
-                userId
-        );
+            LineProfileVO profile =
+                    lineLoginService.getProfile(
+                            accessToken
+                    );
 
-        vo.setLine_user_id(
-                profile.getUserId()
-        );
+            System.out.println(
+                    "LINE USER ID = "
+                            + profile.getUserId()
+            );
 
-        userLineService.register(
-                vo
-        );
+            // =========================
+            // USER_LINE 저장
+            // =========================
 
-        // =========================
-        // 친구추가 페이지 이동
-        // =========================
+            UserLineVO vo =
+                    new UserLineVO();
 
-        return new RedirectView(
-                "http://localhost:5173/line/friend-add"
-        );
+            vo.setUser_id(
+                    userId
+            );
+
+            vo.setLine_user_id(
+                    profile.getUserId()
+            );
+
+            userLineService.register(
+                    vo
+            );
+
+            System.out.println(
+                    "USER_LINE 저장 완료"
+            );
+
+            // =========================
+            // 친구추가 페이지
+            // =========================
+
+            return new RedirectView(
+                    "https://line.me/R/ti/p/@354cpsdr"
+            );
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return new RedirectView(
+                    "http://localhost:5173/line/error?message="
+                            + URLEncoder.encode(
+                            e.getMessage(),
+                            StandardCharsets.UTF_8
+                    )
+            );
+        }
     }
 }
