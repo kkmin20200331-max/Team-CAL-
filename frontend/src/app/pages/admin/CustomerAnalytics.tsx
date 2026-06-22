@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Activity,
   BarChart3,
+  Video,
   Brain,
   Calendar,
   CheckCircle2,
@@ -318,6 +319,7 @@ export default function CustomerAnalytics() {
     { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
     { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
     { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
   ];
 
   const storeId = resolveStoreId(branchId);

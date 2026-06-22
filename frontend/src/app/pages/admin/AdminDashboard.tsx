@@ -669,6 +669,11 @@ export default function AdminDashboard() {
       label: t.menuItems.aiAnalytics,
       path: `/admin/analytics/${branchId}`,
     },
+    {
+      icon: Video,
+      label: t.menuItems.cctvAnalysis,
+      path: `/admin/cctv/${branchId}`,
+    },
   ];
 
   return (
