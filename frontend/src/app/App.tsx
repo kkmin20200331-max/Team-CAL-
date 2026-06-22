@@ -40,6 +40,7 @@ import SubstituteList from "./pages/employee/SubstituteList";
 import EmployeePayroll from "./pages/employee/EmployeePayroll";
 import EmployeeBoard from "./pages/employee/EmployeeBoard";
 import EditProfile from "./pages/employee/EditProfile";
+import LineError from "./pages/auth/LineError";
 
 export default function App() {
   const [apiMessage, setApiMessage] = useState(
@@ -75,7 +76,7 @@ export default function App() {
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/signup" element={<SignUp />} />
-
+          <Route path="/line/error" element={<LineError />} />
           {/* Admin routes */}
           <Route
             path="/admin/branch-selection"

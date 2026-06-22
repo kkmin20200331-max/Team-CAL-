@@ -19,23 +19,17 @@ import java.nio.charset.StandardCharsets;
 @RequestMapping("/api/line")
 public class LineLoginC {
 
-
     @Value("${line.login.channel-id}")
     private String clientId;
-
 
     @Value("${line.login.redirect-uri}")
     private String redirectUri;
 
-
     @Autowired
     private LineLoginService lineLoginService;
 
-
     @Autowired
     private UserLineService userLineService;
-
-
 
     // =========================
     // LINE 로그인 시작
@@ -46,38 +40,24 @@ public class LineLoginC {
             @RequestParam String userId
     ) {
 
-
         String url =
                 "https://access.line.me/oauth2/v2.1/authorize"
                         + "?response_type=code"
-
-                        + "&client_id="
-                        + clientId
-
+                        + "&client_id=" + clientId
                         + "&redirect_uri="
                         + URLEncoder.encode(
                         redirectUri,
                         StandardCharsets.UTF_8
                 )
-
-                        // 우리 서비스 USER_ID 전달
-                        + "&state="
-                        + userId
-
+                        + "&state=" + userId
                         + "&scope=profile%20openid";
 
-
         System.out.println(
-                "LINE LOGIN URL = "
-                        + url
+                "LINE LOGIN URL = " + url
         );
-
 
         return new RedirectView(url);
     }
-
-
-
 
     // =========================
     // LINE Callback
@@ -100,132 +80,118 @@ public class LineLoginC {
 
     ) {
 
-
         System.out.println(
-                "CODE = "
-                        + code
+                "CODE = " + code
         );
 
-
         System.out.println(
-                "STATE(USER_ID) = "
-                        + state
+                "STATE(USER_ID) = " + state
         );
 
-
         System.out.println(
-                "ERROR = "
-                        + error
+                "ERROR = " + error
         );
-
 
         System.out.println(
                 "ERROR_DESCRIPTION = "
                         + error_description
         );
 
-
-
         // =========================
-        // 로그인 취소 처리
+        // 로그인 취소
         // =========================
 
-        if(code == null){
+        if (code == null) {
 
             return new RedirectView(
-                    "http://localhost:5173/auth/login"
+                    "http://localhost:5173/line/error?message="
+                            + URLEncoder.encode(
+                            "LINE 로그인이 취소되었습니다.",
+                            StandardCharsets.UTF_8
+                    )
             );
         }
-
-
-
-
-        // =========================
-        // 우리 서비스 USER_ID
-        // =========================
 
         String userId = state;
 
-
-
-        if(userId == null){
+        if (userId == null) {
 
             return new RedirectView(
-                    "http://localhost:5173/auth/login"
+                    "http://localhost:5173/line/error?message="
+                            + URLEncoder.encode(
+                            "사용자 정보를 찾을 수 없습니다.",
+                            StandardCharsets.UTF_8
+                    )
             );
         }
 
+        try {
 
+            // =========================
+            // Access Token 발급
+            // =========================
 
+            String accessToken =
+                    lineLoginService.getAccessToken(
+                            code
+                    );
 
-        // =========================
-        // 1. LINE Access Token 발급
-        // =========================
+            // =========================
+            // Profile 조회
+            // =========================
 
-        String accessToken =
-                lineLoginService.getAccessToken(
-                        code
-                );
+            LineProfileVO profile =
+                    lineLoginService.getProfile(
+                            accessToken
+                    );
 
+            System.out.println(
+                    "LINE USER ID = "
+                            + profile.getUserId()
+            );
 
+            // =========================
+            // USER_LINE 저장
+            // =========================
 
+            UserLineVO vo =
+                    new UserLineVO();
 
-        // =========================
-        // 2. LINE Profile 조회
-        // =========================
+            vo.setUser_id(
+                    userId
+            );
 
-        LineProfileVO profile =
-                lineLoginService.getProfile(
-                        accessToken
-                );
+            vo.setLine_user_id(
+                    profile.getUserId()
+            );
 
+            userLineService.register(
+                    vo
+            );
 
-        System.out.println(
-                "LINE USER ID = "
-                        + profile.getUserId()
-        );
+            System.out.println(
+                    "USER_LINE 저장 완료"
+            );
 
+            // =========================
+            // 친구추가 페이지
+            // =========================
 
+            return new RedirectView(
+                    "https://line.me/R/ti/p/@354cpsdr"
+            );
 
+        } catch (Exception e) {
 
-        // =========================
-        // 3. USER_LINE 저장
-        // =========================
+            e.printStackTrace();
 
-        UserLineVO vo =
-                new UserLineVO();
-
-
-        vo.setUser_id(
-                userId
-        );
-
-
-        vo.setLine_user_id(
-                profile.getUserId()
-        );
-
-
-        userLineService.register(
-                vo
-        );
-
-
-
-        System.out.println(
-                "USER_LINE 저장 완료"
-        );
-
-
-
-        // =========================
-        // 친구추가 페이지 이동
-        // =========================
-
-        return new RedirectView(
-                "https://line.me/R/ti/p/@354cpsdr"
-        );
-
+            return new RedirectView(
+                    "http://localhost:5173/line/error?message="
+                            + URLEncoder.encode(
+                            e.getMessage(),
+                            StandardCharsets.UTF_8
+                    )
+            );
+        }
     }
-
 }
