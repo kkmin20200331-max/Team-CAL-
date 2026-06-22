@@ -17,7 +17,6 @@ import {
   FileText,
   MessageSquare,
   BarChart3,
-  Video,
   Loader2,
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
@@ -906,7 +905,7 @@ export default function AdminDashboard() {
             </button>
           ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
