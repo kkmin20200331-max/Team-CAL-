@@ -37,6 +37,23 @@ public interface LeaveRequestMapper {
             """)
     List<LeaveRequestVO> getLeaveRequestList(String store_id);
 
+    @Select("""
+            SELECT lr.*
+            FROM leave_request lr
+            JOIN shift s
+                ON lr.shift_id = s.id
+            WHERE s.store_id = #{store_id}
+            AND s.work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+            AND s.work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND lr.status = 'APPROVED'
+            ORDER BY s.work_date
+            """)
+    List<LeaveRequestVO> getApprovedLeaveRequestsForPeriod(
+            @Param("store_id") String store_id,
+            @Param("start_date") String start_date,
+            @Param("end_date") String end_date
+    );
+
     // 휴무 신청 승인/거절 처리
     @Update("""
             UPDATE leave_request

@@ -8,6 +8,7 @@ from app.api.camera_router import router as camera_router
 from app.api.health_router import router as health_router
 from app.api.inference_router import router as inference_router
 from app.api.java_compat_router import router as java_compat_router
+from app.api.schedule_generation_router import router as schedule_generation_router
 from app.core.config import settings
 from app.services.spring_client import spring_client
 
@@ -33,6 +34,7 @@ app.include_router(health_router)
 app.include_router(ai_insight_router, prefix="/api/v1")
 app.include_router(camera_router, prefix="/api/v1")
 app.include_router(inference_router, prefix="/api/v1")
+app.include_router(schedule_generation_router, prefix="/api/v1")
 app.include_router(java_compat_router)
 app.mount("/web", StaticFiles(directory="app/web"), name="web")
 

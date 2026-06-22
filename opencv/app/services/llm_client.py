@@ -23,6 +23,92 @@ class LlmClient:
             return self._call_gemini(payload)
         return None
 
+    def generate_schedule_explanations(self, payload: dict[str, Any]) -> dict[str, Any] | None:
+        provider = settings.llm_provider.lower()
+        if provider == "openai" and settings.openai_api_key:
+            return self._call_openai_schedule_explanations(payload)
+        if provider == "gemini" and settings.gemini_api_key:
+            return self._call_gemini_schedule_explanations(payload)
+        return None
+
+    def _call_openai_schedule_explanations(self, payload: dict[str, Any]) -> dict[str, Any] | None:
+        body = {
+            "model": settings.openai_model,
+            "messages": [
+                {"role": "system", "content": self._schedule_explain_prompt()},
+                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.2,
+        }
+        headers = {
+            "Authorization": f"Bearer {settings.openai_api_key}",
+            "Content-Type": "application/json",
+        }
+        with httpx.Client(timeout=settings.llm_timeout_sec) as client:
+            response = client.post("https://api.openai.com/v1/chat/completions", headers=headers, json=body)
+            response.raise_for_status()
+            content = response.json()["choices"][0]["message"]["content"]
+            return json.loads(content)
+
+    def _call_gemini_schedule_explanations(self, payload: dict[str, Any]) -> dict[str, Any] | None:
+        body = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [
+                        {
+                            "text": (
+                                self._schedule_explain_prompt()
+                                + "\n\nInput JSON:\n"
+                                + json.dumps(payload, ensure_ascii=False)
+                            )
+                        }
+                    ],
+                }
+            ],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "temperature": 0.2,
+            },
+        }
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{settings.gemini_model}:generateContent?key={settings.gemini_api_key}"
+        )
+        with httpx.Client(timeout=settings.llm_timeout_sec) as client:
+            response = client.post(url, json=body)
+            response.raise_for_status()
+            content = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+            return json.loads(content)
+
+    def _schedule_explain_prompt(self) -> str:
+        return """
+You write schedule assignment explanations for Korean store managers.
+
+Return exactly one JSON object. Do not use markdown.
+
+Input has generatedShifts. Each item can include shiftId, workDate, startAt, endAt,
+expectedPeopleCount, requiredStaff, assignedStaff, userLevel, isClosingTime,
+and newbieSoloAvoided.
+
+For every shiftId, write one concise Korean reason. Include the concrete date,
+time range, expected people count, required staff count, and assignment rationale.
+If isClosingTime is true and userLevel is CLOSER or MANAGER, mention that closing-capable
+staff was prioritized. If newbieSoloAvoided is true, mention that a new employee was
+not left working alone. Do not invent missing facts.
+
+Return shape:
+{
+  "reasons": [
+    {
+      "shiftId": "string",
+      "reason": "string"
+    }
+  ]
+}
+""".strip()
+
     def _call_openai(self, payload: dict[str, Any]) -> dict[str, Any] | None:
         body = {
             "model": settings.openai_model,
