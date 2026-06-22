@@ -218,71 +218,6 @@ const getIdleRow = (rows: CustomerTrendRow[]) =>
 const getKoreanWeekday = () =>
   new Date().toLocaleDateString("ko-KR", { weekday: "long" });
 
-/*
-Previous client-side dashboard AI payload builder removed.
-const legacyDashboardAiPayload = (context: DashboardOperationContext, storeId: number, storeName: string) => {
-  const rows = context.rows;
-  const peak = getPeakRow(rows);
-  const totalVisitors = rows.reduce((sum, row) => sum + row.customers, 0);
-  const maxCustomers = Math.max(...rows.map((row) => row.customers), 0);
-  const avgCustomers = Math.max(1, Math.round(totalVisitors / Math.max(rows.length, 1)));
-
-  return {
-    storeId,
-    storeName,
-    storeType: 'CAFE',
-    storeTypeLabel: '카페',
-    date: toDateStr(new Date()),
-    current: {
-      currentCustomerCount: peak.customers,
-      todayTotalVisitors: totalVisitors,
-      conversionRate: 0,
-      processedFrames: 0,
-      confidenceAvg: 0
-    },
-    cameraAggregates: rows.map((row) => ({
-      time: row.time,
-      avgCustomerCount: row.customers,
-      maxCustomerCount: row.customers,
-      minCustomerCount: Math.max(0, row.customers - 2),
-      lastCustomerCount: row.customers,
-      workingStaffCount: row.staff,
-      recommendedStaffCount: Math.max(1, Math.ceil(row.customers / 15)),
-      waitMinutes: Math.max(0, Math.ceil(row.customers / 8))
-    })),
-    historicalBaseline: {
-      sameDayAverageVisitors: Math.max(totalVisitors, 1),
-      averagePeakCustomerCount: Math.max(maxCustomers, avgCustomers)
-    },
-    pos: {
-      conversionRate: 0,
-      hourlyOrders: rows.map((row) => ({
-        time: row.time,
-        orderCount: 0,
-        conversionRate: 0
-      }))
-    },
-    staffSchedule: rows.map((row) => {
-      const hour = Number(row.time.slice(0, 2));
-      return {
-        timeRange: `${row.time}-${String(hour + 1).padStart(2, '0')}:00`,
-        currentStaff: row.staff
-      };
-    }),
-    externalFactors: {
-      source: 'admin-dashboard',
-      dashboardSummary: {
-        totalEmployees: context.totalEmployees,
-        todayShiftCount: context.todayShifts.length,
-        checkedIn: context.checkedIn,
-        substituteCount: context.substituteCount,
-        estimatedPay: context.estimatedPay
-      }
-    }
-  };
-};
-
-*/
 const buildFallbackRecommendations = (
   context: DashboardOperationContext,
 ): OperationRecommendation[] => {
@@ -619,10 +554,10 @@ export default function AdminDashboard() {
   const pageBg = isDark
     ? "linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)"
     : "linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)";
-  const textColor = isDark ? "#fff" : "#111";
   const subTextColor = isDark ? "#aaa" : "#666";
   const sidebarBg = isDark ? "rgba(44,44,46,0.95)" : "rgba(255,255,255,0.85)";
   const sidebarBorder = isDark ? "#3a3a3c" : BORDER_GREEN;
+  const cardBg = isDark ? "rgba(44,44,46,0.6)" : "rgba(230,245,200,0.35)";
 
   const getStatusBadgeStyle = (status: string) => {
     const s = (status || "").toUpperCase();
