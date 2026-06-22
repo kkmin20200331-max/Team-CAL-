@@ -2,19 +2,22 @@ package com.dm.backend.controller;
 
 import com.dm.backend.service.BoardCommentService;
 import com.dm.backend.vo.BoardCommentVO;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/board/comment")
+@RequiredArgsConstructor
 public class BoardCommentC {
 
-    @Autowired
-    private BoardCommentService boardCommentService;
+    private final BoardCommentService boardCommentService;
 
-    // 댓글 목록 조회
+    // =========================
+    // [공통]
+    // =========================
+
     @GetMapping
     public List<BoardCommentVO> getCommentList(
             @RequestParam String post_id
@@ -22,15 +25,20 @@ public class BoardCommentC {
         return boardCommentService.getCommentList(post_id);
     }
 
-    // 댓글 등록
+    // =========================
+    // [직원]
+    // =========================
+
     @PostMapping
-    public void createComment(
-            @RequestBody BoardCommentVO boardCommentVO
-    ) {
-        boardCommentService.createComment(boardCommentVO);
+    public void createComment(@RequestBody BoardCommentVO vo) {
+        boardCommentService.createComment(vo);
     }
 
-    // 댓글 삭제
+    @PutMapping
+    public void updateComment(@RequestBody BoardCommentVO vo) {
+        boardCommentService.updateComment(vo);
+    }
+
     @DeleteMapping
     public void deleteComment(
             @RequestParam String id,

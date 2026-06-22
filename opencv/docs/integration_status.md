@@ -1,6 +1,6 @@
 # 현재 연동 상태
 
-최종 갱신일: 2026-06-15
+최종 갱신일: 2026-06-16
 
 ## 개요
 
@@ -213,6 +213,13 @@ GET /api/people_log
 
 `/api/people_log` 매핑은 React 프론트엔드가 기존 `/api/**` CORS 정책 안에서 조회할 수 있도록 추가했습니다.
 
+`PEOPLE_LOG.RECORD_TIME`은 Oracle `TIMESTAMP` 컬럼입니다. 날짜 범위 조회는 문자열 묵시 변환에 의존하지 않도록 Mapper에서 다음처럼 명시적으로 비교합니다.
+
+```sql
+RECORD_TIME BETWEEN TO_TIMESTAMP(#{start_date}, 'YYYY-MM-DD HH24:MI:SS')
+AND TO_TIMESTAMP(#{end_date}, 'YYYY-MM-DD HH24:MI:SS')
+```
+
 ## React CCTV 제어 화면 동기화
 
 CCTV 제어 화면은 버튼 클릭 결과만 믿지 않습니다.
@@ -276,6 +283,8 @@ GET /api/cctv/aggregate/latest
 ### 요일별 방문 패턴
 
 고객 분석 화면의 `요일별 방문 패턴`은 고정 더미 배열이 아니라 이번 주 `people_log`를 조회해 집계합니다.
+
+이 조회는 `weeklyQuery`로 분리되어 있으며, 주간 방문 패턴 차트에만 사용합니다. AI 인사이트 분석 payload에는 이 주간 조회 결과를 사용하지 않습니다.
 
 조회 범위:
 
@@ -396,9 +405,18 @@ FastAPI AI 분석 API도 호출하지만, 메인 대시보드는 화면 성격�
 
 2. 수동 `새로고침` 버튼
    - 최신 운영 데이터를 다시 조회합니다.
-   - Spring에 `store_id`, `shift_store_id`, 조회 기간만 전달합니다.
+   - Spring에 `store_id`, `shift_store_id`, 오늘 날짜 기준 조회 기간만 전달합니다.
    - Spring이 DB를 조회해 `AiInsightAnalyzeRequest` 형태의 payload를 만듭니다.
    - Spring이 FastAPI LLM 인사이트 API를 호출합니다.
+
+오늘이 2026-06-16이면 AI 분석용 `people_log` 조회 범위는 다음처럼 하루 범위로 고정됩니다.
+
+```text
+start_date=2026-06-16 00:00:00
+end_date=2026-06-16 23:59:59
+```
+
+이번 주 월요일~일요일 범위 조회는 `요일별 방문 패턴` 차트 전용입니다.
 
 수동 새로고침 흐름:
 

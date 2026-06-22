@@ -1,0 +1,68 @@
+.line-error-container {
+  width: 100%;
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: #f5f7fb;
+}
+
+.line-error-card {
+  width: 420px;
+
+  background: white;
+
+  padding: 40px;
+
+  border-radius: 20px;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+  text-align: center;
+}
+
+.line-error-icon {
+  font-size: 60px;
+  margin-bottom: 16px;
+}
+
+.line-error-card h2 {
+  margin-bottom: 12px;
+
+  font-size: 24px;
+  font-weight: 700;
+
+  color: #e53935;
+}
+
+.line-error-card p {
+  margin-bottom: 24px;
+
+  color: #666;
+  line-height: 1.6;
+}
+
+.line-error-btn {
+  width: 100%;
+
+  padding: 12px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #06c755;
+  color: white;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+.line-error-btn:hover {
+  opacity: 0.9;
+}

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -101,5 +102,22 @@ public class AttendanceService {
         // =========================
 
         return "이미 퇴근 처리되었습니다.";
+    }
+
+    // =========================
+    // 월별 출퇴근 조회
+    // =========================
+
+    public List<AttendanceVO> getMonthlyAttendance(
+            String store_id,
+            String user_id,
+            String yearMonth
+    ) {
+
+        return attendanceMapper.getMonthlyAttendance(
+                store_id,
+                user_id,
+                yearMonth
+        );
     }
 }
