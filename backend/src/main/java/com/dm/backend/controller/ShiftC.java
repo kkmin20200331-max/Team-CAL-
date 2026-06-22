@@ -1,6 +1,8 @@
 package com.dm.backend.controller;
 
 import com.dm.backend.service.ShiftService;
+import com.dm.backend.vo.AiSchedulePreviewVO;
+import com.dm.backend.vo.AiScheduleRequestVO;
 import com.dm.backend.vo.ShiftVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -82,6 +84,20 @@ public class ShiftC {
                 start_date,
                 end_date
         );
+    }
+
+    @PostMapping("/ai-preview")
+    public AiSchedulePreviewVO previewAiSchedule(
+            @RequestBody AiScheduleRequestVO request
+    ) {
+        return shiftService.previewAiSchedule(request);
+    }
+
+    @PostMapping("/ai-apply")
+    public void applyAiSchedule(
+            @RequestBody AiScheduleRequestVO request
+    ) {
+        shiftService.applyAiSchedule(request);
     }
 
 
