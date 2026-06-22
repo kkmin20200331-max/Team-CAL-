@@ -147,4 +147,20 @@ public interface UserLineMapper {
     void delete(
             String user_id
     );
+
+    // =========================
+    // shift_id → OWNER LINE USER ID 조회
+    // (shift → user → line_user_id)
+    // =========================
+    @Select("""
+        SELECT ul.LINE_USER_ID
+        FROM USER_LINE ul
+        JOIN SHIFT s
+            ON s.USER_ID = ul.USER_ID
+        WHERE s.ID = #{shift_id}
+        AND ul.FOLLOW_YN = 'Y'
+    """)
+    String getOwnerLineUserIdByShiftId(String shift_id);
+
+
 }
