@@ -1,13 +1,13 @@
 import axios from 'axios';
 
 // ✅ [수정] baseURL을 다시 내부 IP 주소로 변경합니다.
-// const NGROK_URL = 'https://imitate-flock-specimen.ngrok-free.dev/api'; // ngrok 주소 주석 처리
-const LOCAL_URL = 'http://172.30.1.62:8080/api';
+const NGROK_URL = 'https://imitate-flock-specimen.ngrok-free.dev/api'; // ngrok 주소 주석 처리
+// const LOCAL_URL = 'http://172.30.1.62:8080/api';
 
 // ✅ [수정] API 인스턴스를 다른 파일에서 import할 수 있도록 export합니다.
 export const API = axios.create({
-  baseURL: LOCAL_URL,
-  // baseURL: NGROK_URL,
+  // baseURL: LOCAL_URL,
+  baseURL: NGROK_URL,
   timeout: 10000, // ✅ [추가] 10초 이상 서버 응답이 없으면 에러로 처리 (무한 로딩 방지)
   headers: {
     'Content-Type': 'application/json',

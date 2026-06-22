@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ScrollView, Switch, KeyboardAvoidingView, Platform, Modal, Pressable, ActivityIndicator } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { signupAPI, getAllStoresAPI, applyForStoreAPI } from '../../../api/auth';
+import { signupAPI } from '../../../api/auth';
 import axios from 'axios';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,32 +41,7 @@ export default function SignupScreen({ navigation, route }: Props) {
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'openTime' | 'closeTime'>('openTime');
-  const [stores, setStores] = useState<any[]>([]);
-  const [selectedStore, setSelectedStore] = useState<any>(null);
-  const [isStoreModalVisible, setStoreModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (role === 'STAFF') {
-      const fetchStores = async () => {
-        setLoading(true);
-        try {
-          const res = await getAllStoresAPI();
-          setStores(res.data);
-          if (res.data.length === 0) {
-            Alert.alert("알림", "현재 가입하여 근무 신청할 수 있는 매장이 없습니다. 관리자에게 문의하세요.", [{ text: "확인", onPress: () => navigation.goBack() }]);
-          }
-        } catch (error) {
-          console.error("매장 목록을 불러오는 중 오류 발생:", error);
-          Alert.alert("오류", "매장 목록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
-          navigation.goBack();
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchStores();
-    }
-  }, [role, navigation]);
 
   const handleInputChange = (name: string, value: any) => {
     setInputs(prev => ({ ...prev, [name]: value }));
@@ -99,10 +74,6 @@ export default function SignupScreen({ navigation, route }: Props) {
       Alert.alert("입력 오류", "브랜드명, 지점명, 주소는 필수 항목입니다.");
       return;
     }
-    if (role === 'STAFF' && (!selectedStore || !selectedStore.id)) {
-      Alert.alert("입력 오류", "근무할 매장을 선택해주세요.");
-      return;
-    }
     if (password !== passwordCheck) {
       Alert.alert("비밀번호 오류", "비밀번호가 일치하지 않습니다.");
       return;
@@ -118,7 +89,7 @@ export default function SignupScreen({ navigation, route }: Props) {
         name,
         phone,
         role,
-        status: role === 'ADMIN' ? 'ACTIVE' : 'PENDING',
+        status: 'ACTIVE', // 가입 시 일단 ACTIVE, 직원은 매장 선택 후 PENDING으로 변경됨
       };
 
       if (role === 'ADMIN') {
@@ -133,24 +104,15 @@ export default function SignupScreen({ navigation, route }: Props) {
       
       const response = await signupAPI(signupData);
 
-      if (role === 'STAFF') {
-        await applyForStoreAPI({
-          id: `sm-${Date.now().toString(36)}`,
-          store_id: selectedStore.id,
-          user_id: tempUserId,
-          member_role: 'STAFF',
-          user_level: 1,
-          approval_status: 'PENDING',
-          pay_type: 'HOURLY',
-          pay_amount: 0,
-        });
-        Alert.alert("가입 완료", "관리자의 승인을 기다려주세요. 로그인 화면으로 이동합니다.");
-        navigation.navigate('Login');
-      } else { // role === 'ADMIN'
+      Toast.show({ type: 'success', text1: '가입 성공', text2: `${name}님 환영합니다!` });
+
+      if (role === 'ADMIN') {
         const userInfoForLogin = { ...signupData, store_id: response.data?.store_id };
         login(userInfoForLogin, true);
+      } else { // role === 'STAFF'
+        Alert.alert("가입 완료", "이제 로그인 후 근무할 매장을 선택해주세요.");
+        navigation.navigate('Login');
       }
-      Toast.show({ type: 'success', text1: '가입 성공', text2: `${name}님 환영합니다!` });
 
     } catch (error) {
       console.error('회원가입 에러:', error);
@@ -163,9 +125,9 @@ export default function SignupScreen({ navigation, route }: Props) {
     }
   };
 
-  if (loading && role === 'STAFF' && !isStoreModalVisible) {
+  if (loading) {
     return (
-      <SafeAreaView style={styles.container}><View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.primary} /><Text style={styles.loadingText}>매장 목록을 불러오는 중...</Text></View></SafeAreaView>
+      <SafeAreaView style={styles.container}><View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.primary} /><Text style={styles.loadingText}>처리 중...</Text></View></SafeAreaView>
     );
   }
 
@@ -186,10 +148,6 @@ export default function SignupScreen({ navigation, route }: Props) {
           <TextInput style={styles.input} placeholder="이름 (예: 김선민)" placeholderTextColor={colors.subText} value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
           <TextInput style={styles.input} placeholder="전화번호 (예: 010-1234-5678)" placeholderTextColor={colors.subText} value={inputs.phone} onChangeText={(text) => handleInputChange('phone', text)} keyboardType="phone-pad" />
 
-          {role === 'STAFF' && (
-            <><Text style={styles.sectionTitle}>근무 희망 매장 선택</Text><TouchableOpacity style={styles.pickerButton} onPress={() => setStoreModalVisible(true)}><Text style={styles.pickerButtonText}>{selectedStore ? selectedStore.name : '매장을 선택해주세요'}</Text><Text style={styles.pickerButtonIcon}>▼</Text></TouchableOpacity></>
-          )}
-
           {role === 'ADMIN' && (
             <><Text style={styles.sectionTitle}>매장 정보</Text><Text style={styles.label}>업종 카테고리</Text><TouchableOpacity style={styles.pickerButton} onPress={() => setCategoryModalVisible(true)}><Text style={styles.pickerButtonText}>{storeCategory}</Text><Text style={styles.pickerButtonIcon}>▼</Text></TouchableOpacity><TextInput style={styles.input} placeholder="브랜드명 (예: 컴포즈커피)" placeholderTextColor={colors.subText} value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} /><TextInput style={styles.input} placeholder="지점명 (예: 미금점)" placeholderTextColor={colors.subText} value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} /><TextInput style={styles.input} placeholder="매장 주소" placeholderTextColor={colors.subText} value={inputs.address} onChangeText={(text) => handleInputChange('address', text)} /><View style={styles.timeContainer}><View style={styles.timeInputWrapper}><Text style={styles.label}>오픈 시간</Text><TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('openTime')}><Text style={styles.timeText}>{formatTime(inputs.openTime)}</Text></TouchableOpacity></View><View style={styles.timeInputWrapper}><Text style={styles.label}>마감 시간</Text><TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('closeTime')}><Text style={styles.timeText}>{formatTime(inputs.closeTime)}</Text></TouchableOpacity></View></View><Text style={styles.label}>최대 수용 인원 (선택)</Text><TextInput style={styles.input} placeholder="숫자만 입력" placeholderTextColor={colors.subText} value={inputs.capacity} onChangeText={(text) => handleInputChange('capacity', text)} keyboardType="number-pad" /></>
           )}
@@ -199,7 +157,6 @@ export default function SignupScreen({ navigation, route }: Props) {
       </KeyboardAvoidingView>
 
       <Modal animationType="fade" transparent={true} visible={isCategoryModalVisible} onRequestClose={() => setCategoryModalVisible(false)}><Pressable style={styles.modalOverlay} onPress={() => setCategoryModalVisible(false)}><View style={styles.modalContent}><Text style={styles.modalTitle}>업종 선택</Text>{STORE_CATEGORIES.map((cat) => (<TouchableOpacity key={cat} style={[styles.modalOption, storeCategory === cat && styles.modalOptionSelected]} onPress={() => { setStoreCategory(cat); setCategoryModalVisible(false); }}><Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>{cat}</Text></TouchableOpacity>))}</View></Pressable></Modal>
-      <Modal animationType="fade" transparent={true} visible={isStoreModalVisible} onRequestClose={() => setStoreModalVisible(false)}><Pressable style={styles.modalOverlay} onPress={() => setStoreModalVisible(false)}><View style={styles.modalContent}><Text style={styles.modalTitle}>매장 선택</Text><ScrollView>{stores.map((store) => (<TouchableOpacity key={store.id} style={[styles.modalOption, selectedStore?.id === store.id && styles.modalOptionSelected]} onPress={() => { setSelectedStore(store); setStoreModalVisible(false); }}><Text style={[styles.modalOptionText, selectedStore?.id === store.id && styles.modalOptionTextSelected]}>{store.name}</Text></TouchableOpacity>))}</ScrollView></View></Pressable></Modal>
       {isTimePickerVisible && (<TimePickerModal isVisible={isTimePickerVisible} initialDate={pickerTarget === 'openTime' ? inputs.openTime : inputs.closeTime} onClose={() => setTimePickerVisible(false)} onConfirm={handleTimeConfirm} />)}
     </SafeAreaView>
   );
