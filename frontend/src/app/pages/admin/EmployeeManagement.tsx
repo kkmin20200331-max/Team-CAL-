@@ -17,6 +17,7 @@ import {
   FileText,
   MessageSquare,
   BarChart3,
+  Video,
 } from "lucide-react";
 import AdminHeader from "./AdminHeader";
 import { useTheme } from "next-themes";
@@ -87,6 +88,7 @@ export default function EmployeeManagement() {
     { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
     { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
     { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
   ];
 
   useEffect(() => {

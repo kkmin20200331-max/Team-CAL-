@@ -153,6 +153,10 @@ export default function ProfilePanel() {
   // ── 대타 지원 알림 ──
   const [substituteApps, setSubstituteApps] = useState<SubstitutePendingApp[]>([]);
 
+  // ── 게시판 푸시 알림 ──
+  interface BoardNotification { id: string; title: string; content: string; store_id: string; created_at: string; is_read: string; }
+  const [boardNotifications, setBoardNotifications] = useState<BoardNotification[]>([]);
+
   // 패널 열릴 때 → 모든 관리 매장의 알림 fetch
   useEffect(() => {
     if (!open || !currentUser.id) return;
@@ -256,6 +260,13 @@ export default function ProfilePanel() {
 
         await Promise.allSettled(appFetches);
         setSubstituteApps(allPendingApps);
+
+        // ── 게시판 푸시 알림 ──
+        if (currentUser.id) {
+          API.get('/notification', { params: { user_id: currentUser.id } })
+            .then(r => setBoardNotifications(Array.isArray(r.data) ? r.data.filter((n: any) => n.is_read === 'N') : []))
+            .catch(() => {});
+        }
       })
       .catch(err => console.error('[ProfilePanel] 알림 조회 실패:', err));
   }, [open]);
@@ -349,7 +360,7 @@ export default function ProfilePanel() {
     }
   };
 
-  const totalBadge = pendingList.length + leaveRequests.length + substituteApps.length;
+  const totalBadge = pendingList.length + leaveRequests.length + substituteApps.length + boardNotifications.length;
 
   return (
     <>
@@ -530,6 +541,30 @@ export default function ProfilePanel() {
                     </div>
                   );
                 })}
+
+                {/* ── 게시판 푸시 알림 ── */}
+                {boardNotifications.map(notif => (
+                  <div
+                    key={notif.id}
+                    className="rounded-xl p-3 space-y-1"
+                    style={{ border: `1px solid #00A200`, background: isDark ? 'rgba(24,160,34,0.12)' : '#E6F5C8' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: '#07790F' }}>
+                        <Bell className="w-3 h-3" />게시판 알림
+                      </div>
+                      <button
+                        onClick={() => {
+                          fetch(`http://localhost:8080/api/notification/read?id=${notif.id}`, { method: 'PUT' }).catch(() => {});
+                          setBoardNotifications(prev => prev.filter(n => n.id !== notif.id));
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontSize: 12 }}
+                      >✕</button>
+                    </div>
+                    <p className="font-semibold text-xs" style={{ color: textMain }}>{notif.title}</p>
+                    {notif.content && <p className="text-xs" style={{ color: textSub }}>{notif.content}</p>}
+                  </div>
+                ))}
 
                 {/* ── 휴무 신청 ── */}
                 {leaveRequests.map(leave => {

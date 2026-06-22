@@ -16,6 +16,7 @@ import {
   FileText,
   MessageSquare,
   BarChart3,
+  Video,
   Loader2,
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
@@ -633,6 +634,7 @@ export default function AdminDashboard() {
     { icon: FileText, label: t.menuItems.documentManagement, path: `/admin/documents/${branchId}` },
     { icon: MessageSquare, label: t.menuItems.board, path: `/admin/board/${branchId}` },
     { icon: BarChart3, label: t.menuItems.aiAnalytics, path: `/admin/analytics/${branchId}` },
+    { icon: Video, label: t.menuItems.cctvAnalysis, path: `/admin/cctv/${branchId}` },
   ];
 
   return (
