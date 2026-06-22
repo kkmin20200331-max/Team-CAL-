@@ -36,8 +36,8 @@ public interface PeopleLogMapper {
         SELECT *
         FROM PEOPLE_LOG
         WHERE STORE_ID = #{store_id}
-        AND RECORD_TIME BETWEEN #{start_date}
-        AND #{end_date}
+        AND RECORD_TIME BETWEEN TO_TIMESTAMP(#{start_date}, 'YYYY-MM-DD HH24:MI:SS')
+        AND TO_TIMESTAMP(#{end_date}, 'YYYY-MM-DD HH24:MI:SS')
         ORDER BY RECORD_TIME
     """)
     List<PeopleLogVO> getPeopleLogList(

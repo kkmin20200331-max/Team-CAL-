@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
+  ChevronLeft,
   Camera,
   ChevronRight,
   CircleStop,
@@ -16,6 +16,8 @@ import {
   Users,
   Video,
 } from "lucide-react";
+import AdminHeader from "./AdminHeader";
+import { useTheme } from "next-themes";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import {
@@ -115,6 +117,8 @@ const resolveStoreId = (branchId?: string) => {
 export default function CctvAnalysis() {
   const navigate = useNavigate();
   const { branchId } = useParams();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState("-");
@@ -290,56 +294,28 @@ export default function CctvAnalysis() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 md:flex-row md:items-center md:justify-between md:px-6">
-          <div className="flex items-start gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                navigate(`/admin/dashboard/${branchId || "migeum"}`)
-              }
-              aria-label="대시보드로 돌아가기"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button onClick={() => navigate(`/admin/dashboard/${branchId || "migeum"}`)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}><ChevronLeft size={20} /></button>
             <div>
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                <span>{currentBranch}</span>
-                <ChevronRight className="h-4 w-4" />
-                <span>CCTV 분석</span>
-              </div>
-              <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-950 md:text-3xl">
-                <Video className="h-7 w-7 text-blue-600" />
-                CCTV 분석 제어
-              </h1>
-              <p className="mt-1 text-sm text-slate-600">
-                분석 시작 시 Spring 백엔드로 JSON body를 전송하고, Spring이
-                OpenCV 서버의 카메라 루프를 실행합니다.
-              </p>
+              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{currentBranch} <ChevronRight size={12} style={{ display: 'inline' }} /> CCTV 분석</div>
+              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#F2F5EB', display: 'flex', alignItems: 'center', gap: 10 }}><Video size={32} />CCTV 분석 제어</h1>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>분석 시작 시 Spring 백엔드로 JSON body를 전송하고, Spring이 OpenCV 서버의 카메라 루프를 실행합니다.</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="gap-2" onClick={handleSave}>
-              <Save className="h-4 w-4" />
-              설정 저장
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button variant="outline" className="gap-2" onClick={handleSave} style={{ border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: '#fff' }}>
+              <Save className="h-4 w-4" />설정 저장
             </Button>
-            <Button
-              className={`gap-2 ${isRunning ? "bg-red-600 hover:bg-red-700" : ""}`}
-              disabled={isSubmitting}
-              onClick={isRunning ? handleStop : handleStart}
-            >
-              {isRunning ? (
-                <CircleStop className="h-4 w-4" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
+            <Button className={`gap-2`} disabled={isSubmitting} onClick={isRunning ? handleStop : handleStart} style={{ background: isRunning ? '#dc2626' : 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: '#fff' }}>
+              {isRunning ? <CircleStop className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               {isSubmitting ? "요청 중" : isRunning ? "분석 중지" : "분석 시작"}
             </Button>
           </div>
         </div>
-      </header>
+      </AdminHeader>
 
       <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
         {errorMessage && (

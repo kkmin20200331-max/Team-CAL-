@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useLocation } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import {
-  ChevronLeft, ChevronRight, Search, Calendar
+  ChevronLeft, ChevronRight, Search, Calendar,
+  UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3
 } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -96,11 +97,35 @@ const getStatusStyle = (status: string, isDark: boolean) => {
 
 export default function WeeklySchedule() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { branchId } = useParams();
   const language = useLanguage();
   const t = translations.weeklySchedule[language];
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+
+  const menuItems = [
+    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
+    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
+    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
+    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
+    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
+    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
+    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+  ];
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+      .then(r => r.json())
+      .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
+      .catch(() => {});
+  }, []);
 
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -165,32 +190,56 @@ export default function WeeklySchedule() {
   const textColor = isDark ? '#fff' : '#111';
   const subTextColor = isDark ? '#aaa' : '#555';
   const cellBorder = isDark ? '#3a3a3c' : '#d4edda';
+  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
 
   return (
     <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
-      <AdminHeader>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button onClick={() => navigate(`/admin/dashboard/${branchId}`)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
-              <ChevronLeft size={20} />
+      <AdminHeader />
+      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
+        {/* 사이드바 */}
+        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: sidebarBg, borderRadius: 20, border: `1px solid ${sidebarBorder}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
+          <div style={{ marginBottom: 16, position: 'relative' }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
+              <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
+            {branchDropdownOpen && (
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+                {stores.map(s => (
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#3a3a3c' : LIGHT_GREEN}` }}>
+                    {s.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {menuItems.map(({ icon: Icon, label, path }) => {
+            const isActive = path.includes('/schedule/') ? location.pathname.includes('/admin/schedule/') : (location.pathname === path || location.pathname.startsWith(path));
+            return (
+              <button key={label} onClick={() => navigate(path)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, border: 'none', marginBottom: 4, cursor: 'pointer', fontSize: 14, fontWeight: isActive ? 700 : 500, background: isActive ? GREEN : 'transparent', color: isActive ? '#fff' : textColor, transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}>
+                <Icon size={16} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 메인 카드 */}
+        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB' }}>{t.title}</h1>
-              <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN }}>{t.title}</h1>
+              <p style={{ fontSize: 14, color: subTextColor, marginTop: 4 }}>
                 {format(weekDates[0], "yyyy년 M월 d일", { locale: ko })} - {format(weekDates[6], "M월 d일", { locale: ko })}
               </p>
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button onClick={() => setCurrentWeek(prev => addDays(prev, -7))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronLeft size={18} /></button>
+              <button onClick={() => setCurrentWeek(new Date())} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, padding: '6px 16px', color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t.today}</button>
+              <button onClick={() => setCurrentWeek(prev => addDays(prev, 7))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronRight size={18} /></button>
+            </div>
           </div>
-          {/* 주 이동 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={() => setCurrentWeek(prev => addDays(prev, -7))} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}><ChevronLeft size={18} /></button>
-            <button onClick={() => setCurrentWeek(new Date())} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 20, padding: '6px 16px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t.today}</button>
-            <button onClick={() => setCurrentWeek(prev => addDays(prev, 7))} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}><ChevronRight size={18} /></button>
-          </div>
-        </div>
-      </AdminHeader>
-
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 40px' }}>
         {/* 검색 + 범례 */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
@@ -317,10 +366,6 @@ export default function WeeklySchedule() {
           </div>
         </div>
 
-        <div style={{ marginTop: 24 }}>
-          <button style={{ width: '100%', padding: '14px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 16, fontWeight: 600, cursor: 'pointer' }} onClick={() => navigate(`/admin/substitute/${branchId}`)}>
-            대타 근무자 관리
-          </button>
         </div>
       </div>
     </div>
