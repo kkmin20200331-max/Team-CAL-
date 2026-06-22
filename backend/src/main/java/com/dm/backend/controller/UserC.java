@@ -5,8 +5,6 @@ import com.dm.backend.vo.UserVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 import java.util.Map;
 
@@ -98,12 +96,13 @@ public class UserC {
     // =========================
 
     @PostMapping("/{id}/profile-image")
-    public ResponseEntity<?> uploadProfileImage(
+    public ResponseEntity<?> updateProfileImageUrl(
             @PathVariable String id,
-            @RequestParam("file") MultipartFile file
+            @RequestBody Map<String, String> body
     ) {
         try {
-            String url = userservice.uploadProfileImage(id, file);
+            String url = body.get("profile_image");
+            userservice.updateProfileImageUrl(id, url);
             return ResponseEntity.ok(Map.of("profile_image", url));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));

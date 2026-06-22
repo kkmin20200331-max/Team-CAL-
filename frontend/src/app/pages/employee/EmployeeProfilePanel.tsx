@@ -1,4 +1,10 @@
 import { useState, useRef } from "react";
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  'https://ibspdrfjncacwrpslckb.supabase.co',
+  'sb_secret_W6zz0sf66YsJfR6VudJNaQ_MQcddHwo'
+);
 import { useNavigate } from "react-router";
 import { useTheme } from "next-themes";
 import { X, Camera, LogOut, MapPin, User, Pencil } from "lucide-react";
@@ -129,20 +135,21 @@ export default function EmployeeProfilePanel() {
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !currentUser?.id) return;
-    const formData = new FormData();
-    formData.append('file', file);
     try {
-      const res = await fetch(`http://localhost:8080/api/users/${currentUser.id}/profile-image`, {
+      const ext = file.name.split('.').pop();
+      const path = `profile/${currentUser.id}.${ext}`;
+      const { error } = await supabase.storage.from('documents').upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
+      const url = urlData.publicUrl;
+      await fetch(`http://localhost:8080/api/users/${currentUser.id}/profile-image`, {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_image: url }),
       });
-      if (!res.ok) throw new Error('업로드 실패');
-      const data = await res.json();
-      const url: string = data.profile_image;
       setProfileImage(url);
       const updatedUser = { ...currentUser, profile_image: url };
       sessionStorage.setItem('user', JSON.stringify(updatedUser));
-      sessionStorage.removeItem('employee_profile_image');
     } catch (err) {
       console.error('프로필 이미지 업로드 실패:', err);
     }
