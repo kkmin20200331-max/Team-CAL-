@@ -47,42 +47,59 @@ public interface AttendanceMapper {
             @Param("start_date") Date start_date,
             @Param("end_date") Date end_date
     );
+    // =========================
+    // 월별 출퇴근 내역
+    // =========================
+
+    @Select("""
+                SELECT *
+                FROM ATTENDANCE
+                WHERE STORE_ID = #{store_id}
+                AND USER_ID = #{user_id}
+                AND TO_CHAR(WORK_DATE,'YYYY-MM') = #{yearMonth}
+                ORDER BY WORK_DATE DESC
+            """)
+    List<AttendanceVO> getMonthlyAttendance(
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id,
+            @Param("yearMonth") String yearMonth
+    );
 
     @Insert("""
-        INSERT INTO ATTENDANCE
-        (
-            ID,
-            STORE_ID,
-            USER_ID,
-            SHIFT_ID,
-            WORK_DATE,
-            CHECK_IN_AT,
-            STATUS
-        )
-        VALUES
-        (
-            #{id},
-            #{store_id},
-            #{user_id},
-            #{shift_id},
-            TRUNC(SYSDATE),
-            #{check_in_at},
-            #{status}
-        )
-    """)
+                INSERT INTO ATTENDANCE
+                (
+                    ID,
+                    STORE_ID,
+                    USER_ID,
+                    SHIFT_ID,
+                    WORK_DATE,
+                    CHECK_IN_AT,
+                    STATUS
+                )
+                VALUES
+                (
+                    #{id},
+                    #{store_id},
+                    #{user_id},
+                    #{shift_id},
+                    TRUNC(SYSDATE),
+                    #{check_in_at},
+                    #{status}
+                )
+            """)
     void checkIn(
             AttendanceVO vo
     );
 
     @Update("""
-        UPDATE ATTENDANCE
-        SET
-            CHECK_OUT_AT = #{check_out_at},
-            WORK_MINUTES = #{work_minutes},
-            OVERTIME_MINUTES = #{overtime_minutes},
-            STATUS = #{status}
-        WHERE ID = #{id}
-    """)
+                UPDATE ATTENDANCE
+                SET
+                    CHECK_OUT_AT = #{check_out_at},
+                    WORK_MINUTES = #{work_minutes},
+                    OVERTIME_MINUTES = #{overtime_minutes},
+                    STATUS = #{status}
+                WHERE ID = #{id}
+            """)
     void checkOut(
             AttendanceVO vo
     );

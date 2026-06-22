@@ -12,7 +12,6 @@ import axios from "axios";
 // Auth pages
 import Login from "./pages/auth/Login";
 import SignUp from "./pages/auth/Signup";
-import LineFriendAdd from "./pages/auth/LineFriendAdd";
 
 // LoginCheck and AdminCheck
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -41,6 +40,7 @@ import SubstituteList from "./pages/employee/SubstituteList";
 import EmployeePayroll from "./pages/employee/EmployeePayroll";
 import EmployeeBoard from "./pages/employee/EmployeeBoard";
 import EditProfile from "./pages/employee/EditProfile";
+import LineError from "./pages/auth/LineError";
 
 export default function App() {
   const [apiMessage, setApiMessage] = useState(
@@ -59,7 +59,11 @@ export default function App() {
   }, []);
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableColorScheme={false}>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableColorScheme={false}
+    >
       <Router>
         <div className="border-b bg-white px-4 py-2 text-sm font-medium text-slate-700">
           {"API \uC0C1\uD0DC"}: {apiMessage}
@@ -72,8 +76,7 @@ export default function App() {
           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/signup" element={<SignUp />} />
-          <Route path="/line/friend-add" element={<LineFriendAdd />} />
-
+          <Route path="/line/error" element={<LineError />} />
           {/* Admin routes */}
           <Route
             path="/admin/branch-selection"

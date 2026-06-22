@@ -1,14 +1,14 @@
 import React from "react";
 
-interface LineLoginButtonProps {
-  role: "ADMIN" | "STAFF";
-}
-
-const LineLoginButton: React.FC<LineLoginButtonProps> = ({ role }) => {
+const LineLoginButton = () => {
   const user = JSON.parse(sessionStorage.getItem("user") || "{}");
   const handleLineLogin = () => {
     // Spring Boot 로그인 시작 API로 이동
-    window.location.href = `http://localhost:8080/api/line/login?userId=${user.id}`;
+    window.open(
+      `http://localhost:8080/api/line/login?userId=${user.id}`,
+      "_blank",
+      "width=500,height=700",
+    );
   };
   return (
     <button
@@ -24,7 +24,7 @@ const LineLoginButton: React.FC<LineLoginButtonProps> = ({ role }) => {
         fontSize: "14px",
       }}
     >
-      LINE으로 로그인 ({role})
+      LINE 로그인
     </button>
   );
 };

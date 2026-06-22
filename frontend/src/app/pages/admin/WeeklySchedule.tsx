@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useLocation } from 'react-router';
 import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Card, CardContent } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Badge } from '../../components/ui/badge';
 import {
-  ChevronLeft, ChevronRight, Search, Calendar
+  ChevronLeft, ChevronRight, Search, Calendar,
+  UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3
 } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import ProfilePanel from './ProfilePanel';
+import AdminHeader from './AdminHeader';
+import { useTheme } from 'next-themes';
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -83,24 +86,46 @@ const formatTime = (isoStr: string) => {
   return isoStr.substring(0, 5);
 };
 
-const getStatusColor = (status: string) => {
+const getStatusStyle = (status: string, isDark: boolean) => {
   switch (status) {
-    case "confirmed":
-      return "bg-blue-100 border-blue-300 text-blue-900 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-200";
-    case "pending":
-      return "bg-yellow-100 border-yellow-300 text-yellow-900 dark:bg-yellow-900/30";
-    case "cancelled":
-      return "bg-red-100 border-red-300 border-dashed text-red-900 dark:bg-red-900/30";
-    default:
-      return "bg-gray-100 border-gray-300 text-gray-900";
+    case "confirmed": return { background: isDark ? 'rgba(24,160,34,0.2)' : '#E6F5C8', border: '2px solid #18A022', color: isDark ? '#4cd964' : '#07790F' };
+    case "pending": return { background: isDark ? 'rgba(245,158,11,0.2)' : '#fef9c3', border: '2px solid #f59e0b', color: '#92400e' };
+    case "cancelled": return { background: isDark ? 'rgba(239,68,68,0.2)' : '#fee2e2', border: '2px dashed #ef4444', color: '#7f1d1d' };
+    default: return { background: isDark ? '#3a3a3c' : '#f3f4f6', border: '2px solid #d1d5db', color: '#111' };
   }
 };
 
 export default function WeeklySchedule() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { branchId } = useParams();
   const language = useLanguage();
   const t = translations.weeklySchedule[language];
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+
+  const menuItems = [
+    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
+    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
+    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
+    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
+    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
+    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
+    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+  ];
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+      .then(r => r.json())
+      .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
+      .catch(() => {});
+  }, []);
 
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -160,254 +185,187 @@ export default function WeeklySchedule() {
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
+  const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const cardBg = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const textColor = isDark ? '#fff' : '#111';
+  const subTextColor = isDark ? '#aaa' : '#555';
+  const cellBorder = isDark ? '#3a3a3c' : '#d4edda';
+  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Row 1: 제목 + 프로필 */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate(`/admin/dashboard/${branchId}`)}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t.title}</h1>
-                <p className="mt-1 text-gray-600 dark:text-gray-400">
-                  {format(weekDates[0], "yyyy년 M월 d일", { locale: ko })} -{" "}
-                  {format(weekDates[6], "M월 d일", { locale: ko })}
-                </p>
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader />
+      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
+        {/* 사이드바 */}
+        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: sidebarBg, borderRadius: 20, border: `1px solid ${sidebarBorder}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
+          <div style={{ marginBottom: 16, position: 'relative' }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
+              <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
+            </button>
+            {branchDropdownOpen && (
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+                {stores.map(s => (
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#3a3a3c' : LIGHT_GREEN}` }}>
+                    {s.name}
+                  </div>
+                ))}
               </div>
-            </div>
-            <ProfilePanel />
+            )}
           </div>
-
-          {/* Row 2: 범례 + 주 이동 */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-blue-100 border-2 border-blue-300 rounded" />
-                <span>{t.legendConfirmed}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-yellow-100 border-2 border-yellow-300 rounded" />
-                <span>{t.legendPending}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-100 border-2 border-dashed border-red-300 rounded" />
-                <span>{t.legendCancelled}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full" />
-                <span className="text-red-600 font-medium">{t.legendHoliday}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setCurrentWeek((prev) => addDays(prev, -7))}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-              <Button variant="outline" onClick={() => setCurrentWeek(new Date())}>{t.today}</Button>
-              <Button variant="outline" size="icon" onClick={() => setCurrentWeek(prev => addDays(prev, 7))}>
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* 검색 */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder={t.searchPlaceholder}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 스케줄 그리드 */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* 뷰 전환 버튼 */}
-        <div className="flex gap-3 mb-4">
-          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}>
-            <Calendar className="w-4 h-4 mr-2" />{t.monthlyView}
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={() => navigate(`/admin/schedule/daily/${branchId}/${format(new Date(), 'yyyy-MM-dd')}`)}>
-            <Calendar className="w-4 h-4 mr-2" />{t.dailyView}
-          </Button>
+          {menuItems.map(({ icon: Icon, label, path }) => {
+            const isActive = path.includes('/schedule/') ? location.pathname.includes('/admin/schedule/') : (location.pathname === path || location.pathname.startsWith(path));
+            return (
+              <button key={label} onClick={() => navigate(path)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, border: 'none', marginBottom: 4, cursor: 'pointer', fontSize: 14, fontWeight: isActive ? 700 : 500, background: isActive ? GREEN : 'transparent', color: isActive ? '#fff' : textColor, transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}>
+                <Icon size={16} />
+                {label}
+              </button>
+            );
+          })}
         </div>
 
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800">
-                    <th className="sticky left-0 z-10 bg-gray-50 dark:bg-gray-800 p-4 text-left border-b border-r border-gray-200 dark:border-gray-700 min-w-[150px]">
-                      {t.employeeName}
-                    </th>
-                    {weekDates.map((date, index) => {
-                      const dateStr = format(date, "yyyy-MM-dd");
-                      const holiday = HOLIDAYS[dateStr];
-                      const isSunday = date.getDay() === 0;
-                      const isSaturday = date.getDay() === 6;
+        {/* 메인 카드 */}
+        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN }}>{t.title}</h1>
+              <p style={{ fontSize: 14, color: subTextColor, marginTop: 4 }}>
+                {format(weekDates[0], "yyyy년 M월 d일", { locale: ko })} - {format(weekDates[6], "M월 d일", { locale: ko })}
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button onClick={() => setCurrentWeek(prev => addDays(prev, -7))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronLeft size={18} /></button>
+              <button onClick={() => setCurrentWeek(new Date())} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, padding: '6px 16px', color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t.today}</button>
+              <button onClick={() => setCurrentWeek(prev => addDays(prev, 7))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronRight size={18} /></button>
+            </div>
+          </div>
+        {/* 검색 + 범례 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13 }}>
+            {[
+              { color: LIGHT_GREEN, border: `2px solid ${GREEN}`, label: t.legendConfirmed },
+              { color: '#fef9c3', border: '2px solid #f59e0b', label: t.legendPending },
+              { color: '#fee2e2', border: '2px dashed #ef4444', label: t.legendCancelled },
+              { color: '#fca5a5', border: 'none', label: t.legendHoliday, dot: true },
+            ].map(({ color, border, label, dot }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, color: subTextColor }}>
+                {dot ? <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} /> : <div style={{ width: 16, height: 16, background: color, border, borderRadius: 4 }} />}
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ position: 'relative' }}>
+            <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: subTextColor }} />
+            <input
+              type="text"
+              placeholder={t.searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#3a3a3c' : '#fff', color: textColor, fontSize: 14, outline: 'none' }}
+            />
+          </div>
+        </div>
 
-                      return (
-                        <th
-                          key={index}
-                          className={`p-4 text-center border-b border-gray-200 dark:border-gray-700 min-w-[130px] cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                            holiday || isSunday
-                              ? "bg-red-50 dark:bg-red-900/10"
-                              : isSaturday
-                                ? "bg-blue-50 dark:bg-blue-900/10"
-                                : ""
-                          }`}
-                          onClick={() =>
-                            navigate(
-                              `/admin/schedule/daily/${branchId}/${dateStr}`,
-                            )
-                          }
-                        >
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span
-                              className={`text-sm font-medium ${holiday || isSunday ? "text-red-500" : isSaturday ? "text-blue-500" : ""}`}
-                            >
-                              {format(date, "EEE", { locale: ko })}
-                            </span>
-                            <span
-                              className={`text-lg font-bold ${holiday || isSunday ? "text-red-600" : isSaturday ? "text-blue-600" : ""}`}
-                            >
-                              {format(date, "d")}
-                            </span>
-                            {holiday && (
-                              <span className="text-xs text-red-500 font-medium leading-tight">
-                                {holiday}
-                              </span>
-                            )}
+        {/* 뷰 전환 */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+          <button onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.monthlyView}</button>
+          <button onClick={() => navigate(`/admin/schedule/daily/${branchId}/${format(new Date(), 'yyyy-MM-dd')}`)} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.dailyView}</button>
+        </div>
+
+        <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: LIGHT_GREEN }}>
+                  <th style={{ position: 'sticky', left: 0, zIndex: 10, background: LIGHT_GREEN, padding: '14px 16px', textAlign: 'left', borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}`, minWidth: 150, fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+                    {t.employeeName}
+                  </th>
+                  {weekDates.map((date, index) => {
+                    const dateStr = format(date, "yyyy-MM-dd");
+                    const holiday = HOLIDAYS[dateStr];
+                    const isSunday = date.getDay() === 0;
+                    const isSaturday = date.getDay() === 6;
+                    const isRed = !!(holiday || isSunday);
+                    return (
+                      <th key={index} onClick={() => navigate(`/admin/schedule/daily/${branchId}/${dateStr}`)}
+                        style={{
+                          padding: '14px 12px', textAlign: 'center', cursor: 'pointer',
+                          borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}`,
+                          minWidth: 120, background: isRed ? 'rgba(254,202,202,0.3)' : isSaturday ? 'rgba(219,234,254,0.3)' : LIGHT_GREEN,
+                        }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: isRed ? '#ef4444' : isSaturday ? '#2563eb' : DARK_GREEN }}>{format(date, "EEE", { locale: ko })}</span>
+                          <span style={{ fontSize: 18, fontWeight: 800, color: isRed ? '#ef4444' : isSaturday ? '#2563eb' : DARK_GREEN }}>{format(date, "d")}</span>
+                          {holiday && <span style={{ fontSize: 10, color: '#ef4444' }}>{holiday}</span>}
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: subTextColor }}>{t.loading}</td></tr>
+                ) : filteredEmployees.length === 0 ? (
+                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: subTextColor }}>{t.noEmployees}</td></tr>
+                ) : (
+                  filteredEmployees.map((employee) => (
+                    <tr key={employee.id}>
+                      <td style={{ position: 'sticky', left: 0, zIndex: 10, background: isDark ? '#2c2c2e' : '#fff', padding: '12px 16px', borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+                            {employee.name[0]}
                           </div>
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={8} className="text-center py-12 text-gray-500">{t.loading}</td>
-                    </tr>
-                  ) : filteredEmployees.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="text-center py-12 text-gray-400">{t.noEmployees}</td>
-                    </tr>
-                  ) : (
-                    filteredEmployees.map((employee) => (
-                      <tr
-                        key={employee.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      >
-                        {/* 직원 정보 */}
-                        <td className="sticky left-0 z-10 bg-white dark:bg-gray-900 p-4 border-b border-r border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-                              {employee.name[0]}
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm">
-                                {employee.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {employee.username}
-                              </p>
-                            </div>
+                          <div>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: textColor }}>{employee.name}</p>
+                            <p style={{ fontSize: 11, color: subTextColor }}>{employee.username}</p>
                           </div>
-                        </td>
-
-                        {/* 요일별 근무 셀 */}
-                        {weekDates.map((date, dateIndex) => {
-                          const dayShifts = getShiftsForEmployee(
-                            employee.id,
-                            date,
-                          );
-                          const dateStr = format(date, "yyyy-MM-dd");
-                          const isHoliday = !!HOLIDAYS[dateStr];
-                          const isSunday = date.getDay() === 0;
-                          const isSaturday = date.getDay() === 6;
-
-                          return (
-                            <td
-                              key={dateIndex}
-                              className={`p-2 border-b border-gray-200 dark:border-gray-700 text-center align-top ${
-                                isHoliday || isSunday
-                                  ? "bg-red-50/30"
-                                  : isSaturday
-                                    ? "bg-blue-50/30"
-                                    : ""
-                              }`}
-                            >
-                              <div className="space-y-1">
-                                {dayShifts.length === 0 ? (
-                                  <div
-                                    className="h-12 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center"
-                                    onClick={() =>
-                                      navigate(
-                                        `/admin/schedule/daily/${branchId}/${dateStr}`,
-                                      )
-                                    }
-                                  />
-                                ) : (
-                                  dayShifts.map((shift) => (
-                                    <div
-                                      key={shift.id}
-                                      className={`p-1.5 rounded-lg border-2 text-xs cursor-pointer transition-all hover:shadow-md ${getStatusColor(shift.status)}`}
-                                      onClick={() =>
-                                        navigate(
-                                          `/admin/schedule/daily/${branchId}/${dateStr}`,
-                                        )
-                                      }
-                                    >
-                                      <div className="font-semibold">{formatTime(shift.start_at)}</div>
-                                      <div className="font-semibold">{formatTime(shift.end_at)}</div>
+                        </div>
+                      </td>
+                      {weekDates.map((date, dateIndex) => {
+                        const dayShifts = getShiftsForEmployee(employee.id, date);
+                        const dateStr = format(date, "yyyy-MM-dd");
+                        const isHoliday = !!HOLIDAYS[dateStr];
+                        const isSunday = date.getDay() === 0;
+                        const isSaturday = date.getDay() === 6;
+                        const isRed = isHoliday || isSunday;
+                        return (
+                          <td key={dateIndex} style={{
+                            padding: 8, borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}`,
+                            textAlign: 'center', verticalAlign: 'top',
+                            background: isRed ? (isDark ? 'rgba(239,68,68,0.05)' : 'rgba(254,202,202,0.15)') : isSaturday ? (isDark ? 'rgba(37,99,235,0.05)' : 'rgba(219,234,254,0.15)') : 'transparent',
+                          }}>
+                            {dayShifts.length === 0 ? (
+                              <div onClick={() => navigate(`/admin/schedule/daily/${branchId}/${dateStr}`)} style={{ height: 48, borderRadius: 8, cursor: 'pointer' }} />
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                {dayShifts.map((shift) => {
+                                  const ss = getStatusStyle(shift.status, isDark);
+                                  return (
+                                    <div key={shift.id} onClick={() => navigate(`/admin/schedule/daily/${branchId}/${dateStr}`)}
+                                      style={{ ...ss, borderRadius: 8, padding: '6px 4px', fontSize: 11, cursor: 'pointer' }}>
+                                      <div style={{ fontWeight: 700 }}>{formatTime(shift.start_at)}</div>
+                                      <div style={{ fontWeight: 700 }}>{formatTime(shift.end_at)}</div>
                                       {shift.status !== 'confirmed' && (
-                                        <Badge className={`text-xs mt-0.5 px-1 py-0 h-4 ${shift.status === 'pending' ? 'bg-yellow-500' : 'bg-red-500'} text-white`}>
-                                          {shift.status === 'pending' ? t.statusPending : t.statusCancelled}
-                                        </Badge>
+                                        <div style={{ fontSize: 10, marginTop: 2 }}>{shift.status === 'pending' ? t.statusPending : t.statusCancelled}</div>
                                       )}
                                     </div>
-                                  ))
-                                )}
+                                  );
+                                })}
                               </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-        {/* 하단 버튼 */}
-        <div className="mt-6">
-          <Button
-            className="w-full bg-gray-900 hover:bg-gray-700 text-white dark:bg-gray-950 dark:hover:bg-gray-800"
-            onClick={() => navigate(`/admin/substitute/${branchId}`)}
-          >
-            대타 근무자 관리
-          </Button>
         </div>
       </div>
     </div>

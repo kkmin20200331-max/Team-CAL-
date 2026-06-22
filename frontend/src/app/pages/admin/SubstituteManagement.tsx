@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  ArrowLeft,
   UserPlus,
   Search,
   Phone,
@@ -11,13 +10,22 @@ import {
   Calendar,
   Plus,
   X,
+  Users,
+  Wallet,
+  FileText,
+  MessageSquare,
+  BarChart3,
 } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import ProfilePanel from './ProfilePanel';
+import AdminHeader from './AdminHeader';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
+import { useTheme } from 'next-themes';
+import { useLocation } from 'react-router-dom';
+
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
@@ -72,9 +80,25 @@ const formatDate = (s: string) => {
 /* ─── 컴포넌트 ──────────────────────────────────────── */
 const SubstituteManagement: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { branchId } = useParams();
   const language = useLanguage();
   const t = translations.substituteManagement[language];
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
+
+  const menuItems = [
+    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
+    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
+    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
+    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
+    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
+    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
+    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+  ];
 
   const user = useMemo(() => {
     try {
@@ -189,254 +213,169 @@ const SubstituteManagement: React.FC = () => {
       emp.phone?.includes(searchTerm),
   );
 
-  /* ── 상태 뱃지 ──────────────────────────────────────── */
   const getEmployeeStatusBadge = (status: string) => {
     const s = (status || "").toUpperCase();
-    if (s === "ACTIVE" || s === "APPROVED")
-      return (
-        <Badge className="bg-green-500 text-white flex items-center gap-1">
-          <CheckCircle className="w-3 h-3" />{t.statusActive}
-        </Badge>
-      );
-    if (s === 'INACTIVE')
-      return <Badge className="bg-gray-400 text-white">{t.statusInactive}</Badge>;
-    return <Badge variant="outline" className="text-gray-500">{status}</Badge>;
+    if (s === "ACTIVE" || s === "APPROVED") return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: GREEN, background: LIGHT_GREEN, padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>
+        <CheckCircle size={11} />{t.statusActive}
+      </span>
+    );
+    if (s === 'INACTIVE') return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#6b7280', background: '#f3f4f6', padding: '3px 10px', borderRadius: 20, fontWeight: 600 }}>
+        {t.statusInactive}
+      </span>
+    );
+    return <span style={{ fontSize: 12, color: '#6b7280', border: '1px solid #d1d5db', padding: '2px 8px', borderRadius: 20 }}>{status}</span>;
   };
 
-  /* ── 렌더링 ─────────────────────────────────────────── */
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* 페이지 헤더 */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate(`/admin/dashboard/${branchId}`)}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t.backToDashboard}
-            </Button>
-            <ProfilePanel />
-          </div>
+  const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const cardBg = isDark ? '#2c2c2e' : 'rgba(230,245,200,0.35)';
+  const textColor = isDark ? '#fff' : '#111';
+  const subTextColor = isDark ? '#aaa' : '#555';
+  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
+  const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? '#3a3a3c' : '#fff', color: textColor, fontSize: 14, boxSizing: 'border-box' as const };
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t.title}</h1>
-              <p className="text-gray-600 mt-1">{t.subtitle}</p>
-            </div>
-            <Button onClick={openModal}>
-              <Plus className="w-4 h-4 mr-2" />
-              {t.createRequest}
-            </Button>
+  return (
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+      <AdminHeader />
+      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
+        {/* 사이드바 */}
+        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: sidebarBg, borderRadius: 20, border: `1px solid ${sidebarBorder}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
+          <div style={{ marginBottom: 16, position: 'relative' }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
+              <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
+            </button>
+            {branchDropdownOpen && (
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+                {stores.map(s => (
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#3a3a3c' : LIGHT_GREEN}` }}>
+                    {s.name}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+          {menuItems.map(({ icon: Icon, label, path }) => {
+            const isActive = location.pathname === path || location.pathname.startsWith(path);
+            return (
+              <button key={label} onClick={() => navigate(path)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, border: 'none', marginBottom: 4, cursor: 'pointer', fontSize: 14, fontWeight: isActive ? 700 : 500, background: isActive ? GREEN : 'transparent', color: isActive ? '#fff' : textColor, transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}>
+                <Icon size={16} />
+                {label}
+              </button>
+            );
+          })}
         </div>
 
+        {/* 메인 카드 */}
+        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+            <div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN }}>{t.title}</h1>
+              <p style={{ fontSize: 14, color: subTextColor, marginTop: 4 }}>{t.subtitle}</p>
+            </div>
+            <button onClick={openModal} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: GREEN, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              <Plus size={16} />{t.createRequest}
+            </button>
+          </div>
         {/* 통계 */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">{t.currentBranchStaff}</p>
-                  <p className="text-3xl font-bold text-gray-900">{employees.length}</p>
-                </div>
-                <UserPlus className="w-8 h-8 text-gray-400" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+          {[
+            { label: t.currentBranchStaff, value: employees.length, color: textColor, icon: <UserPlus size={24} color={GREEN} /> },
+            { label: t.noWorkToday, value: employees.filter(e => !lastWorkedByUser[e.id]).length, color: '#f59e0b', icon: <AlertCircle size={24} color="#f59e0b" /> },
+          ].map(({ label, value, color, icon }) => (
+            <div key={label} style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ fontSize: 13, color: subTextColor, marginBottom: 6 }}>{label}</p>
+                <p style={{ fontSize: 32, fontWeight: 700, color }}>{value}</p>
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">{t.noWorkToday}</p>
-                  <p className="text-3xl font-bold text-yellow-600">
-                    {employees.filter((e) => !lastWorkedByUser[e.id]).length}
-                  </p>
-                </div>
-                <AlertCircle className="w-8 h-8 text-yellow-400" />
-              </div>
-            </CardContent>
-          </Card>
+              {icon}
+            </div>
+          ))}
         </div>
 
         {/* 검색 */}
-        <Card className="mb-4">
-          <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder={t.searchPlaceholder}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div style={{ position: 'relative', marginBottom: 20 }}>
+          <Search size={16} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: subTextColor }} />
+          <input type="text" placeholder={t.searchPlaceholder} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.7)', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+        </div>
 
         {/* 직원 카드 목록 */}
         {loadingStaff ? (
-          <div className="text-center py-16 text-gray-400">{t.loading}</div>
+          <div style={{ textAlign: 'center', padding: '64px 0', color: subTextColor }}>{t.loading}</div>
         ) : filteredEmployees.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            {searchTerm ? t.noSearchResult : t.noEmployees}
-          </div>
+          <div style={{ textAlign: 'center', padding: '64px 0', color: subTextColor }}>{searchTerm ? t.noSearchResult : t.noEmployees}</div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
             {filteredEmployees.map((emp) => (
-              <Card key={emp.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="pt-6">
-                  {/* 프로필 헤더 */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                        <span className="text-blue-600 font-semibold text-lg">
-                          {emp.name?.[0] ?? "?"}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg leading-tight">
-                          {emp.name}
-                        </h3>
-                        <p className="text-sm text-gray-400">{emp.username}</p>
-                      </div>
-                    </div>
-                    {getEmployeeStatusBadge(emp.status)}
-                  </div>
-
-                  {/* 연락처 · 최근 근무 */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span>{emp.phone || "-"}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span>
-                        {t.recentWork}{' '}
-                        {lastWorkedByUser[emp.id]
-                          ? formatDate(lastWorkedByUser[emp.id])
-                          : t.noRecord}
-                      </span>
+              <div key={emp.id} style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 18, flexShrink: 0 }}>{emp.name?.[0] ?? '?'}</div>
+                    <div>
+                      <h3 style={{ fontSize: 17, fontWeight: 700, color: textColor }}>{emp.name}</h3>
+                      <p style={{ fontSize: 12, color: subTextColor }}>{emp.username}</p>
                     </div>
                   </div>
-
-                  {/* 근무 가능 요일·시간 (DB 컬럼 추가 후 연동 예정) */}
-                  <div className="mb-5">
-                    <p className="text-xs font-medium text-gray-400 mb-2">
-                      {t.availableSchedule}{' '}
-                      <span className="text-gray-300">({t.settingPending})</span>
-                    </p>
-                    <div className="flex gap-1">
-                      {t.dayLabels.map((day: string) => (
-                        <div
-                          key={day}
-                          className="flex-1 text-center py-1 rounded text-sm bg-gray-100 text-gray-400"
-                        >
-                          {day}
-                        </div>
-                      ))}
-                    </div>
+                  {getEmployeeStatusBadge(emp.status)}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16, fontSize: 13, color: subTextColor }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Phone size={13} /><span>{emp.phone || '-'}</span></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Calendar size={13} /><span>{t.recentWork} {lastWorkedByUser[emp.id] ? formatDate(lastWorkedByUser[emp.id]) : t.noRecord}</span></div>
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <p style={{ fontSize: 11, color: subTextColor, marginBottom: 6 }}>{t.availableSchedule} <span style={{ opacity: 0.5 }}>({t.settingPending})</span></p>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {t.dayLabels.map((day: string) => (
+                      <div key={day} style={{ flex: 1, textAlign: 'center', padding: '4px 0', borderRadius: 6, background: isDark ? '#3a3a3c' : LIGHT_GREEN, color: subTextColor, fontSize: 12 }}>{day}</div>
+                    ))}
                   </div>
-
-                  {/* 연락 버튼 */}
-                  <Button
-                    className="w-full"
-                    variant="outline"
-                    disabled={!emp.phone}
-                    onClick={() => handleContact(emp.phone, emp.name)}
-                  >
-                    <Phone className="w-4 h-4 mr-2" />
-                    {t.contactBtn}
-                  </Button>
-                </CardContent>
-              </Card>
+                </div>
+                <button disabled={!emp.phone} onClick={() => handleContact(emp.phone, emp.name)} style={{ width: '100%', padding: '10px 0', background: emp.phone ? 'none' : 'transparent', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: emp.phone ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: emp.phone ? 1 : 0.5 }}>
+                  <Phone size={14} />{t.contactBtn}
+                </button>
+              </div>
             ))}
           </div>
         )}
+        </div>
       </div>
 
-      {/* ── 대타 요청하기 모달 ────────────────────────── */}
+      {/* 모달 */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setIsModalOpen(false)}
-          />
-
-          <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">{t.modalTitle}</h2>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-full hover:bg-gray-100"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setIsModalOpen(false)} />
+          <div style={{ position: 'relative', background: isDark ? '#2c2c2e' : '#fff', borderRadius: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', width: '100%', maxWidth: 440, margin: '0 16px', padding: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: textColor }}>{t.modalTitle}</h2>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subTextColor }}><X size={20} /></button>
             </div>
-
-            <div className="space-y-5">
-              {/* 지점 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.branchLabel}</label>
-                <select
-                  value={modalStoreId}
-                  onChange={(e) => setModalStoreId(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                >
-                  {stores.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 6 }}>{t.branchLabel}</label>
+                <select value={modalStoreId} onChange={(e) => setModalStoreId(e.target.value)} style={inputStyle}>
+                  {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
-
-              {/* 날짜 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t.dateLabel}</label>
-                <input
-                  type="date"
-                  value={modalDate}
-                  onChange={(e) => setModalDate(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                />
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 6 }}>{t.dateLabel}</label>
+                <input type="date" value={modalDate} onChange={(e) => setModalDate(e.target.value)} style={inputStyle} />
               </div>
-
-              {/* 인원수 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">{t.staffCountLabel}</label>
-                <div className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setModalCount((c) => Math.max(1, c - 1))}
-                    className="w-10 h-10 rounded-full border-2 border-gray-300 text-gray-600 text-xl font-bold hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center"
-                  >
-                    −
-                  </button>
-                  <span className="text-2xl font-bold text-gray-900 w-16 text-center">
-                    {t.count(modalCount)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setModalCount((c) => Math.min(20, c + 1))}
-                    className="w-10 h-10 rounded-full border-2 border-gray-300 text-gray-600 text-xl font-bold hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center"
-                  >
-                    +
-                  </button>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 12 }}>{t.staffCountLabel}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <button type="button" onClick={() => setModalCount(c => Math.max(1, c - 1))} style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${BORDER_GREEN}`, background: 'none', color: DARK_GREEN, fontSize: 20, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                  <span style={{ fontSize: 24, fontWeight: 700, color: textColor, width: 64, textAlign: 'center' }}>{t.count(modalCount)}</span>
+                  <button type="button" onClick={() => setModalCount(c => Math.min(20, c + 1))} style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${BORDER_GREEN}`, background: 'none', color: DARK_GREEN, fontSize: 20, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
                 </div>
               </div>
             </div>
-
-            <div className="flex gap-3 mt-6">
-              <Button variant="outline" className="flex-1" onClick={() => setIsModalOpen(false)} disabled={modalSubmitting}>
-                {t.cancelBtn}
-              </Button>
-              <Button className="flex-1" onClick={handleCreatePost} disabled={modalSubmitting}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              <button onClick={() => setIsModalOpen(false)} disabled={modalSubmitting} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t.cancelBtn}</button>
+              <button onClick={handleCreatePost} disabled={modalSubmitting} style={{ flex: 1, padding: '12px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                 {modalSubmitting ? t.requesting : t.requestBtn}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
