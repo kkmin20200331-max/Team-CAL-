@@ -5,10 +5,13 @@ import { NotificationContext, NotificationItem } from '../../contexts/Notificati
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 import Swipeable from 'react-native-gesture-handler/Swipeable'; // ✅ 스와이프 기능 추가
+import { markAllNotificationsAsReadAPI, markNotificationAsReadAPI } from '../../../api/auth';
+import { useApp } from '../../contexts/AppContext';
 
 const NotificationListScreen = () => {
   // ✅ 1. 알림 데이터를 나홀로 상태가 아닌 전역 상태(Context)에서 가져옵니다.
   const { notifications, setNotifications } = useContext(NotificationContext);
+  const { userInfo } = useApp();
   
   // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
@@ -21,9 +24,12 @@ const NotificationListScreen = () => {
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
 
   // 알림 클릭 시 실행
-  const handlePressNotification = (item: NotificationItem) => {
+  const handlePressNotification = async (item: NotificationItem) => {
     setSelectedNotification(item);
     setModalVisible(true);
+    markNotificationAsReadAPI(item.id).catch((error) => {
+      console.error('알림 읽음 처리 오류:', error);
+    });
     
     // 🔥 [핵심 추가] 클릭한 알림의 id와 일치하는 아이템만 isRead를 true로 변경합니다.
     setNotifications((prevNotifications: NotificationItem[]) => 
@@ -40,6 +46,11 @@ const NotificationListScreen = () => {
 
   // ✅ 모든 알림 읽음 처리
   const handleMarkAllAsRead = () => {
+    if (userInfo?.id) {
+      markAllNotificationsAsReadAPI(userInfo.id).catch((error) => {
+        console.error('전체 알림 읽음 처리 오류:', error);
+      });
+    }
     setNotifications((prev: NotificationItem[]) => prev.map((noti: NotificationItem) => ({ ...noti, isRead: true })));
   };
 
@@ -80,14 +91,14 @@ const NotificationListScreen = () => {
         <View style={styles.contentContainer}>
           <View style={styles.titleRow}>
             <Text style={[styles.titleText, !item.isRead && styles.unreadTitleText]}>
-              {t(item.title)}
+              {t(item.title) === item.title ? item.title : t(item.title)}
             </Text>
             {!item.isRead && <View style={styles.unreadDot} />}
           </View>
           <Text style={styles.messageText} numberOfLines={2}>
-            {t(item.message)}
+            {t(item.message) === item.message ? item.message : t(item.message)}
           </Text>
-          <Text style={styles.timeText}>{t(item.createdAt)}</Text>
+          <Text style={styles.timeText}>{t(item.createdAt) === item.createdAt ? item.createdAt : t(item.createdAt)}</Text>
         </View>
       </TouchableOpacity>
     </Swipeable>
@@ -133,11 +144,11 @@ const NotificationListScreen = () => {
                   <Text style={styles.modalIcon}>
                     {selectedNotification.type === 'SCHEDULE' ? '📅' : selectedNotification.type === 'NOTICE' ? '📢' : '⚙️'}
                   </Text>
-                  <Text style={styles.modalTitle}>{t(selectedNotification.title)}</Text>
-                  <Text style={styles.modalTime}>{t(selectedNotification.createdAt)}</Text>
+                  <Text style={styles.modalTitle}>{t(selectedNotification.title) === selectedNotification.title ? selectedNotification.title : t(selectedNotification.title)}</Text>
+                  <Text style={styles.modalTime}>{t(selectedNotification.createdAt) === selectedNotification.createdAt ? selectedNotification.createdAt : t(selectedNotification.createdAt)}</Text>
                 </View>
                 <View style={styles.modalBody}>
-                  <Text style={styles.modalMessage}>{t(selectedNotification.message)}</Text>
+                  <Text style={styles.modalMessage}>{t(selectedNotification.message) === selectedNotification.message ? selectedNotification.message : t(selectedNotification.message)}</Text>
                 </View>
                 
                 {/* 하단 버튼 그룹 (삭제 / 확인) */}

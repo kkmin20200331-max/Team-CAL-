@@ -22,4 +22,9 @@ export interface User {
 
   // [선택] 지점 이름 (예: 미금점)
   branchName?: string;
+
+  payRate?: number;
+  payType?: 'HOURLY' | 'SALARY';
+  password?: string;
+  color?: string;
 }

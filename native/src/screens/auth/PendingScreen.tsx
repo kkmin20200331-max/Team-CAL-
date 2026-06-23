@@ -7,7 +7,7 @@ type PendingScreenNavigationProp = StackNavigationProp<any, 'Pending'>;
 
 // ✅ [개선 21] 부모(App.tsx)로부터 받는 handleLogout 함수의 타입을 명확하게 정의합니다.
 type Props = {
-  navigation: PendingScreenNavigationProp;
+  navigation?: PendingScreenNavigationProp;
   handleLogout: () => void;
 };
 

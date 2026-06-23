@@ -4,10 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
-import { User } from '../../types/User';
 import { Shift } from '../../types/Schedule';
-import { format, addDays, startOfWeek, getDay, getDaysInMonth, getMonth, getYear, setMonth, setYear, startOfMonth, parseISO } from 'date-fns';
+import { format, addDays, startOfWeek, getDay, getDaysInMonth, getMonth, getYear, setMonth, startOfMonth, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { useApp } from '../../contexts/AppContext';
+import { getMyScheduleAPI, requestLeaveAPI } from '../../../api/auth';
 
 const today = new Date();
 const formatDate = (d: Date) => format(d, 'yyyy-MM-dd');
@@ -20,6 +21,40 @@ const generateWeekDates = (base: Date) => {
   return Array.from({ length: 7 }).map((_, i) => {
     const d = addDays(sunday, i);
     return { fullDate: formatDate(d), date: String(d.getDate()), dayIndex: d.getDay() };
+  });
+};
+
+const getTimePart = (value?: string) => {
+  if (!value) return '';
+  const time = value.includes('T') ? value.split('T')[1] : value.split(' ')[1];
+  return time ? time.slice(0, 5) : '';
+};
+
+const normalizeStatus = (status?: string): Shift['status'] => {
+  const upper = (status || '').toUpperCase();
+  if (upper === 'COMPLETED') return 'COMPLETED';
+  if (upper === 'WORKING' || upper === 'CHECKED_IN' || upper === 'IN_PROGRESS') return 'IN_PROGRESS';
+  if (upper === 'SUBSTITUTE_REQ') return 'SUBSTITUTE_REQ';
+  return 'SCHEDULED';
+};
+
+const mapShift = (raw: any, storeName: string): Shift => {
+  const fullDate = raw.work_date?.includes('T')
+    ? raw.work_date.split('T')[0]
+    : raw.work_date?.split(' ')[0] || formatDate(new Date());
+  const start = getTimePart(raw.start_at);
+  const end = getTimePart(raw.end_at);
+
+  return getRealTimeItem({
+    id: raw.id,
+    fullDate,
+    date: String(Number(fullDate.slice(8, 10))),
+    day: KOREAN_DAYS[getDay(parseISO(fullDate))],
+    time: start && end ? `${start} - ${end}` : '-',
+    storeName,
+    status: normalizeStatus(raw.status),
+    checkInTime: getTimePart(raw.check_in_at) || null,
+    checkOutTime: getTimePart(raw.check_out_at) || null,
   });
 };
 
@@ -46,59 +81,8 @@ const getRealTimeItem = (item: Shift): Shift => {
   return { ...item, status: newStatus };
 };
 
-const generateDummyScheduleForWeek = (baseDate: Date, storeName: string): Shift[] => {
-  const weekDates = generateWeekDates(baseDate);
-  return weekDates.map((dayInfo, index) => {
-    const dayOfWeek = dayInfo.dayIndex;
-    let shift: Partial<Shift> = {
-      id: `${dayInfo.fullDate}-${index}`,
-      fullDate: dayInfo.fullDate,
-      date: dayInfo.date,
-      day: KOREAN_DAYS[dayOfWeek],
-      storeName: storeName,
-    };
-    if (dayOfWeek % 4 === 0) {
-      shift.time = '휴무';
-      shift.status = 'OFF';
-    } else {
-      shift.time = '14:00 - 22:00';
-      shift.status = 'SCHEDULED';
-    }
-    return getRealTimeItem(shift as Shift);
-  });
-};
-
-const generateDummyScheduleForMonth = (date: Date, storeName: string): Shift[] => {
-    const monthStart = startOfMonth(date);
-    const daysInMonth = getDaysInMonth(date);
-    const schedule: Shift[] = [];
-
-    for (let i = 0; i < daysInMonth; i++) {
-        const currentDate = addDays(monthStart, i);
-        const dayOfWeek = getDay(currentDate);
-        let shift: Partial<Shift> = {
-            id: `month_shift_${formatDate(currentDate)}`,
-            fullDate: formatDate(currentDate),
-            date: String(currentDate.getDate()),
-            day: KOREAN_DAYS[dayOfWeek],
-            storeName: storeName,
-        };
-
-        if (dayOfWeek % 4 === 0) {
-            shift.time = '휴무';
-            shift.status = 'OFF';
-        } else {
-            shift.time = '14:00 - 22:00';
-            shift.status = 'SCHEDULED';
-        }
-        schedule.push(getRealTimeItem(shift as Shift));
-    }
-    return schedule;
-};
-
-
-const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null } } }) => {
-  const { userInfo } = route?.params || {};
+const ScheduleScreen = () => {
+  const { userInfo } = useApp();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
@@ -116,11 +100,44 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
   const [isMonthModalVisible, setMonthModalVisible] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    const newSchedule = generateDummyScheduleForWeek(baseDate, storeName);
-    setScheduleData(newSchedule);
-    setLoading(false);
-  }, [baseDate, storeName]);
+    let alive = true;
+
+    const loadSchedule = async () => {
+      if (!userInfo?.id) {
+        setScheduleData([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const weekDates = generateWeekDates(baseDate);
+        const startDate = weekDates[0].fullDate;
+        const endDate = weekDates[6].fullDate;
+        const response = await getMyScheduleAPI(userInfo.id, startDate, endDate);
+        const shifts = Array.isArray(response.data)
+          ? response.data
+              .filter((item: any) => item.status !== 'VACANT' && item.status !== 'CANCELLED')
+              .map((item: any) => mapShift(item, storeName))
+          : [];
+
+        if (alive) setScheduleData(shifts);
+      } catch (error) {
+        console.error('스케줄 조회 오류:', error);
+        if (alive) {
+          setScheduleData([]);
+          Toast.show({ type: 'error', text1: '스케줄 조회 실패', text2: '근무표를 불러오지 못했습니다.' });
+        }
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+
+    loadSchedule();
+
+    return () => {
+      alive = false;
+    };
+  }, [baseDate, storeName, userInfo?.id]);
 
   const renderStatusBadge = (status: string) => {
     const statusMap = {
@@ -147,13 +164,35 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
       Toast.show({ type: 'error', text1: '알림', text2: '사유를 입력해주세요.' });
       return;
     }
-    const newStatus = modalType === 'SUBSTITUTE' ? 'SUBSTITUTE_REQ' : 'OFF';
-    setScheduleData(prev => prev.map(shift => 
-      shift.id === selectedShift!.id ? { ...shift, status: newStatus, time: modalType === 'LEAVE' ? '휴무' : shift.time } : shift
-    ));
-    Toast.show({ type: 'success', text1: '신청 완료', text2: '점주에게 요청이 전송되었습니다.' });
-    setReqModalVisible(false);
-    setSelectedShift(null);
+    if (!selectedShift || !userInfo?.id) return;
+
+    try {
+      if (modalType === 'LEAVE') {
+        await requestLeaveAPI({
+          shift_id: selectedShift.id,
+          user_id: userInfo.id,
+          reason,
+        });
+        setScheduleData(prev => prev.map(shift =>
+          shift.id === selectedShift.id ? { ...shift, status: 'OFF', time: '휴무' } : shift
+        ));
+      } else {
+        setScheduleData(prev => prev.map(shift =>
+          shift.id === selectedShift.id ? { ...shift, status: 'SUBSTITUTE_REQ' } : shift
+        ));
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: '신청 완료',
+        text2: modalType === 'LEAVE' ? '휴무 신청이 전송되었습니다.' : '대타 요청 상태로 표시했습니다.',
+      });
+      setReqModalVisible(false);
+      setSelectedShift(null);
+    } catch (error) {
+      console.error('신청 오류:', error);
+      Toast.show({ type: 'error', text1: '신청 실패', text2: '잠시 후 다시 시도해주세요.' });
+    }
   };
 
   const moveWeek = (offset: number) => {
@@ -216,7 +255,7 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
        : <FlatList data={scheduleData.filter((item) => item.fullDate === selectedDate)} renderItem={renderShiftCard} keyExtractor={item => item.id} contentContainerStyle={styles.listContainer} ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyIcon}>🏖️</Text><Text style={styles.emptyText}>예정된 근무가 없습니다.</Text></View>} />
       }
 
-      <CalendarModal isVisible={isMonthModalVisible} onClose={() => setMonthModalVisible(false)} onDateSelect={onDateSelectFromCalendar} storeName={storeName} colors={colors} />
+      <CalendarModal isVisible={isMonthModalVisible} onClose={() => setMonthModalVisible(false)} onDateSelect={onDateSelectFromCalendar} shifts={scheduleData} colors={colors} />
 
       <Modal animationType="fade" transparent={true} visible={isReqModalVisible} onRequestClose={() => setReqModalVisible(false)}>
         <View style={styles.modalOverlay}>
@@ -235,21 +274,13 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
   );
 };
 
-const CalendarModal = ({ isVisible, onClose, onDateSelect, storeName, colors }: any) => {
+const CalendarModal = ({ isVisible, onClose, onDateSelect, shifts, colors }: any) => {
   const [calendarDate, setCalendarDate] = useState(new Date());
-  const [monthlySchedule, setMonthlySchedule] = useState<Shift[]>([]);
   const styles = getThemedStyles(colors);
-
-  useEffect(() => {
-    if (isVisible) {
-      const newMonthlySchedule = generateDummyScheduleForMonth(calendarDate, storeName);
-      setMonthlySchedule(newMonthlySchedule);
-    }
-  }, [isVisible, calendarDate, storeName]);
 
   const markedDates = useMemo(() => {
     const marks: { [key: string]: { dots: { color: string }[] } } = {};
-    monthlySchedule.forEach((item: Shift) => {
+    (Array.isArray(shifts) ? shifts : []).forEach((item: Shift) => {
       const color = item.status === 'OFF' ? 'red' : 'blue';
       if (!marks[item.fullDate]) {
         marks[item.fullDate] = { dots: [] };
@@ -259,7 +290,7 @@ const CalendarModal = ({ isVisible, onClose, onDateSelect, storeName, colors }: 
       }
     });
     return marks;
-  }, [monthlySchedule]);
+  }, [shifts]);
 
   const changeMonth = (offset: number) => {
     setCalendarDate(prev => setMonth(prev, getMonth(prev) + offset));

@@ -8,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
 import { useApp } from '../../contexts/AppContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -111,15 +110,7 @@ export default function SignupScreen({ navigation, route }: Props) {
       });
 
       if (role === 'ADMIN') {
-        const branches = [{ id: 'branch_1', brandName, branchName }];
-        await AsyncStorage.setItem(`admin_branch_info_${id}`, JSON.stringify(branches));
-
-        const userInfoForLogin = {
-          ...signupData,
-          branches: branches,
-          activeBranchId: 'branch_1',
-        };
-        login(userInfoForLogin, true);
+        login(signupData, false);
       } else {
         login(signupData, false);
       }
