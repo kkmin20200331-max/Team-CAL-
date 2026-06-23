@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-import axios from "axios";
+import axiosInstance from "../lib/axiosInstance";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -48,13 +48,13 @@ export default function App() {
   );
 
   useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/hello")
+    axiosInstance
+      .get("/hello")
       .then((res) => {
         setApiMessage(res.data.message);
       })
       .catch(() => {
-        setApiMessage("Spring Boot \uC5F0\uACB0 \uC2E4\uD328");
+        setApiMessage("Spring Boot 연결 실패");
       });
   }, []);
 
@@ -187,10 +187,41 @@ export default function App() {
           />
 
           <Route
+            path="/admin/analytics"
+            element={
+              <ProtectedRoute>
+                <Navigate
+                  to={
+                    sessionStorage.getItem("store_id")
+                      ? `/admin/analytics/${sessionStorage.getItem("store_id")}`
+                      : "/admin/branch-selection"
+                  }
+                  replace
+                />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/admin/cctv/:branchId"
             element={
               <ProtectedRoute>
                 <CctvAnalysis />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/cctv"
+            element={
+              <ProtectedRoute>
+                <Navigate
+                  to={
+                    sessionStorage.getItem("store_id")
+                      ? `/admin/cctv/${sessionStorage.getItem("store_id")}`
+                      : "/admin/branch-selection"
+                  }
+                  replace
+                />
               </ProtectedRoute>
             }
           />

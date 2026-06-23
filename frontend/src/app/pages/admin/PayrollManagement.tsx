@@ -1,3 +1,4 @@
+﻿import { API_BASE } from "../../../lib/axiosInstance";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
@@ -127,6 +128,9 @@ const getRecentPeriods = (count: number) => {
   return periods;
 };
 
+const formatWon = (amount: number) =>
+  `${Math.round(Number(amount || 0)).toLocaleString()}원`;
+
 const PayrollManagement: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -153,10 +157,14 @@ const PayrollManagement: React.FC = () => {
 
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
@@ -188,10 +196,10 @@ const PayrollManagement: React.FC = () => {
   });
 
   const fetchPayrollEntries = async (period: string) => {
-    if (!branchId) return [];
+    if (!selectedBranchId) return [];
 
     const response = await fetch(
-      `http://localhost:8080/api/payroll/store?store_id=${encodeURIComponent(branchId)}&year_month=${encodeURIComponent(period)}`
+      `${API_BASE}/payroll/store?store_id=${encodeURIComponent(selectedBranchId)}&year_month=${encodeURIComponent(period)}`
     );
 
     if (!response.ok) {
@@ -203,7 +211,7 @@ const PayrollManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!branchId) return;
+    if (!selectedBranchId) return;
 
     setPayrollLoading(true);
     setPayrollError('');
@@ -215,10 +223,30 @@ const PayrollManagement: React.FC = () => {
         setPayrollError(error instanceof Error ? error.message : '급여 정보를 불러오지 못했습니다.');
       })
       .finally(() => setPayrollLoading(false));
-  }, [branchId, selectedPeriod]);
+  }, [selectedBranchId, selectedPeriod]);
 
   useEffect(() => {
-    if (!branchId) return;
+    if (!selectedBranchId) return;
+
+    const refreshPayroll = () => {
+      if (document.visibilityState === 'hidden') return;
+
+      fetchPayrollEntries(selectedPeriod)
+        .then(setPayrollEntries)
+        .catch(() => {});
+    };
+
+    window.addEventListener('focus', refreshPayroll);
+    document.addEventListener('visibilitychange', refreshPayroll);
+
+    return () => {
+      window.removeEventListener('focus', refreshPayroll);
+      document.removeEventListener('visibilitychange', refreshPayroll);
+    };
+  }, [selectedBranchId, selectedPeriod]);
+
+  useEffect(() => {
+    if (!selectedBranchId) return;
 
     Promise.all(
       getRecentPeriods(6).map(period =>
@@ -230,17 +258,17 @@ const PayrollManagement: React.FC = () => {
     )
       .then(setMonthlyPayrollData)
       .catch(() => setMonthlyPayrollData([]));
-  }, [branchId]);
+  }, [selectedBranchId]);
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
   const [payrollEntries, setPayrollEntries] = useState<PayrollEntry[]>([]);
@@ -349,12 +377,12 @@ const PayrollManagement: React.FC = () => {
                     }}
                     style={{
                       display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left',
-                      background: s.id === branchId ? LIGHT_GREEN : 'transparent',
+                      background: s.id === selectedBranchId ? LIGHT_GREEN : 'transparent',
                       border: 'none', cursor: 'pointer',
                       color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600,
                     }}
                     onMouseOver={e => { e.currentTarget.style.background = LIGHT_GREEN; }}
-                    onMouseOut={e => { e.currentTarget.style.background = s.id === branchId ? LIGHT_GREEN : 'transparent'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = s.id === selectedBranchId ? LIGHT_GREEN : 'transparent'; }}
                   >
                     {s.name}
                   </button>
@@ -415,7 +443,7 @@ const PayrollManagement: React.FC = () => {
           {/* Statistics Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
             {[
-              { label: t.totalPay, value: `${(stats.totalPayroll / 10000).toFixed(0)}만원` },
+              { label: t.totalPay, value: formatWon(stats.totalPayroll) },
               { label: '직원 수', value: String(stats.employeeCount) },
               { label: '총 근무시간', value: `${stats.regularHours.toFixed(1)}h` },
               { label: '연장시간', value: `${stats.overtimeHours.toFixed(1)}h` },
@@ -527,10 +555,10 @@ const PayrollManagement: React.FC = () => {
                             <div style={{ color: '#2563eb' }}>{t.overtimeHours(entry.overtimeHours)}</div>
                             <div style={{ color: GREEN }}>{t.holidayHours(entry.holidayHours)}</div>
                           </td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{(entry.basePay / 10000).toFixed(0)}만원</td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{((entry.overtimePay + entry.holidayPay) / 10000).toFixed(0)}만원</td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: '#ef4444' }}>{((entry.deductions.tax + entry.deductions.insurance + entry.deductions.pension) / 10000).toFixed(0)}만원</td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: DARK_GREEN, fontWeight: 700 }}>{(entry.totalPay / 10000).toFixed(0)}만원</td>
+                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{formatWon(entry.basePay)}</td>
+                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{formatWon(entry.overtimePay + entry.holidayPay)}</td>
+                          <td style={{ padding: '12px 16px', fontSize: 14, color: '#ef4444' }}>{formatWon(entry.deductions.tax + entry.deductions.insurance + entry.deductions.pension)}</td>
+                          <td style={{ padding: '12px 16px', fontSize: 14, color: DARK_GREEN, fontWeight: 700 }}>{formatWon(entry.totalPay)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -570,8 +598,8 @@ const PayrollManagement: React.FC = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
                       {[
                         { label: t.workPeriod, value: `${request.weekStart} ~ ${request.weekEnd}` },
-                        { label: t.requestAmount, value: `${(request.requestedAmount / 10000).toFixed(0)}만원` },
-                        { label: t.approvedAmount, value: request.approvedAmount ? `${(request.approvedAmount / 10000).toFixed(0)}만원` : '-' },
+                        { label: t.requestAmount, value: formatWon(request.requestedAmount) },
+                        { label: t.approvedAmount, value: request.approvedAmount ? formatWon(request.approvedAmount) : '-' },
                         { label: t.requestDate, value: request.requestDate },
                       ].map(({ label, value }) => (
                         <div key={label}>
@@ -659,7 +687,7 @@ const PayrollManagement: React.FC = () => {
                           <span style={{ fontSize: 14, fontWeight: 600, color: textColor }}>{item.name}</span>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN }}>{(item.value / 10000).toFixed(0)}만원</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN }}>{formatWon(item.value)}</div>
                           <div style={{ fontSize: 13, color: '#8BA68D' }}>{item.percentage}%</div>
                         </div>
                       </div>

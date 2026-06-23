@@ -1,6 +1,7 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
+import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import axios from "axios";
 import {
   DollarSign,
   Users,
@@ -27,7 +28,6 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface UserVo {
   id: string;
@@ -70,7 +70,10 @@ export default function EmployeeManagement() {
   const navigate = useNavigate();
   const location = useLocation();
   const { branchId } = useParams();
-  const storeId = branchId || sessionStorage.getItem("store_id") || "";
+  const storeId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || "";
   const storeName = sessionStorage.getItem("store_name") || "매장";
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -81,19 +84,19 @@ export default function EmployeeManagement() {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: storeId ? `/admin/schedule/monthly/${storeId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: '대타 모집', path: storeId ? `/admin/substitute/${storeId}` : '/admin/branch-selection' },
+    { icon: Users, label: '직원 관리', path: storeId ? `/admin/employees/${storeId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: '급여 관리', path: storeId ? `/admin/payroll/${storeId}` : '/admin/branch-selection' },
+    { icon: FileText, label: '문서 관리', path: storeId ? `/admin/documents/${storeId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: '게시판', path: storeId ? `/admin/board/${storeId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: 'AI 고객 분석', path: storeId ? `/admin/analytics/${storeId}` : '/admin/branch-selection' },
+    { icon: Video, label: 'CCTV 분석', path: storeId ? `/admin/cctv/${storeId}` : '/admin/branch-selection' },
   ];
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
@@ -113,12 +116,12 @@ export default function EmployeeManagement() {
     if (!storeId) return;
     setLoading(true);
     try {
-      const res = await API.get("/users", { params: { store_id: storeId } });
+      const res = await axiosInstance.get("/users", { params: { store_id: storeId } });
       const list: UserVo[] = Array.isArray(res.data) ? res.data : [];
       setEmployees(list);
       const results = await Promise.allSettled(
         list.map((u) =>
-          API.get("/store_member/pay", {
+          axiosInstance.get("/store_member/pay", {
             params: { user_id: u.id, store_id: storeId },
           }),
         ),
@@ -151,7 +154,7 @@ export default function EmployeeManagement() {
     if (!editTarget || !payAmount) return;
     setSaving(true);
     try {
-      await API.put("/store_member/pay", {
+      await axiosInstance.put("/store_member/pay", {
         user_id: editTarget.id,
         store_id: storeId,
         pay_type: payType,
@@ -178,7 +181,7 @@ export default function EmployeeManagement() {
   const handleDelete = async (emp: UserVo) => {
     if (!confirm(`${emp.name}님을 매장에서 제거하시겠습니까?`)) return;
     try {
-      await API.delete("/store_member", {
+      await axiosInstance.delete("/store_member", {
         params: { store_id: storeId, user_id: emp.id },
       });
       setEmployees((prev) => prev.filter((e) => e.id !== emp.id));

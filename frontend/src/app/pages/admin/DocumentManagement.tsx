@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Upload,
@@ -26,6 +26,7 @@ import {
 import { Badge } from "../../components/ui/badge";
 import AdminHeader from "./AdminHeader";
 import { useTheme } from "next-themes";
+import { API_BASE } from "../../../lib/axiosInstance";
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
@@ -109,6 +110,10 @@ const DocumentManagement: React.FC = () => {
 
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const employeeNameById = (userId: string) => {
     return employees.find((employee) => employee.id === userId)?.name || userId;
@@ -181,15 +186,15 @@ const DocumentManagement: React.FC = () => {
   });
 
   const fetchDocuments = async () => {
-    if (!branchId) return;
-    const response = await fetch(`http://localhost:8080/api/file/store/${branchId}`);
+    if (!selectedBranchId) return;
+    const response = await fetch(`${API_BASE}/file/store/${selectedBranchId}`);
     if (!response.ok) throw new Error("failed to load documents");
     const data = await response.json();
     setDocuments(Array.isArray(data) ? data.map(mapBackendFile) : []);
   };
 
   const handleUpload = async () => {
-    if (!branchId || !uploadUserId || !uploadFile) {
+    if (!selectedBranchId || !uploadUserId || !uploadFile) {
       alert("직원과 파일을 선택해주세요.");
       return;
     }
@@ -199,14 +204,14 @@ const DocumentManagement: React.FC = () => {
     }
 
     const formData = new FormData();
-    formData.append("store_id", branchId);
+    formData.append("store_id", selectedBranchId);
     formData.append("user_id", uploadUserId);
     formData.append("file_type", uploadFileType);
     formData.append("file", uploadFile);
 
     setIsUploading(true);
     try {
-      const response = await fetch("http://localhost:8080/api/file/upload", {
+      const response = await fetch(`${API_BASE}/file/upload`, {
         method: "POST",
         body: formData,
       });
@@ -223,7 +228,7 @@ const DocumentManagement: React.FC = () => {
   };
 
   const handleDownload = async (doc: Document) => {
-    const response = await fetch(`http://localhost:8080/api/file/${doc.id}/signed-url`);
+    const response = await fetch(`${API_BASE}/file/${doc.id}/signed-url`);
     if (!response.ok) {
       alert("다운로드 URL을 만들 수 없습니다.");
       return;
@@ -238,7 +243,7 @@ const DocumentManagement: React.FC = () => {
     setPreviewUrl("");
     setIsPreviewLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/file/${doc.id}/signed-url`);
+      const response = await fetch(`${API_BASE}/file/${doc.id}/signed-url`);
       if (!response.ok) throw new Error(await response.text());
       const data = await response.json();
       setPreviewUrl(data.url || "");
@@ -259,7 +264,7 @@ const DocumentManagement: React.FC = () => {
   };
 
   const handleUpdateStatus = async (doc: Document, status: Document["status"]) => {
-    const response = await fetch(`http://localhost:8080/api/file/${doc.id}/status?status=${status}`, {
+    const response = await fetch(`${API_BASE}/file/${doc.id}/status?status=${status}`, {
       method: "PUT",
     });
     if (!response.ok) {
@@ -274,7 +279,7 @@ const DocumentManagement: React.FC = () => {
 
   const handleDelete = async (doc: Document) => {
     if (!confirm("문서를 삭제할까요?")) return;
-    const response = await fetch(`http://localhost:8080/api/file/${doc.id}`, {
+    const response = await fetch(`${API_BASE}/file/${doc.id}`, {
       method: "DELETE",
     });
     if (!response.ok) {
@@ -287,15 +292,15 @@ const DocumentManagement: React.FC = () => {
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (!branchId) return;
-    fetch(`http://localhost:8080/api/users?store_id=${branchId}`)
+    if (!selectedBranchId) return;
+    fetch(`${API_BASE}/users?store_id=${selectedBranchId}`)
       .then(r => r.json())
       .then(data => {
         const nextEmployees = Array.isArray(data) ? data.map((user: any) => ({ id: user.id, name: user.name })) : [];
@@ -305,11 +310,11 @@ const DocumentManagement: React.FC = () => {
         }
       })
       .catch(() => setEmployees([]));
-  }, [branchId]);
+  }, [selectedBranchId]);
 
   useEffect(() => {
     fetchDocuments().catch(() => {});
-  }, [branchId, employees.length]);
+  }, [selectedBranchId, employees.length]);
 
   useEffect(() => {
     if (!showDetailModal || !selectedDocument) {
@@ -320,14 +325,14 @@ const DocumentManagement: React.FC = () => {
   }, [showDetailModal, selectedDocument?.id]);
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
   // Mock data - 문서 목록
@@ -544,12 +549,12 @@ const DocumentManagement: React.FC = () => {
                     }}
                     style={{
                       display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left',
-                      background: s.id === branchId ? LIGHT_GREEN : 'transparent',
+                      background: s.id === selectedBranchId ? LIGHT_GREEN : 'transparent',
                       border: 'none', cursor: 'pointer',
                       color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600,
                     }}
                     onMouseOver={e => { e.currentTarget.style.background = LIGHT_GREEN; }}
-                    onMouseOut={e => { e.currentTarget.style.background = s.id === branchId ? LIGHT_GREEN : 'transparent'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = s.id === selectedBranchId ? LIGHT_GREEN : 'transparent'; }}
                   >
                     {s.name}
                   </button>

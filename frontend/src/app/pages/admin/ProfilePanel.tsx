@@ -1,7 +1,7 @@
+import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useTheme } from "next-themes";
-import axios from "axios";
 import { useLanguage } from "../../i18n/useLanguage";
 import {
   Avatar,
@@ -101,7 +101,6 @@ function MoonIcon({ color }: { color: string }) {
   );
 }
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface PendingEmployee {
   id: string;
@@ -194,10 +193,10 @@ export default function ProfilePanel() {
   const [open, setOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUser = JSON.parse(sessionStorage.getItem("user") || "{}");
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => localStorage.getItem("admin_profile_image") || "",
+    () => sessionStorage.getItem("admin_profile_image") || "",
   );
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,7 +205,7 @@ export default function ProfilePanel() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const base64 = ev.target?.result as string;
-      localStorage.setItem("admin_profile_image", base64);
+      sessionStorage.setItem("admin_profile_image", base64);
       setProfileImage(base64);
     };
     reader.readAsDataURL(file);
@@ -235,9 +234,11 @@ export default function ProfilePanel() {
   // ── 게시판 푸시 알림 ──
   interface BoardNotification {
     id: string;
+    type: string;
     title: string;
     content: string;
     store_id: string;
+    ref_id: string;
     created_at: string;
     is_read: string;
   }
@@ -245,11 +246,37 @@ export default function ProfilePanel() {
     BoardNotification[]
   >([]);
 
+  const fetchUnreadNotifications = async () => {
+    if (!currentUser.id) return;
+
+    try {
+      const r = await axiosInstance.get("/notification", {
+        params: { user_id: currentUser.id },
+      });
+      setBoardNotifications(
+        Array.isArray(r.data)
+          ? r.data.filter((n: BoardNotification) => n.is_read === "N")
+          : [],
+      );
+    } catch {
+      // Keep the panel usable even if notification polling fails.
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser.id) return;
+
+    fetchUnreadNotifications();
+    const timer = window.setInterval(fetchUnreadNotifications, 30000);
+
+    return () => window.clearInterval(timer);
+  }, [currentUser.id]);
+
   // 패널 열릴 때 → 모든 관리 매장의 알림 fetch
   useEffect(() => {
     if (!open || !currentUser.id) return;
 
-    API.get("/store", { params: { user_id: currentUser.id } })
+    axiosInstance.get("/store", { params: { user_id: currentUser.id } })
       .then(async (res) => {
         const stores: StoreVO[] = Array.isArray(res.data) ? res.data : [];
 
@@ -257,7 +284,7 @@ export default function ProfilePanel() {
         const [leaveResults, userResults] = await Promise.all([
           Promise.allSettled(
             stores.map((store) =>
-              API.get("/leave_request", {
+              axiosInstance.get("/leave_request", {
                 params: { store_id: store.id },
               }).then((r) =>
                 (Array.isArray(r.data) ? r.data : []).map((lr: any) => ({
@@ -270,7 +297,7 @@ export default function ProfilePanel() {
           ),
           Promise.allSettled(
             stores.map((store) =>
-              API.get("/users", { params: { store_id: store.id } }),
+              axiosInstance.get("/users", { params: { store_id: store.id } }),
             ),
           ),
         ]);
@@ -299,7 +326,7 @@ export default function ProfilePanel() {
         const uniqueShiftIds = [...new Set(allLeaves.map((lr) => lr.shift_id))];
         if (uniqueShiftIds.length > 0) {
           const shiftResults = await Promise.allSettled(
-            uniqueShiftIds.map((sid) => API.get(`/shift/${sid}`)),
+            uniqueShiftIds.map((sid) => axiosInstance.get(`/shift/${sid}`)),
           );
           const newShiftMap: Record<string, ShiftVO> = {};
           shiftResults.forEach((r, i) => {
@@ -312,7 +339,7 @@ export default function ProfilePanel() {
         // ── 대타 지원 알림 조회 ──
         const subPostResults = await Promise.allSettled(
           stores.map((store) =>
-            API.get("/substitute", { params: { store_id: store.id } }).then(
+            axiosInstance.get("/substitute", { params: { store_id: store.id } }).then(
               (r) => ({ store, posts: Array.isArray(r.data) ? r.data : [] }),
             ),
           ),
@@ -328,7 +355,7 @@ export default function ProfilePanel() {
             .filter((p: any) => (p.status || "").toLowerCase() === "open")
             .forEach((post: any) => {
               appFetches.push(
-                API.get("/substitute/manager", { params: { post_id: post.id } })
+                axiosInstance.get("/substitute/manager", { params: { post_id: post.id } })
                   .then((r2) => {
                     const apps = Array.isArray(r2.data) ? r2.data : [];
                     apps
@@ -359,7 +386,7 @@ export default function ProfilePanel() {
 
         // ── 게시판 푸시 알림 ──
         if (currentUser.id) {
-          API.get("/notification", { params: { user_id: currentUser.id } })
+          axiosInstance.get("/notification", { params: { user_id: currentUser.id } })
             .then((r) =>
               setBoardNotifications(
                 Array.isArray(r.data)
@@ -375,7 +402,7 @@ export default function ProfilePanel() {
 
   const handleApproveLeave = async (leave: LeaveRequestVO) => {
     try {
-      await API.put(`/leave_request/${leave.id}`, null, {
+      await axiosInstance.put(`/leave_request/${leave.id}`, null, {
         params: { status: "APPROVED" },
       });
       setLeaveRequests((prev) => prev.filter((l) => l.id !== leave.id));
@@ -388,7 +415,7 @@ export default function ProfilePanel() {
     const name = userNameMap[leave.user_id] || "직원";
     if (!confirm(`${name}님의 휴무 신청을 거절하시겠습니까?`)) return;
     try {
-      await API.put(`/leave_request/${leave.id}`, null, {
+      await axiosInstance.put(`/leave_request/${leave.id}`, null, {
         params: { status: "REJECTED" },
       });
       setLeaveRequests((prev) => prev.filter((l) => l.id !== leave.id));
@@ -400,7 +427,7 @@ export default function ProfilePanel() {
   // ── 대타 지원 승인/거절 ──
   const handleApproveSubstitute = async (app: SubstitutePendingApp) => {
     try {
-      await API.put("/substitute/manager", null, {
+      await axiosInstance.put("/substitute/manager", null, {
         params: { application_id: app.app_id, status: "APPROVED" },
       });
       setSubstituteApps((prev) => prev.filter((a) => a.app_id !== app.app_id));
@@ -413,7 +440,7 @@ export default function ProfilePanel() {
     const name = userNameMap[app.applicant_user_id] || "직원";
     if (!confirm(`${name}님의 대타 지원을 거절하시겠습니까?`)) return;
     try {
-      await API.delete("/substitute/staff", { params: { id: app.app_id } });
+      await axiosInstance.delete("/substitute/staff", { params: { id: app.app_id } });
       setSubstituteApps((prev) => prev.filter((a) => a.app_id !== app.app_id));
     } catch {
       alert("처리 중 오류가 발생했습니다.");
@@ -423,8 +450,8 @@ export default function ProfilePanel() {
   // ── 직원 가입 승인/거절 ──
   const handleApprove = async (emp: PendingEmployee) => {
     try {
-      await API.put("/users/approve", null, { params: { id: emp.id } });
-      await API.put("/store_member", null, {
+      await axiosInstance.put("/users/approve", null, { params: { id: emp.id } });
+      await axiosInstance.put("/store_member", null, {
         params: { user_id: emp.id, store_id: emp.store_id },
       });
       setPendingList((prev) => {
@@ -441,7 +468,7 @@ export default function ProfilePanel() {
   const handleReject = async (emp: PendingEmployee) => {
     if (!confirm(`${emp.name}님의 가입 요청을 거절하시겠습니까?`)) return;
     try {
-      await API.delete("/users", { params: { id: emp.id } });
+      await axiosInstance.delete("/users", { params: { id: emp.id } });
       setPendingList((prev) => {
         const updated = prev.filter((p) => p.id !== emp.id);
         sessionStorage.setItem("pendingList", JSON.stringify(updated));
@@ -452,10 +479,49 @@ export default function ProfilePanel() {
     }
   };
 
+  const markNotificationRead = async (id: string) => {
+    try {
+      await axiosInstance.put("/notification/read", null, { params: { id } });
+    } catch {
+      // The card should still disappear locally after the action succeeds.
+    }
+    setBoardNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  const handleApproveJoinNotification = async (notif: BoardNotification) => {
+    if (!notif.ref_id) {
+      alert("요청 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    try {
+      await axiosInstance.put(`/store_member/${notif.ref_id}/approve`);
+      await markNotificationRead(notif.id);
+      alert("근무 지점 요청을 승인했습니다.");
+    } catch {
+      alert("승인 처리 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleRejectJoinNotification = async (notif: BoardNotification) => {
+    if (!notif.ref_id) {
+      alert("요청 정보를 찾을 수 없습니다.");
+      return;
+    }
+    if (!confirm("이 근무 지점 요청을 거절하시겠습니까?")) return;
+
+    try {
+      await axiosInstance.delete(`/store_member/${notif.ref_id}/reject`);
+      await markNotificationRead(notif.id);
+    } catch {
+      alert("거절 처리 중 오류가 발생했습니다.");
+    }
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("store_id");
-    localStorage.removeItem("store_name");
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("store_id");
+    sessionStorage.removeItem("store_name");
     sessionStorage.removeItem("pendingList");
     navigate("/auth/login");
   };
@@ -464,7 +530,7 @@ export default function ProfilePanel() {
     if (!confirm("정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다."))
       return;
     try {
-      await API.delete("/users", { params: { id: currentUser.id } });
+      await axiosInstance.delete("/users", { params: { id: currentUser.id } });
       handleLogout();
     } catch {
       alert("탈퇴 처리 중 오류가 발생했습니다.");
@@ -774,8 +840,60 @@ export default function ProfilePanel() {
                 })}
 
                 {/* ── 게시판 푸시 알림 ── */}
-                {boardNotifications.map((notif) => (
-                  <div
+                {boardNotifications.map((notif) => {
+                  if (notif.type === "STAFF_APPROVAL_REQUEST") {
+                    return (
+                      <div
+                        key={notif.id}
+                        className="rounded-xl p-3 space-y-2"
+                        style={{
+                          border: `1px solid ${isDark ? "#1a4a1a" : "#bbf7d0"}`,
+                          background: isDark ? "rgba(10,40,10,0.3)" : "#f0fdf4",
+                        }}
+                      >
+                        <div
+                          className="flex items-center gap-1 text-xs font-semibold"
+                          style={{ color: "#18A022" }}
+                        >
+                          <UserCheck className="w-3 h-3" />
+                          직원 가입 요청
+                        </div>
+                        <p
+                          className="font-semibold text-xs"
+                          style={{ color: textMain }}
+                        >
+                          {notif.title}
+                        </p>
+                        {notif.content && (
+                          <p className="text-xs" style={{ color: textSub }}>
+                            {notif.content}
+                          </p>
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1 text-xs h-7"
+                            onClick={() => handleApproveJoinNotification(notif)}
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            승인
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-red-500 border-red-300 hover:bg-red-50 gap-1 text-xs h-7"
+                            onClick={() => handleRejectJoinNotification(notif)}
+                          >
+                            <XCircle className="w-3 h-3" />
+                            거절
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
                     key={notif.id}
                     className="rounded-xl p-3 space-y-1"
                     style={{
@@ -792,15 +910,7 @@ export default function ProfilePanel() {
                         게시판 알림
                       </div>
                       <button
-                        onClick={() => {
-                          fetch(
-                            `http://localhost:8080/api/notification/read?id=${notif.id}`,
-                            { method: "PUT" },
-                          ).catch(() => {});
-                          setBoardNotifications((prev) =>
-                            prev.filter((n) => n.id !== notif.id),
-                          );
-                        }}
+                        onClick={() => markNotificationRead(notif.id)}
                         style={{
                           background: "none",
                           border: "none",
@@ -823,8 +933,9 @@ export default function ProfilePanel() {
                         {notif.content}
                       </p>
                     )}
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
 
                 {/* ── 휴무 신청 ── */}
                 {leaveRequests.map((leave) => {

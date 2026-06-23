@@ -1,11 +1,1 @@
-CREATE TABLE NOTIFICATION (
-    ID          VARCHAR2(50)    PRIMARY KEY,
-    USER_ID     VARCHAR2(50)    NOT NULL,
-    STORE_ID    VARCHAR2(50),
-    TYPE        VARCHAR2(30)    DEFAULT 'BOARD_PUSH',
-    TITLE       VARCHAR2(200),
-    CONTENT     VARCHAR2(1000),
-    REF_ID      VARCHAR2(50),
-    IS_READ     CHAR(1)         DEFAULT 'N',
-    CREATED_AT  TIMESTAMP       DEFAULT CURRENT_TIMESTAMP
-);
+delete from notification where id = 'NOTI_cfa5ce3be4eb4f3785e503e2c485b6ed';

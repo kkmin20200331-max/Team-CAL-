@@ -1,7 +1,7 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
 import { useTheme } from 'next-themes';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import EmployeeHeader from './EmployeeHeader';
@@ -18,7 +18,6 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface PayrollResult {
   basePay: number;
@@ -104,7 +103,7 @@ export default function EmployeePayroll() {
 
   useEffect(() => {
     if (storeId || !user.id) return;
-    API.get("/store/my", { params: { user_id: user.id } })
+    axiosInstance.get("/store/my", { params: { user_id: user.id } })
       .then((res) => {
         if (res.data?.id) {
           setStoreId(res.data.id);
@@ -116,7 +115,7 @@ export default function EmployeePayroll() {
 
   useEffect(() => {
     if (!user.id || !storeId) return;
-    API.get("/store_member/pay", {
+    axiosInstance.get("/store_member/pay", {
       params: { user_id: user.id, store_id: storeId },
     })
       .then((res) => {
@@ -131,7 +130,7 @@ export default function EmployeePayroll() {
     const start = toDateStr(startOfMonth(selectedMonth));
     const end = toDateStr(endOfMonth(selectedMonth));
     Promise.all([
-      API.get("/payroll", {
+      axiosInstance.get("/payroll", {
         params: {
           user_id: user.id,
           store_id: storeId,
@@ -139,7 +138,7 @@ export default function EmployeePayroll() {
           end_date: end,
         },
       }),
-      API.get("/shift/staff", {
+      axiosInstance.get("/shift/staff", {
         params: { user_id: user.id, start_date: start, end_date: end },
       }),
     ])
@@ -166,7 +165,7 @@ export default function EmployeePayroll() {
         const start = toDateStr(startOfMonth(m)),
           end = toDateStr(endOfMonth(m));
         return Promise.all([
-          API.get("/payroll", {
+          axiosInstance.get("/payroll", {
             params: {
               user_id: user.id,
               store_id: storeId,
@@ -174,7 +173,7 @@ export default function EmployeePayroll() {
               end_date: end,
             },
           }),
-          API.get("/shift/staff", {
+          axiosInstance.get("/shift/staff", {
             params: { user_id: user.id, start_date: start, end_date: end },
           }),
         ]).then(([p, s]) => ({
