@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'; // useMemo 임포트
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
@@ -43,21 +44,21 @@ const MyPageScreen = ({ navigation }: Props) => {
   const renderMenuItem = (icon: string, title: string, onPress: () => void) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.menuLeft}>
-        <Text style={styles.menuIcon}>{icon}</Text>
+        <Ionicons name={icon as any} size={20} color={colors.primary} style={styles.menuIcon} />
         <Text style={styles.menuTitle}>{title}</Text>
       </View>
-      <Text style={styles.menuArrow}>›</Text>
+      <Ionicons name="chevron-forward-outline" size={18} color={colors.subText} />
     </TouchableOpacity>
   );
 
   const renderSwitchItem = (icon: string, title: string, value: boolean, onValueChange: (val: boolean) => void) => (
     <View style={styles.menuItem}>
       <View style={styles.menuLeft}>
-        <Text style={styles.menuIcon}>{icon}</Text>
+        <Ionicons name={icon as any} size={20} color={colors.primary} style={styles.menuIcon} />
         <Text style={styles.menuTitle}>{title}</Text>
       </View>
       <Switch
-        trackColor={{ false: '#D1D5DB', true: '#34C759' }}
+        trackColor={{ false: '#D1D5DB', true: colors.primary }}
         thumbColor={'#FFFFFF'}
         ios_backgroundColor="#D1D5DB"
         onValueChange={onValueChange}
@@ -109,16 +110,16 @@ const MyPageScreen = ({ navigation }: Props) => {
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
-          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo }))}
-          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
-          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
+          {renderMenuItem('person-outline', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo }))}
+          {renderMenuItem('document-text-outline', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
+          {renderMenuItem('medkit-outline', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
         </View>
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
-          {renderMenuItem('🌙', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
-          {renderMenuItem('🌐', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
-          {renderSwitchItem('🔔', t('pushAlert'), isPushEnabled, setIsPushEnabled)}
+          {renderMenuItem('moon-outline', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
+          {renderMenuItem('globe-outline', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
+          {renderSwitchItem('notifications-outline', t('pushAlert'), isPushEnabled, setIsPushEnabled)}
         </View>
 
         <TouchableOpacity 
@@ -222,7 +223,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   avatarText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#007BFF',
+    color: colors.primary,
   },
   profileInfo: {
     flex: 1,
@@ -265,17 +266,11 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   menuIcon: {
-    fontSize: 18,
     marginRight: 12,
-    color: colors.text,
   },
   menuTitle: {
     fontSize: 16,
     color: colors.text,
-  },
-  menuArrow: {
-    fontSize: 20,
-    color: colors.subText,
   },
   logoutButton: {
     marginTop: 30,
@@ -313,6 +308,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.modalBg,
     borderRadius: 12,
     padding: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,
@@ -334,7 +331,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   modalOptionTextSelected: {
-    color: '#007BFF',
+    color: colors.primary,
     fontWeight: 'bold',
   },
 });

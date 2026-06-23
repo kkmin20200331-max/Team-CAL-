@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Post } from '../../types/Post';
 
 type Props = {
@@ -30,7 +31,7 @@ const NoticeSection = ({ posts, handleOpenPost, navigation, colors, isDarkMode, 
         <React.Fragment key={post.id}>
           <TouchableOpacity style={styles.noticeItem} onPress={() => handleOpenPost(post)} activeOpacity={0.7}>
             <View style={styles.noticeTextContainer}>
-              {post.isPinned && <Text style={styles.pinIcon}>📌</Text>}
+              {post.isPinned && <Ionicons name="pin" size={14} color="#EF4444" style={styles.pinIcon} />}
               <View style={styles.categoryBadge}>
                 <Text style={styles.categoryBadgeText}>{t(CATEGORIES.find(c => c.id === post.category)?.label || 'boardTabNotice')}</Text>
               </View>
@@ -62,6 +63,8 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -92,11 +95,10 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     paddingRight: 10,
   },
   pinIcon: {
-    fontSize: 14,
-    marginRight: 8,
+    marginRight: 6,
   },
   categoryBadge: {
-    backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',
+    backgroundColor: isDarkMode ? '#1F293D' : '#E5E7EB',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,

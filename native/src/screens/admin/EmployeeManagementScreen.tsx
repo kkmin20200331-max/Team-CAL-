@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
-import { getStoreGuestStaffAPI, getStoreStaffAPI } from '../../../api/auth';
+import { getStorePendingStaffAPI, getStoreStaffAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -45,9 +45,9 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
 
     setLoading(true);
     try {
-      const [staffRes, guestRes] = await Promise.allSettled([
+      const [staffRes, pendingRes] = await Promise.allSettled([
         getStoreStaffAPI(storeId),
-        getStoreGuestStaffAPI(storeId),
+        getStorePendingStaffAPI(storeId),
       ]);
 
       const mapStaff = (item: any, sectionStatus: 'ACTIVE' | 'PENDING'): StaffRow => ({
@@ -66,8 +66,8 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
           : [],
       );
       setPendingStaff(
-        guestRes.status === 'fulfilled' && Array.isArray(guestRes.value.data)
-          ? guestRes.value.data.map((item: any) => mapStaff(item, 'PENDING'))
+        pendingRes.status === 'fulfilled' && Array.isArray(pendingRes.value.data)
+          ? pendingRes.value.data.map((item: any) => mapStaff(item, 'PENDING'))
           : [],
       );
     } catch (error) {

@@ -238,7 +238,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     color: colors.subText 
   },
   saveButton: { 
-    backgroundColor: '#2563EB', 
+    backgroundColor: colors.primary, 
     paddingVertical: 16, 
     borderRadius: 12, 
     alignItems: 'center', 

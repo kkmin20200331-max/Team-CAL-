@@ -10,7 +10,7 @@ import { useApp } from '../../contexts/AppContext';
 
 const NotificationListScreen = () => {
   // ✅ 1. 알림 데이터를 나홀로 상태가 아닌 전역 상태(Context)에서 가져옵니다.
-  const { notifications, setNotifications } = useContext(NotificationContext);
+  const { notifications, setNotifications, refreshNotifications } = useContext(NotificationContext);
   const { userInfo } = useApp();
   
   // ✅ 전역 언어 설정 가져오기
@@ -62,12 +62,16 @@ const NotificationListScreen = () => {
 
   // ✅ 당겨서 새로고침 상태 및 핸들러 추가
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // 💡 실제 백엔드 연동 시 여기에 API를 호출하여 최신 알림 데이터를 가져옵니다.
-    // 지금은 UI 테스트를 위해 1초 후 로딩이 끝나는 것처럼 시뮬레이션합니다.
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    try {
+      await refreshNotifications();
+    } catch (error) {
+      console.error('알림 새로고침 오류:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshNotifications]);
 
   // ✅ 스와이프했을 때 나타날 오른쪽 [삭제] 버튼 UI
   const renderRightActions = (id: string) => {
@@ -124,8 +128,8 @@ const NotificationListScreen = () => {
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh} 
-            colors={['#2563EB']} // 안드로이드 스피너 색상
-            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'} // iOS 스피너 색상
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       />
@@ -175,9 +179,9 @@ const NotificationListScreen = () => {
 // ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: colors.primaryLight, backgroundColor: colors.card },
   headerText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  markAllText: { fontSize: 14, color: isDarkMode ? '#60A5FA' : '#2563EB', fontWeight: '600' },
+  markAllText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
   listContent: { paddingVertical: 10 },
   notificationItem: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
   unreadBackground: { backgroundColor: isDarkMode ? '#1E293B' : '#F0F8FF' }, // 다크 모드일 땐 어두운 남색
@@ -185,7 +189,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   titleText: { fontSize: 15, fontWeight: '600', color: colors.subText, flex: 1, marginRight: 10 },
   unreadTitleText: { color: colors.text, fontWeight: 'bold' },
-  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: isDarkMode ? '#60A5FA' : '#2563EB' },
+  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
   messageText: { fontSize: 14, color: colors.subText, lineHeight: 20, marginBottom: 8 },
   timeText: { fontSize: 12, color: colors.subText },
   
@@ -200,7 +204,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   modalButtonGroup: { flexDirection: 'row', gap: 12 },
   deleteButton: { flex: 1, backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   deleteButtonText: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 15, fontWeight: 'bold' },
-  closeButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  closeButton: { flex: 1, backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   closeButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 
   // --- 스와이프 삭제 액션 스타일 ---

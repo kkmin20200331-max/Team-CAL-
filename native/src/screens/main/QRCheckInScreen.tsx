@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   permissionButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#18A022',
     padding: 15,
     marginHorizontal: 40,
     borderRadius: 8,

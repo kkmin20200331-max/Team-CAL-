@@ -1,54 +1,174 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, RefreshControl } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 import Toast from 'react-native-toast-message';
+import { useApp } from '../../contexts/AppContext';
+import { format, parseISO } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import {
+  getSubstitutePostsAPI,
+  applySubstituteAPI,
+  getMySubstituteApplicationsAPI,
+  getShiftAPI,
+} from '../../../api/auth';
 
 const SubstituteScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
-  
-  // ✅ 탭 상태 관리 ('REQUEST' = 대타 요청 목록, 'HISTORY' = 내 대타 이력)
+  const { userInfo } = useApp();
   const [activeTab, setActiveTab] = useState<'REQUEST' | 'HISTORY'>('REQUEST');
 
-  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
-  // 더미 데이터 1. 대타 요청 목록
-  const requestData = [
-    { id: '1', store: '컴포즈 미금점', date: '6월 3일 (수)', time: '17:00 ~ 22:00', wage: '51,600', role: '마감 가능자 우대', bonus: '+3' },
-    { id: '2', store: '컴포즈 판교점', date: '6월 5일 (금)', time: '12:00 ~ 17:00', wage: '51,600', role: '일반 직원', bonus: '+2' },
-  ];
+  const [requests, setRequests] = useState<any[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // 더미 데이터 2. 내 대타 이력
-  const historyData = [
-    { id: '1', store: '컴포즈 미금점', date: '5월 20일 (월)', time: '14:00 ~ 18:00', earnedBonus: '+2' },
-    { id: '2', store: '컴포즈 미금점', date: '5월 15일 (수)', time: '18:00 ~ 22:00', earnedBonus: '+3' },
-  ];
+  const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
+  const storeName = userInfo?.brandName || userInfo?.store_id || '매장';
 
-  // 대타 지원 버튼 누를 때
+  const fetchData = async () => {
+    if (!storeId || !userInfo?.id) {
+      setLoadingData(false);
+      return;
+    }
+
+    setLoadingData(true);
+    try {
+      // 1. 대타 모집글 목록 조회
+      const postsRes = await getSubstitutePostsAPI(storeId);
+      const posts = Array.isArray(postsRes.data) ? postsRes.data : [];
+      const pendingPosts = posts.filter((p: any) => p.status === 'PENDING');
+
+      const mappedRequests = await Promise.all(
+        pendingPosts.map(async (post: any) => {
+          try {
+            const shiftRes = await getShiftAPI(post.shift_id);
+            const shift = shiftRes.data;
+            let timeStr = '-';
+            let wageStr = '0';
+            let dateStr = '';
+
+            if (shift) {
+              const start = shift.start_time || shift.startTime || '';
+              const end = shift.end_time || shift.endTime || '';
+              timeStr = `${start.slice(0, 5)} ~ ${end.slice(0, 5)}`;
+              dateStr = format(parseISO(shift.work_date || shift.date), 'M월 d일 (eee)', { locale: ko });
+              
+              const [sH, sM] = start.split(':').map(Number);
+              const [eH, eM] = end.split(':').map(Number);
+              let diff = (eH * 60 + eM) - (sH * 60 + sM);
+              if (diff < 0) diff += 24 * 60;
+              const wageVal = (diff / 60) * (userInfo.payRate || 9860);
+              wageStr = Math.round(wageVal).toLocaleString();
+            }
+
+            return {
+              id: post.id,
+              post_id: post.id,
+              store: storeName,
+              date: dateStr,
+              time: timeStr,
+              wage: wageStr,
+              role: post.reason || '대타 근무',
+              bonus: '+1',
+            };
+          } catch (e) {
+            console.error('스케줄 상세 조회 실패:', e);
+            return null;
+          }
+        })
+      );
+      setRequests(mappedRequests.filter(item => item !== null));
+
+      // 2. 내 대타 지원 내역 조회
+      const appsRes = await getMySubstituteApplicationsAPI(userInfo.id);
+      const apps = Array.isArray(appsRes.data) ? appsRes.data : [];
+
+      const mappedHistory = await Promise.all(
+        apps.map(async (app: any) => {
+          try {
+            // 해당 app의 post_id를 통해 매장 전체 post 검색
+            const matchedPost = posts.find(p => p.id === app.substitute_post_id);
+            if (!matchedPost) return null;
+
+            const shiftRes = await getShiftAPI(matchedPost.shift_id);
+            const shift = shiftRes.data;
+            let timeStr = '-';
+            let dateStr = '';
+
+            if (shift) {
+              const start = shift.start_time || shift.startTime || '';
+              const end = shift.end_time || shift.endTime || '';
+              timeStr = `${start.slice(0, 5)} ~ ${end.slice(0, 5)}`;
+              dateStr = format(parseISO(shift.work_date || shift.date), 'M월 d일 (eee)', { locale: ko });
+            }
+
+            return {
+              id: app.id,
+              store: storeName,
+              date: dateStr,
+              time: timeStr,
+              earnedBonus: '+1',
+            };
+          } catch (e) {
+            return null;
+          }
+        })
+      );
+      setHistory(mappedHistory.filter(item => item !== null));
+
+    } catch (error) {
+      console.error('대타 데이터 로딩 실패:', error);
+      Toast.show({ type: 'error', text1: '대타 정보 로드 실패', text2: '서버 연결 상태를 확인해주세요.' });
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [storeId, userInfo?.id]);
+
   const handleApply = (item: any) => {
     Alert.alert(
       t('subReqConfirmTitle'),
       `${item.date} ${item.time}\n${t('subReqConfirmMsg')}`,
       [
         { text: t('cancel'), style: 'cancel' },
-        { text: t('applyBtn'), onPress: () => Toast.show({ type: 'success', text1: t('subApplySuccessTitle'), text2: t('subApplySuccessMsg') }) }
+        {
+          text: t('applyBtn'),
+          onPress: async () => {
+            try {
+              const appId = `SA_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+              await applySubstituteAPI({
+                id: appId,
+                substitute_post_id: item.post_id,
+                applicant_user_id: userInfo?.id || '',
+                message: '대타 신청합니다.',
+                status: 'PENDING',
+              });
+              Toast.show({ type: 'success', text1: t('subApplySuccessTitle'), text2: t('subApplySuccessMsg') });
+              fetchData();
+            } catch (error) {
+              console.error('대타 지원 에러:', error);
+              Toast.show({ type: 'error', text1: '지원 실패', text2: '이미 지원했거나 서버 오류가 발생했습니다.' });
+            }
+          }
+        }
       ]
     );
   };
 
-  // ✅ 당겨서 새로고침 상태 및 핸들러 추가
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // 💡 실제 백엔드 연동 시 여기에 API를 호출하여 최신 대타 데이터를 가져옵니다.
-    // 지금은 UI 테스트를 위해 1초 후 로딩이 끝나는 것처럼 시뮬레이션합니다.
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    await fetchData();
+    setRefreshing(false);
+  }, [storeId, userInfo?.id]);
 
-  // --- 리스트 렌더링 함수 ---
   const renderRequestItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -114,48 +234,54 @@ const SubstituteScreen = ({ navigation }: any) => {
       </View>
 
       {/* 탭 내용 영역 */}
-      <View style={styles.contentContainer}>
-        {activeTab === 'REQUEST' ? (
-          <FlatList
-            data={requestData}
-            keyExtractor={(item) => item.id}
-            renderItem={renderRequestItem}
-            contentContainerStyle={styles.listContainer}
-            ListEmptyComponent={<Text style={styles.emptyText}>{t('subEmptyReq')}</Text>}
-            refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
-                onRefresh={onRefresh} 
-                colors={['#2563EB']} // 안드로이드 스피너 색상
-                tintColor={isDarkMode ? '#60A5FA' : '#2563EB'} // iOS 스피너 색상
-              />
-            }
-          />
-        ) : (
-          <>
-            {/* 내 대타 이력 상단 누적 점수 표시 */}
-            <View style={styles.pointSummaryBox}>
-              <Text style={styles.pointSummaryTitle}>{t('subPointTotal')}</Text>
-              <Text style={styles.pointSummaryValue}>5{t('subPointUnit')}</Text>
-            </View>
+      {loadingData ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <View style={styles.contentContainer}>
+          {activeTab === 'REQUEST' ? (
             <FlatList
-              data={historyData}
+              data={requests}
               keyExtractor={(item) => item.id}
-              renderItem={renderHistoryItem}
+              renderItem={renderRequestItem}
               contentContainerStyle={styles.listContainer}
-              ListEmptyComponent={<Text style={styles.emptyText}>{t('subEmptyHist')}</Text>}
+              ListEmptyComponent={<Text style={styles.emptyText}>{t('subEmptyReq')}</Text>}
               refreshControl={
                 <RefreshControl 
                   refreshing={refreshing} 
                   onRefresh={onRefresh} 
-                  colors={['#2563EB']}
-                  tintColor={isDarkMode ? '#60A5FA' : '#2563EB'}
+                  colors={[colors.primary]}
+                  tintColor={colors.primary}
                 />
               }
             />
-          </>
-        )}
-      </View>
+          ) : (
+            <>
+              {/* 내 대타 이력 상단 누적 점수 표시 */}
+              <View style={styles.pointSummaryBox}>
+                <Text style={styles.pointSummaryTitle}>{t('subPointTotal')}</Text>
+                <Text style={styles.pointSummaryValue}>{history.length}{t('subPointUnit')}</Text>
+              </View>
+              <FlatList
+                data={history}
+                keyExtractor={(item) => item.id}
+                renderItem={renderHistoryItem}
+                contentContainerStyle={styles.listContainer}
+                ListEmptyComponent={<Text style={styles.emptyText}>{t('subEmptyHist')}</Text>}
+                refreshControl={
+                  <RefreshControl 
+                    refreshing={refreshing} 
+                    onRefresh={onRefresh} 
+                    colors={[colors.primary]}
+                    tintColor={colors.primary}
+                  />
+                }
+              />
+            </>
+          )}
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -190,9 +316,9 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  activeTabButton: { borderBottomColor: '#2563EB' },
+  activeTabButton: { borderBottomColor: colors.primary },
   tabText: { fontSize: 15, fontWeight: '600', color: colors.subText },
-  activeTabText: { color: '#2563EB' },
+  activeTabText: { color: colors.primary },
 
   contentContainer: { flex: 1 },
   listContainer: { padding: 20, gap: 16 },
@@ -206,6 +332,8 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   storeText: { fontSize: 14, fontWeight: '600', color: colors.text },
@@ -217,7 +345,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   infoValue: { fontSize: 14, fontWeight: '600', color: colors.text },
   
   applyButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -228,7 +356,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   // 이력 리스트 스타일
   historyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16 },
   historyLeft: { flex: 1 },
-  historySubText: { fontSize: 14, color: colors.subText, marginTop: -10 },
+  historySubText: { fontSize: 14, color: colors.subText, marginTop: 4 },
   historyRight: { justifyContent: 'center', alignItems: 'center' },
   historyBonusText: { fontSize: 18, fontWeight: '800', color: isDarkMode ? '#FDE68A' : '#D97706' },
 
@@ -239,6 +367,8 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     padding: 20,
     borderRadius: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   pointSummaryTitle: { fontSize: 14, color: colors.subText, marginBottom: 8, fontWeight: '600' },
   pointSummaryValue: { fontSize: 32, fontWeight: '900', color: isDarkMode ? '#FDE68A' : '#D97706' },

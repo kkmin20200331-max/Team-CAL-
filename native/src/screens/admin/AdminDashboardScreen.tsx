@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { getStoreShiftsAPI, getStoreStaffAPI } from '../../../api/auth';
 import TodayScheduleCard from '../../components/admin/TodayScheduleCard';
 import { useApp } from '../../contexts/AppContext';
@@ -25,7 +26,7 @@ const normalizeShift = (shift: any) => {
 };
 
 const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors);
   const isFocused = useIsFocused();
   const { userInfo, setActiveBranch } = useApp();
@@ -144,21 +145,24 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const menuItems = [
-    { title: '직원 관리', icon: '👥', screen: 'EmployeeManagement' },
-    { title: '월간 근무표', icon: '📅', screen: 'AdminSchedule' },
-    { title: '급여 정산', icon: '💰', screen: 'Payroll' },
-    { title: '사내 게시판', icon: '📋', screen: 'BoardNavigator' },
+    { title: '직원 관리', icon: 'people-outline', screen: 'EmployeeManagement' },
+    { title: '월간 근무표', icon: 'calendar-outline', screen: 'AdminSchedule' },
+    { title: '급여 정산', icon: 'cash-outline', screen: 'Payroll' },
+    { title: '사내 게시판', icon: 'document-text-outline', screen: 'BoardNavigator' },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>관리자 대시보드</Text>
           <TouchableOpacity style={styles.branchSelector} onPress={() => setBranchModalVisible(true)}>
-            <Text style={styles.storeName}>
-              {activeBranch ? `${activeBranch.brandName} ${activeBranch.branchName}` : '지점 선택'}
-            </Text>
+            <View style={styles.branchSelectorContent}>
+              <Text style={styles.storeName}>
+                {activeBranch ? `${activeBranch.brandName} ${activeBranch.branchName}` : '지점 선택'}
+              </Text>
+              <Ionicons name="chevron-down-outline" size={16} color={colors.primary} style={{ marginLeft: 4 }} />
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -182,7 +186,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
         <View style={styles.menuGrid}>
           {menuItems.map((item) => (
             <TouchableOpacity key={item.screen} style={styles.card} onPress={() => navigation.navigate(item.screen)}>
-              <Text style={styles.cardIcon}>{item.icon}</Text>
+              <Ionicons name={item.icon as any} size={28} color={colors.primary} style={styles.cardIcon} />
               <Text style={styles.cardLabel}>{item.title}</Text>
             </TouchableOpacity>
           ))}
@@ -207,7 +211,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
                   setBranchModalVisible(false);
                 }}
               >
-                <Text style={[styles.branchName, branch.id === activeBranch?.id && styles.branchNameActive]}>
+                <Text style={[styles.branchModalText, branch.id === activeBranch?.id && styles.branchTextActive]}>
                   {branch.brandName} {branch.branchName}
                 </Text>
               </TouchableOpacity>
@@ -234,26 +238,27 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
 const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContainer: { padding: 16 },
-  header: { marginBottom: 24 },
-  headerTitle: { fontSize: 28, fontWeight: 'bold', color: colors.text },
-  branchSelector: { marginTop: 4 },
-  storeName: { fontSize: 18, color: colors.primary, fontWeight: '600' },
-  summaryContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
-  summaryBox: { alignItems: 'center', backgroundColor: colors.card, padding: 20, borderRadius: 12, width: '45%', minHeight: 96 },
-  summaryValue: { fontSize: 24, fontWeight: 'bold', color: colors.primary },
-  summaryLabel: { fontSize: 14, color: colors.subText, marginTop: 8 },
+  header: { marginBottom: 24, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: colors.text },
+  branchSelector: { marginTop: 6 },
+  branchSelectorContent: { flexDirection: 'row', alignItems: 'center' },
+  storeName: { fontSize: 16, color: colors.primary, fontWeight: '600' },
+  summaryContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+  summaryBox: { alignItems: 'center', backgroundColor: colors.card, padding: 20, borderRadius: 16, width: '48%', minHeight: 96, borderWidth: 1, borderColor: colors.border, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  summaryValue: { fontSize: 24, fontWeight: '800', color: colors.primary },
+  summaryLabel: { fontSize: 13, color: colors.subText, marginTop: 8, fontWeight: '500' },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  card: { width: '48%', height: 120, backgroundColor: colors.card, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 16, padding: 16 },
-  cardIcon: { fontSize: 32, marginBottom: 8 },
+  card: { width: '48%', height: 120, backgroundColor: colors.card, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 16, padding: 16, borderWidth: 1, borderColor: colors.border, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  cardIcon: { marginBottom: 8 },
   cardLabel: { fontSize: 14, fontWeight: '600', color: colors.text, textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 30 },
+  modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 30, borderWidth: 1, borderColor: colors.border },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, textAlign: 'center', marginBottom: 20 },
-  branchItem: { padding: 16, borderRadius: 8, marginBottom: 10 },
-  branchItemActive: { backgroundColor: colors.primary },
-  branchName: { fontSize: 18, color: colors.text },
-  branchNameActive: { color: '#FFFFFF', fontWeight: 'bold' },
-  addBranchButton: { padding: 16, borderRadius: 8, backgroundColor: '#E5E7EB', alignItems: 'center', marginTop: 10 },
+  branchItem: { padding: 16, borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  branchItemActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  branchModalText: { fontSize: 16, color: colors.text },
+  branchTextActive: { color: '#FFFFFF', fontWeight: 'bold' },
+  addBranchButton: { padding: 16, borderRadius: 8, backgroundColor: colors.primaryLight, alignItems: 'center', marginTop: 10 },
   addBranchButtonText: { fontSize: 16, color: colors.primary, fontWeight: '600' },
   closeButton: { marginTop: 20, alignItems: 'center' },
   closeButtonText: { fontSize: 16, color: colors.subText },

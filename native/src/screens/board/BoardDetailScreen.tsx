@@ -114,7 +114,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   },
   pinButtonText: {
     fontSize: 14,
-    color: '#2563EB',
+    color: colors.primary,
     fontWeight: '600',
   },
   container: { flex: 1, padding: 20 },

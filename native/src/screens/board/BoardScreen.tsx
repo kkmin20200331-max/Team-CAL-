@@ -143,13 +143,13 @@ const BoardScreen = ({ route, navigation }: Props) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#2563EB']}
-            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator size="large" color="#2563EB" style={{ marginTop: 40 }} />
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
           ) : (
             <Text style={styles.emptyText}>등록된 게시글이 없습니다.</Text>
           )
@@ -198,7 +198,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderRadius: 20,
     backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6',
   },
-  tabButtonActive: { backgroundColor: '#2563EB' },
+  tabButtonActive: { backgroundColor: colors.primary },
   tabText: { fontSize: 14, color: colors.subText, fontWeight: '500' },
   tabTextActive: { color: '#FFFFFF', fontWeight: '700' },
   listContainer: {
@@ -274,7 +274,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,

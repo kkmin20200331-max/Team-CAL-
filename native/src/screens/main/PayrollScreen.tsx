@@ -113,7 +113,7 @@ const PayrollScreen = ({ route, navigation }: any) => {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>급여 내역을 계산 중입니다...</Text>
         </View>
       ) : !summary || dailyWages.length === 0 ? (

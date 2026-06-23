@@ -26,10 +26,15 @@ public interface StoreMemberMapper {
 
     //관리자 정보가 필요한 경우 조회
     @Select("""
-                SELECT *
-                FROM STORE_MEMBER
-                WHERE STORE_ID = #{store_id}
-                AND MEMBER_ROLE = 'ADMIN'
+                SELECT sm.*
+                FROM STORE_MEMBER sm
+                JOIN USERS u
+                    ON u.ID = sm.USER_ID
+                WHERE sm.STORE_ID = #{store_id}
+                AND (
+                    sm.MEMBER_ROLE IN ('ADMIN', 'OWNER', 'MANAGER')
+                    OR u.ROLE = 'ADMIN'
+                )
             """)
     List<StoreMemberVo> getAdmins(
             String store_id

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert, RefreshControl, Animated, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -242,10 +243,11 @@ const DashboardScreen = ({ navigation }: Props) => {
         />
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.qrButton} onPress={handleQRCheckIn}>
+            <Ionicons name="qr-code-outline" size={15} color={colors.text} style={{ marginRight: 6 }} />
             <Text style={styles.qrButtonText}>{t('qrCheckIn')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}>
-            <Text style={styles.notificationIcon}>🔔</Text>
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
             {unreadCount > 0 && <View style={styles.badge} />}
           </TouchableOpacity>
         </View>

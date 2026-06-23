@@ -177,6 +177,17 @@ const ScheduleScreen = () => {
           shift.id === selectedShift.id ? { ...shift, status: 'OFF', time: '휴무' } : shift
         ));
       } else {
+        const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
+        const postId = `SP_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+        const { createSubstitutePostAPI } = require('../../../api/auth');
+        await createSubstitutePostAPI({
+          id: postId,
+          shift_id: selectedShift.id,
+          store_id: storeId,
+          requester_user_id: userInfo.id,
+          reason,
+          status: 'PENDING',
+        });
         setScheduleData(prev => prev.map(shift =>
           shift.id === selectedShift.id ? { ...shift, status: 'SUBSTITUTE_REQ' } : shift
         ));

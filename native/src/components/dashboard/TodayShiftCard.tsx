@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 // Props 타입 정의
 type Props = {
@@ -26,12 +27,12 @@ const getStatusText = (status: string, t: (key: string) => string) => {
 // 근무 상태 색상 반환 함수
 const getStatusColor = (status: string, isDarkMode: boolean) => {
   switch(status) {
-    case 'SCHEDULED': return { bg: isDarkMode ? '#075985' : '#E0F2FE', text: isDarkMode ? '#BAE6FD' : '#0284C7' };
-    case 'IN_PROGRESS': return { bg: isDarkMode ? '#14532D' : '#DCFCE7', text: isDarkMode ? '#86EFAC' : '#16A34A' };
-    case 'COMPLETED': return { bg: isDarkMode ? '#374151' : '#F3F4F6', text: isDarkMode ? '#D1D5DB' : '#4B5563' };
+    case 'SCHEDULED': return { bg: isDarkMode ? 'rgba(16,185,129,0.16)' : '#E6F5C8', text: isDarkMode ? '#10B981' : '#059669' };
+    case 'IN_PROGRESS': return { bg: isDarkMode ? '#065F46' : '#D1FAE5', text: isDarkMode ? '#34D399' : '#059669' };
+    case 'COMPLETED': return { bg: isDarkMode ? '#1F293D' : '#F3F4F6', text: isDarkMode ? '#94A3B8' : '#4B5563' };
     case 'SUBSTITUTE_REQ': return { bg: isDarkMode ? '#78350F' : '#FEF3C7', text: isDarkMode ? '#FDE68A' : '#D97706' };
     case 'OFF': return { bg: isDarkMode ? '#7F1D1D' : '#FEE2E2', text: isDarkMode ? '#FECACA' : '#DC2626' };
-    default: return { bg: isDarkMode ? '#374151' : '#F3F4F6', text: isDarkMode ? '#D1D5DB' : '#4B5563' };
+    default: return { bg: isDarkMode ? '#1F293D' : '#F3F4F6', text: isDarkMode ? '#94A3B8' : '#4B5563' };
   }
 };
 
@@ -55,29 +56,29 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
       {loading ? (
         <Animated.View style={{ opacity: fadeAnim, paddingVertical: 10 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <View style={{ width: 20, height: 20, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 10, marginRight: 8 }} />
-            <View style={{ width: '50%', height: 18, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+            <View style={{ width: 20, height: 20, backgroundColor: isDarkMode ? '#1F293D' : '#E5E7EB', borderRadius: 10, marginRight: 8 }} />
+            <View style={{ width: '50%', height: 18, backgroundColor: isDarkMode ? '#1F293D' : '#E5E7EB', borderRadius: 6 }} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <View style={{ width: 20, height: 20, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 10, marginRight: 8 }} />
-            <View style={{ width: '70%', height: 18, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+            <View style={{ width: 20, height: 20, backgroundColor: isDarkMode ? '#1F293D' : '#E5E7EB', borderRadius: 10, marginRight: 8 }} />
+            <View style={{ width: '70%', height: 18, backgroundColor: isDarkMode ? '#1F293D' : '#E5E7EB', borderRadius: 6 }} />
           </View>
           <View style={styles.divider} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ width: '30%', height: 18, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
-            <View style={{ width: '40%', height: 24, backgroundColor: isDarkMode ? '#374151' : '#E5E7EB', borderRadius: 6 }} />
+            <View style={{ width: '30%', height: 18, backgroundColor: isDarkMode ? '#1F293D' : '#E5E7EB', borderRadius: 6 }} />
+            <View style={{ width: '40%', height: 24, backgroundColor: isDarkMode ? '#1F293D' : '#E5E7EB', borderRadius: 6 }} />
           </View>
         </Animated.View>
       ) : todayShift ? (
         <>
           {/* 근무 상세 정보 */}
           <View style={styles.workInfoRow}>
-            <Text style={styles.infoIcon}>🕒</Text>
+            <Ionicons name="time-outline" size={16} color={colors.primary} style={styles.infoIcon} />
             <Text style={styles.infoText}>{todayShift.time}</Text>
           </View>
           {todayShift.status !== 'OFF' && (
             <View style={styles.workInfoRow}>
-              <Text style={styles.infoIcon}>📍</Text>
+              <Ionicons name="location-outline" size={16} color={colors.primary} style={styles.infoIcon} />
               <Text style={styles.infoText}>{todayShift.storeName}</Text>
             </View>
           )}
@@ -85,13 +86,13 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
           {/* 출퇴근 시간 표시 영역 */}
           {todayShift.checkInTime && (
             <View style={styles.workInfoRow}>
-              <Text style={styles.infoIcon}>▶️</Text>
+              <Ionicons name="log-in-outline" size={16} color={colors.primary} style={styles.infoIcon} />
               <Text style={styles.infoText}>출근: {todayShift.checkInTime}</Text>
             </View>
           )}
           {todayShift.checkOutTime && (
             <View style={styles.workInfoRow}>
-              <Text style={styles.infoIcon}>⏹️</Text>
+              <Ionicons name="log-out-outline" size={16} color={colors.primary} style={styles.infoIcon} />
               <Text style={styles.infoText}>퇴근: {todayShift.checkOutTime}</Text>
             </View>
           )}
@@ -106,7 +107,7 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
         </>
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🏖️</Text>
+          <Ionicons name="calendar-outline" size={40} color={colors.subText} style={styles.emptyIcon} />
           <Text style={styles.emptyText}>{t('noScheduleToday')}</Text>
         </View>
       )}
@@ -126,6 +127,8 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -153,7 +156,6 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     marginBottom: 8,
   },
   infoIcon: {
-    fontSize: 16,
     marginRight: 8,
   },
   infoText: {
@@ -182,7 +184,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     fontWeight: '700',
   },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
-  emptyIcon: { fontSize: 40, marginBottom: 10 },
+  emptyIcon: { marginBottom: 10 },
   emptyText: { fontSize: 15, color: colors.subText, fontWeight: '500' },
 });
 

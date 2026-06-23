@@ -35,11 +35,13 @@ import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
 import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
 import SubstituteScreen from './src/screens/schedule/SubstituteScreen';
 
+import { Ionicons } from '@expo/vector-icons';
+
 // Contexts
 import { AppProvider, useApp } from './src/contexts/AppContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
-import { ThemeProvider } from './src/contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { BoardProvider } from './src/contexts/BoardContext';
 import { ScheduleProvider } from './src/contexts/ScheduleContext';
 
@@ -127,8 +129,38 @@ function AuthNavigator() {
 }
 
 function AdminTabNavigator() {
+  const { colors } = useTheme();
   return (
-    <AdminTab.Navigator screenOptions={{ headerShown: false }}>
+    <AdminTab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.subText,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          height: Platform.OS === 'ios' ? 84 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ color, size, focused }) => {
+          let iconName: any = 'grid';
+          if (route.name === 'AdminDashboard') {
+            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          } else if (route.name === 'EmployeeManagement') {
+            iconName = focused ? 'people' : 'people-outline';
+          } else if (route.name === 'AdminMyPage') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+          return <Ionicons name={iconName} size={size || 22} color={color} />;
+        },
+      })}
+    >
       <AdminTab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: '대시보드' }} />
       <AdminTab.Screen name="EmployeeManagement" component={EmployeeManagementScreen} options={{ title: '직원관리' }} />
       <AdminTab.Screen name="AdminMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
@@ -147,8 +179,40 @@ function BoardNavigator() {
 }
 
 function StaffTabNavigator() {
+  const { colors } = useTheme();
   return (
-    <StaffTab.Navigator screenOptions={{ headerShown: false }}>
+    <StaffTab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.subText,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          height: Platform.OS === 'ios' ? 84 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ color, size, focused }) => {
+          let iconName: any = 'home';
+          if (route.name === 'StaffDashboard') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'StaffSchedule') {
+            iconName = focused ? 'calendar' : 'calendar-outline';
+          } else if (route.name === 'Notifications') {
+            iconName = focused ? 'notifications' : 'notifications-outline';
+          } else if (route.name === 'StaffMyPage') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+          return <Ionicons name={iconName} size={size || 22} color={color} />;
+        },
+      })}
+    >
       <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '홈' }} />
       <StaffTab.Screen name="StaffSchedule" component={StaffScheduleScreen} options={{ title: '스케줄' }} />
       <StaffTab.Screen name="Notifications" component={NotificationScreen} options={{ title: '알림' }} />

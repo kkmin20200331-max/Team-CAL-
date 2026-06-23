@@ -168,7 +168,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.primaryLight,
+    backgroundColor: colors.card,
   },
   backButton: { fontSize: 28, color: colors.primary, width: 40 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
@@ -176,7 +177,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   label: { fontSize: 16, color: colors.subText, marginBottom: 8, marginLeft: 4 },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primaryLight,
     padding: 16,
     borderRadius: 8,
     marginBottom: 24,
@@ -185,7 +186,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   saveButton: {
-    backgroundColor: '#6EE7B7',
+    backgroundColor: colors.primary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -195,13 +196,13 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     opacity: 0.7,
   },
   saveButtonText: {
-    color: '#064E3B',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
   pickerButton: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primaryLight,
     padding: 16,
     borderRadius: 8,
     marginBottom: 24,
