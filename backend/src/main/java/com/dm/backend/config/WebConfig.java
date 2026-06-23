@@ -1,19 +1,46 @@
 package com.dm.backend.config;
 
+import java.util.List;
+
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    private static final List<String> ALLOWED_ORIGIN_PATTERNS = List.of(
+            "http://localhost:*",
+            "http://127.0.0.1:*",
+            "http://10.*:*",
+            "http://192.168.*:*"
+    );
+
+    @Bean
+    public CorsFilter corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(ALLOWED_ORIGIN_PATTERNS);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return new CorsFilter(source);
+    }
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**") // 1. /api로 시작하는 모든 백엔드 주소에 대해
-                .allowedOrigins("http://localhost:5173") // 2. 우리 리액트 주소만 전면 허용
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 3. 사용할 HTTP 메서드들 지정
-                .allowedHeaders("*") // 4. 어떤 헤더값 요청이 들어와도 허용
-                .allowCredentials(true) // 5. 쿠키나 인증 세션을 주고받을 수 있게 허용
-                .maxAge(3600); // 6. 브라우저가 CORS 검사 결과를 1시간 동안 캐싱하게 해서 통신 속도 최적화
+        registry.addMapping("/api/**")
+                .allowedOriginPatterns(ALLOWED_ORIGIN_PATTERNS.toArray(String[]::new))
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 }
