@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../lib/axiosInstance";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
@@ -88,7 +89,6 @@ type CctvStatus = CctvMetrics & {
   lastError?: string;
 };
 
-const CCTV_API = "http://localhost:8080/api/cctv";
 const OPENCV_CAMERA_STREAM = "http://localhost:8000/api/v1/camera/stream";
 
 const initialConfig: CameraConfig = {
@@ -113,21 +113,25 @@ export default function CctvAnalysis() {
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : "/admin/branch-selection" },
   ];
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
@@ -142,11 +146,13 @@ export default function CctvAnalysis() {
   const [lastSavedAt, setLastSavedAt] = useState("저장 전");
   const [lastResponse, setLastResponse] = useState("응답 대기");
   const [errorMessage, setErrorMessage] = useState("");
-  const storeId = branchId || sessionStorage.getItem("store_id") || "";
+  const storeId = selectedBranchId;
   const CONFIG_KEY = `cctv_config_${storeId}`;
   const [config, setConfig] = useState<CameraConfig>(() => {
     try {
-      const saved = localStorage.getItem(`cctv_config_${branchId || sessionStorage.getItem("store_id") || ""}`);
+      const saved = localStorage.getItem(
+        `cctv_config_${selectedBranchId || sessionStorage.getItem("store_id") || ""}`,
+      );
       return saved ? { ...initialConfig, ...JSON.parse(saved) } : initialConfig;
     } catch { return initialConfig; }
   });
@@ -188,7 +194,7 @@ export default function CctvAnalysis() {
   };
 
   const requestCctv = async (path: string, options?: RequestInit) => {
-    const response = await fetch(`${CCTV_API}${path}`, options);
+    const response = await fetch(`${API_BASE}/cctv${path}`, options);
     const data = await parseJsonOrText(response);
 
     if (!response.ok) {
@@ -672,7 +678,7 @@ export default function CctvAnalysis() {
                   {config.name}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  POST {CCTV_API}/start
+                  POST {API_BASE}/cctv/start
                 </p>
               </div>
               <div className="rounded-lg border bg-slate-950 p-3">

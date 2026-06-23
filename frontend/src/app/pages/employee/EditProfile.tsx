@@ -1,13 +1,12 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import PasswordInput from '../../components/PasswordInput';
-import axios from 'axios';
 import { Camera, Check } from 'lucide-react';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { useTheme } from 'next-themes';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
 const fontMap: Record<string, string> = {
   ko: "'Noto Sans KR', sans-serif",
@@ -112,7 +111,7 @@ export default function EditProfile() {
     if (!formName.trim()) return;
     setCheckingName(true); setNameCheckMsg('');
     try {
-      await API.get('/users/check-nickname', { params: { nickname: formName } });
+      await axiosInstance.get('/users/check-nickname', { params: { nickname: formName } });
       setNameCheckOk(true); setNameChecked(true); setNameCheckMsg(t.nameAvailable);
     } catch (err: any) {
       if (err.response?.status === 409) {
@@ -141,7 +140,7 @@ export default function EditProfile() {
 
     // 현재 비밀번호 검증
     try {
-      await API.post('/users/login', { username: currentUser.username, password: formCurrentPw });
+      await axiosInstance.post('/users/login', { username: currentUser.username, password: formCurrentPw });
     } catch {
       setErrMsg(t.errCurrentPassword); return;
     }
@@ -165,7 +164,7 @@ export default function EditProfile() {
         password: formPw || formCurrentPw,
       };
 
-      await API.put('/users', body);
+      await axiosInstance.put('/users', body);
 
       const updated = { ...currentUser, name: formName, phone: formPhone, username: formUsername || currentUser.username };
       sessionStorage.setItem('user', JSON.stringify(updated));

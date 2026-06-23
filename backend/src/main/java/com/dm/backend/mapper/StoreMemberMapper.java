@@ -99,6 +99,12 @@ void approveRegister(StoreMemberVo storeMemberVo);
     @Update("UPDATE store_member SET approval_status = 'APPROVED', member_role = 'STAFF' WHERE user_id = #{user_id} AND store_id = #{store_id}")
     void updateStoreMember(StoreMemberVo storeMemberVo);
 
+    @Select("SELECT * FROM store_member WHERE id = #{id}")
+    StoreMemberVo getMemberById(@Param("id") String id);
+
+    @Delete("delete from store_member where id = #{id}")
+    void deleteStoreMemberById(@Param("id") String id);
+
     // 직원 삭제 / 매장 직원 제거
     @Delete("delete from store_member where store_id = #{store_id} and user_id = #{user_id}")
     void deleteStoreMember(

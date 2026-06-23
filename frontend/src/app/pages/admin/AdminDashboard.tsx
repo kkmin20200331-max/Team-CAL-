@@ -1,6 +1,7 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
+import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router";
-import axios from "axios";
 import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
 import {
@@ -18,6 +19,7 @@ import {
   MessageSquare,
   BarChart3,
   Loader2,
+  QrCode,
 } from "lucide-react";
 import AdminHeader from "./AdminHeader";
 import { useTheme } from "next-themes";
@@ -37,8 +39,6 @@ const DARK_GREEN = "#07790F";
 const BORDER_GREEN = "#00A200";
 const LIGHT_GREEN = "#E6F5C8";
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
-const AI_INSIGHT_API = "http://localhost:8080/api/ai-insights";
 
 // ── 유틸 ──
 const toDateStr = (d: Date) => {
@@ -83,6 +83,14 @@ interface UserVO {
 interface PayInfo {
   pay_type: string; // 'HOURLY' | 'MONTHLY'
   pay_amount: number;
+}
+
+interface AttendanceQr {
+  qr_token: string;
+  store_id: string;
+  created_at: string;
+  expired_at: string;
+  is_active: string;
 }
 
 interface PeopleLog {
@@ -310,11 +318,18 @@ export default function AdminDashboard() {
     useState<CustomerTrendRow[]>(customerData);
   const [customerTrendSyncedAt, setCustomerTrendSyncedAt] = useState("");
   const [aiInsight, setAiInsight] = useState<AiInsightResponse | null>(null);
+  const [attendanceQr, setAttendanceQr] = useState<AttendanceQr | null>(null);
+  const [qrRemainSeconds, setQrRemainSeconds] = useState(30);
+  const [qrError, setQrError] = useState("");
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   // 관리 매장 목록 (드롭다운용)
   useEffect(() => {
     if (!currentUser?.id) return;
-    API.get("/store", { params: { user_id: currentUser.id } })
+    axiosInstance.get("/store", { params: { user_id: currentUser.id } })
       .then((res) =>
         setStores(
           Array.isArray(res.data)
@@ -334,16 +349,16 @@ export default function AdminDashboard() {
 
         const [shiftRes, userRes, subRes, peopleLogRes] =
           await Promise.allSettled([
-            API.get("/shift", {
+            axiosInstance.get("/shift", {
               params: {
                 store_id: branchId,
                 start_date: today,
                 end_date: today,
               },
             }),
-            API.get("/users", { params: { store_id: branchId } }),
-            API.get("/substitute", { params: { store_id: branchId } }),
-            API.get("/people_log", {
+            axiosInstance.get("/users", { params: { store_id: branchId } }),
+            axiosInstance.get("/substitute", { params: { store_id: branchId } }),
+            axiosInstance.get("/people_log", {
               params: {
                 store_id: resolveStoreId(branchId),
                 start_date: `${today} 00:00:00`,
@@ -400,7 +415,7 @@ export default function AdminDashboard() {
         if (uniqueIds.length > 0) {
           const payResults = await Promise.allSettled(
             uniqueIds.map((uid) =>
-              API.get("/store_member/pay", {
+              axiosInstance.get("/store_member/pay", {
                 params: { user_id: uid, store_id: branchId },
               }).then((r) => ({ uid, data: r.data as PayInfo })),
             ),
@@ -423,10 +438,10 @@ export default function AdminDashboard() {
       try {
         const today = toDateStr(new Date());
         const [shiftRes, peopleLogRes] = await Promise.allSettled([
-          API.get("/shift", {
+          axiosInstance.get("/shift", {
             params: { store_id: branchId, start_date: today, end_date: today },
           }),
-          API.get("/people_log", {
+          axiosInstance.get("/people_log", {
             params: {
               store_id: resolveStoreId(branchId),
               start_date: `${today} 00:00:00`,
@@ -465,6 +480,40 @@ export default function AdminDashboard() {
     return () => window.clearInterval(intervalId);
   }, [branchId]);
 
+  useEffect(() => {
+    if (!branchId) return;
+
+    let cancelled = false;
+
+    const generateQr = async () => {
+      try {
+        const response = await axiosInstance.post(`/attendance/qr/${branchId}`);
+        if (cancelled) return;
+
+        setAttendanceQr(response.data);
+        setQrRemainSeconds(30);
+        setQrError("");
+      } catch (err) {
+        if (cancelled) return;
+        console.error("[AdminDashboard] QR generation failed:", err);
+        setAttendanceQr(null);
+        setQrError("QR 코드를 발급하지 못했습니다.");
+      }
+    };
+
+    generateQr();
+    const refreshId = window.setInterval(generateQr, 30000);
+    const countdownId = window.setInterval(() => {
+      setQrRemainSeconds(prev => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(refreshId);
+      window.clearInterval(countdownId);
+    };
+  }, [branchId]);
+
   // ── 파생 값 ──
   const checkedIn = todayShifts.filter(
     (s) => (s.status || "").toUpperCase() === "CHECKED_IN",
@@ -485,6 +534,14 @@ export default function AdminDashboard() {
     estimatedPay,
   };
 
+  const attendanceQrPayload = attendanceQr
+    ? `teamcal://attendance?token=${attendanceQr.qr_token}`
+    : "";
+
+  const attendanceQrImageUrl = attendanceQrPayload
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(attendanceQrPayload)}`
+    : "";
+
   useEffect(() => {
     if (!branchId || customerTrendData.length === 0) return;
 
@@ -493,7 +550,7 @@ export default function AdminDashboard() {
     const loadAiInsight = async () => {
       try {
         const today = toDateStr(new Date());
-        const response = await fetch(`${AI_INSIGHT_API}/analyze`, {
+        const response = await fetch(`${API_BASE}/ai-insights/analyze`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -572,42 +629,58 @@ export default function AdminDashboard() {
     {
       icon: Calendar,
       label: t.menuItems.scheduleManagement,
-      path: `/admin/schedule/monthly/${branchId}`,
+      path: selectedBranchId
+        ? `/admin/schedule/monthly/${selectedBranchId}`
+        : "/admin/branch-selection",
     },
     {
       icon: UserPlus,
       label: t.menuItems.substituteRecruitment,
-      path: `/admin/substitute/${branchId}`,
+      path: selectedBranchId
+        ? `/admin/substitute/${selectedBranchId}`
+        : "/admin/branch-selection",
     },
     {
       icon: Users,
       label: t.menuItems.employeeManagement,
-      path: `/admin/employees/${branchId}`,
+      path: selectedBranchId
+        ? `/admin/employees/${selectedBranchId}`
+        : "/admin/branch-selection",
     },
     {
       icon: Wallet,
       label: t.menuItems.payrollManagement,
-      path: `/admin/payroll/${branchId}`,
+      path: selectedBranchId
+        ? `/admin/payroll/${selectedBranchId}`
+        : "/admin/branch-selection",
     },
     {
       icon: FileText,
       label: t.menuItems.documentManagement,
-      path: `/admin/documents/${branchId}`,
+      path: selectedBranchId
+        ? `/admin/documents/${selectedBranchId}`
+        : "/admin/branch-selection",
     },
     {
       icon: MessageSquare,
       label: t.menuItems.board,
-      path: `/admin/board/${branchId}`,
+      path: selectedBranchId
+        ? `/admin/board/${selectedBranchId}`
+        : "/admin/branch-selection",
     },
     {
       icon: BarChart3,
       label: t.menuItems.aiAnalytics,
-      path: `/admin/analytics/${branchId}`,
+      path: selectedBranchId
+        ? `/admin/analytics/${selectedBranchId}`
+        : "/admin/branch-selection",
     },
     {
       icon: Video,
       label: t.menuItems.cctvAnalysis,
-      path: `/admin/cctv/${branchId}`,
+      path: selectedBranchId
+        ? `/admin/cctv/${selectedBranchId}`
+        : "/admin/branch-selection",
     },
   ];
 
@@ -976,6 +1049,82 @@ export default function AdminDashboard() {
                 )}
               </div>
             ))}
+          </div>
+
+          {/* 출퇴근 QR */}
+          <div
+            style={{
+              background: "rgba(230,245,200,0.35)",
+              borderRadius: 18,
+              padding: "22px",
+              border: `1px solid ${LIGHT_GREEN}`,
+              marginBottom: 14,
+              display: "grid",
+              gridTemplateColumns: "260px 1fr",
+              gap: 22,
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                width: 240,
+                height: 240,
+                borderRadius: 16,
+                background: "#fff",
+                border: `1px solid ${LIGHT_GREEN}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}
+            >
+              {attendanceQrImageUrl ? (
+                <img
+                  src={attendanceQrImageUrl}
+                  alt="출퇴근 QR 코드"
+                  style={{ width: 220, height: 220, display: "block" }}
+                />
+              ) : (
+                <Loader2 size={32} color={DARK_GREEN} />
+              )}
+            </div>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <QrCode size={24} color={DARK_GREEN} />
+                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: DARK_GREEN }}>
+                  출퇴근 QR
+                </h2>
+              </div>
+              <p style={{ margin: "0 0 10px", fontSize: 15, color: "#5f7f61", fontWeight: 600 }}>
+                직원이 개인 폰으로 스캔하면 출근/퇴근이 자동 처리됩니다.
+              </p>
+              <p style={{ margin: "0 0 16px", fontSize: 14, color: "#8BA68D" }}>
+                QR 코드는 30초마다 새로 발급되고 이전 QR은 즉시 무효화됩니다.
+              </p>
+              {qrError ? (
+                <div style={{ color: "#dc2626", fontSize: 14, fontWeight: 700 }}>
+                  {qrError}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 14px",
+                    borderRadius: 999,
+                    background: "#fff",
+                    border: `1px solid ${LIGHT_GREEN}`,
+                    color: DARK_GREEN,
+                    fontSize: 14,
+                    fontWeight: 800,
+                  }}
+                >
+                  <Clock size={16} />
+                  {qrRemainSeconds}초 후 갱신
+                </div>
+              )}
+            </div>
           </div>
 
           {/* 차트 — 단독 행 */}
@@ -1384,7 +1533,7 @@ export default function AdminDashboard() {
                     {t.staffingBody}
                   </p>
                   <button
-                    onClick={() => navigate(`/admin/substitute/${branchId}`)}
+                    onClick={() => navigate(selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection')}
                     style={{
                       width: "100%",
                       padding: "10px 0",
@@ -1457,22 +1606,30 @@ export default function AdminDashboard() {
             {
               icon: CalendarDays,
               label: t.viewSchedule,
-              path: `/admin/schedule/monthly/${branchId}`,
+              path: selectedBranchId
+                ? `/admin/schedule/monthly/${selectedBranchId}`
+                : "/admin/branch-selection",
             },
             {
               icon: UserPlus,
               label: t.recruitSubNav,
-              path: `/admin/substitute/${branchId}`,
+              path: selectedBranchId
+                ? `/admin/substitute/${selectedBranchId}`
+                : "/admin/branch-selection",
             },
             {
               icon: BarChart3,
               label: t.customerAnalytics,
-              path: `/admin/analytics/${branchId}`,
+              path: selectedBranchId
+                ? `/admin/analytics/${selectedBranchId}`
+                : "/admin/branch-selection",
             },
             {
               icon: Video,
               label: "CCTV 분석",
-              path: `/admin/cctv/${branchId}`,
+              path: selectedBranchId
+                ? `/admin/cctv/${selectedBranchId}`
+                : "/admin/branch-selection",
             },
           ].map(({ icon: Icon, label, path }) => (
             <button
