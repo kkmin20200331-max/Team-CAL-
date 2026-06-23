@@ -6,8 +6,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import * as ImagePicker from 'expo-image-picker';
 import { User } from '../../types/User';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
-// ✅ [개선 23] 부모(MyPageScreen)로부터 받는 props의 타입을 명확하게 정의합니다.
 type Props = {
   route: {
     params: {
@@ -51,19 +51,17 @@ const ProfileEditScreen = ({ route, navigation }: Props) => {
 
   const handleSave = async () => {
     try {
-      // ✅ [오류 수정] userInfo가 null일 경우를 대비하여 기본값 {}를 제공합니다.
       const { profileImage: _, ...restUserInfo } = userInfo || {};
       const updateData = { 
         ...restUserInfo, 
         name: name, 
         phone: phone,
-        password: newPassword !== '' ? newPassword : (userInfo?.password || '1234') // userInfo?.password로 안전하게 접근
+        password: newPassword !== '' ? newPassword : (userInfo?.password || '1234')
       };
       
       await updateProfileAPI(updateData);
 
-      if (setUserInfo && userInfo) { // userInfo가 있을 때만 setUserInfo 호출
-        // ✅ [개선 24] 부모에게 전달하는 데이터가 User 타입의 구조를 따르도록 profileImage 속성을 포함합니다.
+      if (setUserInfo && userInfo) {
         setUserInfo({ ...userInfo, name, phone, profileImage: profileImage || undefined });
       }
 
@@ -80,7 +78,7 @@ const ProfileEditScreen = ({ route, navigation }: Props) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('profileEdit')}</Text>
         <View style={{ width: 40 }} />
@@ -98,7 +96,7 @@ const ProfileEditScreen = ({ route, navigation }: Props) => {
               </View>
             )}
             <View style={styles.avatarEditBadge}>
-              <Text style={styles.avatarEditBadgeText}>📷</Text>
+              <Ionicons name="camera" size={16} color={isDarkMode ? '#FFF' : '#374151'} />
             </View>
           </TouchableOpacity>
         </View>
@@ -196,17 +194,15 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderBottomColor: colors.border,
     backgroundColor: colors.card
   },
-  backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: colors.text },
+  backButton: { padding: 4, width: 40, justifyContent: 'center', alignItems: 'flex-start' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   container: { flex: 1, padding: 20 },
   
   avatarSection: { alignItems: 'center', marginVertical: 20 },
   avatarImage: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.primaryLight },
   avatarPlaceholder: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center' },
-  avatarPlaceholderText: { fontSize: 40, fontWeight: 'bold', color: '#007BFF' },
+  avatarPlaceholderText: { fontSize: 40, fontWeight: 'bold', color: colors.primary },
   avatarEditBadge: { position: 'absolute', right: 0, bottom: 0, backgroundColor: colors.card, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-  avatarEditBadgeText: { fontSize: 14 },
 
   section: { marginBottom: 32 },
   sectionTitle: { 

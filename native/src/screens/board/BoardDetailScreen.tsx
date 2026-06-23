@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -62,12 +63,16 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>‹</Text>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>게시글 상세</Text>
         {userInfo?.role === 'ADMIN' ? (
           <TouchableOpacity onPress={handleTogglePin} style={styles.pinButton}>
-            <Text style={styles.pinButtonText}>{post.isPinned ? '해제' : '고정'}</Text>
+            <Ionicons 
+              name={post.isPinned ? "pin" : "pin-outline"} 
+              size={22} 
+              color={colors.primary} 
+            />
           </TouchableOpacity>
         ) : (
           <View style={{ width: 60 }} />
@@ -104,18 +109,12 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderBottomColor: colors.border,
     backgroundColor: colors.card,
   },
-  backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 28, color: colors.text },
+  backButton: { padding: 4, width: 40, justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   pinButton: {
     width: 60,
     alignItems: 'center',
     paddingVertical: 4,
-  },
-  pinButtonText: {
-    fontSize: 14,
-    color: colors.primary,
-    fontWeight: '600',
   },
   container: { flex: 1, padding: 20 },
   postContainer: {

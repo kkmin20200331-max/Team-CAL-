@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
 import Toast from 'react-native-toast-message';
@@ -172,7 +173,10 @@ const SubstituteScreen = ({ navigation }: any) => {
   const renderRequestItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.storeText}>📍 {item.store}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Ionicons name="location-outline" size={16} color={colors.text} />
+          <Text style={styles.storeText}>{item.store}</Text>
+        </View>
         <View style={styles.bonusBadge}>
           <Text style={styles.bonusBadgeText}>{item.bonus}{t('subPointUnit')}</Text>
         </View>
@@ -211,7 +215,7 @@ const SubstituteScreen = ({ navigation }: any) => {
       {/* 상단 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('substituteTitle')}</Text>
         <View style={{ width: 40 }} />
@@ -286,7 +290,6 @@ const SubstituteScreen = ({ navigation }: any) => {
   );
 };
 
-// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
@@ -299,8 +302,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: colors.text },
+  backButton: { padding: 4, width: 40, justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   
   tabContainer: {

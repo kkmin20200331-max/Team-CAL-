@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
+import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -92,7 +93,7 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>‹</Text>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEdit ? '글 수정' : '새 글 작성'}</Text>
         <View style={{ width: 40 }} />
@@ -162,8 +163,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 28, color: colors.text },
+  backButton: { padding: 4, width: 40, justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   container: { padding: 20 },
   label: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 12, marginTop: 20 },

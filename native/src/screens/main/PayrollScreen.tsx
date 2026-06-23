@@ -7,6 +7,7 @@ import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth } from 'da
 import { ko } from 'date-fns/locale';
 import { Shift } from '../../types/Schedule';
 import { User } from '../../types/User';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 interface DailyWage {
   id: string;
@@ -105,7 +106,7 @@ const PayrollScreen = ({ route, navigation }: any) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('payrollTitle')}</Text>
         <View style={{ width: 40 }} />
@@ -165,8 +166,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border
   },
-  backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: colors.text },
+  backButton: { padding: 4, width: 40, justifyContent: 'center', alignItems: 'flex-start' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   container: { padding: 20 },
   

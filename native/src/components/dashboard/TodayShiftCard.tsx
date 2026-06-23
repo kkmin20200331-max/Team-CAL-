@@ -27,8 +27,8 @@ const getStatusText = (status: string, t: (key: string) => string) => {
 // 근무 상태 색상 반환 함수
 const getStatusColor = (status: string, isDarkMode: boolean) => {
   switch(status) {
-    case 'SCHEDULED': return { bg: isDarkMode ? 'rgba(16,185,129,0.16)' : '#E6F5C8', text: isDarkMode ? '#10B981' : '#059669' };
-    case 'IN_PROGRESS': return { bg: isDarkMode ? '#065F46' : '#D1FAE5', text: isDarkMode ? '#34D399' : '#059669' };
+    case 'SCHEDULED': return { bg: isDarkMode ? 'rgba(0,162,0,0.16)' : '#EEF5DD', text: isDarkMode ? '#00A200' : '#008200' };
+    case 'IN_PROGRESS': return { bg: isDarkMode ? '#004D00' : '#D6F2C5', text: isDarkMode ? '#00A200' : '#008200' };
     case 'COMPLETED': return { bg: isDarkMode ? '#1F293D' : '#F3F4F6', text: isDarkMode ? '#94A3B8' : '#4B5563' };
     case 'SUBSTITUTE_REQ': return { bg: isDarkMode ? '#78350F' : '#FEF3C7', text: isDarkMode ? '#FDE68A' : '#D97706' };
     case 'OFF': return { bg: isDarkMode ? '#7F1D1D' : '#FEE2E2', text: isDarkMode ? '#FECACA' : '#DC2626' };

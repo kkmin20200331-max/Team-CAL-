@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
@@ -15,7 +16,6 @@ const formatDate = (d: Date) => format(d, 'yyyy-MM-dd');
 const initialSelectedDate = formatDate(today);
 const KOREAN_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-// 1. 삭제되었던 generateWeekDates 함수 복원
 const generateWeekDates = (base: Date) => {
   const sunday = startOfWeek(base, { weekStartsOn: 0 });
   return Array.from({ length: 7 }).map((_, i) => {
@@ -225,13 +225,21 @@ const ScheduleScreen = () => {
         {renderStatusBadge(item.status)}
       </View>
       <View style={styles.cardBody}>
-        <View style={styles.infoRow}><Text style={styles.infoIcon}>🕒</Text><Text style={styles.infoText}>{item.time}</Text></View>
-        {item.status !== 'OFF' && <View style={styles.infoRow}><Text style={styles.infoIcon}>📍</Text><Text style={styles.infoText}>{item.storeName}</Text></View>}
+        <View style={styles.infoRow}>
+          <Ionicons name="time-outline" size={16} color={colors.subText} style={styles.infoIcon} />
+          <Text style={styles.infoText}>{item.time}</Text>
+        </View>
+        {item.status !== 'OFF' && (
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={16} color={colors.subText} style={styles.infoIcon} />
+            <Text style={styles.infoText}>{item.storeName}</Text>
+          </View>
+        )}
       </View>
       {item.status === 'SCHEDULED' && (
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenModal(item, 'LEAVE')}><Text style={styles.actionButtonText}>휴가 신청</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.substituteButton]} onPress={() => handleOpenModal(item, 'SUBSTITUTE')}><Text style={styles.actionButtonText}>대타 신청</Text></TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.substituteButton]} onPress={() => handleOpenModal(item, 'SUBSTITUTE')}><Text style={[styles.actionButtonText, { color: '#FFFFFF' }]}>대타 신청</Text></TouchableOpacity>
         </View>
       )}
     </View>
@@ -247,7 +255,9 @@ const ScheduleScreen = () => {
       </View>
       <View style={styles.calendarContainer}>
         <View style={styles.weekDaysContainer}>
-          <TouchableOpacity onPress={() => moveWeek(-1)} style={styles.arrowButton}><Text style={styles.arrowText}>◀</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => moveWeek(-1)} style={styles.arrowButton}>
+            <Ionicons name="chevron-back-outline" size={20} color={colors.subText} />
+          </TouchableOpacity>
           {generateWeekDates(baseDate).map((item) => {
             const isSelected = item.fullDate === selectedDate;
             const isWeekend = item.dayIndex === 0 ? '#EF4444' : item.dayIndex === 6 ? '#3B82F6' : colors.subText;
@@ -258,13 +268,30 @@ const ScheduleScreen = () => {
               </TouchableOpacity>
             );
           })}
-          <TouchableOpacity onPress={() => moveWeek(1)} style={styles.arrowButton}><Text style={styles.arrowText}>▶</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => moveWeek(1)} style={styles.arrowButton}>
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.subText} />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {loading ? <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color="#2563EB" /></View>
-       : <FlatList data={scheduleData.filter((item) => item.fullDate === selectedDate)} renderItem={renderShiftCard} keyExtractor={item => item.id} contentContainerStyle={styles.listContainer} ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyIcon}>🏖️</Text><Text style={styles.emptyText}>예정된 근무가 없습니다.</Text></View>} />
-      }
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={scheduleData.filter((item) => item.fullDate === selectedDate)}
+          renderItem={renderShiftCard}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="calendar-outline" size={48} color={colors.subText} style={{ marginBottom: 16 }} />
+              <Text style={styles.emptyText}>예정된 근무가 없습니다.</Text>
+            </View>
+          }
+        />
+      )}
 
       <CalendarModal isVisible={isMonthModalVisible} onClose={() => setMonthModalVisible(false)} onDateSelect={onDateSelectFromCalendar} shifts={scheduleData} colors={colors} />
 
@@ -336,9 +363,13 @@ const CalendarModal = ({ isVisible, onClose, onDateSelect, shifts, colors }: any
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity style={styles.calendarModalContent} activeOpacity={1}>
           <View style={styles.calendarHeader}>
-            <TouchableOpacity onPress={() => changeMonth(-1)}><Text style={styles.calendarNav}>◀</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => changeMonth(-1)}>
+              <Ionicons name="chevron-back-outline" size={24} color={colors.primary} />
+            </TouchableOpacity>
             <Text style={styles.calendarTitle}>{`${getYear(calendarDate)}년 ${getMonth(calendarDate) + 1}월`}</Text>
-            <TouchableOpacity onPress={() => changeMonth(1)}><Text style={styles.calendarNav}>▶</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => changeMonth(1)}>
+              <Ionicons name="chevron-forward-outline" size={24} color={colors.primary} />
+            </TouchableOpacity>
           </View>
           <View style={styles.weekHeader}>
             {KOREAN_DAYS.map(day => <Text key={day} style={styles.weekDay}>{day}</Text>)}
@@ -358,9 +389,8 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   calendarContainer: { backgroundColor: colors.card, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   weekDaysContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 10 },
   arrowButton: { paddingHorizontal: 5, paddingVertical: 10 },
-  arrowText: { fontSize: 16, color: colors.subText },
   dateBox: { width: 42, height: 65, justifyContent: 'center', alignItems: 'center', borderRadius: 10, backgroundColor: isDarkMode ? '#2A2A2A' : '#F9FAFB' },
-  dateBoxSelected: { backgroundColor: '#2563EB' },
+  dateBoxSelected: { backgroundColor: colors.primary },
   dayText: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
   dateText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   dateTextSelected: { color: '#FFFFFF' },
@@ -381,14 +411,13 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   badgeTextOff: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 12, fontWeight: '600' },
   cardBody: { marginBottom: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  infoIcon: { fontSize: 16, marginRight: 8 },
+  infoIcon: { marginRight: 8 },
   infoText: { fontSize: 15, color: colors.text, fontWeight: '500' },
   buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, gap: 10 },
   actionButton: { flex: 1, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  substituteButton: { backgroundColor: isDarkMode ? '#5B21B6' : '#A78BFA' },
+  substituteButton: { backgroundColor: colors.primary },
   actionButtonText: { color: isDarkMode ? colors.text : '#1F2937', fontSize: 14, fontWeight: '600' },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
-  emptyIcon: { fontSize: 50, marginBottom: 16 },
   emptyText: { fontSize: 16, color: colors.subText, fontWeight: '500' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '85%', backgroundColor: colors.card, borderRadius: 16, padding: 24, elevation: 5 },
@@ -398,12 +427,12 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   modalButtonGroup: { flexDirection: 'row', gap: 12 },
   modalCancelButton: { flex: 1, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   modalCancelText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  modalSubmitButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  modalSubmitButton: { flex: 1, backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   modalSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
   // Calendar Modal Styles
   calendarModalContent: { width: '90%', backgroundColor: colors.card, borderRadius: 16, padding: 20 },
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10 },
-  calendarNav: { fontSize: 20, color: colors.primary, padding: 10 },
+  calendarNav: { padding: 10 },
   calendarTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   weekHeader: { flexDirection: 'row', justifyContent: 'space-around', borderBottomWidth: 1, borderColor: colors.border, paddingBottom: 10, marginBottom: 5 },
   weekDay: { flex: 1, textAlign: 'center', fontSize: 13, color: colors.subText, fontWeight: '600' },

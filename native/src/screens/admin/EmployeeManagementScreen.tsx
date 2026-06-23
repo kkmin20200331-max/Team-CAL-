@@ -14,6 +14,7 @@ import Toast from 'react-native-toast-message';
 import { getStorePendingStaffAPI, getStoreStaffAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 type StaffRow = {
   id: string;
@@ -114,7 +115,7 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
         <View
           style={[
             styles.colorDot,
-            { backgroundColor: item.sectionStatus === 'PENDING' ? '#F59E0B' : '#10B981' },
+            { backgroundColor: item.sectionStatus === 'PENDING' ? '#F59E0B' : colors.primary },
           ]}
         />
         <View>
@@ -133,8 +134,8 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‹</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonWrapper}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>직원 관리</Text>
         <TouchableOpacity onPress={loadEmployees}>
@@ -181,9 +182,9 @@ const getThemedStyles = (colors: any) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    backButton: { fontSize: 32, color: colors.primary, width: 72 },
+    backButtonWrapper: { width: 72, justifyContent: 'center', alignItems: 'flex-start' },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
-    refreshText: { color: colors.primary, fontSize: 13, fontWeight: '800', width: 72, textAlign: 'right' },
+    refreshText: { color: colors.primary, fontSize: 14, fontWeight: '700', width: 72, textAlign: 'right' },
     listContainer: { paddingHorizontal: 16, paddingBottom: 24 },
     sectionHeader: {
       fontSize: 16,

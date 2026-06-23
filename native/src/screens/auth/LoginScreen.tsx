@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { getStoresAPI, loginAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
 
@@ -29,6 +30,8 @@ export default function LoginScreen({ navigation }: Props) {
   const { username, password } = inputs;
   const [loginRole, setLoginRole] = useState<LoginRole>('STAFF');
   const { login } = useApp();
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
   const handleInputChange = (name: string, text: string) => {
     setInputs({ ...inputs, [name]: text });
@@ -118,11 +121,11 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.inputContainer}>
-          <Ionicons name="person-outline" size={20} color="#94A3B8" style={styles.inputIcon} />
+          <Ionicons name="person-outline" size={20} color={colors.subText} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="아이디를 입력하세요"
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.subText}
             value={username}
             onChangeText={(text) => handleInputChange('username', text)}
             autoCapitalize="none"
@@ -130,11 +133,11 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed-outline" size={20} color="#94A3B8" style={styles.inputIcon} />
+          <Ionicons name="lock-closed-outline" size={20} color={colors.subText} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="비밀번호를 입력하세요"
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.subText}
             value={password}
             onChangeText={(text) => handleInputChange('password', text)}
             secureTextEntry
@@ -152,23 +155,38 @@ export default function LoginScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   keyboardAvoidingContainer: { flex: 1 },
-  container: { flexGrow: 1, justifyContent: 'center', padding: 24, backgroundColor: '#F8FAFC' },
-  logoImage: { width: 360, height: 140, alignSelf: 'center', marginBottom: 36 },
-  roleToggleContainer: { flexDirection: 'row', marginBottom: 24, backgroundColor: '#ECFDF5', borderRadius: 12, padding: 4, borderWidth: 1, borderColor: '#10B981' },
+  container: { flexGrow: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.background },
+  logoImage: { width: 320, height: 120, alignSelf: 'center', marginBottom: 36 },
+  roleToggleContainer: { 
+    flexDirection: 'row', 
+    marginBottom: 24, 
+    backgroundColor: isDarkMode ? 'rgba(0,162,0,0.1)' : '#F2F8E8', 
+    borderRadius: 12, 
+    padding: 4, 
+    borderWidth: 1, 
+    borderColor: colors.primary 
+  },
   roleButton: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 9 },
-  roleButtonActive: { backgroundColor: '#FFFFFF', elevation: 2, shadowColor: '#10B981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 },
-  roleButtonText: { fontSize: 15, fontWeight: '700', color: '#64748B' },
-  roleButtonTextActive: { color: '#059669' },
+  roleButtonActive: { 
+    backgroundColor: isDarkMode ? '#3A3A3C' : '#FFFFFF', 
+    elevation: 2, 
+    shadowColor: colors.primary, 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.12, 
+    shadowRadius: 6 
+  },
+  roleButtonText: { fontSize: 15, fontWeight: '700', color: colors.subText },
+  roleButtonTextActive: { color: colors.primary },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     borderRadius: 8,
     marginBottom: 15,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     paddingHorizontal: 12,
   },
   inputIcon: {
@@ -177,11 +195,25 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     paddingVertical: 12,
-    color: '#0F172A',
+    color: colors.text,
     fontSize: 16,
   },
-  primaryButton: { backgroundColor: '#10B981', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 10 },
+  primaryButton: { 
+    backgroundColor: colors.primary, 
+    padding: 15, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    marginTop: 10 
+  },
   primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
-  secondaryButton: { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0', padding: 15, borderRadius: 8, alignItems: 'center', marginTop: 12 },
-  secondaryButtonText: { color: '#475569', fontSize: 16, fontWeight: 'bold' },
+  secondaryButton: { 
+    backgroundColor: isDarkMode ? '#2C2C2E' : '#F1F5F9', 
+    borderWidth: 1, 
+    borderColor: colors.border, 
+    padding: 15, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    marginTop: 12 
+  },
+  secondaryButtonText: { color: colors.text, fontSize: 16, fontWeight: 'bold' },
 });
