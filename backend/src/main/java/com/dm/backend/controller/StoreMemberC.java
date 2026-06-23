@@ -55,6 +55,16 @@ public class StoreMemberC {
     }
 
     // 직원 삭제 / 매장 직원 제거
+    @PutMapping("/{id}/approve")
+    public void approveRequestById(@PathVariable String id) {
+        storeMemberService.approveRequestById(id);
+    }
+
+    @DeleteMapping("/{id}/reject")
+    public void rejectRequestById(@PathVariable String id) {
+        storeMemberService.rejectRequestById(id);
+    }
+
     @DeleteMapping
     public void deleteStoreMember(
             @RequestParam String store_id,

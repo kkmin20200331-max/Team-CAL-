@@ -1,6 +1,6 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import EmployeeProfilePanel from './EmployeeProfilePanel';
@@ -12,7 +12,6 @@ import {
 } from './figma/FigmaIcons';
 import { Clock, MapPin } from 'lucide-react';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
@@ -149,7 +148,7 @@ export default function EmployeeHome() {
     const user: UserInfo = JSON.parse(userStr);
     setCurrentUser(user);
 
-    API.get('/store/my', { params: { user_id: user.id } })
+    axiosInstance.get('/store/my', { params: { user_id: user.id } })
       .then(res => {
         if (res.data?.name) { setStoreName(res.data.name); sessionStorage.setItem('store_name', res.data.name); }
         if (res.data?.id) sessionStorage.setItem('store_id', res.data.id);
@@ -164,7 +163,7 @@ export default function EmployeeHome() {
     const twoWeeksLater = new Date(today);
     twoWeeksLater.setDate(today.getDate() + 14);
 
-    API.get('/shift/staff', {
+    axiosInstance.get('/shift/staff', {
       params: { user_id: user.id, start_date: toDateStr(weekStart), end_date: toDateStr(twoWeeksLater) },
     })
       .then(res => setShifts(Array.isArray(res.data) ? res.data : []))

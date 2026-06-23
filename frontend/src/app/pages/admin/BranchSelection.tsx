@@ -1,6 +1,6 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { Clock, MapPin, LayoutGrid } from 'lucide-react';
@@ -18,7 +18,6 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface StoreVo {
   id: string;
@@ -52,7 +51,7 @@ export default function BranchSelection() {
     const fetchAll = async () => {
       try {
         const user = JSON.parse(sessionStorage.getItem("user") || "{}");
-        const res = await API.get("/store", { params: { user_id: user.id } });
+        const res = await axiosInstance.get("/store", { params: { user_id: user.id } });
         const storeList: StoreVo[] = Array.isArray(res.data) ? res.data : [];
         setStores(storeList);
 
@@ -60,7 +59,7 @@ export default function BranchSelection() {
         const pending: PendingEmployee[] = [];
         for (const store of storeList) {
           try {
-            const guestRes = await API.get("/users/guest", {
+            const guestRes = await axiosInstance.get("/users/guest", {
               params: { store_id: store.id, role: "ADMIN" },
             });
             const guests = Array.isArray(guestRes.data) ? guestRes.data : [];

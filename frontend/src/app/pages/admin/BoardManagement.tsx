@@ -1,3 +1,4 @@
+﻿import { API_BASE } from "../../../lib/axiosInstance";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
@@ -13,7 +14,6 @@ const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
-const API = 'http://localhost:8080/api';
 
 interface BoardVO {
   id: string;
@@ -78,29 +78,33 @@ const BoardManagement: React.FC = () => {
   // ---------- 사이드바 ----------
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`${API}/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (!branchId) return;
-    fetch(`${API}/users?store_id=${branchId}`)
+    if (!selectedBranchId) return;
+    fetch(`${API_BASE}/users?store_id=${selectedBranchId}`)
       .then(r => r.json())
       .then((data: any[]) => {
         const map: Record<string, string> = {};
@@ -113,7 +117,7 @@ const BoardManagement: React.FC = () => {
         // fetch 실패해도 현재 유저는 표시
         if (currentUser?.id) setUserNameMap({ [currentUser.id]: currentUser.name || currentUser.username || currentUser.id });
       });
-  }, [branchId]);
+  }, [selectedBranchId]);
 
   // ---------- 게시판/게시글 ----------
   const [boards, setBoards] = useState<BoardVO[]>([]);
@@ -123,8 +127,8 @@ const BoardManagement: React.FC = () => {
   const [loadingPosts, setLoadingPosts] = useState(false);
 
   useEffect(() => {
-    if (!branchId) return;
-    fetch(`${API}/board?store_id=${branchId}`)
+    if (!selectedBranchId) return;
+    fetch(`${API_BASE}/board?store_id=${selectedBranchId}`)
       .then(r => r.json())
       .then((data: BoardVO[]) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -133,7 +137,7 @@ const BoardManagement: React.FC = () => {
         }
       })
       .catch(() => {});
-  }, [branchId]);
+  }, [selectedBranchId]);
 
   useEffect(() => {
     if (!selectedBoardId) return;
@@ -145,14 +149,14 @@ const BoardManagement: React.FC = () => {
     try {
       let data: BoardPostVO[] = [];
       if (searchTerm) {
-        const res = await fetch(`${API}/board/post/search?store_id=${branchId}&keyword=${encodeURIComponent(searchTerm)}`);
+        const res = await fetch(`${API_BASE}/board/post/search?store_id=${selectedBranchId}&keyword=${encodeURIComponent(searchTerm)}`);
         data = await res.json();
       } else if (selectedBoardId === '__all__') {
-        const results = await Promise.all(boards.map(b => fetch(`${API}/board/post?board_id=${b.id}`).then(r => r.json())));
+        const results = await Promise.all(boards.map(b => fetch(`${API_BASE}/board/post?board_id=${b.id}`).then(r => r.json())));
         results.forEach(r => { if (Array.isArray(r)) data.push(...r); });
         data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       } else {
-        const res = await fetch(`${API}/board/post?board_id=${selectedBoardId}`);
+        const res = await fetch(`${API_BASE}/board/post?board_id=${selectedBoardId}`);
         data = await res.json();
       }
       setPosts(Array.isArray(data) ? data : []);
@@ -170,12 +174,12 @@ const BoardManagement: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('게시글을 삭제하시겠습니까?')) return;
-    await fetch(`${API}/board/post?id=${id}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/board/post?id=${id}`, { method: 'DELETE' });
     fetchPosts();
   };
 
   const handleTogglePin = async (post: BoardPostVO) => {
-    await fetch(`${API}/board/post`, {
+    await fetch(`${API_BASE}/board/post`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...post, is_pinned: post.is_pinned === 'Y' ? 'N' : 'Y' }),
@@ -200,7 +204,7 @@ const BoardManagement: React.FC = () => {
     setPushSending(true);
     try {
       // 해당 매장 직원 목록 조회
-      const res = await fetch(`${API}/users?store_id=${branchId}`);
+      const res = await fetch(`${API_BASE}/users?store_id=${selectedBranchId}`);
       const staff: any[] = await res.json();
       // 관리자 본인도 포함
       const targets = Array.isArray(staff) ? staff : [];
@@ -209,13 +213,13 @@ const BoardManagement: React.FC = () => {
       }
       // 각 직원에게 알림 생성
       await Promise.all(targets.map((u: any) =>
-        fetch(`${API}/notification`, {
+        fetch(`${API_BASE}/notification`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: `NOTIF_${Date.now()}_${u.id}`,
             user_id: u.id,
-            store_id: branchId,
+            store_id: selectedBranchId,
             type: 'BOARD_PUSH',
             title: pushForm.title,
             content: pushForm.content,
@@ -254,18 +258,18 @@ const BoardManagement: React.FC = () => {
     if (!form.title.trim()) { alert('제목을 입력해주세요.'); return; }
     const status = asDraft ? 'DRAFT' : 'PUBLISHED';
     if (editingPost) {
-      await fetch(`${API}/board/post`, {
+      await fetch(`${API_BASE}/board/post`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...editingPost, ...form, status }),
       });
     } else {
       const id = 'POST_' + Date.now();
-      await fetch(`${API}/board/post`, {
+      await fetch(`${API_BASE}/board/post`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id, board_id: selectedBoardId, store_id: branchId,
+          id, board_id: selectedBoardId, store_id: selectedBranchId,
           writer_id: currentUser.id || '',
           title: form.title, content: form.content,
           is_pinned: form.is_pinned, status,
@@ -293,7 +297,7 @@ const BoardManagement: React.FC = () => {
   const fetchComments = async (postId: string) => {
     setLoadingComments(true);
     try {
-      const res = await fetch(`${API}/board/comment?post_id=${postId}`);
+      const res = await fetch(`${API_BASE}/board/comment?post_id=${postId}`);
       const data = await res.json();
       setComments(Array.isArray(data) ? data : []);
     } catch { setComments([]); }
@@ -302,7 +306,7 @@ const BoardManagement: React.FC = () => {
 
   const handleAddComment = async () => {
     if (!commentText.trim() || !selectedPost) return;
-    await fetch(`${API}/board/comment`, {
+    await fetch(`${API_BASE}/board/comment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -320,7 +324,7 @@ const BoardManagement: React.FC = () => {
 
   const handleDeleteComment = async (comment: BoardCommentVO) => {
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
-    await fetch(`${API}/board/comment?id=${comment.id}&post_id=${comment.post_id}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/board/comment?id=${comment.id}&post_id=${comment.post_id}`, { method: 'DELETE' });
     await fetchComments(comment.post_id);
     setPosts(prev => prev.map(p => p.id === comment.post_id ? { ...p, comment_count: Math.max(0, (p.comment_count || 1) - 1) } : p));
   };
@@ -346,7 +350,7 @@ const BoardManagement: React.FC = () => {
             {branchDropdownOpen && stores.length > 0 && (
               <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50, background: isDark ? '#1c1c1e' : '#fff', border: `1px solid ${sidebarBorder}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
                 {stores.map(s => (
-                  <button key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); setBranchDropdownOpen(false); navigate(`/admin/dashboard/${s.id}`); }} style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: s.id === branchId ? LIGHT_GREEN : 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600 }}>
+                  <button key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); setBranchDropdownOpen(false); navigate(`/admin/dashboard/${s.id}`); }} style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: s.id === selectedBranchId ? LIGHT_GREEN : 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600 }}>
                     {s.name}
                   </button>
                 ))}

@@ -1,8 +1,8 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from 'next-themes';
 import Holidays from 'date-holidays';
-import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { Badge } from '../../components/ui/badge';
@@ -30,7 +30,6 @@ import {
 } from "date-fns";
 import { ko } from "date-fns/locale";
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 // date-holidays로 한국 공휴일 동적 조회
 const hd = new Holidays('KR');
@@ -127,7 +126,7 @@ export default function MySchedule() {
     try {
       const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
       const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-      const res = await API.get("/shift/staff", {
+      const res = await axiosInstance.get("/shift/staff", {
         params: { user_id: user.id, start_date: start, end_date: end },
       });
       setShifts(Array.isArray(res.data) ? res.data : []);
@@ -143,7 +142,7 @@ export default function MySchedule() {
     try {
       const start = format(currentWeekStart, "yyyy-MM-dd");
       const end = format(addDays(currentWeekStart, 6), "yyyy-MM-dd");
-      const res = await API.get("/shift/staff", {
+      const res = await axiosInstance.get("/shift/staff", {
         params: { user_id: user.id, start_date: start, end_date: end },
       });
       setShifts(Array.isArray(res.data) ? res.data : []);

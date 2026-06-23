@@ -1,11 +1,12 @@
 import React from "react";
+import { API_BASE } from "../../../lib/axiosInstance";
 
 const LineLoginButton = () => {
   const user = JSON.parse(sessionStorage.getItem("user") || "{}");
   const handleLineLogin = () => {
     // Spring Boot 로그인 시작 API로 이동
     window.open(
-      `http://localhost:8080/api/line/login?userId=${user.id}`,
+      `${API_BASE}/line/login?userId=${user.id}`,
       "_blank",
       "width=500,height=700",
     );

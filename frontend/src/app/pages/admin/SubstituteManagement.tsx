@@ -1,5 +1,5 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
 import React, { useState, useEffect, useMemo } from "react";
-import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   UserPlus,
@@ -28,7 +28,6 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 /* ─── 타입 ─────────────────────────────────────────── */
 interface UserVo {
@@ -90,16 +89,20 @@ const SubstituteManagement: React.FC = () => {
 
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || "";
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
   const user = useMemo(() => {
@@ -122,24 +125,24 @@ const SubstituteManagement: React.FC = () => {
   /* 대타 요청하기 모달 */
   const [stores, setStores] = useState<StoreVo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalStoreId, setModalStoreId] = useState(branchId ?? "");
+  const [modalStoreId, setModalStoreId] = useState(selectedBranchId);
   const [modalDate, setModalDate] = useState(toDateStr(new Date()));
   const [modalCount, setModalCount] = useState(1);
   const [modalSubmitting, setModalSubmitting] = useState(false);
 
   /* ── 현재 지점 직원 + 최근 근무일 로드 ─────────────── */
   useEffect(() => {
-    if (!branchId) return;
+    if (!selectedBranchId) return;
 
     const today = new Date();
     const past90 = new Date(today);
     past90.setDate(today.getDate() - 90);
 
     Promise.all([
-      API.get("/users", { params: { store_id: branchId } }),
-      API.get("/shift", {
+      axiosInstance.get("/users", { params: { store_id: selectedBranchId } }),
+      axiosInstance.get("/shift", {
         params: {
-          store_id: branchId,
+          store_id: selectedBranchId,
           start_date: toDateStr(past90),
           end_date: toDateStr(today),
         },
@@ -163,19 +166,19 @@ const SubstituteManagement: React.FC = () => {
       })
       .catch(() => {})
       .finally(() => setLoadingStaff(false));
-  }, [branchId]);
+  }, [selectedBranchId]);
 
   /* ── admin 관리 지점 목록 (모달 지점 선택용) ───────── */
   useEffect(() => {
     if (!user.id) return;
-    API.get("/store", { params: { user_id: user.id } })
+    axiosInstance.get("/store", { params: { user_id: user.id } })
       .then((res) => setStores(Array.isArray(res.data) ? res.data : []))
       .catch(() => {});
   }, [user.id]);
 
   /* ── 모달 열기 ──────────────────────────────────────── */
   const openModal = () => {
-    setModalStoreId(branchId ?? stores[0]?.id ?? "");
+    setModalStoreId(selectedBranchId || stores[0]?.id || "");
     setModalDate(toDateStr(new Date()));
     setModalCount(1);
     setIsModalOpen(true);
@@ -194,7 +197,7 @@ const SubstituteManagement: React.FC = () => {
       status: "open",
     };
 
-    API.post("/substitute/staff", payload)
+    axiosInstance.post("/substitute/staff", payload)
       .then(() => setIsModalOpen(false))
       .catch(() => alert(t.errCreate))
       .finally(() => setModalSubmitting(false));

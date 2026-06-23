@@ -32,6 +32,17 @@ public interface AttendanceQrMapper {
             AttendanceQrVO vo
     );
 
+    @Update("""
+        UPDATE ATTENDANCE_QR
+        SET IS_ACTIVE = 'N'
+        WHERE STORE_ID = #{store_id}
+        AND IS_ACTIVE = 'Y'
+    """)
+    void expireStoreQrs(
+            @Param("store_id")
+            String store_id
+    );
+
     @Select("""
         SELECT *
         FROM ATTENDANCE_QR

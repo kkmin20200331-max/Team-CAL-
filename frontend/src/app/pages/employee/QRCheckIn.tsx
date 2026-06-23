@@ -1,7 +1,7 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useEffect, useMemo } from 'react';
 import EmployeeHeader from './EmployeeHeader';
 import { useNavigate } from 'react-router';
-import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { useTheme } from 'next-themes';
@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import EmployeeBottomNav from './EmployeeBottomNav';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface ShiftVO {
   id: string;
@@ -163,7 +162,7 @@ export default function QRCheckIn() {
   useEffect(() => {
     if (!user.id) return;
     const today = toDateStr(new Date());
-    API.get("/shift/staff", {
+    axiosInstance.get("/shift/staff", {
       params: { user_id: user.id, start_date: today, end_date: today },
     })
       .then((res) => setTodayShifts(Array.isArray(res.data) ? res.data : []))
@@ -179,7 +178,7 @@ export default function QRCheckIn() {
     yesterday.setDate(now.getDate() - 1);
     const twoWeeksAgo = new Date(now);
     twoWeeksAgo.setDate(now.getDate() - 14);
-    API.get("/shift/staff", {
+    axiosInstance.get("/shift/staff", {
       params: {
         user_id: user.id,
         start_date: toDateStr(twoWeeksAgo),
