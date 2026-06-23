@@ -4,11 +4,13 @@ import com.dm.backend.mapper.AttendanceMapper;
 import com.dm.backend.mapper.FixedscheduleMapper;
 import com.dm.backend.mapper.StoreMemberMapper;
 import com.dm.backend.mapper.SubstituteMapper;
+import com.dm.backend.mapper.UserMapper;
 import com.dm.backend.vo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,6 +29,113 @@ public class PayrollService {
 
     @Autowired
     private SubstituteMapper substituteMapper;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    public List<PayrollEntryVO> calculateStorePayroll(
+            String store_id,
+            String year_month
+    ) {
+
+        YearMonth yearMonth =
+                YearMonth.parse(year_month);
+
+        Date startDate =
+                Date.from(
+                        yearMonth
+                                .atDay(1)
+                                .atStartOfDay(ZoneId.systemDefault())
+                                .toInstant()
+                );
+
+        Date endDate =
+                Date.from(
+                        yearMonth
+                                .atEndOfMonth()
+                                .atTime(23, 59, 59)
+                                .atZone(ZoneId.systemDefault())
+                                .toInstant()
+                );
+
+        List<UserVo> staffList =
+                userMapper.getStaff(store_id);
+
+        List<PayrollEntryVO> payrollEntries =
+                new ArrayList<>();
+
+        for (UserVo staff : staffList) {
+
+            StoreMemberVo memberInfo =
+                    storeMemberMapper.getMemberInfo(
+                            staff.getId(),
+                            store_id
+                    );
+
+            PayrollResultVO payroll =
+                    calculatePayroll(
+                            staff.getId(),
+                            store_id,
+                            startDate,
+                            endDate
+                    );
+
+            List<AttendanceVO> attendances =
+                    attendanceMapper.getCompletedAttendanceList(
+                            staff.getId(),
+                            store_id,
+                            startDate,
+                            endDate
+                    );
+
+            PayrollWorkSummary summary =
+                    summarizeWorkHours(attendances);
+
+            PayrollEntryVO entry =
+                    new PayrollEntryVO();
+
+            entry.setId(
+                    "PAY-" + store_id + "-" + staff.getId() + "-" + year_month
+            );
+            entry.setEmployeeId(staff.getId());
+            entry.setEmployeeName(staff.getName());
+            entry.setPosition(resolvePosition(memberInfo));
+            entry.setLocation(store_id);
+            entry.setPeriod(year_month);
+            entry.setRegularHours(summary.regularHours);
+            entry.setOvertimeHours(summary.overtimeHours);
+            entry.setHolidayHours(summary.nightHours);
+            entry.setHourlyRate(
+                    memberInfo != null && memberInfo.getPay_amount() != null
+                            ? memberInfo.getPay_amount()
+                            : 0
+            );
+            entry.setBasePay(payroll.getBasePay());
+            entry.setOvertimePay(payroll.getOvertimePay());
+            entry.setHolidayPay(
+                    payroll.getNightPay()
+                            + payroll.getWeeklyPay()
+            );
+            entry.setTax(0);
+            entry.setInsurance(0);
+            entry.setPension(0);
+            entry.setTotalPay(payroll.getTotalPay());
+            entry.setStatus(
+                    payroll.getTotalPay() > 0
+                            ? "approved"
+                            : "pending"
+            );
+            entry.setRequestedDate(
+                    yearMonth
+                            .atEndOfMonth()
+                            .format(DateTimeFormatter.ISO_LOCAL_DATE)
+            );
+
+            payrollEntries.add(entry);
+        }
+
+        return payrollEntries;
+    }
 
     public PayrollResultVO calculatePayroll(
             String user_id,
@@ -293,6 +402,127 @@ public class PayrollService {
                 startTime,
                 endTime
         ).toMinutes() / 60.0;
+    }
+
+    private PayrollWorkSummary summarizeWorkHours(
+            List<AttendanceVO> attendances
+    ) {
+
+        PayrollWorkSummary summary =
+                new PayrollWorkSummary();
+
+        for (AttendanceVO attendance : attendances) {
+
+            LocalDateTime startTime =
+                    attendance.getCheck_in_at()
+                            .toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDateTime();
+
+            LocalDateTime endTime =
+                    attendance.getCheck_out_at()
+                            .toInstant()
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDateTime();
+
+            double workHours =
+                    resolveWorkHours(
+                            attendance,
+                            startTime,
+                            endTime
+                    );
+
+            summary.regularHours += workHours;
+            summary.overtimeHours +=
+                    Math.max(
+                            workHours - 8,
+                            0
+                    );
+            summary.nightHours +=
+                    calculateNightHours(
+                            startTime,
+                            endTime
+                    );
+        }
+
+        return summary;
+    }
+
+    private String resolvePosition(
+            StoreMemberVo memberInfo
+    ) {
+
+        if (memberInfo == null) {
+            return "직원";
+        }
+
+        if (memberInfo.getUser_level() != null
+                && !memberInfo.getUser_level().isBlank()) {
+            return memberInfo.getUser_level();
+        }
+
+        if (memberInfo.getMember_role() != null
+                && !memberInfo.getMember_role().isBlank()) {
+            return memberInfo.getMember_role();
+        }
+
+        return "직원";
+    }
+
+    private double calculateNightHours(
+            LocalDateTime start,
+            LocalDateTime end
+    ) {
+
+        double nightMinutes = 0;
+
+        LocalDateTime currentDate =
+                start.toLocalDate()
+                        .atStartOfDay();
+
+        while (!currentDate.isAfter(end)) {
+
+            LocalDateTime nightStart =
+                    currentDate.withHour(22);
+
+            LocalDateTime nightEnd =
+                    currentDate.plusDays(1)
+                            .withHour(6);
+
+            LocalDateTime overlapStart =
+                    start.isAfter(nightStart)
+                            ? start
+                            : nightStart;
+
+            LocalDateTime overlapEnd =
+                    end.isBefore(nightEnd)
+                            ? end
+                            : nightEnd;
+
+            if (
+                    overlapStart.isBefore(
+                            overlapEnd
+                    )
+            ) {
+
+                nightMinutes +=
+                        Duration.between(
+                                overlapStart,
+                                overlapEnd
+                        ).toMinutes();
+            }
+
+            currentDate =
+                    currentDate.plusDays(1);
+        }
+
+        return nightMinutes / 60.0;
+    }
+
+    private static class PayrollWorkSummary {
+        private double regularHours;
+        private double overtimeHours;
+        private double nightHours;
     }
 
     // =========================

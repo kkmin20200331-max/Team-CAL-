@@ -39,6 +39,7 @@ interface Document {
   employeeName: string;
   fileName: string;
   fileSize: number;
+  mimeType?: string;
   uploadDate: string;
   expiryDate?: string;
   status: "pending" | "verified" | "rejected" | "expired";
@@ -55,6 +56,28 @@ interface Document {
   notes?: string;
 }
 
+interface Employee {
+  id: string;
+  name: string;
+}
+
+interface BackendFile {
+  id: string;
+  user_id: string;
+  store_id?: string;
+  file_type: string;
+  original_name?: string;
+  storage_path?: string;
+  file_size?: number;
+  mime_type?: string;
+  status?: string;
+  ocr_status?: string;
+  expiry_date?: string;
+  notes?: string;
+  extracted_data?: string;
+  created_at?: string;
+}
+
 const DocumentManagement: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -69,6 +92,13 @@ const DocumentManagement: React.FC = () => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [uploadUserId, setUploadUserId] = useState("");
+  const [uploadFileType, setUploadFileType] = useState<Document["type"]>("health_certificate");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   const pageBg = isDark
     ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
@@ -80,6 +110,181 @@ const DocumentManagement: React.FC = () => {
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
 
+  const employeeNameById = (userId: string) => {
+    return employees.find((employee) => employee.id === userId)?.name || userId;
+  };
+
+  const parseExtractedData = (value?: string): Document["extractedData"] => {
+    if (!value) return undefined;
+    try {
+      return JSON.parse(value);
+    } catch {
+      return undefined;
+    }
+  };
+
+  const mapFileType = (type?: string): Document["type"] => {
+    switch ((type || "").toUpperCase()) {
+      case "HEALTH_CERT":
+        return "health_certificate";
+      case "CONTRACT":
+        return "contract";
+      case "ID_CARD":
+        return "id_card";
+      case "BANK_ACCOUNT":
+        return "bank_account";
+      default:
+        return "other";
+    }
+  };
+
+  const mapStatus = (status?: string): Document["status"] => {
+    switch ((status || "").toUpperCase()) {
+      case "VERIFIED":
+        return "verified";
+      case "REJECTED":
+        return "rejected";
+      case "EXPIRED":
+        return "expired";
+      default:
+        return "pending";
+    }
+  };
+
+  const mapOcrStatus = (status?: string): Document["ocrStatus"] => {
+    switch ((status || "").toUpperCase()) {
+      case "COMPLETED":
+        return "completed";
+      case "PROCESSING":
+        return "processing";
+      case "FAILED":
+        return "failed";
+      default:
+        return "pending";
+    }
+  };
+
+  const mapBackendFile = (file: BackendFile): Document => ({
+    id: file.id,
+    type: mapFileType(file.file_type),
+    employeeId: file.user_id,
+    employeeName: employeeNameById(file.user_id),
+    fileName: file.original_name || file.storage_path || file.id,
+    fileSize: file.file_size || 0,
+    mimeType: file.mime_type,
+    uploadDate: file.created_at ? file.created_at.slice(0, 10) : "",
+    expiryDate: file.expiry_date ? file.expiry_date.slice(0, 10) : undefined,
+    status: mapStatus(file.status),
+    ocrStatus: mapOcrStatus(file.ocr_status),
+    extractedData: parseExtractedData(file.extracted_data),
+    notes: file.notes,
+  });
+
+  const fetchDocuments = async () => {
+    if (!branchId) return;
+    const response = await fetch(`http://localhost:8080/api/file/store/${branchId}`);
+    if (!response.ok) throw new Error("failed to load documents");
+    const data = await response.json();
+    setDocuments(Array.isArray(data) ? data.map(mapBackendFile) : []);
+  };
+
+  const handleUpload = async () => {
+    if (!branchId || !uploadUserId || !uploadFile) {
+      alert("직원과 파일을 선택해주세요.");
+      return;
+    }
+    if (uploadFile.size > 10 * 1024 * 1024) {
+      alert("10MB 이하 파일만 업로드할 수 있습니다.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("store_id", branchId);
+    formData.append("user_id", uploadUserId);
+    formData.append("file_type", uploadFileType);
+    formData.append("file", uploadFile);
+
+    setIsUploading(true);
+    try {
+      const response = await fetch("http://localhost:8080/api/file/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) throw new Error(await response.text());
+      await fetchDocuments();
+      setUploadModalOpen(false);
+      setUploadFile(null);
+    } catch (error) {
+      alert(`문서 업로드에 실패했습니다.\n${error instanceof Error ? error.message : ""}`);
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownload = async (doc: Document) => {
+    const response = await fetch(`http://localhost:8080/api/file/${doc.id}/signed-url`);
+    if (!response.ok) {
+      alert("다운로드 URL을 만들 수 없습니다.");
+      return;
+    }
+    const data = await response.json();
+    if (data.url) {
+      window.open(data.url, "_blank");
+    }
+  };
+
+  const loadPreview = async (doc: Document) => {
+    setPreviewUrl("");
+    setIsPreviewLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/file/${doc.id}/signed-url`);
+      if (!response.ok) throw new Error(await response.text());
+      const data = await response.json();
+      setPreviewUrl(data.url || "");
+    } catch (error) {
+      console.error(error);
+      setPreviewUrl("");
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  const isImageDocument = (doc: Document) => {
+    return (doc.mimeType || "").startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(doc.fileName);
+  };
+
+  const isPdfDocument = (doc: Document) => {
+    return doc.mimeType === "application/pdf" || /\.pdf$/i.test(doc.fileName);
+  };
+
+  const handleUpdateStatus = async (doc: Document, status: Document["status"]) => {
+    const response = await fetch(`http://localhost:8080/api/file/${doc.id}/status?status=${status}`, {
+      method: "PUT",
+    });
+    if (!response.ok) {
+      alert("문서 상태 변경에 실패했습니다.");
+      return;
+    }
+    await fetchDocuments();
+    if (selectedDocument?.id === doc.id) {
+      setSelectedDocument((prev) => prev ? { ...prev, status } : prev);
+    }
+  };
+
+  const handleDelete = async (doc: Document) => {
+    if (!confirm("문서를 삭제할까요?")) return;
+    const response = await fetch(`http://localhost:8080/api/file/${doc.id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      alert("문서 삭제에 실패했습니다.");
+      return;
+    }
+    setShowDetailModal(false);
+    await fetchDocuments();
+  };
+
   useEffect(() => {
     if (!currentUser?.id) return;
     fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
@@ -87,6 +292,32 @@ const DocumentManagement: React.FC = () => {
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!branchId) return;
+    fetch(`http://localhost:8080/api/users?store_id=${branchId}`)
+      .then(r => r.json())
+      .then(data => {
+        const nextEmployees = Array.isArray(data) ? data.map((user: any) => ({ id: user.id, name: user.name })) : [];
+        setEmployees(nextEmployees);
+        if (!uploadUserId && nextEmployees.length > 0) {
+          setUploadUserId(nextEmployees[0].id);
+        }
+      })
+      .catch(() => setEmployees([]));
+  }, [branchId]);
+
+  useEffect(() => {
+    fetchDocuments().catch(() => {});
+  }, [branchId, employees.length]);
+
+  useEffect(() => {
+    if (!showDetailModal || !selectedDocument) {
+      setPreviewUrl("");
+      return;
+    }
+    loadPreview(selectedDocument);
+  }, [showDetailModal, selectedDocument?.id]);
 
   const menuItems = [
     { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
@@ -502,11 +733,11 @@ const DocumentManagement: React.FC = () => {
                   >
                     <Eye size={14} />보기
                   </button>
-                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={() => handleDownload(doc)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     <Download size={14} />다운로드
                   </button>
                   {doc.status === "pending" && (
-                    <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: GREEN, border: 'none', color: '#fff', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <button onClick={() => handleUpdateStatus(doc, "verified")} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: GREEN, border: 'none', color: '#fff', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       승인
                     </button>
                   )}
@@ -526,15 +757,15 @@ const DocumentManagement: React.FC = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div>
                     <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>직원 선택</label>
-                    <select style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor }}>
-                      <option>김민수 (EMP001)</option>
-                      <option>이지은 (EMP002)</option>
-                      <option>박철수 (EMP003)</option>
+                    <select value={uploadUserId} onChange={(e) => setUploadUserId(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor }}>
+                      {employees.map((employee) => (
+                        <option key={employee.id} value={employee.id}>{employee.name} ({employee.id})</option>
+                      ))}
                     </select>
                   </div>
                   <div>
                     <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>문서 유형</label>
-                    <select style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor }}>
+                    <select value={uploadFileType} onChange={(e) => setUploadFileType(e.target.value as Document["type"])} style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor }}>
                       <option value="health_certificate">보건증</option>
                       <option value="contract">근로계약서</option>
                       <option value="id_card">신분증</option>
@@ -545,8 +776,9 @@ const DocumentManagement: React.FC = () => {
                   <div style={{ border: `2px dashed ${BORDER_GREEN}`, borderRadius: 12, padding: 28, textAlign: 'center' }}>
                     <Upload size={40} color={DARK_GREEN} style={{ margin: '0 auto 12px' }} />
                     <p style={{ fontSize: 14, color: '#8BA68D', marginBottom: 6 }}>파일을 드래그하거나 클릭하여 업로드</p>
-                    <p style={{ fontSize: 12, color: '#8BA68D' }}>JPG, PNG, PDF (최대 10MB)</p>
-                    <button style={{ marginTop: 12, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>파일 선택</button>
+                    <p style={{ fontSize: 12, color: '#8BA68D' }}>{uploadFile ? uploadFile.name : 'JPG, PNG, PDF (최대 10MB)'}</p>
+                    <input id="document-upload-file" type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
+                    <button type="button" onClick={() => document.getElementById('document-upload-file')?.click()} style={{ marginTop: 12, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>파일 선택</button>
                   </div>
                   <div style={{ background: LIGHT_GREEN, borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10 }}>
                     <Scan size={20} color={DARK_GREEN} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -556,8 +788,8 @@ const DocumentManagement: React.FC = () => {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                      <Upload size={16} />업로드 및 OCR 실행
+                    <button onClick={handleUpload} disabled={isUploading} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.6 : 1 }}>
+                      <Upload size={16} />{isUploading ? '업로드 중...' : '업로드 및 OCR 실행'}
                     </button>
                     <button onClick={() => setUploadModalOpen(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                       취소
@@ -614,25 +846,48 @@ const DocumentManagement: React.FC = () => {
                     </div>
                   </div>
                 )}
-                <div style={{ background: LIGHT_GREEN, borderRadius: 12, padding: 20, textAlign: 'center', marginBottom: 16 }}>
-                  <Image size={48} color={DARK_GREEN} style={{ margin: '0 auto 8px' }} />
-                  <p style={{ fontSize: 14, color: '#8BA68D', margin: 0 }}>문서 미리보기</p>
+                <div style={{ background: LIGHT_GREEN, borderRadius: 12, padding: 12, textAlign: 'center', marginBottom: 16, minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                  {isPreviewLoading ? (
+                    <p style={{ fontSize: 14, color: '#8BA68D', margin: 0 }}>미리보기 불러오는 중...</p>
+                  ) : previewUrl && isImageDocument(selectedDocument) ? (
+                    <img
+                      src={previewUrl}
+                      alt={selectedDocument.fileName}
+                      style={{ maxWidth: '100%', maxHeight: 520, objectFit: 'contain', borderRadius: 10, background: '#fff' }}
+                    />
+                  ) : previewUrl && isPdfDocument(selectedDocument) ? (
+                    <iframe
+                      title={selectedDocument.fileName}
+                      src={previewUrl}
+                      style={{ width: '100%', height: 520, border: 'none', borderRadius: 10, background: '#fff' }}
+                    />
+                  ) : previewUrl ? (
+                    <button onClick={() => window.open(previewUrl, "_blank")} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: DARK_GREEN }}>
+                      <Image size={48} color={DARK_GREEN} style={{ margin: '0 auto 8px' }} />
+                      <p style={{ fontSize: 14, color: DARK_GREEN, margin: 0, fontWeight: 700 }}>새 탭에서 미리보기</p>
+                    </button>
+                  ) : (
+                    <div>
+                      <Image size={48} color={DARK_GREEN} style={{ margin: '0 auto 8px' }} />
+                      <p style={{ fontSize: 14, color: '#8BA68D', margin: 0 }}>미리보기를 불러올 수 없습니다</p>
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                  <button onClick={() => handleDownload(selectedDocument)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                     <Download size={16} />다운로드
                   </button>
                   {selectedDocument.status === "pending" && (
                     <>
-                      <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                      <button onClick={() => handleUpdateStatus(selectedDocument, "verified")} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                         <CheckCircle size={16} />승인
                       </button>
-                      <button style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                      <button onClick={() => handleUpdateStatus(selectedDocument, "rejected")} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                         <XCircle size={16} />반려
                       </button>
                     </>
                   )}
-                  <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid #EF4444`, color: '#EF4444', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                  <button onClick={() => handleDelete(selectedDocument)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid #EF4444`, color: '#EF4444', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                     <Trash2 size={16} />삭제
                   </button>
                 </div>

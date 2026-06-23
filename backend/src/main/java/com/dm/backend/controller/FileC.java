@@ -3,9 +3,12 @@ package com.dm.backend.controller;
 import com.dm.backend.service.FileService;
 import com.dm.backend.vo.FileVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/file")
@@ -32,6 +35,40 @@ public class FileC {
         fileService.updateFile(fileVO);
     }
 
+    @PostMapping("/upload")
+    public FileVO uploadFile(
+            @RequestParam String store_id,
+            @RequestParam String user_id,
+            @RequestParam String file_type,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return fileService.uploadAndAnalyze(store_id, user_id, file_type, file);
+    }
+
+    @PostMapping("/{id}/ocr")
+    public FileVO runOcr(
+            @PathVariable String id
+    ) {
+        return fileService.runOcr(id);
+    }
+
+    @GetMapping("/{id}/signed-url")
+    public Map<String, String> getSignedUrl(
+            @PathVariable String id
+    ) {
+        String url = fileService.createSignedUrl(id);
+        return Map.of("url", url == null ? "" : url);
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Void> updateStatus(
+            @PathVariable String id,
+            @RequestParam String status
+    ) {
+        fileService.updateFileStatus(id, status);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping("/{id}")
     public void deleteFile(
             @PathVariable String id
@@ -51,6 +88,13 @@ public class FileC {
             @PathVariable String userId
     ) {
         return fileService.getFilesByUserId(userId);
+    }
+
+    @GetMapping("/store/{storeId}")
+    public List<FileVO> getFilesByStoreId(
+            @PathVariable String storeId
+    ) {
+        return fileService.getFilesByStoreId(storeId);
     }
 
     // =========================
