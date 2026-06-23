@@ -79,6 +79,8 @@ const toastConfig = {
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
   }),
@@ -112,13 +114,14 @@ const MainStack = createStackNavigator();
 const AdminTab = createBottomTabNavigator();
 const StaffTab = createBottomTabNavigator();
 const BoardStack = createStackNavigator();
+const asScreen = (component: React.ComponentType<any>) => component;
 
 function AuthNavigator() {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="SignupChoice" component={SignupChoiceScreen} />
-      <AuthStack.Screen name="Signup" component={SignupScreen} />
+      <AuthStack.Screen name="Signup" component={asScreen(SignupScreen)} />
     </AuthStack.Navigator>
   );
 }
@@ -137,7 +140,7 @@ function BoardNavigator() {
   return (
     <BoardStack.Navigator screenOptions={{ headerShown: false }}>
       <BoardStack.Screen name="Board" component={BoardScreen} />
-      <BoardStack.Screen name="BoardDetail" component={BoardDetailScreen} />
+      <BoardStack.Screen name="BoardDetail" component={asScreen(BoardDetailScreen)} />
       <BoardStack.Screen name="BoardWrite" component={BoardWriteScreen} />
     </BoardStack.Navigator>
   );
@@ -165,17 +168,26 @@ function MainNavigator() {
       )}
       <MainStack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
       <MainStack.Screen name="AdminDailySchedule" component={AdminDailyScheduleScreen} />
-      <MainStack.Screen name="ShiftEditor" component={ShiftEditorScreen} />
+      <MainStack.Screen name="ShiftEditor" component={asScreen(ShiftEditorScreen)} />
       <MainStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
       <MainStack.Screen name="SubstituteManagement" component={SubstituteManagementScreen} />
       <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
       <MainStack.Screen name="BoardNavigator" component={BoardNavigator} />
       <MainStack.Screen name="Payroll" component={PayrollScreen} />
-      <MainStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+      <MainStack.Screen name="ProfileEdit" component={asScreen(ProfileEditScreen)} />
       <MainStack.Screen name="Contract" component={ContractScreen} />
       <MainStack.Screen name="HealthCert" component={HealthCertScreen} />
       <MainStack.Screen name="QRCheckIn" component={QRCheckInScreen} />
       <MainStack.Screen name="Substitute" component={SubstituteScreen} />
+    </MainStack.Navigator>
+  );
+}
+
+function BranchSetupNavigator() {
+  return (
+    <MainStack.Navigator screenOptions={{ headerShown: false }}>
+      <MainStack.Screen name="BranchSelect" component={BranchSelectScreen} />
+      <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
     </MainStack.Navigator>
   );
 }
@@ -189,7 +201,7 @@ function AppContent() {
   }
 
   if (!hasSelectedBranch) {
-    return <BranchSelectScreen />;
+    return <BranchSetupNavigator />;
   }
 
   if (userStatus !== 'ACTIVE') {

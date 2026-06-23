@@ -14,6 +14,8 @@ const HealthCertScreen = ({ navigation }: any) => {
   
   // 현재 날짜를 기준으로 만료 상태를 계산하는 함수
   const calculateStatus = (expiryDate: string | null) => {
+    if (!expiryDate) return 'pending';
+
     const today = new Date();
     today.setHours(0, 0, 0, 0); // 시간 제외 (자정 기준)
     const expiry = new Date(expiryDate);

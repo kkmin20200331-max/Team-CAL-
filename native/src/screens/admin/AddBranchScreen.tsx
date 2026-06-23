@@ -1,10 +1,23 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput, Modal, Pressable } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../contexts/ThemeContext';
+import Toast from 'react-native-toast-message';
+import { createStoreAPI, getStoresAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
-const STORE_CATEGORIES = ["카페", "음식점", "패스트푸드", "의류/잡화", "서비스", "기타"];
+const STORE_CATEGORIES = ['카페', '음식점', '편의점', '의류/잡화', '서비스', '기타'];
 
 const AddBranchScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
@@ -15,38 +28,73 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
   const [branchName, setBranchName] = useState('');
   const [storeCategory, setStoreCategory] = useState(STORE_CATEGORIES[0]);
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    if (!brandName.trim() || !branchName.trim()) {
-      Alert.alert("입력 오류", "브랜드명과 지점명을 모두 입력해주세요.");
+  const handleSave = async () => {
+    if (!userInfo?.id) {
+      Alert.alert('오류', '로그인 정보가 없습니다. 다시 로그인해주세요.');
       return;
     }
 
-    const newBranch = {
-      id: `branch_${Date.now()}`,
-      brandName,
-      branchName,
-      storeCategory,
-    };
-
-    if (userInfo) {
-      const updatedUserInfo = {
-        ...userInfo,
-        branches: [...(userInfo.branches || []), newBranch],
-      };
-      login(updatedUserInfo, true);
+    if (!brandName.trim() || !branchName.trim()) {
+      Alert.alert('입력 오류', '브랜드명과 지점명을 모두 입력해주세요.');
+      return;
     }
 
-    navigation.goBack();
+    setSaving(true);
+
+    try {
+      const storeId = `S_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+      await createStoreAPI({
+        id: storeId,
+        name: brandName.trim(),
+        type: storeCategory,
+        address: branchName.trim(),
+        capacity: 0,
+        owner_user_id: userInfo.id,
+      });
+
+      const storesResponse = await getStoresAPI(userInfo.id);
+      const stores = Array.isArray(storesResponse.data) ? storesResponse.data : [];
+      const branches = stores.map((store: any) => ({
+        id: store.id,
+        brandName: store.name || '매장',
+        branchName: store.address || store.id,
+      }));
+
+      login(
+        {
+          ...userInfo,
+          branches,
+          activeBranchId: storeId,
+          store_id: storeId,
+        } as any,
+        branches.length > 0,
+      );
+
+      Toast.show({
+        type: 'success',
+        text1: '지점 등록 완료',
+        text2: `${brandName.trim()} ${branchName.trim()} 지점이 등록되었습니다.`,
+      });
+
+      navigation.goBack();
+    } catch (error) {
+      console.error('지점 등록 오류:', error);
+      Alert.alert('저장 실패', '지점 등록 중 오류가 발생했습니다.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>◀</Text>
+          <Text style={styles.backButton}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>새 지점 추가</Text>
+        <Text style={styles.headerTitle}>지점 추가</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -54,15 +102,15 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
         <Text style={styles.label}>브랜드명</Text>
         <TextInput
           style={styles.input}
-          placeholder="예: 컴포즈커피"
+          placeholder="예: 시프트 커피"
           value={brandName}
           onChangeText={setBrandName}
         />
 
-        <Text style={styles.label}>지점명</Text>
+        <Text style={styles.label}>지점명 또는 주소</Text>
         <TextInput
           style={styles.input}
-          placeholder="예: 서현점"
+          placeholder="예: 강남점"
           value={branchName}
           onChangeText={setBranchName}
         />
@@ -70,17 +118,21 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
         <Text style={styles.label}>업종 카테고리</Text>
         <TouchableOpacity style={styles.pickerButton} onPress={() => setCategoryModalVisible(true)}>
           <Text style={styles.pickerButtonText}>{storeCategory}</Text>
-          <Text style={styles.pickerButtonIcon}>▼</Text>
+          <Text style={styles.pickerButtonIcon}>⌄</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>저장</Text>
+        <TouchableOpacity
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? <ActivityIndicator color="#064E3B" /> : <Text style={styles.saveButtonText}>저장</Text>}
         </TouchableOpacity>
       </ScrollView>
 
       <Modal
         animationType="fade"
-        transparent={true}
+        transparent
         visible={isCategoryModalVisible}
         onRequestClose={() => setCategoryModalVisible(false)}
       >
@@ -96,7 +148,9 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
                   setCategoryModalVisible(false);
                 }}
               >
-                <Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>{cat}</Text>
+                <Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>
+                  {cat}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -116,7 +170,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backButton: { fontSize: 24, color: colors.primary, width: 40 },
+  backButton: { fontSize: 28, color: colors.primary, width: 40 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   content: { padding: 20 },
   label: { fontSize: 16, color: colors.subText, marginBottom: 8, marginLeft: 4 },
@@ -131,14 +185,17 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   saveButton: {
-    backgroundColor: '#6EE7B7', // 에메랄드 색상
+    backgroundColor: '#6EE7B7',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
   },
+  saveButtonDisabled: {
+    opacity: 0.7,
+  },
   saveButtonText: {
-    color: '#000000', // 검은색
+    color: '#064E3B',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -158,7 +215,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   pickerButtonIcon: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.subText,
   },
   modalOverlay: {

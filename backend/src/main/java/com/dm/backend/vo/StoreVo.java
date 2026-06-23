@@ -17,4 +17,5 @@ public class StoreVo {
     private Integer capacity;
     private String open_time;
     private String close_time;
+    private String owner_user_id;
 }
