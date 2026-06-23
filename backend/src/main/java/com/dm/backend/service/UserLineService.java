@@ -124,4 +124,28 @@ public class UserLineService {
                 user_id
         );
     }
+    // =========================
+    // LINE - 직원 USER_ID → LINE USER_ID
+    // =========================
+    public String getLineUserIdByUserId(String user_id) {
+
+        try {
+            return userLineMapper.getLineUserId(user_id);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+
+    // =========================
+    // LINE - shift_id → 관리자 LINE USER_ID
+    // =========================
+    public String getOwnerLineUserIdByShiftId(String shift_id) {
+
+        try {
+            return userLineMapper.getOwnerLineUserIdByShiftId(shift_id);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }

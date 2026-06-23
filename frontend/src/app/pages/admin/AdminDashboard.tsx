@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router';
-import axios from 'axios';
-import { useLanguage } from '../../i18n/useLanguage';
-import { translations } from '../../i18n/translations';
+import { useState, useEffect } from "react";
+import { useNavigate, useParams, useLocation } from "react-router";
+import axios from "axios";
+import { useLanguage } from "../../i18n/useLanguage";
+import { translations } from "../../i18n/translations";
 import {
   Users,
   TrendingUp,
@@ -18,9 +18,9 @@ import {
   MessageSquare,
   BarChart3,
   Loader2,
-} from 'lucide-react';
-import AdminHeader from './AdminHeader';
-import { useTheme } from 'next-themes';
+} from "lucide-react";
+import AdminHeader from "./AdminHeader";
+import { useTheme } from "next-themes";
 import {
   LineChart,
   Line,
@@ -32,10 +32,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const GREEN = '#18A022';
-const DARK_GREEN = '#07790F';
-const BORDER_GREEN = '#00A200';
-const LIGHT_GREEN = '#E6F5C8';
+const GREEN = "#18A022";
+const DARK_GREEN = "#07790F";
+const BORDER_GREEN = "#00A200";
+const LIGHT_GREEN = "#E6F5C8";
 
 const API = axios.create({ baseURL: "http://localhost:8080/api" });
 const AI_INSIGHT_API = "http://localhost:8080/api/ai-insights";
@@ -161,10 +161,10 @@ const resolveStoreId = (branchId?: string) => {
 };
 
 const getPeopleCount = (log: PeopleLog) =>
-    Number(log.people_count ?? log.peopleCount ?? 0);
+  Number(log.people_count ?? log.peopleCount ?? 0);
 
 const getRecordTime = (log: PeopleLog) =>
-    String(log.record_time ?? log.recordTime ?? "");
+  String(log.record_time ?? log.recordTime ?? "");
 
 const getMinutesFromDateTime = (value: string) => {
   const time = value?.includes(" ") ? value.split(" ")[1] : value;
@@ -173,8 +173,8 @@ const getMinutesFromDateTime = (value: string) => {
 };
 
 const buildCustomerTrend = (
-    logs: PeopleLog[],
-    shifts: ShiftVO[],
+  logs: PeopleLog[],
+  shifts: ShiftVO[],
 ): CustomerTrendRow[] => {
   const latestCustomersByHour = new Map<number, number>();
 
@@ -204,93 +204,28 @@ const buildCustomerTrend = (
 };
 
 const getPeakRow = (rows: CustomerTrendRow[]) =>
-    rows.reduce(
-        (max, row) => (row.customers > max.customers ? row : max),
-        rows[0],
-    );
+  rows.reduce(
+    (max, row) => (row.customers > max.customers ? row : max),
+    rows[0],
+  );
 
 const getIdleRow = (rows: CustomerTrendRow[]) =>
-    rows.reduce(
-        (min, row) => (row.customers < min.customers ? row : min),
-        rows[0],
-    );
+  rows.reduce(
+    (min, row) => (row.customers < min.customers ? row : min),
+    rows[0],
+  );
 
 const getKoreanWeekday = () =>
-    new Date().toLocaleDateString("ko-KR", { weekday: "long" });
+  new Date().toLocaleDateString("ko-KR", { weekday: "long" });
 
-/*
-Previous client-side dashboard AI payload builder removed.
-const legacyDashboardAiPayload = (context: DashboardOperationContext, storeId: number, storeName: string) => {
-  const rows = context.rows;
-  const peak = getPeakRow(rows);
-  const totalVisitors = rows.reduce((sum, row) => sum + row.customers, 0);
-  const maxCustomers = Math.max(...rows.map((row) => row.customers), 0);
-  const avgCustomers = Math.max(1, Math.round(totalVisitors / Math.max(rows.length, 1)));
-
-  return {
-    storeId,
-    storeName,
-    storeType: 'CAFE',
-    storeTypeLabel: '카페',
-    date: toDateStr(new Date()),
-    current: {
-      currentCustomerCount: peak.customers,
-      todayTotalVisitors: totalVisitors,
-      conversionRate: 0,
-      processedFrames: 0,
-      confidenceAvg: 0
-    },
-    cameraAggregates: rows.map((row) => ({
-      time: row.time,
-      avgCustomerCount: row.customers,
-      maxCustomerCount: row.customers,
-      minCustomerCount: Math.max(0, row.customers - 2),
-      lastCustomerCount: row.customers,
-      workingStaffCount: row.staff,
-      recommendedStaffCount: Math.max(1, Math.ceil(row.customers / 15)),
-      waitMinutes: Math.max(0, Math.ceil(row.customers / 8))
-    })),
-    historicalBaseline: {
-      sameDayAverageVisitors: Math.max(totalVisitors, 1),
-      averagePeakCustomerCount: Math.max(maxCustomers, avgCustomers)
-    },
-    pos: {
-      conversionRate: 0,
-      hourlyOrders: rows.map((row) => ({
-        time: row.time,
-        orderCount: 0,
-        conversionRate: 0
-      }))
-    },
-    staffSchedule: rows.map((row) => {
-      const hour = Number(row.time.slice(0, 2));
-      return {
-        timeRange: `${row.time}-${String(hour + 1).padStart(2, '0')}:00`,
-        currentStaff: row.staff
-      };
-    }),
-    externalFactors: {
-      source: 'admin-dashboard',
-      dashboardSummary: {
-        totalEmployees: context.totalEmployees,
-        todayShiftCount: context.todayShifts.length,
-        checkedIn: context.checkedIn,
-        substituteCount: context.substituteCount,
-        estimatedPay: context.estimatedPay
-      }
-    }
-  };
-};
-
-*/
 const buildFallbackRecommendations = (
-    context: DashboardOperationContext,
+  context: DashboardOperationContext,
 ): OperationRecommendation[] => {
   const rows = context.rows;
   const peak = getPeakRow(rows);
   const idle = getIdleRow(rows);
   const avgCustomers = Math.round(
-      rows.reduce((sum, row) => sum + row.customers, 0) /
+    rows.reduce((sum, row) => sum + row.customers, 0) /
       Math.max(rows.length, 1),
   );
   const recommendedStaff = Math.max(1, Math.ceil(peak.customers / 15));
@@ -298,9 +233,9 @@ const buildFallbackRecommendations = (
   const nextHour = `${String(Number(peak.time.slice(0, 2)) + 1).padStart(2, "0")}:00`;
   const idleNextHour = `${String(Number(idle.time.slice(0, 2)) + 1).padStart(2, "0")}:00`;
   const increaseRate =
-      avgCustomers > 0
-          ? Math.round(((peak.customers - avgCustomers) / avgCustomers) * 100)
-          : 0;
+    avgCustomers > 0
+      ? Math.round(((peak.customers - avgCustomers) / avgCustomers) * 100)
+      : 0;
 
   return [
     {
@@ -321,28 +256,28 @@ const buildFallbackRecommendations = (
 };
 
 const mapAiRecommendations = (
-    aiResult: AiInsightResponse | null,
-    fallback: OperationRecommendation[],
+  aiResult: AiInsightResponse | null,
+  fallback: OperationRecommendation[],
 ): OperationRecommendation[] => {
   if (!aiResult) return fallback;
 
   const schedule = aiResult.scheduleRecommendations?.[0];
   const staffingInsight = aiResult.insights?.find(
-      (item) => item.type === "STAFFING" || item.type === "CONGESTION",
+    (item) => item.type === "STAFFING" || item.type === "CONGESTION",
   );
 
   return [
     {
       title: "인력 배치 추천",
       body: schedule
-          ? `${schedule.timeRange || fallback[0].title} 현재 ${schedule.currentStaff ?? 0}명 근무 중입니다. ${schedule.reason || `${schedule.recommendedExtraStaff ?? 0}명 추가 배치를 권장합니다.`}`
-          : staffingInsight?.message ||
+        ? `${schedule.timeRange || fallback[0].title} 현재 ${schedule.currentStaff ?? 0}명 근무 중입니다. ${schedule.reason || `${schedule.recommendedExtraStaff ?? 0}명 추가 배치를 권장합니다.`}`
+        : staffingInsight?.message ||
           staffingInsight?.reason ||
           fallback[0].body,
       actionLabel:
-          (schedule?.recommendedExtraStaff ?? 0) > 0
-              ? "대타 모집하기"
-              : "근무표 확인",
+        (schedule?.recommendedExtraStaff ?? 0) > 0
+          ? "대타 모집하기"
+          : "근무표 확인",
       primary: true,
     },
     fallback[1],
@@ -357,7 +292,7 @@ export default function AdminDashboard() {
   const language = useLanguage();
   const t = translations.adminDashboard[language];
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+  const isDark = theme === "dark";
 
   const currentBranch = sessionStorage.getItem("store_name") || "지점 선택";
   const currentUser = JSON.parse(sessionStorage.getItem("user") || "{}");
@@ -372,16 +307,22 @@ export default function AdminDashboard() {
   const [payMap, setPayMap] = useState<Record<string, PayInfo>>({});
   const [substituteCount, setSubstituteCount] = useState(0);
   const [customerTrendData, setCustomerTrendData] =
-      useState<CustomerTrendRow[]>(customerData);
+    useState<CustomerTrendRow[]>(customerData);
   const [customerTrendSyncedAt, setCustomerTrendSyncedAt] = useState("");
   const [aiInsight, setAiInsight] = useState<AiInsightResponse | null>(null);
 
   // 관리 매장 목록 (드롭다운용)
   useEffect(() => {
     if (!currentUser?.id) return;
-    API.get('/store', { params: { user_id: currentUser.id } })
-        .then(res => setStores(Array.isArray(res.data) ? res.data.map((s: any) => ({ id: s.id, name: s.name })) : []))
-        .catch(() => {});
+    API.get("/store", { params: { user_id: currentUser.id } })
+      .then((res) =>
+        setStores(
+          Array.isArray(res.data)
+            ? res.data.map((s: any) => ({ id: s.id, name: s.name }))
+            : [],
+        ),
+      )
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -392,37 +333,37 @@ export default function AdminDashboard() {
         const today = toDateStr(new Date());
 
         const [shiftRes, userRes, subRes, peopleLogRes] =
-            await Promise.allSettled([
-              API.get("/shift", {
-                params: {
-                  store_id: branchId,
-                  start_date: today,
-                  end_date: today,
-                },
-              }),
-              API.get("/users", { params: { store_id: branchId } }),
-              API.get("/substitute", { params: { store_id: branchId } }),
-              API.get("/people_log", {
-                params: {
-                  store_id: resolveStoreId(branchId),
-                  start_date: `${today} 00:00:00`,
-                  end_date: `${today} 23:59:59`,
-                },
-              }),
-            ]);
+          await Promise.allSettled([
+            API.get("/shift", {
+              params: {
+                store_id: branchId,
+                start_date: today,
+                end_date: today,
+              },
+            }),
+            API.get("/users", { params: { store_id: branchId } }),
+            API.get("/substitute", { params: { store_id: branchId } }),
+            API.get("/people_log", {
+              params: {
+                store_id: resolveStoreId(branchId),
+                start_date: `${today} 00:00:00`,
+                end_date: `${today} 23:59:59`,
+              },
+            }),
+          ]);
 
         // 오늘 근무표
         const shifts: ShiftVO[] =
-            shiftRes.status === "fulfilled" && Array.isArray(shiftRes.value.data)
-                ? shiftRes.value.data
-                : [];
+          shiftRes.status === "fulfilled" && Array.isArray(shiftRes.value.data)
+            ? shiftRes.value.data
+            : [];
         setTodayShifts(shifts);
 
         // 직원 맵
         const users: UserVO[] =
-            userRes.status === "fulfilled" && Array.isArray(userRes.value.data)
-                ? userRes.value.data
-                : [];
+          userRes.status === "fulfilled" && Array.isArray(userRes.value.data)
+            ? userRes.value.data
+            : [];
         setTotalEmployees(users.length);
         const empMap: Record<string, UserVO> = {};
         users.forEach((u) => {
@@ -432,37 +373,37 @@ export default function AdminDashboard() {
 
         // 대타 오픈 건수
         const subs =
-            subRes.status === "fulfilled" && Array.isArray(subRes.value.data)
-                ? subRes.value.data
-                : [];
+          subRes.status === "fulfilled" && Array.isArray(subRes.value.data)
+            ? subRes.value.data
+            : [];
         setSubstituteCount(
-            subs.filter((s: any) => (s.status || "").toLowerCase() === "open")
-                .length,
+          subs.filter((s: any) => (s.status || "").toLowerCase() === "open")
+            .length,
         );
 
         const peopleLogs: PeopleLog[] =
-            peopleLogRes.status === "fulfilled" &&
-            Array.isArray(peopleLogRes.value.data)
-                ? peopleLogRes.value.data
-                : [];
+          peopleLogRes.status === "fulfilled" &&
+          Array.isArray(peopleLogRes.value.data)
+            ? peopleLogRes.value.data
+            : [];
         setCustomerTrendData(buildCustomerTrend(peopleLogs, shifts));
         setCustomerTrendSyncedAt(
-            new Date().toLocaleTimeString("ko-KR", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            }),
+          new Date().toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }),
         );
 
         // 시급/급여 조회 (오늘 근무자 한정)
         const uniqueIds = [...new Set(shifts.map((s) => s.user_id))];
         if (uniqueIds.length > 0) {
           const payResults = await Promise.allSettled(
-              uniqueIds.map((uid) =>
-                  API.get("/store_member/pay", {
-                    params: { user_id: uid, store_id: branchId },
-                  }).then((r) => ({ uid, data: r.data as PayInfo })),
-              ),
+            uniqueIds.map((uid) =>
+              API.get("/store_member/pay", {
+                params: { user_id: uid, store_id: branchId },
+              }).then((r) => ({ uid, data: r.data as PayInfo })),
+            ),
           );
           const pm: Record<string, PayInfo> = {};
           payResults.forEach((r) => {
@@ -495,23 +436,23 @@ export default function AdminDashboard() {
         ]);
 
         const shifts: ShiftVO[] =
-            shiftRes.status === "fulfilled" && Array.isArray(shiftRes.value.data)
-                ? shiftRes.value.data
-                : [];
+          shiftRes.status === "fulfilled" && Array.isArray(shiftRes.value.data)
+            ? shiftRes.value.data
+            : [];
         const peopleLogs: PeopleLog[] =
-            peopleLogRes.status === "fulfilled" &&
-            Array.isArray(peopleLogRes.value.data)
-                ? peopleLogRes.value.data
-                : [];
+          peopleLogRes.status === "fulfilled" &&
+          Array.isArray(peopleLogRes.value.data)
+            ? peopleLogRes.value.data
+            : [];
 
         setTodayShifts(shifts);
         setCustomerTrendData(buildCustomerTrend(peopleLogs, shifts));
         setCustomerTrendSyncedAt(
-            new Date().toLocaleTimeString("ko-KR", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            }),
+          new Date().toLocaleTimeString("ko-KR", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }),
         );
       } catch (err) {
         console.error("[AdminDashboard] customer trend refresh failed:", err);
@@ -526,7 +467,7 @@ export default function AdminDashboard() {
 
   // ── 파생 값 ──
   const checkedIn = todayShifts.filter(
-      (s) => (s.status || "").toUpperCase() === "CHECKED_IN",
+    (s) => (s.status || "").toUpperCase() === "CHECKED_IN",
   ).length;
 
   const estimatedPay = todayShifts.reduce((sum, shift) => {
@@ -596,317 +537,970 @@ export default function AdminDashboard() {
   ]);
 
   const fallbackRecommendations =
-      buildFallbackRecommendations(operationContext);
+    buildFallbackRecommendations(operationContext);
   const operationRecommendations = mapAiRecommendations(
-      aiInsight,
-      fallbackRecommendations,
+    aiInsight,
+    fallbackRecommendations,
   );
 
   const getStatusLabel = (status: string) => {
-    const s = (status || '').toUpperCase();
-    if (s === 'CHECKED_IN') return t.statusCheckedIn;
-    if (s === 'CHECKED_OUT') return t.statusCheckedOut;
-    if (s === 'ABSENT') return t.statusAbsent;
+    const s = (status || "").toUpperCase();
+    if (s === "CHECKED_IN") return t.statusCheckedIn;
+    if (s === "CHECKED_OUT") return t.statusCheckedOut;
+    if (s === "ABSENT") return t.statusAbsent;
     return t.statusBeforeWork;
   };
 
   const pageBg = isDark
-      ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
-      : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const textColor = isDark ? '#fff' : '#111';
-  const subTextColor = isDark ? '#aaa' : '#666';
-  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
-  const cardBg = isDark ? 'rgba(44,44,46,0.6)' : 'rgba(230,245,200,0.35)';
+    ? "linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)"
+    : "linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)";
+  const subTextColor = isDark ? "#aaa" : "#666";
+  const sidebarBg = isDark ? "rgba(44,44,46,0.95)" : "rgba(255,255,255,0.85)";
+  const sidebarBorder = isDark ? "#3a3a3c" : BORDER_GREEN;
+  const cardBg = isDark ? "rgba(44,44,46,0.6)" : "rgba(230,245,200,0.35)";
 
   const getStatusBadgeStyle = (status: string) => {
     const s = (status || "").toUpperCase();
-    if (s === "CHECKED_IN") return { background: LIGHT_GREEN, color: DARK_GREEN };
-    if (s === "ABSENT") return { background: '#fee2e2', color: '#ef4444' };
-    if (s === "CHECKED_OUT") return { background: '#dbeafe', color: '#1d4ed8' };
-    return { background: '#f3f4f6', color: '#6b7280' };
+    if (s === "CHECKED_IN")
+      return { background: LIGHT_GREEN, color: DARK_GREEN };
+    if (s === "ABSENT") return { background: "#fee2e2", color: "#ef4444" };
+    if (s === "CHECKED_OUT") return { background: "#dbeafe", color: "#1d4ed8" };
+    return { background: "#f3f4f6", color: "#6b7280" };
   };
 
   const menuItems = [
-    { icon: Calendar, label: t.menuItems.scheduleManagement, path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: t.menuItems.substituteRecruitment, path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: t.menuItems.employeeManagement, path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: t.menuItems.payrollManagement, path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: t.menuItems.documentManagement, path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: t.menuItems.board, path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: t.menuItems.aiAnalytics, path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: t.menuItems.cctvAnalysis, path: `/admin/cctv/${branchId}` },
+    {
+      icon: Calendar,
+      label: t.menuItems.scheduleManagement,
+      path: `/admin/schedule/monthly/${branchId}`,
+    },
+    {
+      icon: UserPlus,
+      label: t.menuItems.substituteRecruitment,
+      path: `/admin/substitute/${branchId}`,
+    },
+    {
+      icon: Users,
+      label: t.menuItems.employeeManagement,
+      path: `/admin/employees/${branchId}`,
+    },
+    {
+      icon: Wallet,
+      label: t.menuItems.payrollManagement,
+      path: `/admin/payroll/${branchId}`,
+    },
+    {
+      icon: FileText,
+      label: t.menuItems.documentManagement,
+      path: `/admin/documents/${branchId}`,
+    },
+    {
+      icon: MessageSquare,
+      label: t.menuItems.board,
+      path: `/admin/board/${branchId}`,
+    },
+    {
+      icon: BarChart3,
+      label: t.menuItems.aiAnalytics,
+      path: `/admin/analytics/${branchId}`,
+    },
+    {
+      icon: Video,
+      label: t.menuItems.cctvAnalysis,
+      path: `/admin/cctv/${branchId}`,
+    },
   ];
 
   return (
-      <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
-        <AdminHeader />
+    <div
+      style={{
+        minHeight: "100vh",
+        background: pageBg,
+        fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif",
+      }}
+    >
+      <AdminHeader />
 
-        {/* ── 바디: 사이드바 + 메인 카드 ── */}
-        <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
-
-          {/* ── 사이드바 ── */}
-          <aside style={{
-            width: 220, flexShrink: 0,
+      {/* ── 바디: 사이드바 + 메인 카드 ── */}
+      <div
+        style={{
+          display: "flex",
+          gap: 20,
+          padding: "24px 40px 40px",
+          alignItems: "flex-start",
+        }}
+      >
+        {/* ── 사이드바 ── */}
+        <aside
+          style={{
+            width: 220,
+            flexShrink: 0,
             background: sidebarBg,
             border: `1px solid ${sidebarBorder}`,
-            borderRadius: 20, padding: '20px 12px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.07)',
-            position: 'sticky', top: 140,
-            maxHeight: 'calc(100vh - 160px)',
-            overflowY: 'auto',
-          }}>
-
-            {/* 지점 드롭다운 */}
-            <div style={{ position: 'relative', marginBottom: 18 }}>
-              <button
-                  onClick={() => setBranchDropdownOpen(o => !o)}
-                  style={{
-                    width: '100%', padding: '10px 14px',
-                    background: isDark ? 'rgba(255,255,255,0.06)' : LIGHT_GREEN,
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : BORDER_GREEN}`,
-                    borderRadius: 12, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
-                    color: isDark ? '#fff' : DARK_GREEN, fontSize: 12, fontWeight: 700,
-                  }}
+            borderRadius: 20,
+            padding: "20px 12px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.07)",
+            position: "sticky",
+            top: 140,
+            maxHeight: "calc(100vh - 160px)",
+            overflowY: "auto",
+          }}
+        >
+          {/* 지점 드롭다운 */}
+          <div style={{ position: "relative", marginBottom: 18 }}>
+            <button
+              onClick={() => setBranchDropdownOpen((o) => !o)}
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                background: isDark ? "rgba(255,255,255,0.06)" : LIGHT_GREEN,
+                border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : BORDER_GREEN}`,
+                borderRadius: 12,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 6,
+                color: isDark ? "#fff" : DARK_GREEN,
+                fontSize: 12,
+                fontWeight: 700,
+              }}
+            >
+              <span
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
               >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
-                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ flexShrink: 0, transform: branchDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                  <path d="M1 1L5 5L9 1" stroke={isDark ? 'white' : DARK_GREEN} strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+                {currentBranch}
+              </span>
+              <svg
+                width="10"
+                height="6"
+                viewBox="0 0 10 6"
+                fill="none"
+                style={{
+                  flexShrink: 0,
+                  transform: branchDropdownOpen ? "rotate(180deg)" : "none",
+                  transition: "transform 0.2s",
+                }}
+              >
+                <path
+                  d="M1 1L5 5L9 1"
+                  stroke={isDark ? "white" : DARK_GREEN}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+            {branchDropdownOpen && stores.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "110%",
+                  left: 0,
+                  right: 0,
+                  zIndex: 50,
+                  background: isDark ? "#1c1c1e" : "#fff",
+                  border: `1px solid ${isDark ? "#3a3a3c" : BORDER_GREEN}`,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                }}
+              >
+                {stores.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      sessionStorage.setItem("store_id", s.id);
+                      sessionStorage.setItem("store_name", s.name);
+                      setBranchDropdownOpen(false);
+                      navigate(`/admin/dashboard/${s.id}`);
+                    }}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      padding: "10px 14px",
+                      textAlign: "left",
+                      background:
+                        s.id === branchId ? LIGHT_GREEN : "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      color: isDark ? "#fff" : DARK_GREEN,
+                      fontSize: 13,
+                      fontWeight: 600,
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = LIGHT_GREEN;
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background =
+                        s.id === branchId ? LIGHT_GREEN : "transparent";
+                    }}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+                <div
+                  style={{
+                    borderTop: `1px solid ${isDark ? "#3a3a3c" : "#e5e7eb"}`,
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    setBranchDropdownOpen(false);
+                    navigate("/admin/branch-selection");
+                  }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    padding: "10px 14px",
+                    textAlign: "left",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    color: isDark ? "#888" : "#aaa",
+                    fontSize: 12,
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = isDark
+                      ? "#2c2c2e"
+                      : "#f5f5f5";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                  }}
+                >
+                  + 지점 선택 페이지로
+                </button>
+              </div>
+            )}
+          </div>
+
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <button
+                key={item.label}
+                onClick={() => navigate(item.path)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  width: "100%",
+                  padding: "11px 14px",
+                  marginBottom: 4,
+                  background: isActive ? GREEN : "transparent",
+                  border: "none",
+                  borderRadius: 12,
+                  cursor: "pointer",
+                  color: isActive ? "#fff" : isDark ? "#ccc" : DARK_GREEN,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  textAlign: "left",
+                  transition: "all 0.15s",
+                  boxShadow: isActive
+                    ? "0 2px 8px rgba(24,160,34,0.3)"
+                    : "none",
+                }}
+                onMouseOver={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = isDark
+                      ? "rgba(255,255,255,0.08)"
+                      : LIGHT_GREEN;
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "transparent";
+                  }
+                }}
+              >
+                <item.icon size={16} color={isActive ? "#fff" : GREEN} />
+                {item.label}
               </button>
-              {branchDropdownOpen && stores.length > 0 && (
-                  <div style={{
-                    position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50,
-                    background: isDark ? '#1c1c1e' : '#fff',
-                    border: `1px solid ${isDark ? '#3a3a3c' : BORDER_GREEN}`,
-                    borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                  }}>
-                    {stores.map(s => (
-                        <button
-                            key={s.id}
-                            onClick={() => {
-                              sessionStorage.setItem('store_id', s.id);
-                              sessionStorage.setItem('store_name', s.name);
-                              setBranchDropdownOpen(false);
-                              navigate(`/admin/dashboard/${s.id}`);
-                            }}
-                            style={{
-                              display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left',
-                              background: s.id === branchId ? LIGHT_GREEN : 'transparent',
-                              border: 'none', cursor: 'pointer',
-                              color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600,
-                            }}
-                            onMouseOver={e => { e.currentTarget.style.background = LIGHT_GREEN; }}
-                            onMouseOut={e => { e.currentTarget.style.background = s.id === branchId ? LIGHT_GREEN : 'transparent'; }}
-                        >
-                          {s.name}
-                        </button>
-                    ))}
-                    <div style={{ borderTop: `1px solid ${isDark ? '#3a3a3c' : '#e5e7eb'}` }} />
-                    <button
-                        onClick={() => { setBranchDropdownOpen(false); navigate('/admin/branch-selection'); }}
-                        style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#888' : '#aaa', fontSize: 12 }}
-                        onMouseOver={e => { e.currentTarget.style.background = isDark ? '#2c2c2e' : '#f5f5f5'; }}
-                        onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      + 지점 선택 페이지로
-                    </button>
+            );
+          })}
+        </aside>
+
+        {/* ── 메인: 하나의 큰 흰 카드 ── */}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            background: "rgba(255,255,255,0.97)",
+            borderRadius: 24,
+            padding: "28px 28px 32px",
+            boxShadow: "0px 8px 40px rgba(0,0,0,0.18)",
+          }}
+        >
+          {/* 타이틀 행 */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: 16,
+              marginBottom: 24,
+            }}
+          >
+            <h1
+              style={{
+                fontSize: 28,
+                fontWeight: 900,
+                color: DARK_GREEN,
+                margin: 0,
+              }}
+            >
+              {t.mainDashboard}
+            </h1>
+            <span style={{ fontSize: 15, color: "#8BA68D", fontWeight: 500 }}>
+              {new Date().toLocaleDateString("ko-KR", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                weekday: "long",
+              })}
+            </span>
+          </div>
+
+          {/* Summary Cards */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 14,
+              marginBottom: 20,
+            }}
+          >
+            {[
+              {
+                label: t.todayStaff,
+                value: loading ? null : todayShifts.length,
+                sub: loading ? null : t.checkedInCount(checkedIn),
+                icon: <Users size={20} color={GREEN} />,
+                subColor: GREEN,
+                isAlert: false,
+              },
+              {
+                label: t.registeredStaff,
+                value: loading ? null : totalEmployees,
+                sub: loading ? null : t.allStaffThisBranch,
+                icon: <TrendingUp size={20} color={GREEN} />,
+                subColor: GREEN,
+                isAlert: false,
+              },
+              {
+                label: t.substituteRecruiting,
+                value: loading ? null : substituteCount,
+                sub: loading
+                  ? null
+                  : substituteCount > 0
+                    ? t.waitingForApplicants
+                    : t.noOpenings,
+                icon: (
+                  <AlertCircle
+                    size={20}
+                    color={substituteCount > 0 ? "#A20000" : GREEN}
+                  />
+                ),
+                subColor: substituteCount > 0 ? "#A20000" : subTextColor,
+                isAlert: substituteCount > 0,
+              },
+              {
+                label: t.estimatedLaborCost,
+                value: loading
+                  ? null
+                  : `₩${estimatedPay.toLocaleString("ko-KR")}`,
+                sub: loading ? null : t.hourlyBasis,
+                icon: <DollarSign size={20} color={GREEN} />,
+                subColor: subTextColor,
+                isAlert: false,
+              },
+            ].map(({ label, value, sub, icon, subColor, isAlert }) => (
+              <div
+                key={label}
+                style={{
+                  background: "rgba(230,245,200,0.35)",
+                  borderRadius: 16,
+                  padding: "18px 20px",
+                  border: `1px solid ${LIGHT_GREEN}`,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 12,
+                  }}
+                >
+                  <p
+                    style={{ fontSize: 13, fontWeight: 600, color: "#8BA68D" }}
+                  >
+                    {label}
+                  </p>
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 9,
+                      background: "transparent",
+                      border: `1.5px solid ${isAlert ? "#A20000" : BORDER_GREEN}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {icon}
                   </div>
+                </div>
+                {value === null ? (
+                  <Loader2 size={20} style={{ color: subTextColor }} />
+                ) : (
+                  <>
+                    <p
+                      style={{
+                        fontSize: 28,
+                        fontWeight: 800,
+                        color: isAlert ? "#A20000" : DARK_GREEN,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {value}
+                    </p>
+                    <p style={{ fontSize: 13, color: subColor, marginTop: 6 }}>
+                      {sub}
+                    </p>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 차트 — 단독 행 */}
+          <div
+            style={{
+              background: "rgba(230,245,200,0.35)",
+              borderRadius: 18,
+              padding: "22px",
+              border: `1px solid ${LIGHT_GREEN}`,
+              marginBottom: 14,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 16,
+              }}
+            >
+              <span
+                style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN }}
+              >
+                {t.realtimeTrend}
+              </span>
+              <span
+                style={{
+                  fontSize: 12,
+                  color: "#8BA68D",
+                  background: LIGHT_GREEN,
+                  padding: "3px 12px",
+                  borderRadius: 20,
+                }}
+              >
+                {t.sampleData}
+              </span>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={customerTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#d4e8d4" />
+                <XAxis
+                  dataKey="time"
+                  tick={{ fill: "#8BA68D", fontSize: 12 }}
+                />
+                <YAxis tick={{ fill: "#8BA68D", fontSize: 12 }} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 13 }} />
+                <Line
+                  type="monotone"
+                  dataKey="customers"
+                  stroke={GREEN}
+                  name={t.customers}
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="staff"
+                  stroke={DARK_GREEN}
+                  name={t.workingStaff}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 오늘의 운영 알림 — 단독 행, 가로 나열 */}
+          <div
+            style={{
+              background: "rgba(230,245,200,0.35)",
+              borderRadius: 18,
+              padding: "20px 22px",
+              border: `1px solid ${LIGHT_GREEN}`,
+              marginBottom: 14,
+            }}
+          >
+            <p
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: DARK_GREEN,
+                marginBottom: 14,
+              }}
+            >
+              {t.todayAlerts}
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                gap: 10,
+              }}
+            >
+              {!loading && substituteCount > 0 && (
+                <div
+                  style={{
+                    padding: "13px 16px",
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.7)",
+                    border: `1.5px solid #A20000`,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#A20000",
+                      marginBottom: 4,
+                    }}
+                  >
+                    {t.substituteAlert(substituteCount)}
+                  </p>
+                  <p style={{ fontSize: 13, color: "#8BA68D" }}>
+                    {t.checkApplicants}
+                  </p>
+                </div>
+              )}
+              {!loading &&
+                checkedIn < todayShifts.length &&
+                todayShifts.length > 0 && (
+                  <div
+                    style={{
+                      padding: "13px 16px",
+                      borderRadius: 12,
+                      background: "rgba(255,255,255,0.7)",
+                      border: `1.5px solid ${BORDER_GREEN}`,
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: DARK_GREEN,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {t.absentAlert(todayShifts.length - checkedIn)}
+                    </p>
+                    <p style={{ fontSize: 13, color: "#8BA68D" }}>
+                      {t.checkAttendance}
+                    </p>
+                  </div>
+                )}
+              {!loading && todayShifts.length === 0 && (
+                <div
+                  style={{
+                    padding: "13px 16px",
+                    borderRadius: 12,
+                    background: "rgba(255,255,255,0.7)",
+                    border: `1px solid ${LIGHT_GREEN}`,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: DARK_GREEN,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {t.noWorkToday}
+                  </p>
+                  <p style={{ fontSize: 13, color: "#8BA68D" }}>
+                    {t.checkSchedule}
+                  </p>
+                </div>
+              )}
+              <div
+                style={{
+                  padding: "13px 16px",
+                  borderRadius: 12,
+                  background: "rgba(255,255,255,0.7)",
+                  border: `1px solid ${LIGHT_GREEN}`,
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: DARK_GREEN,
+                    marginBottom: 4,
+                  }}
+                >
+                  {t.healthCertExpiry}
+                </p>
+                <p style={{ fontSize: 13, color: "#8BA68D" }}>
+                  {t.checkDocuments}
+                </p>
+              </div>
+              <div
+                style={{
+                  padding: "13px 16px",
+                  borderRadius: 12,
+                  background: "rgba(255,255,255,0.7)",
+                  border: `1.5px solid ${BORDER_GREEN}`,
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: DARK_GREEN,
+                    marginBottom: 4,
+                  }}
+                >
+                  {t.nextWeekSchedule}
+                </p>
+                <p style={{ fontSize: 13, color: "#8BA68D" }}>
+                  {t.writeInSchedule}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 오늘 근무자 + AI 추천 */}
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
+          >
+            <div
+              style={{
+                background: "rgba(230,245,200,0.35)",
+                borderRadius: 18,
+                padding: "22px",
+                border: `1px solid ${LIGHT_GREEN}`,
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: DARK_GREEN,
+                  marginBottom: 14,
+                }}
+              >
+                {t.todayWorkerList}
+              </p>
+              {loading ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: "32px 0",
+                  }}
+                >
+                  <Loader2 size={24} style={{ color: "#8BA68D" }} />
+                </div>
+              ) : todayShifts.length === 0 ? (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "32px 0",
+                    color: "#8BA68D",
+                    fontSize: 15,
+                  }}
+                >
+                  {t.noWorkersToday}
+                </div>
+              ) : (
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
+                  {todayShifts.map((shift) => {
+                    const emp = employeeMap[shift.user_id];
+                    const name = emp?.name || t.unknown;
+                    const bs = getStatusBadgeStyle(shift.status);
+                    return (
+                      <div
+                        key={shift.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "11px 14px",
+                          background: "rgba(230,245,200,0.5)",
+                          borderRadius: 14,
+                          border: `1px solid ${LIGHT_GREEN}`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: "50%",
+                              background: `linear-gradient(135deg, ${GREEN}, ${DARK_GREEN})`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#fff",
+                              fontWeight: 700,
+                              fontSize: 15,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {name[0]}
+                          </div>
+                          <div>
+                            <p
+                              style={{
+                                fontWeight: 700,
+                                fontSize: 15,
+                                color: DARK_GREEN,
+                              }}
+                            >
+                              {name}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: 13,
+                                color: "#8BA68D",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                            >
+                              <Clock size={11} />
+                              {fmt(shift.start_at)} ~ {fmt(shift.end_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          style={{
+                            ...bs,
+                            padding: "4px 11px",
+                            borderRadius: 20,
+                            fontSize: 12,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {getStatusLabel(shift.status)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
-            {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                  <button
-                      key={item.label}
-                      onClick={() => navigate(item.path)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        width: '100%', padding: '11px 14px', marginBottom: 4,
-                        background: isActive ? GREEN : 'transparent',
-                        border: 'none',
-                        borderRadius: 12, cursor: 'pointer',
-                        color: isActive ? '#fff' : (isDark ? '#ccc' : DARK_GREEN),
-                        fontSize: 14, fontWeight: 600, textAlign: 'left',
-                        transition: 'all 0.15s',
-                        boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none',
-                      }}
-                      onMouseOver={e => { if (!isActive) { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : LIGHT_GREEN; } }}
-                      onMouseOut={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; } }}
+            <div
+              style={{
+                background: "rgba(230,245,200,0.35)",
+                borderRadius: 18,
+                padding: "22px",
+                border: `1px solid ${LIGHT_GREEN}`,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 14,
+                }}
+              >
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 9,
+                    background: "transparent",
+                    border: `1.5px solid ${BORDER_GREEN}`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <BarChart3 size={17} color={GREEN} />
+                </div>
+                <span
+                  style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN }}
+                >
+                  {t.aiRecommendation}
+                </span>
+              </div>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
+                <div
+                  style={{
+                    borderRadius: 14,
+                    padding: "15px",
+                    background: "rgba(230,245,200,0.6)",
+                    border: `1.5px solid ${BORDER_GREEN}`,
+                  }}
+                >
+                  <h4
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: DARK_GREEN,
+                      marginBottom: 6,
+                    }}
                   >
-                    <item.icon size={16} color={isActive ? '#fff' : GREEN} />
-                    {item.label}
+                    {t.staffingRecommendation}
+                  </h4>
+                  <p
+                    style={{ fontSize: 13, color: "#8BA68D", marginBottom: 11 }}
+                  >
+                    {t.staffingBody}
+                  </p>
+                  <button
+                    onClick={() => navigate(`/admin/substitute/${branchId}`)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 0",
+                      background: GREEN,
+                      border: "none",
+                      borderRadius: 50,
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {t.recruitSubstitute}
                   </button>
-              );
-            })}
-          </aside>
-
-          {/* ── 메인: 하나의 큰 흰 카드 ── */}
-          <div style={{
-            flex: 1, minWidth: 0,
-            background: 'rgba(255,255,255,0.97)',
-            borderRadius: 24,
-            padding: '28px 28px 32px',
-            boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
-          }}>
-
-            {/* 타이틀 행 */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 24 }}>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: 0 }}>{t.mainDashboard}</h1>
-              <span style={{ fontSize: 15, color: '#8BA68D', fontWeight: 500 }}>
-              {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
-            </span>
-            </div>
-
-            {/* Summary Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
-              {[
-                { label: t.todayStaff, value: loading ? null : todayShifts.length, sub: loading ? null : t.checkedInCount(checkedIn), icon: <Users size={20} color={GREEN} />, subColor: GREEN, isAlert: false },
-                { label: t.registeredStaff, value: loading ? null : totalEmployees, sub: loading ? null : t.allStaffThisBranch, icon: <TrendingUp size={20} color={GREEN} />, subColor: GREEN, isAlert: false },
-                { label: t.substituteRecruiting, value: loading ? null : substituteCount, sub: loading ? null : (substituteCount > 0 ? t.waitingForApplicants : t.noOpenings), icon: <AlertCircle size={20} color={substituteCount > 0 ? '#A20000' : GREEN} />, subColor: substituteCount > 0 ? '#A20000' : subTextColor, isAlert: substituteCount > 0 },
-                { label: t.estimatedLaborCost, value: loading ? null : `₩${estimatedPay.toLocaleString("ko-KR")}`, sub: loading ? null : t.hourlyBasis, icon: <DollarSign size={20} color={GREEN} />, subColor: subTextColor, isAlert: false },
-              ].map(({ label, value, sub, icon, subColor, isAlert }) => (
-                  <div key={label} style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#8BA68D' }}>{label}</p>
-                      <div style={{ width: 34, height: 34, borderRadius: 9, background: 'transparent', border: `1.5px solid ${isAlert ? '#A20000' : BORDER_GREEN}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-                    </div>
-                    {value === null ? <Loader2 size={20} style={{ color: subTextColor }} /> : (
-                        <>
-                          <p style={{ fontSize: 28, fontWeight: 800, color: isAlert ? '#A20000' : DARK_GREEN, lineHeight: 1 }}>{value}</p>
-                          <p style={{ fontSize: 13, color: subColor, marginTop: 6 }}>{sub}</p>
-                        </>
-                    )}
-                  </div>
-              ))}
-            </div>
-
-            {/* 차트 — 단독 행 */}
-            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 18, padding: '22px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN }}>{t.realtimeTrend}</span>
-                <span style={{ fontSize: 12, color: '#8BA68D', background: LIGHT_GREEN, padding: '3px 12px', borderRadius: 20 }}>{t.sampleData}</span>
-              </div>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={customerTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#d4e8d4" />
-                  <XAxis dataKey="time" tick={{ fill: '#8BA68D', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#8BA68D', fontSize: 12 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 13 }} />
-                  <Line type="monotone" dataKey="customers" stroke={GREEN} name={t.customers} strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="staff" stroke={DARK_GREEN} name={t.workingStaff} strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* 오늘의 운영 알림 — 단독 행, 가로 나열 */}
-            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 18, padding: '20px 22px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 14 }}>
-              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 14 }}>{t.todayAlerts}</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-                {!loading && substituteCount > 0 && (
-                    <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1.5px solid #A20000` }}>
-                      <p style={{ fontSize: 14, fontWeight: 700, color: '#A20000', marginBottom: 4 }}>{t.substituteAlert(substituteCount)}</p>
-                      <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.checkApplicants}</p>
-                    </div>
-                )}
-                {!loading && checkedIn < todayShifts.length && todayShifts.length > 0 && (
-                    <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1.5px solid ${BORDER_GREEN}` }}>
-                      <p style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN, marginBottom: 4 }}>{t.absentAlert(todayShifts.length - checkedIn)}</p>
-                      <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.checkAttendance}</p>
-                    </div>
-                )}
-                {!loading && todayShifts.length === 0 && (
-                    <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${LIGHT_GREEN}` }}>
-                      <p style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN, marginBottom: 4 }}>{t.noWorkToday}</p>
-                      <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.checkSchedule}</p>
-                    </div>
-                )}
-                <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1px solid ${LIGHT_GREEN}` }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN, marginBottom: 4 }}>{t.healthCertExpiry}</p>
-                  <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.checkDocuments}</p>
                 </div>
-                <div style={{ padding: '13px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.7)', border: `1.5px solid ${BORDER_GREEN}` }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN, marginBottom: 4 }}>{t.nextWeekSchedule}</p>
-                  <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.writeInSchedule}</p>
+                <div
+                  style={{
+                    borderRadius: 14,
+                    padding: "15px",
+                    background: "rgba(230,245,200,0.3)",
+                    border: `1px solid ${LIGHT_GREEN}`,
+                  }}
+                >
+                  <h4
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: DARK_GREEN,
+                      marginBottom: 5,
+                    }}
+                  >
+                    {t.menuRecommendation}
+                  </h4>
+                  <p style={{ fontSize: 13, color: "#8BA68D" }}>{t.menuBody}</p>
+                </div>
+                <div
+                  style={{
+                    borderRadius: 14,
+                    padding: "15px",
+                    background: "rgba(230,245,200,0.3)",
+                    border: `1px solid ${LIGHT_GREEN}`,
+                  }}
+                >
+                  <h4
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: DARK_GREEN,
+                      marginBottom: 5,
+                    }}
+                  >
+                    {t.idleTimeTask}
+                  </h4>
+                  <p style={{ fontSize: 13, color: "#8BA68D" }}>{t.idleBody}</p>
                 </div>
               </div>
             </div>
-
-            {/* 오늘 근무자 + AI 추천 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-              <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 18, padding: '22px', border: `1px solid ${LIGHT_GREEN}` }}>
-                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 14 }}>{t.todayWorkerList}</p>
-                {loading ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}><Loader2 size={24} style={{ color: '#8BA68D' }} /></div>
-                ) : todayShifts.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '32px 0', color: '#8BA68D', fontSize: 15 }}>{t.noWorkersToday}</div>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {todayShifts.map((shift) => {
-                        const emp = employeeMap[shift.user_id];
-                        const name = emp?.name || t.unknown;
-                        const bs = getStatusBadgeStyle(shift.status);
-                        return (
-                            <div key={shift.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', background: 'rgba(230,245,200,0.5)', borderRadius: 14, border: `1px solid ${LIGHT_GREEN}` }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <div style={{ width: 38, height: 38, borderRadius: '50%', background: `linear-gradient(135deg, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>{name[0]}</div>
-                                <div>
-                                  <p style={{ fontWeight: 700, fontSize: 15, color: DARK_GREEN }}>{name}</p>
-                                  <p style={{ fontSize: 13, color: '#8BA68D', display: 'flex', alignItems: 'center', gap: 4 }}><Clock size={11} />{fmt(shift.start_at)} ~ {fmt(shift.end_at)}</p>
-                                </div>
-                              </div>
-                              <span style={{ ...bs, padding: '4px 11px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>{getStatusLabel(shift.status)}</span>
-                            </div>
-                        );
-                      })}
-                    </div>
-                )}
-              </div>
-
-              <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 18, padding: '22px', border: `1px solid ${LIGHT_GREEN}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 9, background: 'transparent', border: `1.5px solid ${BORDER_GREEN}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <BarChart3 size={17} color={GREEN} />
-                  </div>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN }}>{t.aiRecommendation}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ borderRadius: 14, padding: '15px', background: 'rgba(230,245,200,0.6)', border: `1.5px solid ${BORDER_GREEN}` }}>
-                    <h4 style={{ fontWeight: 700, fontSize: 15, color: DARK_GREEN, marginBottom: 6 }}>{t.staffingRecommendation}</h4>
-                    <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 11 }}>{t.staffingBody}</p>
-                    <button onClick={() => navigate(`/admin/substitute/${branchId}`)} style={{ width: '100%', padding: '10px 0', background: GREEN, border: 'none', borderRadius: 50, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{t.recruitSubstitute}</button>
-                  </div>
-                  <div style={{ borderRadius: 14, padding: '15px', background: 'rgba(230,245,200,0.3)', border: `1px solid ${LIGHT_GREEN}` }}>
-                    <h4 style={{ fontWeight: 700, fontSize: 15, color: DARK_GREEN, marginBottom: 5 }}>{t.menuRecommendation}</h4>
-                    <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.menuBody}</p>
-                  </div>
-                  <div style={{ borderRadius: 14, padding: '15px', background: 'rgba(230,245,200,0.3)', border: `1px solid ${LIGHT_GREEN}` }}>
-                    <h4 style={{ fontWeight: 700, fontSize: 15, color: DARK_GREEN, marginBottom: 5 }}>{t.idleTimeTask}</h4>
-                    <p style={{ fontSize: 13, color: '#8BA68D' }}>{t.idleBody}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-            {[
-              { icon: CalendarDays, label: t.viewSchedule, path: `/admin/schedule/monthly/${branchId}` },
-              { icon: UserPlus, label: t.recruitSubNav, path: `/admin/substitute/${branchId}` },
-              { icon: BarChart3, label: t.customerAnalytics, path: `/admin/analytics/${branchId}` },
-              { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
-            ].map(({ icon: Icon, label, path }) => (
-                <button key={label} onClick={() => navigate(path)} style={{ height: 96, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: DARK_GREEN, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
-                  <Icon size={22} color={GREEN} />
-                  <span>{label}</span>
-                </button>
-            ))}
           </div>
         </div>
+
+        {/* Quick Actions */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 16,
+          }}
+        >
+          {[
+            {
+              icon: CalendarDays,
+              label: t.viewSchedule,
+              path: `/admin/schedule/monthly/${branchId}`,
+            },
+            {
+              icon: UserPlus,
+              label: t.recruitSubNav,
+              path: `/admin/substitute/${branchId}`,
+            },
+            {
+              icon: BarChart3,
+              label: t.customerAnalytics,
+              path: `/admin/analytics/${branchId}`,
+            },
+            {
+              icon: Video,
+              label: "CCTV 분석",
+              path: `/admin/cctv/${branchId}`,
+            },
+          ].map(({ icon: Icon, label, path }) => (
+            <button
+              key={label}
+              onClick={() => navigate(path)}
+              style={{
+                height: 96,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                background: cardBg,
+                border: `1px solid ${BORDER_GREEN}`,
+                borderRadius: 20,
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+                color: DARK_GREEN,
+                boxShadow: "0px 4px 7.7px rgba(188,192,188,0.25)",
+              }}
+            >
+              <Icon size={22} color={GREEN} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
       </div>
+    </div>
   );
 }

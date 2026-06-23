@@ -5,6 +5,7 @@ import com.dm.backend.service.UserLineService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,119 +18,64 @@ public class LineWebhookC {
     @Autowired
     private LineService lineService;
 
-    // =========================
-    // Webhook Verify
-    // =========================
-
-    @GetMapping("/webhook")
-    public String verify() {
-        return "OK";
-    }
-
-    // =========================
-    // LINE Webhook
-    // =========================
-
     @PostMapping("/webhook")
-    public String webhook(
-            @RequestBody String body
-    ) {
+    public ResponseEntity<String> webhook(@RequestBody(required = false) String body) {
 
         try {
 
-            ObjectMapper mapper =
-                    new ObjectMapper();
+            if (body == null || body.isBlank()) {
+                return ResponseEntity.ok("OK");
+            }
 
-            JsonNode root =
-                    mapper.readTree(body);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(body);
 
-            JsonNode events =
-                    root.get("events");
+            JsonNode events = root.get("events");
 
-            if (events == null) {
-                return "OK";
+            if (events == null || !events.isArray()) {
+                return ResponseEntity.ok("OK");
             }
 
             for (JsonNode event : events) {
 
-                String type =
-                        event.get("type")
-                                .asText();
+                String type = event.has("type") ? event.get("type").asText() : null;
+                if (type == null) continue;
 
-                JsonNode source =
-                        event.get("source");
+                JsonNode source = event.get("source");
+                if (source == null || !source.has("userId")) continue;
 
-                if (source == null
-                        || source.get("userId") == null) {
-                    continue;
-                }
+                String lineUserId = source.get("userId").asText();
 
-                String lineUserId =
-                        source.get("userId")
-                                .asText();
+                System.out.println("EVENT: " + type);
 
-                System.out.println(
-                        "EVENT : " + type
-                );
-
-                System.out.println(
-                        "LINE USER ID : "
-                                + lineUserId
-                );
-
-                // =========================
-                // 친구추가
-                // =========================
-
+                // follow
                 if ("follow".equals(type)) {
 
-                    userLineService.follow(
-                            lineUserId
-                    );
+                    userLineService.follow(lineUserId);
 
                     try {
-
-                        lineService.sendMessage(
-                                lineUserId,
-                                """
-                                CalPeace LINE 연동이 완료되었습니다.
-                                
-                                이제 대타 신청, 승인, 공지사항 등의
-                                알림을 받아보실 수 있습니다.
-                                """
-                        );
-
+                        lineService.sendMessage(lineUserId,
+                                "CalPeace LINE 연동 완료");
                     } catch (Exception e) {
-
                         e.printStackTrace();
                     }
 
-                    System.out.println(
-                            "친구추가 완료"
-                    );
+                    System.out.println("친구추가 완료");
                 }
 
-                // =========================
-                // 친구삭제
-                // =========================
-
+                // unfollow
                 if ("unfollow".equals(type)) {
 
-                    userLineService.unfollow(
-                            lineUserId
-                    );
+                    userLineService.unfollow(lineUserId);
 
-                    System.out.println(
-                            "친구삭제 완료"
-                    );
+                    System.out.println("친구삭제 완료");
                 }
             }
 
         } catch (Exception e) {
-
             e.printStackTrace();
         }
 
-        return "OK";
+        return ResponseEntity.ok("OK");
     }
 }
