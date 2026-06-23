@@ -1,16 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, RefreshControl, ScrollView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useApp } from '../../contexts/AppContext';
+import { useBoard } from '../../contexts/BoardContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Post } from '../../types/Post';
-import { useApp } from '../../contexts/AppContext';
-import { useBoard } from '../../contexts/BoardContext';
-
-type BoardScreenNavigationProp = any;
 
 type Props = {
-  navigation: BoardScreenNavigationProp;
+  navigation: any;
   route: {
     params?: {
       postToOpenId?: string;
@@ -18,39 +26,53 @@ type Props = {
   };
 };
 
+const CATEGORIES = [
+  { id: 'ALL', label: '전체' },
+  { id: 'NOTICE', label: '공지' },
+  { id: 'MENU', label: '건의' },
+  { id: 'EVENT', label: '자유' },
+  { id: 'MANUAL', label: '매뉴얼' },
+  { id: 'LOST', label: '분실물' },
+];
+
 const BoardScreen = ({ route, navigation }: Props) => {
   const { userInfo } = useApp();
-  const { posts } = useBoard();
+  const { posts, loading, loadPosts } = useBoard();
   const { postToOpenId } = route.params || {};
-  
+  const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
+
   const [activeCategory, setActiveCategory] = useState('ALL');
+  const [refreshing, setRefreshing] = useState(false);
   const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
-  const CATEGORIES = [
-    { id: 'ALL', label: 'boardTabAll' },
-    { id: 'NOTICE', label: 'boardTabNotice' },
-    { id: 'MENU', label: 'boardTabMenu' },
-    { id: 'EVENT', label: 'boardTabEvent' },
-    { id: 'MANUAL', label: 'boardTabManual' },
-    { id: 'LOST', label: 'boardTabLost' },
-  ];
+  const refreshPosts = useCallback(async () => {
+    if (storeId) {
+      await loadPosts(storeId);
+    }
+  }, [loadPosts, storeId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshPosts();
+    }, [refreshPosts]),
+  );
 
   useEffect(() => {
     if (postToOpenId) {
       navigation.navigate('BoardDetail', { postId: postToOpenId });
     }
-  }, [postToOpenId]);
+  }, [navigation, postToOpenId]);
 
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    await refreshPosts();
+    setRefreshing(false);
+  }, [refreshPosts]);
 
   const filteredPosts = posts
-    .filter(post => activeCategory === 'ALL' || post.category === activeCategory)
+    .filter((post) => activeCategory === 'ALL' || post.category === activeCategory)
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
@@ -58,19 +80,27 @@ const BoardScreen = ({ route, navigation }: Props) => {
     });
 
   const renderItem = ({ item }: { item: Post }) => (
-    <TouchableOpacity style={styles.noticeItem} onPress={() => navigation.navigate('BoardDetail', { postId: item.id })} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.noticeItem}
+      onPress={() => navigation.navigate('BoardDetail', { postId: item.id })}
+      activeOpacity={0.7}
+    >
       <View style={styles.noticeTextContainer}>
-        {item.isPinned && <Text style={styles.pinIcon}>📌 </Text>}
+        {item.isPinned && <Text style={styles.pinIcon}>📌</Text>}
         {activeCategory === 'ALL' && (
           <View style={styles.categoryBadge}>
-            <Text style={styles.categoryBadgeText}>{t(CATEGORIES.find(c => c.id === item.category)?.label || 'boardTabNotice')}</Text>
+            <Text style={styles.categoryBadgeText}>
+              {CATEGORIES.find((category) => category.id === item.category)?.label || '공지'}
+            </Text>
           </View>
         )}
         <Text style={styles.noticeItemTitle} numberOfLines={1}>
-          {t(item.title).length > (activeCategory === 'ALL' ? 14 : 18) ? t(item.title).substring(0, (activeCategory === 'ALL' ? 14 : 18)) + '..' : t(item.title)}
+          {item.title}
         </Text>
         {item.badge && (
-          <View style={styles.newBadge}><Text style={styles.newBadgeText}>{t(item.badge)}</Text></View>
+          <View style={styles.newBadge}>
+            <Text style={styles.newBadgeText}>{t(item.badge)}</Text>
+          </View>
         )}
       </View>
       <Text style={styles.noticeDate}>{item.date}</Text>
@@ -81,21 +111,23 @@ const BoardScreen = ({ route, navigation }: Props) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Text style={styles.backButtonText}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('notice')}</Text>
+        <Text style={styles.headerTitle}>게시판</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.tabContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabScroll}>
-          {CATEGORIES.map(category => (
-            <TouchableOpacity 
-              key={category.id} 
+          {CATEGORIES.map((category) => (
+            <TouchableOpacity
+              key={category.id}
               style={[styles.tabButton, activeCategory === category.id && styles.tabButtonActive]}
               onPress={() => setActiveCategory(category.id)}
             >
-              <Text style={[styles.tabText, activeCategory === category.id && styles.tabTextActive]}>{t(category.label)}</Text>
+              <Text style={[styles.tabText, activeCategory === category.id && styles.tabTextActive]}>
+                {category.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -103,22 +135,29 @@ const BoardScreen = ({ route, navigation }: Props) => {
 
       <FlatList
         data={filteredPosts}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContainer}
         ItemSeparatorComponent={() => <View style={styles.listDivider} />}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
             colors={['#2563EB']}
             tintColor={isDarkMode ? '#60A5FA' : '#2563EB'}
           />
         }
+        ListEmptyComponent={
+          loading ? (
+            <ActivityIndicator size="large" color="#2563EB" style={{ marginTop: 40 }} />
+          ) : (
+            <Text style={styles.emptyText}>등록된 게시글이 없습니다.</Text>
+          )
+        }
       />
 
-      <TouchableOpacity 
-        style={styles.fab} 
+      <TouchableOpacity
+        style={styles.fab}
         onPress={() => navigation.navigate('BoardWrite', { isEdit: false })}
         activeOpacity={0.8}
       >
@@ -130,20 +169,19 @@ const BoardScreen = ({ route, navigation }: Props) => {
 
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20, 
-    paddingVertical: 16, 
-    borderBottomWidth: 1, 
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.card
+    backgroundColor: colors.card,
   },
   backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: colors.text },
+  backButtonText: { fontSize: 28, color: colors.text },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  
   tabContainer: {
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -163,10 +201,10 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   tabButtonActive: { backgroundColor: '#2563EB' },
   tabText: { fontSize: 14, color: colors.subText, fontWeight: '500' },
   tabTextActive: { color: '#FFFFFF', fontWeight: '700' },
-
   listContainer: {
     paddingHorizontal: 20,
     paddingVertical: 10,
+    flexGrow: 1,
   },
   noticeItem: {
     flexDirection: 'row',
@@ -200,6 +238,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     fontSize: 16,
     color: colors.text,
     fontWeight: '500',
+    flexShrink: 1,
   },
   newBadge: {
     backgroundColor: '#EF4444',
@@ -221,7 +260,13 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     height: 1,
     backgroundColor: colors.border,
   },
-
+  emptyText: {
+    marginTop: 48,
+    textAlign: 'center',
+    color: colors.subText,
+    fontSize: 15,
+    fontWeight: '600',
+  },
   fab: {
     position: 'absolute',
     right: 20,

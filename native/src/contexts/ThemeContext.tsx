@@ -12,6 +12,7 @@ interface ThemeContextProps {
     text: string;
     subText: string;
     border: string;
+    primary: string;
     primaryLight: string;
     modalBg: string;
   };
@@ -33,6 +34,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     text: isDarkMode ? '#E0E0E0' : '#333333',
     subText: isDarkMode ? '#A0A0A0' : '#666666',
     border: isDarkMode ? '#333333' : '#EEEEEE',
+    primary: '#18A022',
     primaryLight: isDarkMode ? '#1A365D' : '#E8F0FE',
     modalBg: isDarkMode ? '#2A2A2A' : '#FFFFFF',
   };

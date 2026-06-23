@@ -5,6 +5,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 // Expo Camera 최신 API
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Toast from 'react-native-toast-message';
+import { checkAttendanceByQrAPI } from '../../../api/auth';
+import { useApp } from '../../contexts/AppContext';
 
 type QRCheckInScreenNavigationProp = StackNavigationProp<any, 'QRCheckIn'>;
 
@@ -13,10 +15,21 @@ type Props = {
 };
 
 const QRCheckInScreen = ({ navigation }: Props) => {
+  const { userInfo } = useApp();
   // 카메라 권한 상태와 권한 요청 함수를 가져옵니다.
   const [permission, requestPermission] = useCameraPermissions();
   // 중복 스캔(여러 번 연속으로 찍히는 것)을 방지하기 위한 상태
   const [scanned, setScanned] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  const extractQrToken = (data: string) => {
+    try {
+      const parsed = new URL(data);
+      return parsed.searchParams.get('token') || data;
+    } catch {
+      return data;
+    }
+  };
 
   // 1. 카메라 권한 로딩 중일 때
   if (!permission) {
@@ -36,18 +49,42 @@ const QRCheckInScreen = ({ navigation }: Props) => {
   }
 
   // 3. QR 코드가 성공적으로 스캔되었을 때 실행되는 함수
-  const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
+  const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
     setScanned(true); // 중복 스캔 방지
-    
-    // TODO: 여기서 백엔드로 스캔한 QR 데이터(data)를 보내는 로직(Axios)이 들어갑니다.
-    Toast.show({
-      type: 'success',
-      text1: 'QR 인식 성공!',
-      text2: `스캔된 데이터: ${data}`,
-    });
-    
-    // 스캔 직후 바로 대시보드로 돌아가기
-    navigation.goBack();
+    setProcessing(true);
+
+    if (!userInfo?.id) {
+      Toast.show({
+        type: 'error',
+        text1: '로그인 정보가 없습니다.',
+        text2: '다시 로그인 후 시도해주세요.',
+      });
+      setProcessing(false);
+      setScanned(false);
+      return;
+    }
+
+    try {
+      const qrToken = extractQrToken(data);
+      const response = await checkAttendanceByQrAPI(userInfo.id, qrToken);
+
+      Toast.show({
+        type: 'success',
+        text1: '출퇴근 처리 완료',
+        text2: response.data?.message || '정상 처리되었습니다.',
+      });
+
+      navigation.goBack();
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: '출퇴근 처리 실패',
+        text2: error.response?.data?.message || 'QR 코드를 다시 스캔해주세요.',
+      });
+      setScanned(false);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -81,7 +118,9 @@ const QRCheckInScreen = ({ navigation }: Props) => {
 
           {/* 하단 안내 문구 */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>사각 영역 안에 QR 코드를 맞춰주세요.</Text>
+            <Text style={styles.footerText}>
+              {processing ? '출퇴근 처리 중입니다...' : '사각 영역 안에 QR 코드를 맞춰주세요.'}
+            </Text>
           </View>
         </View>
 
