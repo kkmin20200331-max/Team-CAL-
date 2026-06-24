@@ -46,7 +46,7 @@ export default function EditProfile() {
   }, [isDark]);
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => sessionStorage.getItem('employee_profile_image') || ''
+    () => sessionStorage.getItem('profile_image') || ''
   );
 
   const [formName,       setFormName]       = useState(currentUser?.name     || '');
@@ -92,7 +92,7 @@ export default function EditProfile() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const base64 = ev.target?.result as string;
-      sessionStorage.setItem('employee_profile_image', base64);
+      sessionStorage.setItem('profile_image', base64);
       setProfileImage(base64);
     };
     reader.readAsDataURL(file);
@@ -166,7 +166,8 @@ export default function EditProfile() {
 
       await axiosInstance.put('/users', body);
 
-      const updated = { ...currentUser, name: formName, phone: formPhone, username: formUsername || currentUser.username };
+      const savedProfileImage = sessionStorage.getItem('profile_image') || currentUser.profile_image || '';
+      const updated = { ...currentUser, name: formName, phone: formPhone, username: formUsername || currentUser.username, profile_image: savedProfileImage };
       sessionStorage.setItem('user', JSON.stringify(updated));
 
       setSavedFlash(true);

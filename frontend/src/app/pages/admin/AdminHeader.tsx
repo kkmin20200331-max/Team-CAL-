@@ -38,7 +38,7 @@ export default function AdminHeader({ children }: Props) {
 
   return (
     <header style={{
-      background: headerBg, position: 'sticky', top: 0, zIndex: 100,
+      background: headerBg, position: 'sticky', top: 0, zIndex: 10,
       boxShadow: shadow,
     }}>
       <div style={{
