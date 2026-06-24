@@ -138,6 +138,7 @@ class InferenceService:
     def infer_image_bytes(
         self,
         image_bytes: bytes,
+        # 문자열 매장 ID를 그대로 payload에 싣습니다.
         store_id: str,
         camera_id: str,
         model_name: str | None = None,
@@ -385,6 +386,7 @@ class InferenceService:
 
     def _build_payload(
         self,
+        # OpenCV 결과를 Spring 백엔드로 보낼 때 사용하는 문자열 매장 ID입니다.
         store_id: str,
         camera_id: str,
         source_type: str,

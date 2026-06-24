@@ -15,6 +15,7 @@ router = APIRouter(prefix="/camera", tags=["camera"])
 @router.post("/start")
 def start_camera(
     request: CameraStartRequest | None = Body(default=None),
+    # Spring/Oracle store.id는 nanoid 형태 문자열이므로 FastAPI 쿼리도 문자열로 받습니다.
     storeId: str | None = Query(default=None, min_length=1),
     cameraId: str | None = Query(default=None),
     source: str | None = Query(default=None),

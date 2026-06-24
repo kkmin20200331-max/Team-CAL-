@@ -12,6 +12,7 @@ class SourceType(StrEnum):
 
 
 class CameraStartRequest(BaseModel):
+    # 백엔드 store.id는 숫자가 아니라 문자열 ID입니다. 예: V1StGXR8_Z5jdHi6B-myT
     storeId: str = Field(..., min_length=1)
     cameraId: str = Field(..., min_length=1)
     source: str = Field(..., min_length=1)

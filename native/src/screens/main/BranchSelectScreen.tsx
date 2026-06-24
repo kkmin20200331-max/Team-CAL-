@@ -12,7 +12,8 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
   const styles = getThemedStyles(colors);
 
   const { userInfo, login, logout } = useApp();
-  
+
+  // 화면 상태: 선택 지점, 매장 목록, 검색어, 요청 진행 상태를 관리합니다.
   const [selectedStore, setSelectedStore] = useState<any>(null);
   const [stores, setStores] = useState<any[]>([]);
   const [allStores, setAllStores] = useState<any[]>([]);
@@ -21,6 +22,7 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
   const [requestingStoreId, setRequestingStoreId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
+  // 매장 데이터 로딩: 관리자는 본인 매장, 직원은 전체 매장과 가입 상태를 함께 불러옵니다.
   useEffect(() => {
     let alive = true;
 
@@ -85,11 +87,13 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
     };
   }, [userInfo?.id, userInfo?.role, reloadKey]);
 
+  // 매장 표시용 헬퍼: API 응답 필드명이 조금 달라도 화면에서 같은 형태로 보여줍니다.
   const getStoreTitle = (store: any) => store.name || store.brandName || '근무 매장';
   const getStoreSubtitle = (store: any) => store.address || store.branchName || store.id;
   const getApprovalStatus = (store: any) =>
     String(store.approval_status || 'NONE').toUpperCase();
 
+  // 검색/통계 계산: 현재 화면에 보이는 매장 기준으로 결과 수와 승인 상태를 계산합니다.
   const filteredAllStores = allStores.filter((store) => {
     const q = storeSearchTerm.trim().toLowerCase();
     if (!q) return true;
@@ -100,6 +104,7 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
   const approvedCount = visibleStores.filter(store => getApprovalStatus(store) === 'APPROVED').length;
   const pendingCount = visibleStores.filter(store => getApprovalStatus(store) === 'PENDING').length;
 
+  // 매장 입장 처리: 선택한 매장을 로컬 저장소와 앱 전역 사용자 정보에 반영합니다.
   const enterStore = async (store: any) => {
     if (!store) {
       Alert.alert("알림", "근무할 지점을 선택해주세요.");
@@ -125,6 +130,7 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
     }
   };
 
+  // 매장 선택 처리: 관리자는 선택만 하고, 직원은 승인된 매장으로 바로 입장합니다.
   const handleSelectStore = (store: any) => {
     if (userInfo?.role === 'ADMIN') {
       setSelectedStore(store);
@@ -138,6 +144,7 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
     await enterStore(selectedStore);
   };
 
+  // 관리자용 매장 카드: 운영할 지점을 선택하는 리스트 항목입니다.
   const renderStoreItem = ({ item }: { item: any }) => {
     const isSelected = selectedStore?.id === item.id;
     const title = getStoreTitle(item);
@@ -164,6 +171,7 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
     );
   };
 
+  // 직원 근무 요청: 미승인 매장에 가입 요청을 보내고 화면 상태를 갱신합니다.
   const handleRequestStoreJoin = async (store: any) => {
     if (!userInfo?.id) {
       Alert.alert('오류', '로그인 정보가 없습니다.');
@@ -214,6 +222,7 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
     );
   };
 
+  // 직원용 매장 카드: 승인/대기/요청 상태를 한눈에 보여줍니다.
   const renderRequestStoreItem = ({ item }: { item: any }) => {
     const approvalStatus = getApprovalStatus(item);
 
@@ -260,6 +269,7 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
     );
   };
 
+  // 화면 구성: AI 매칭 헤더, 검색 영역, 매장 리스트, 하단 액션 버튼으로 구성합니다.
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -365,6 +375,7 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
   );
 };
 
+// 디자인 토큰: AI 서비스 느낌을 주는 밝은 콘솔 톤과 카드형 레이아웃입니다.
 const getThemedStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
