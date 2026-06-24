@@ -1,10 +1,5 @@
 import { useState, useRef } from "react";
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_KEY
-);
+import axiosInstance from "../../../lib/axiosInstance";
 import { useNavigate } from "react-router";
 import { useTheme } from "next-themes";
 import { X, Camera, LogOut, MapPin, User, Pencil } from "lucide-react";
@@ -136,17 +131,14 @@ export default function EmployeeProfilePanel() {
     const file = e.target.files?.[0];
     if (!file || !currentUser?.id) return;
     try {
-      const ext = file.name.split('.').pop();
-      const path = `profile/${currentUser.id}.${ext}`;
-      const { error } = await supabase.storage.from('documents').upload(path, file, { upsert: true });
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path);
-      const url = urlData.publicUrl;
-      await fetch(`http://localhost:8080/api/users/${currentUser.id}/profile-image`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_image: url }),
-      });
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await axiosInstance.post(
+        `/users/${currentUser.id}/profile-image`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      const url = response.data?.profile_image;
       setProfileImage(url);
       const updatedUser = { ...currentUser, profile_image: url };
       sessionStorage.setItem('user', JSON.stringify(updatedUser));

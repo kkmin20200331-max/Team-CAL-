@@ -30,6 +30,7 @@ import CustomerAnalytics from "./pages/admin/CustomerAnalytics";
 import MultibranchDashboard from "./pages/admin/MultibranchDashboard";
 import MonthlySchedule from "./pages/admin/MonthlySchedule";
 import CctvAnalysis from "./pages/admin/CctvAnalysis";
+import MasterApplications from "./pages/master/MasterApplications";
 
 // Employee pages
 import EmployeeHome from "./pages/employee/EmployeeHome";
@@ -77,6 +78,14 @@ export default function App() {
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/signup" element={<SignUp />} />
           <Route path="/line/error" element={<LineError />} />
+          <Route
+            path="/master/applications"
+            element={
+              <ProtectedRoute>
+                <MasterApplications />
+              </ProtectedRoute>
+            }
+          />
           {/* Admin routes */}
           <Route
             path="/admin/branch-selection"

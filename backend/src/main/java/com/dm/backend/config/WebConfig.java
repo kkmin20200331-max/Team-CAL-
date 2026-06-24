@@ -21,6 +21,9 @@ public class WebConfig implements WebMvcConfigurer {
             "http://192.168.*:*"
     );
 
+    // =========================
+    // 외부 HTTP 호출용 RestTemplate
+    // =========================
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();

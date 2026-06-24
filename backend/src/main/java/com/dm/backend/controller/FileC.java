@@ -91,20 +91,11 @@ public class FileC {
     }
 
     // =========================
-    // [매장 전체 파일 조회]
-    // =========================
-
-    @GetMapping("/store/{storeId}")
-    public List<FileVO> getFilesByStoreId(@PathVariable String storeId) {
-        return fileService.getFilesByStoreId(storeId);
-    }
-
-    // =========================
     // [Supabase 업로드]
     // =========================
 
-    @PostMapping("/upload-supabase")
-    public ResponseEntity<?> upload(
+    @PostMapping("/supabase/upload")
+    public ResponseEntity<?> uploadToSupabase(
             @RequestParam String user_id,
             @RequestParam String file_type,
             @RequestParam("file") MultipartFile file
@@ -122,7 +113,7 @@ public class FileC {
     // =========================
 
     @GetMapping("/{id}/url")
-    public ResponseEntity<?> getSignedUrl(@PathVariable String id) {
+    public ResponseEntity<?> getLegacySignedUrl(@PathVariable String id) {
         try {
             return ResponseEntity.ok(Map.of("url", fileService.getSignedUrl(id)));
         } catch (Exception e) {
