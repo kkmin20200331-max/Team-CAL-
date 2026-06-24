@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  'https://ibspdrfjncacwrpslckb.supabase.co',
-  'sb_secret_W6zz0sf66YsJfR6VudJNaQ_MQcddHwo'
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_KEY
 );
 import { useNavigate } from 'react-router';
 import { useTheme } from 'next-themes';
