@@ -7,12 +7,16 @@ import com.dm.backend.vo.DocumentOcrRequestVO;
 import com.dm.backend.vo.DocumentOcrResponseVO;
 import com.dm.backend.vo.FileVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -23,6 +27,15 @@ public class FileService {
     private final SupabaseStorageService supabaseStorageService;
     private final DocumentOcrClient documentOcrClient;
     private final ObjectMapper objectMapper;
+    private final RestTemplate restTemplate;
+
+    @Value("${supabase.project.url}")
+    private String supabaseUrl;
+
+    @Value("${supabase.project.key}")
+    private String supabaseKey;
+
+    private static final String BUCKET = "documents";
 
     // =========================
     // [공통]
@@ -116,6 +129,83 @@ public class FileService {
     }
 
     // =========================
+    // [Supabase 업로드 (레거시)]
+    // =========================
+
+    public FileVO uploadToSupabase(String userId, String fileType, MultipartFile file) throws Exception {
+        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
+        String ext = "";
+        int dotIdx = originalName.lastIndexOf('.');
+        if (dotIdx >= 0) ext = originalName.substring(dotIdx);
+
+        String fileId = UUID.randomUUID().toString().replace("-", "").substring(0, 21);
+        String path   = userId + "/" + fileId + ext;
+        String apiUrl = supabaseUrl.replaceAll("/$", "") + "/storage/v1/object/" + BUCKET + "/" + path;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + supabaseKey);
+        headers.setContentType(MediaType.parseMediaType(
+                file.getContentType() != null ? file.getContentType() : "application/octet-stream"
+        ));
+
+        ResponseEntity<Map> res = restTemplate.exchange(apiUrl, HttpMethod.POST, new HttpEntity<>(file.getBytes(), headers), Map.class);
+        if (!res.getStatusCode().is2xxSuccessful()) throw new RuntimeException("Supabase 업로드 실패");
+
+        FileVO vo = new FileVO();
+        vo.setId(fileId);
+        vo.setUser_id(userId);
+        vo.setFile_type(fileType.toUpperCase());
+        vo.setOriginal_name(originalName);
+        vo.setStorage_path(path);
+        vo.setFile_size(file.getSize());
+        vo.setMime_type(file.getContentType());
+
+        fileMapper.insertFile(vo);
+        return vo;
+    }
+
+    // =========================
+    // [서명 URL (레거시)]
+    // =========================
+
+    public String getSignedUrl(String id) {
+        FileVO file = fileMapper.selectFileById(id);
+        if (file == null) throw new RuntimeException("파일을 찾을 수 없습니다.");
+
+        String apiUrl = supabaseUrl.replaceAll("/$", "") + "/storage/v1/object/sign/" + BUCKET + "/" + file.getStorage_path();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + supabaseKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<Map> res = restTemplate.exchange(apiUrl, HttpMethod.POST, new HttpEntity<>("{\"expiresIn\":3600}", headers), Map.class);
+        if (res.getBody() == null) throw new RuntimeException("서명 URL 생성 실패");
+
+        String signedUrl = (String) res.getBody().get("signedURL");
+        return supabaseUrl.replaceAll("/$", "") + "/storage/v1" + signedUrl;
+    }
+
+    // =========================
+    // [Supabase 파일 삭제]
+    // =========================
+
+    public void deleteFromSupabase(String id) {
+        FileVO file = fileMapper.selectFileById(id);
+        if (file == null) return;
+
+        String apiUrl = supabaseUrl.replaceAll("/$", "") + "/storage/v1/object/" + BUCKET;
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + supabaseKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String body = "{\"prefixes\":[\"" + file.getStorage_path() + "\"]}";
+        try {
+            restTemplate.exchange(apiUrl, HttpMethod.DELETE, new HttpEntity<>(body, headers), Map.class);
+        } catch (Exception ignored) {}
+
+        fileMapper.deleteFile(id);
+    }
+
+    // =========================
     // [근로계약서]
     // =========================
 
@@ -162,9 +252,7 @@ public class FileService {
     }
 
     private String toJson(Object value) {
-        if (value == null) {
-            return null;
-        }
+        if (value == null) return null;
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
@@ -173,9 +261,7 @@ public class FileService {
     }
 
     private Date toSqlDate(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
+        if (value == null || value.isBlank()) return null;
         try {
             return Date.valueOf(LocalDate.parse(value));
         } catch (Exception e) {
@@ -188,9 +274,7 @@ public class FileService {
     }
 
     private String normalizeFileType(String fileType) {
-        if (fileType == null || fileType.isBlank()) {
-            return "OTHER";
-        }
+        if (fileType == null || fileType.isBlank()) return "OTHER";
         return switch (fileType.trim().toLowerCase()) {
             case "health_certificate", "health_cert", "health-cert" -> "HEALTH_CERT";
             case "contract" -> "CONTRACT";
@@ -201,9 +285,7 @@ public class FileService {
     }
 
     private String normalizeStatus(String status) {
-        if (status == null || status.isBlank()) {
-            return "PENDING";
-        }
+        if (status == null || status.isBlank()) return "PENDING";
         return switch (status.trim().toLowerCase()) {
             case "verified", "approved" -> "VERIFIED";
             case "rejected" -> "REJECTED";
@@ -217,9 +299,7 @@ public class FileService {
     }
 
     private String extensionOf(String originalName) {
-        if (originalName == null || originalName.isBlank() || !originalName.contains(".")) {
-            return "";
-        }
+        if (originalName == null || originalName.isBlank() || !originalName.contains(".")) return "";
         String extension = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
         return extension.matches("\\.[a-z0-9]{1,10}") ? extension : "";
     }

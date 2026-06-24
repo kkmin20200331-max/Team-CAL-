@@ -20,6 +20,7 @@ import {
   FileText,
   MessageSquare,
   BarChart3,
+  ChevronRight,
 } from "lucide-react";
 import AdminHeader from "./AdminHeader";
 import { useTheme } from "next-themes";
@@ -110,6 +111,8 @@ export default function CctvAnalysis() {
   const { branchId } = useParams();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const contentBg = isDark ? '#3c3c46' : '#fff';
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -318,20 +321,20 @@ export default function CctvAnalysis() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
         {/* 사이드바 */}
-        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)', borderRadius: 20, border: `1px solid ${isDark ? '#3a3a3c' : BORDER_GREEN}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
+        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)', borderRadius: 20, border: `1px solid ${isDark ? '#50505a' : BORDER_GREEN}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
           <div style={{ marginBottom: 16, position: 'relative' }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
                 {stores.map(s => (
-                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: isDark ? '#fff' : '#111', borderBottom: `1px solid ${isDark ? '#3a3a3c' : LIGHT_GREEN}` }}>
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: isDark ? '#fff' : '#111', borderBottom: `1px solid ${isDark ? '#50505a' : LIGHT_GREEN}` }}>
                     {s.name}
                   </div>
                 ))}
@@ -350,11 +353,16 @@ export default function CctvAnalysis() {
         </div>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, display: 'flex', alignItems: 'center', gap: 10 }}><Video size={28} />CCTV 분석 제어</h1>
-              <p style={{ fontSize: 14, color: isDark ? '#aaa' : '#555', marginTop: 4 }}>{currentBranch} · 실시간 고객 인원 분석</p>
+              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {currentBranch} <ChevronRight size={12} /> CCTV 분석
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Video size={26} />매장 CCTV 실시간 모니터링
+              </h1>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>카메라를 통해 매장 혼잡도를 실시간으로 분석합니다.</p>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
@@ -370,91 +378,63 @@ export default function CctvAnalysis() {
             </div>
           </div>
         {errorMessage && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div style={{ marginBottom: 16, borderRadius: 10, border: '1px solid #fca5a5', background: '#fef2f2', padding: '10px 16px', fontSize: 13, color: '#b91c1c' }}>
             {errorMessage}
           </div>
         )}
 
-        <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card className="rounded-lg">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm text-slate-500">분석 상태</p>
-                  <p className="mt-2 text-2xl font-bold text-slate-950">
-                    {isRunning ? "실행 중" : "대기 중"}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {isRunning
-                      ? `서버 동기화 ${lastSyncedAt}`
-                      : "시작 버튼으로 API 호출"}
-                  </p>
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+          {[
+            {
+              label: '분석 상태',
+              value: isRunning ? '실행 중' : '대기 중',
+              sub: isRunning ? `서버 동기화 ${lastSyncedAt}` : '시작 버튼으로 API 호출',
+              badge: { text: isRunning ? 'LIVE' : 'STOP', bg: isRunning ? GREEN : '#888' },
+              icon: null,
+            },
+            {
+              label: '분석 매장',
+              value: currentBranch,
+              sub: `ID: ${storeId || '미설정'}`,
+              badge: null,
+              icon: <Users size={22} color={DARK_GREEN} />,
+            },
+            {
+              label: '샘플링 주기',
+              value: `${config.intervalSec}초`,
+              sub: `집계 ${config.aggregationIntervalSec}초`,
+              badge: null,
+              icon: <Clock size={22} color={DARK_GREEN} />,
+            },
+            {
+              label: '최근 측정',
+              value: `${metrics?.lastCustomerCount ?? '-'}명`,
+              sub: metrics?.lastMeasuredAt ? new Date(metrics.lastMeasuredAt).toLocaleTimeString() : '수신 대기',
+              badge: null,
+              icon: <Eye size={22} color={DARK_GREEN} />,
+            },
+          ].map(({ label, value, sub, badge, icon }) => (
+            <div key={label} style={{ background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '16px 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, color: isDark ? '#aaa' : '#6b7280', margin: 0 }}>{label}</p>
+                  <p style={{ fontSize: label === '분석 매장' ? 15 : 22, fontWeight: 800, color: isDark ? '#fff' : DARK_GREEN, margin: '6px 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</p>
+                  <p style={{ fontSize: 11, color: isDark ? '#aaa' : '#6b7280', margin: 0 }}>{sub}</p>
                 </div>
-                <Badge
-                  className={isRunning ? "bg-emerald-600" : "bg-slate-600"}
-                >
-                  {isRunning ? "LIVE" : "STOP"}
-                </Badge>
+                {badge && (
+                  <span style={{ background: badge.bg, color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>{badge.text}</span>
+                )}
+                {icon}
               </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-lg">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm text-slate-500">분석 매장</p>
-                  <p className="mt-2 text-lg font-bold text-slate-950 leading-snug">
-                    {currentBranch}
-                  </p>
-                  <p className="mt-2 text-xs text-slate-400 truncate max-w-[140px]">
-                    ID: {storeId || "미설정"}
-                  </p>
-                </div>
-                <Users className="h-6 w-6 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-lg">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm text-slate-500">샘플링 주기</p>
-                  <p className="mt-2 text-3xl font-bold text-slate-950">
-                    {config.intervalSec}초
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    집계 {config.aggregationIntervalSec}초
-                  </p>
-                </div>
-                <Clock className="h-6 w-6 text-orange-500" />
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="rounded-lg">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm text-slate-500">최근 측정</p>
-                  <p className="mt-2 text-3xl font-bold text-slate-950">
-                    {metrics?.lastCustomerCount ?? "-"}명
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {metrics?.lastMeasuredAt
-                      ? new Date(metrics.lastMeasuredAt).toLocaleTimeString()
-                      : "수신 대기"}
-                  </p>
-                </div>
-                <Eye className="h-6 w-6 text-violet-600" />
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          ))}
         </section>
 
-        <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="rounded-lg lg:col-span-2">
+        <section style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+          <Card className="rounded-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5 text-blue-600" />
+                <Camera className="h-5 w-5" style={{ color: DARK_GREEN }} />
                 실시간 카메라
               </CardTitle>
             </CardHeader>
@@ -476,11 +456,11 @@ export default function CctvAnalysis() {
                   <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(30,64,175,0.28),rgba(15,23,42,0.08)),repeating-linear-gradient(0deg,rgba(255,255,255,0.06)_0px,rgba(255,255,255,0.06)_1px,transparent_1px,transparent_36px),repeating-linear-gradient(90deg,rgba(255,255,255,0.05)_0px,rgba(255,255,255,0.05)_1px,transparent_1px,transparent_48px)]" />
                 )}
                 <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-                  <Badge className={isRunning ? "bg-red-600" : "bg-slate-700"}>
+                  <span style={{ background: isRunning ? '#e53e3e' : '#555', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
                     {isRunning ? "REC" : "OFF"}
-                  </Badge>
-                  <Badge variant="secondary">{config.sourceType}</Badge>
-                  <Badge variant="secondary">{config.modelName}</Badge>
+                  </span>
+                  <span style={{ background: 'rgba(255,255,255,0.18)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, backdropFilter: 'blur(4px)' }}>{config.sourceType}</span>
+                  <span style={{ background: 'rgba(255,255,255,0.18)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, backdropFilter: 'blur(4px)' }}>{config.modelName}</span>
                 </div>
                 <div className="absolute bottom-4 left-4 right-4 grid grid-cols-1 gap-3 md:grid-cols-3">
                   {[
@@ -526,7 +506,7 @@ export default function CctvAnalysis() {
           <Card className="rounded-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-slate-700" />
+                <Settings className="h-5 w-5" style={{ color: DARK_GREEN }} />
                 카메라 시작 설정
               </CardTitle>
             </CardHeader>
@@ -660,40 +640,36 @@ export default function CctvAnalysis() {
           </Card>
         </section>
 
-        <section className="mt-4">
+        <section style={{ marginTop: 16 }}>
           <Card className="rounded-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <RotateCw className="h-5 w-5 text-orange-500" />
+                <RotateCw className="h-5 w-5" style={{ color: GREEN }} />
                 요청/응답 확인
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="rounded-lg border bg-slate-50 p-3">
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <MapPin className="h-4 w-4" />
+              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? 'rgba(52,52,60,0.7)' : LIGHT_GREEN, padding: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: DARK_GREEN }}>
+                  <MapPin size={14} />
                   {config.location}
                 </div>
-                <p className="mt-2 font-semibold text-slate-950">
+                <p style={{ marginTop: 6, fontWeight: 700, fontSize: 14, color: isDark ? '#fff' : DARK_GREEN }}>
                   {config.name}
                 </p>
-                <p className="mt-1 text-sm text-slate-500">
+                <p style={{ marginTop: 4, fontSize: 12, color: isDark ? '#aaa' : '#6b7280' }}>
                   POST {API_BASE}/cctv/start
                 </p>
               </div>
-              <div className="rounded-lg border bg-slate-950 p-3">
-                <p className="mb-2 text-xs font-semibold text-slate-300">
-                  start body
-                </p>
-                <pre className="max-h-64 overflow-auto whitespace-pre-wrap text-xs leading-5 text-emerald-100">
+              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: '#0d1f0e', padding: 12 }}>
+                <p style={{ marginBottom: 6, fontSize: 11, fontWeight: 700, color: LIGHT_GREEN }}>start body</p>
+                <pre style={{ maxHeight: 256, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: 11, lineHeight: 1.6, color: '#a8f0b0' }}>
                   {JSON.stringify(startPayload, null, 2)}
                 </pre>
               </div>
-              <div className="rounded-lg border bg-white p-3">
-                <p className="mb-2 text-xs font-semibold text-slate-500">
-                  last response
-                </p>
-                <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-xs leading-5 text-slate-700">
+              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? '#30303a' : '#fff', padding: 12 }}>
+                <p style={{ marginBottom: 6, fontSize: 11, fontWeight: 700, color: isDark ? '#aaa' : DARK_GREEN }}>last response</p>
+                <pre style={{ maxHeight: 160, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: 11, lineHeight: 1.6, color: isDark ? '#ccc' : '#374151' }}>
                   {lastResponse}
                 </pre>
               </div>
@@ -712,12 +688,10 @@ export default function CctvAnalysis() {
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  className="flex items-center justify-between rounded-lg border p-3"
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, padding: 12 }}
                 >
-                  <span className="text-sm text-slate-600">{label}</span>
-                  <span className="text-sm font-semibold text-slate-950">
-                    {value}
-                  </span>
+                  <span style={{ fontSize: 13, color: isDark ? '#aaa' : '#6b7280' }}>{label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: isDark ? '#fff' : DARK_GREEN }}>{value}</span>
                 </div>
               ))}
             </CardContent>
