@@ -128,7 +128,7 @@ export default function EmployeeProfilePanel() {
   const storeName = sessionStorage.getItem("store_name") || "";
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => currentUser?.profile_image || sessionStorage.getItem("employee_profile_image") || "",
+    () => currentUser?.profile_image || sessionStorage.getItem("profile_image") || "",
   );
   const [open, setOpen] = useState(false);
 

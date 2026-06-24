@@ -335,29 +335,17 @@ const PayrollManagement: React.FC = () => {
           width: 220, flexShrink: 0,
           background: sidebarBg,
           border: `1px solid ${sidebarBorder}`,
-          borderRadius: 20, padding: '20px 12px',
+          borderRadius: 20, padding: '16px 12px',
           boxShadow: '0 4px 16px rgba(0,0,0,0.07)',
           position: 'sticky', top: 140,
           maxHeight: 'calc(100vh - 160px)',
           overflowY: 'auto',
         }}>
           {/* Branch dropdown */}
-          <div style={{ position: 'relative', marginBottom: 18 }}>
-            <button
-              onClick={() => setBranchDropdownOpen(o => !o)}
-              style={{
-                width: '100%', padding: '10px 14px',
-                background: isDark ? 'rgba(255,255,255,0.06)' : LIGHT_GREEN,
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : BORDER_GREEN}`,
-                borderRadius: 12, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
-                color: isDark ? '#fff' : DARK_GREEN, fontSize: 12, fontWeight: 700,
-              }}
-            >
+          <div style={{ position: 'relative', marginBottom: 16 }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
-              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style={{ flexShrink: 0, transform: branchDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                <path d="M1 1L5 5L9 1" stroke={isDark ? 'white' : DARK_GREEN} strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
+              <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && stores.length > 0 && (
               <div style={{

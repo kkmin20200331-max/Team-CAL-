@@ -53,7 +53,7 @@ public class FileC {
     }
 
     @GetMapping("/{id}/signed-url")
-    public Map<String, String> getSignedUrl(
+    public Map<String, String> createSignedUrl(
             @PathVariable String id
     ) {
         String url = fileService.createSignedUrl(id);
@@ -90,13 +90,6 @@ public class FileC {
         return fileService.getFilesByUserId(userId);
     }
 
-    @GetMapping("/store/{storeId}")
-    public List<FileVO> getFilesByStoreId(
-            @PathVariable String storeId
-    ) {
-        return fileService.getFilesByStoreId(storeId);
-    }
-
     // =========================
     // [매장 전체 파일 조회]
     // =========================
@@ -110,7 +103,7 @@ public class FileC {
     // [Supabase 업로드]
     // =========================
 
-    @PostMapping("/upload")
+    @PostMapping("/upload-supabase")
     public ResponseEntity<?> upload(
             @RequestParam String user_id,
             @RequestParam String file_type,
