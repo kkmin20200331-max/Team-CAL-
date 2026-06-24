@@ -366,7 +366,11 @@ const BoardManagement: React.FC = () => {
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path);
             return (
-              <button key={item.label} onClick={() => navigate(item.path)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '11px 14px', marginBottom: 4, background: isActive ? GREEN : 'transparent', border: 'none', borderRadius: 12, cursor: 'pointer', color: isActive ? '#fff' : (isDark ? '#ccc' : DARK_GREEN), fontSize: 14, fontWeight: 600, transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}>
+              <button key={item.label} onClick={() => navigate(item.path)}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '11px 14px', marginBottom: 4, background: isActive ? GREEN : 'transparent', border: 'none', borderRadius: 12, cursor: 'pointer', color: isActive ? '#fff' : (isDark ? '#ccc' : DARK_GREEN), fontSize: 14, fontWeight: 600, textAlign: 'left', transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}
+                onMouseOver={e => { if (!isActive) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : LIGHT_GREEN; }}
+                onMouseOut={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+              >
                 <item.icon size={16} color={isActive ? '#fff' : GREEN} />
                 {item.label}
               </button>
