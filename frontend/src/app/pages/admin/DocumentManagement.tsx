@@ -89,11 +89,13 @@ const DocumentManagement: React.FC = () => {
   const [uploading, setUploading] = useState(false);
 
   const pageBg = isDark
-    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)'
     : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
+  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
   const textColor = isDark ? '#fff' : '#111';
+  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const contentBg = isDark ? '#3c3c46' : '#fff';
 
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -250,7 +252,7 @@ const DocumentManagement: React.FC = () => {
               </svg>
             </button>
             {branchDropdownOpen && stores.length > 0 && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50, background: isDark ? '#1c1c1e' : '#fff', border: `1px solid ${isDark ? '#3a3a3c' : BORDER_GREEN}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50, background: isDark ? '#30303a' : '#fff', border: `1px solid ${isDark ? '#50505a' : BORDER_GREEN}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
                 {stores.map(s => (
                   <button key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); setBranchDropdownOpen(false); navigate(`/admin/dashboard/${s.id}`); }}
                     style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: s.id === branchId ? LIGHT_GREEN : 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600 }}>
@@ -274,7 +276,7 @@ const DocumentManagement: React.FC = () => {
         </aside>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
 
           {/* 헤더 */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 24, justifyContent: 'space-between' }}>
@@ -379,7 +381,7 @@ const DocumentManagement: React.FC = () => {
       {/* 업로드 모달 */}
       {uploadModalOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 520 }}>
+          <div style={{ background: contentBg, borderRadius: 20, padding: 28, width: '100%', maxWidth: 520 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <p style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>문서 업로드</p>
               <button onClick={() => setUploadModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8BA68D' }}><XCircle size={22} /></button>
@@ -444,7 +446,7 @@ const DocumentManagement: React.FC = () => {
       {/* 상세 모달 */}
       {showDetailModal && selectedDocument && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: contentBg, borderRadius: 20, padding: 28, width: '100%', maxWidth: 640, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <p style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>문서 상세 정보</p>
               <button onClick={() => setShowDetailModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8BA68D' }}><XCircle size={22} /></button>

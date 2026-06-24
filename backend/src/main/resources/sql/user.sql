@@ -84,3 +84,5 @@ DELETE FROM users WHERE username = '1234';
 COMMIT;
 
 UPDATE users SET password = '123' WHERE username = 'admin01';
+ALTER TABLE users
+    ADD profile_image VARCHAR2(500 CHAR);

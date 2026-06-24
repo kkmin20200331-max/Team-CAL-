@@ -36,6 +36,11 @@ interface PayrollRow {
   loading: boolean;
 }
 
+const getCurrentPeriod = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+};
+
 const PayrollManagement: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,13 +49,15 @@ const PayrollManagement: React.FC = () => {
   const isDark = theme === 'dark';
 
   const pageBg = isDark
-    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)'
     : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
+  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
   const textColor = isDark ? '#fff' : '#111';
   const subText = isDark ? '#aaa' : '#8BA68D';
-  const cardBg = isDark ? 'rgba(44,44,46,0.6)' : 'rgba(230,245,200,0.35)';
+  const contentBg = isDark ? '#3c3c46' : '#fff';
+  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const cardBg = isDark ? 'rgba(52,52,60,0.7)' : 'rgba(230,245,200,0.35)';
 
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -59,26 +66,11 @@ const PayrollManagement: React.FC = () => {
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const [activeTab, setActiveTab] = useState<'payroll' | 'analytics'>('payroll');
   const [searchTerm, setSearchTerm] = useState('');
-
-  // 이번 달 기본값
-  const now = new Date();
-  const defaultPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const [selectedPeriod, setSelectedPeriod] = useState(defaultPeriod);
+  const [selectedPeriod, setSelectedPeriod] = useState(getCurrentPeriod());
 
   const [employees, setEmployees] = useState<EmployeeVO[]>([]);
   const [payrollRows, setPayrollRows] = useState<PayrollRow[]>([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
-
-  const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
-  ];
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -88,7 +80,6 @@ const PayrollManagement: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  // 직원 목록 fetch
   useEffect(() => {
     if (!branchId) return;
     setLoadingEmployees(true);
@@ -99,7 +90,6 @@ const PayrollManagement: React.FC = () => {
       .finally(() => setLoadingEmployees(false));
   }, [branchId]);
 
-  // 기간 → start/end 변환
   const getPeriodDates = (period: string) => {
     const [year, month] = period.split('-').map(Number);
     const start = `${year}-${String(month).padStart(2, '0')}-01`;
@@ -108,12 +98,10 @@ const PayrollManagement: React.FC = () => {
     return { start, end };
   };
 
-  // 급여 일괄 fetch
   const fetchPayrolls = useCallback(async (emps: EmployeeVO[], period: string) => {
     if (!branchId || emps.length === 0) return;
     const { start, end } = getPeriodDates(period);
 
-    // 로딩 상태 초기화
     setPayrollRows(emps.map(e => ({ employee: e, result: null, loading: true })));
 
     const results = await Promise.all(
@@ -136,6 +124,17 @@ const PayrollManagement: React.FC = () => {
     if (employees.length > 0) fetchPayrolls(employees, selectedPeriod);
   }, [employees, selectedPeriod]);
 
+  const menuItems = [
+    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
+    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
+    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
+    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
+    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
+    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
+    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+  ];
+
   const filteredRows = payrollRows.filter(row =>
     row.employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     row.employee.username.toLowerCase().includes(searchTerm.toLowerCase())
@@ -151,7 +150,7 @@ const PayrollManagement: React.FC = () => {
 
   const inputStyle: React.CSSProperties = {
     padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`,
-    fontSize: 14, background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
+    fontSize: 14, background: isDark ? '#50505a' : 'rgba(255,255,255,0.8)',
     outline: 'none', color: textColor,
   };
 
@@ -169,7 +168,7 @@ const PayrollManagement: React.FC = () => {
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && stores.length > 0 && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50, background: isDark ? '#1c1c1e' : '#fff', border: `1px solid ${sidebarBorder}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50, background: isDark ? '#30303a' : '#fff', border: `1px solid ${sidebarBorder}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
                 {stores.map(s => (
                   <button key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); setBranchDropdownOpen(false); navigate(`/admin/dashboard/${s.id}`); }} style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: s.id === branchId ? LIGHT_GREEN : 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600 }}>
                     {s.name}
@@ -190,7 +189,7 @@ const PayrollManagement: React.FC = () => {
         </aside>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
 
           {/* 헤더 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -302,7 +301,6 @@ const PayrollManagement: React.FC = () => {
                           </tr>
                         ))}
                       </tbody>
-                      {/* 합계 행 */}
                       {filteredRows.length > 0 && (
                         <tfoot>
                           <tr style={{ background: LIGHT_GREEN, fontWeight: 800 }}>
@@ -343,7 +341,7 @@ const PayrollManagement: React.FC = () => {
                               <span style={{ fontSize: 14, fontWeight: 600, color: textColor }}>{row.employee.name}</span>
                               <span style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN }}>{fmt(Math.round(row.result!.totalPay))} ({pct.toFixed(1)}%)</span>
                             </div>
-                            <div style={{ height: 10, background: isDark ? '#3a3a3c' : '#e5e7eb', borderRadius: 5, overflow: 'hidden' }}>
+                            <div style={{ height: 10, background: isDark ? '#50505a' : '#e5e7eb', borderRadius: 5, overflow: 'hidden' }}>
                               <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${GREEN}, ${DARK_GREEN})`, borderRadius: 5, transition: 'width 0.5s' }} />
                             </div>
                           </div>
@@ -366,7 +364,7 @@ const PayrollManagement: React.FC = () => {
                   ].map(({ label, value, color }) => {
                     const pct = totalPayroll > 0 ? (value / totalPayroll) * 100 : 0;
                     return (
-                      <div key={label} style={{ background: isDark ? 'rgba(44,44,46,0.8)' : '#fff', borderRadius: 14, padding: '16px 18px', border: `1px solid ${LIGHT_GREEN}`, textAlign: 'center' }}>
+                      <div key={label} style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 14, padding: '16px 18px', border: `1px solid ${LIGHT_GREEN}`, textAlign: 'center' }}>
                         <div style={{ width: 48, height: 48, borderRadius: '50%', background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
                           <DollarSign size={22} color={color} />
                         </div>

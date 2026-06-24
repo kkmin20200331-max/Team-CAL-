@@ -9,64 +9,38 @@ import java.util.List;
 public interface LeaveRequestMapper {
 
     // =========================
-    // [공통]
+    // 공통
     // =========================
 
-    // 휴무 신청 단건 조회
     @Select("""
-            SELECT *
-            FROM leave_request
+            SELECT * FROM leave_request
             WHERE id = #{id}
             """)
     LeaveRequestVO getLeaveRequest(String id);
 
-
     // =========================
-    // [관리자]
+    // 관리자
     // =========================
 
-    // 매장별 승인 대기중(PENDING) 휴무 신청 목록 조회
     @Select("""
             SELECT lr.*
             FROM leave_request lr
-            JOIN shift s
-                ON lr.shift_id = s.id
+            JOIN shift s ON lr.shift_id = s.id
             WHERE s.store_id = #{store_id}
             AND lr.status = 'PENDING'
             ORDER BY lr.requested_at DESC
             """)
     List<LeaveRequestVO> getLeaveRequestList(String store_id);
 
-    @Select("""
-            SELECT lr.*
-            FROM leave_request lr
-            JOIN shift s
-                ON lr.shift_id = s.id
-            WHERE s.store_id = #{store_id}
-            AND s.work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
-            AND s.work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
-            AND lr.status = 'APPROVED'
-            ORDER BY s.work_date
-            """)
-    List<LeaveRequestVO> getApprovedLeaveRequestsForPeriod(
-            @Param("store_id") String store_id,
-            @Param("start_date") String start_date,
-            @Param("end_date") String end_date
-    );
-
-    // 휴무 신청 승인/거절 처리
     @Update("""
             UPDATE leave_request
             SET status = #{status},
                 processed_at = SYSTIMESTAMP
             WHERE id = #{id}
             """)
-    void updateLeaveStatus(
-            @Param("id") String id,
-            @Param("status") String status
-    );
+    void updateLeaveStatus(@Param("id") String id,
+                           @Param("status") String status);
 
-    // 승인 시 근무 상태를 공석(VACANT) 처리
     @Update("""
             UPDATE shift
             SET status = 'VACANT'
@@ -74,7 +48,6 @@ public interface LeaveRequestMapper {
             """)
     void updateShiftStatusVacant(String shift_id);
 
-    // 승인 취소 시 근무 상태를 예정(SCHEDULED)으로 복구
     @Update("""
             UPDATE shift
             SET status = 'SCHEDULED'
@@ -83,12 +56,10 @@ public interface LeaveRequestMapper {
             """)
     void rollbackShiftStatusScheduled(String shift_id);
 
-
     // =========================
-    // [직원]
+    // 직원
     // =========================
 
-    // 휴무 신청 등록
     @Insert("""
             INSERT INTO leave_request
             (id, shift_id, user_id, reason, status)
@@ -97,7 +68,6 @@ public interface LeaveRequestMapper {
             """)
     void registerLeaveRequest(LeaveRequestVO leaveRequestVO);
 
-    // 휴무 신청 취소(CANCELLED)
     @Update("""
             UPDATE leave_request
             SET status = 'CANCELLED',
@@ -106,12 +76,10 @@ public interface LeaveRequestMapper {
             """)
     void cancelLeaveRequest(String id);
 
-    // 월별 휴무 신청 내역 전체 조회
     @Select("""
             SELECT lr.*
             FROM leave_request lr
-            JOIN shift s
-                ON lr.shift_id = s.id
+            JOIN shift s ON lr.shift_id = s.id
             WHERE lr.user_id = #{user_id}
             AND EXTRACT(YEAR FROM s.work_date) = #{year}
             AND EXTRACT(MONTH FROM s.work_date) = #{month}
@@ -123,12 +91,10 @@ public interface LeaveRequestMapper {
             @Param("month") int month
     );
 
-    // 월별 휴무 신청 내역 상태별 조회
     @Select("""
             SELECT lr.*
             FROM leave_request lr
-            JOIN shift s
-                ON lr.shift_id = s.id
+            JOIN shift s ON lr.shift_id = s.id
             WHERE lr.user_id = #{user_id}
             AND lr.status = #{status}
             AND EXTRACT(YEAR FROM s.work_date) = #{year}
@@ -140,5 +106,24 @@ public interface LeaveRequestMapper {
             @Param("year") int year,
             @Param("month") int month,
             @Param("status") String status
+    );
+    // =========================
+    // [AI 스케줄용 - 승인된 휴무 조회]
+    // =========================
+    @Select("""
+        SELECT lr.*
+        FROM leave_request lr
+        JOIN shift s
+            ON lr.shift_id = s.id
+        WHERE s.store_id = #{store_id}
+        AND lr.status = 'APPROVED'
+        AND s.work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+        AND s.work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+        ORDER BY s.work_date
+        """)
+    List<LeaveRequestVO> getApprovedLeaveRequestsForPeriod(
+            @Param("store_id") String store_id,
+            @Param("start_date") String start_date,
+            @Param("end_date") String end_date
     );
 }
