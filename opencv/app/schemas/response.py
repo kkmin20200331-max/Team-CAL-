@@ -6,7 +6,8 @@ from pydantic import BaseModel, Field
 
 class CameraStartResponse(BaseModel):
     running: bool
-    storeId: int
+    # Java 백엔드와 같은 문자열 store_id를 응답에도 유지합니다.
+    storeId: str
     cameraId: str
     intervalSec: int
     aggregationIntervalSec: int
@@ -15,7 +16,8 @@ class CameraStartResponse(BaseModel):
 
 class CameraStatusResponse(BaseModel):
     running: bool
-    storeId: Optional[int] = None
+    # 실행 중인 카메라가 연결된 문자열 매장 ID입니다.
+    storeId: Optional[str] = None
     cameraId: Optional[str] = None
     lastCustomerCount: Optional[int] = None
     lastConfidenceAvg: Optional[float] = None
@@ -46,7 +48,8 @@ class DetectionBox(BaseModel):
 
 
 class DetectionResponse(BaseModel):
-    storeId: int
+    # 혼잡도 payload는 Spring의 OpenCvCongestionPayloadVO.storeId(String)와 매칭됩니다.
+    storeId: str
     cameraId: str
     measuredAt: datetime
     customerCount: int
@@ -69,7 +72,8 @@ class AggregatedSample(BaseModel):
 
 
 class AggregatedCongestionResponse(BaseModel):
-    storeId: int
+    # 집계 payload도 개별 감지 payload와 같은 문자열 매장 ID를 사용합니다.
+    storeId: str
     cameraId: str
     measuredAt: datetime
     windowStartAt: datetime

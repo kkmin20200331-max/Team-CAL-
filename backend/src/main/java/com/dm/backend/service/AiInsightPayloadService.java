@@ -25,6 +25,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AiInsightPayloadService {
 
+    // =========================
+    // 날짜 포맷
+    // =========================
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final StoreMapper storeMapper;
@@ -32,20 +35,28 @@ public class AiInsightPayloadService {
     private final ShiftMapper shiftMapper;
     private final StoreMemberMapper storeMemberMapper;
 
+    // =========================
+    // AI 인사이트 요청 payload 생성
+    // =========================
     public Map<String, Object> buildPayload(AiInsightAnalyzeRequestVO request) {
+        // 매장 ID: 혼잡도 로그 조회용 store_id와 스케줄 조회용 shift_store_id를 분리해서 처리합니다.
         String storeId = request.getStore_id();
         String shiftStoreId = request.getShift_store_id() != null && !request.getShift_store_id().isBlank()
                 ? request.getShift_store_id()
                 : storeId;
+
+        // 조회 기간: 날짜만 들어오면 하루 범위(00:00:00~23:59:59)로 정규화합니다.
         String date = resolveDate(request);
         String startDateTime = normalizeStartDate(request.getStart_date(), date);
         String endDateTime = normalizeEndDate(request.getEnd_date(), date);
 
+        // Spring DB 원천 데이터 조회
         StoreVo store = storeMapper.getStore(storeId);
         List<PeopleLogVO> peopleLogs = peopleLogMapper.getPeopleLogList(storeId, startDateTime, endDateTime);
         List<ShiftVO> shifts = shiftMapper.getShiftList(shiftStoreId, date, date);
         List<StoreMemberVo> members = storeMemberMapper.getStoreMembers(shiftStoreId);
 
+        // FastAPI가 요구하는 카메라 집계/current/staffSchedule 형태로 변환합니다.
         List<Map<String, Object>> cameraAggregates = buildCameraAggregates(peopleLogs, shifts);
         Map<String, Object> current = buildCurrent(peopleLogs);
 
@@ -60,6 +71,7 @@ public class AiInsightPayloadService {
                 .orElse(0);
 
         Map<String, Object> payload = new HashMap<>();
+        // FastAPI AI 인사이트 스키마는 현재 숫자 storeId를 기대하므로 변환 실패 시 1로 fallback합니다.
         payload.put("storeId", parseStoreId(storeId));
         payload.put("storeName", store != null ? store.getName() : "Store " + storeId);
         payload.put("storeType", normalizeStoreType(store != null ? store.getType() : null));
@@ -85,6 +97,9 @@ public class AiInsightPayloadService {
         return payload;
     }
 
+    // =========================
+    // 시간대별 카메라 집계 생성
+    // =========================
     private List<Map<String, Object>> buildCameraAggregates(List<PeopleLogVO> peopleLogs, List<ShiftVO> shifts) {
         Map<Integer, PeopleLogVO> latestByHour = new HashMap<>();
         for (PeopleLogVO log : peopleLogs) {
@@ -122,6 +137,9 @@ public class AiInsightPayloadService {
         return rows;
     }
 
+    // =========================
+    // 현재 혼잡도 요약 생성
+    // =========================
     private Map<String, Object> buildCurrent(List<PeopleLogVO> peopleLogs) {
         int totalVisitors = peopleLogs.stream()
                 .map(PeopleLogVO::getPeople_count)
@@ -144,6 +162,9 @@ public class AiInsightPayloadService {
         );
     }
 
+    // =========================
+    // 시간대별 근무 인원 생성
+    // =========================
     private List<Map<String, Object>> buildStaffSchedule(List<ShiftVO> shifts) {
         List<Map<String, Object>> rows = new ArrayList<>();
         for (int hour = 9; hour <= 20; hour++) {
@@ -155,6 +176,9 @@ public class AiInsightPayloadService {
         return rows;
     }
 
+    // =========================
+    // POS 주문 데이터 기본값 생성
+    // =========================
     private List<Map<String, Object>> buildHourlyOrders() {
         List<Map<String, Object>> rows = new ArrayList<>();
         for (int hour = 9; hour <= 20; hour++) {
@@ -167,6 +191,9 @@ public class AiInsightPayloadService {
         return rows;
     }
 
+    // =========================
+    // 특정 시간에 근무 중인 직원 수 계산
+    // =========================
     private int countWorkingStaff(List<ShiftVO> shifts, int hour) {
         int hourStart = hour * 60;
         int hourEnd = hourStart + 60;
@@ -184,6 +211,9 @@ public class AiInsightPayloadService {
                 .count();
     }
 
+    // =========================
+    // 요청 날짜 결정
+    // =========================
     private String resolveDate(AiInsightAnalyzeRequestVO request) {
         if (request.getDate() != null && !request.getDate().isBlank()) {
             return request.getDate();
@@ -194,6 +224,9 @@ public class AiInsightPayloadService {
         return LocalDate.now().format(DATE_FORMATTER);
     }
 
+    // =========================
+    // 시작 시각 정규화
+    // =========================
     private String normalizeStartDate(String value, String date) {
         if (value == null || value.isBlank()) {
             return date + " 00:00:00";
@@ -201,6 +234,9 @@ public class AiInsightPayloadService {
         return value.length() == 10 ? value + " 00:00:00" : value;
     }
 
+    // =========================
+    // 종료 시각 정규화
+    // =========================
     private String normalizeEndDate(String value, String date) {
         if (value == null || value.isBlank()) {
             return date + " 23:59:59";
@@ -208,6 +244,9 @@ public class AiInsightPayloadService {
         return value.length() == 10 ? value + " 23:59:59" : value;
     }
 
+    // =========================
+    // FastAPI 인사이트용 storeId 변환
+    // =========================
     private int parseStoreId(String storeId) {
         try {
             return Integer.parseInt(storeId);
@@ -216,6 +255,9 @@ public class AiInsightPayloadService {
         }
     }
 
+    // =========================
+    // 업종 코드 정규화
+    // =========================
     private String normalizeStoreType(String storeType) {
         if (storeType == null || storeType.isBlank()) {
             return "OTHER";

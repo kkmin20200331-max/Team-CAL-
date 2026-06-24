@@ -138,7 +138,9 @@ export default function Login() {
       };
       sessionStorage.setItem("user", JSON.stringify(loginUser));
 
-      if (loginUser.role === "ADMIN") {
+      if (loginUser.role === "MASTER") {
+        navigate("/master/applications");
+      } else if (loginUser.role === "ADMIN") {
         navigate("/admin/branch-selection");
       } else {
         navigate("/employee/home");

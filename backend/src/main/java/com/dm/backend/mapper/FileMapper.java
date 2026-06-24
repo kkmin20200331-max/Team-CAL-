@@ -111,18 +111,6 @@ public interface FileMapper {
     """)
     List<FileVO> selectFilesByUserId(String user_id);
 
-    @Select("""
-        SELECT F.*
-        FROM FILES F
-        JOIN STORE_MEMBER SM
-          ON SM.USER_ID = F.USER_ID
-         AND SM.STORE_ID = #{store_id}
-        WHERE F.STORE_ID = #{store_id}
-           OR F.STORE_ID IS NULL
-        ORDER BY F.CREATED_AT DESC
-    """)
-    List<FileVO> selectFilesByStoreId(String store_id);
-
     // =========================
     // [매장 전체 파일 조회]
     // =========================
