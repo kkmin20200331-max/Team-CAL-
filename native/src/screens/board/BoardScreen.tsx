@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -86,7 +87,9 @@ const BoardScreen = ({ route, navigation }: Props) => {
       activeOpacity={0.7}
     >
       <View style={styles.noticeTextContainer}>
-        {item.isPinned && <Text style={styles.pinIcon}>📌</Text>}
+        {item.isPinned && (
+          <Ionicons name="pin" size={16} color={colors.primary} style={styles.pinIcon} />
+        )}
         {activeCategory === 'ALL' && (
           <View style={styles.categoryBadge}>
             <Text style={styles.categoryBadgeText}>
@@ -111,7 +114,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>‹</Text>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>게시판</Text>
         <View style={{ width: 40 }} />
@@ -143,13 +146,13 @@ const BoardScreen = ({ route, navigation }: Props) => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#2563EB']}
-            tintColor={isDarkMode ? '#60A5FA' : '#2563EB'}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator size="large" color="#2563EB" style={{ marginTop: 40 }} />
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
           ) : (
             <Text style={styles.emptyText}>등록된 게시글이 없습니다.</Text>
           )
@@ -161,7 +164,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
         onPress={() => navigation.navigate('BoardWrite', { isEdit: false })}
         activeOpacity={0.8}
       >
-        <Text style={styles.fabIcon}>+</Text>
+        <Ionicons name="add" size={32} color="#FFFFFF" />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -179,8 +182,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderBottomColor: colors.border,
     backgroundColor: colors.card,
   },
-  backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 28, color: colors.text },
+  backButton: { padding: 4, width: 40, justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   tabContainer: {
     borderBottomWidth: 1,
@@ -198,7 +200,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderRadius: 20,
     backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6',
   },
-  tabButtonActive: { backgroundColor: '#2563EB' },
+  tabButtonActive: { backgroundColor: colors.primary },
   tabText: { fontSize: 14, color: colors.subText, fontWeight: '500' },
   tabTextActive: { color: '#FFFFFF', fontWeight: '700' },
   listContainer: {
@@ -219,8 +221,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     paddingRight: 10,
   },
   pinIcon: {
-    fontSize: 16,
-    marginRight: 4,
+    marginRight: 6,
   },
   categoryBadge: {
     backgroundColor: isDarkMode ? '#374151' : '#E5E7EB',
@@ -274,7 +275,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
@@ -282,11 +283,6 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-  },
-  fabIcon: {
-    fontSize: 30,
-    color: '#FFFFFF',
-    lineHeight: 32,
   },
 });
 

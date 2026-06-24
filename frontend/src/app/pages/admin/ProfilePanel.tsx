@@ -246,6 +246,9 @@ export default function ProfilePanel() {
     BoardNotification[]
   >([]);
 
+  const isUnreadNotification = (n: any) =>
+    n.is_read === "N" || n.isRead === "N" || n.is_read === false || n.isRead === false;
+
   const fetchUnreadNotifications = async () => {
     if (!currentUser.id) return;
 
@@ -255,7 +258,7 @@ export default function ProfilePanel() {
       });
       setBoardNotifications(
         Array.isArray(r.data)
-          ? r.data.filter((n: BoardNotification) => n.is_read === "N")
+          ? r.data.filter(isUnreadNotification)
           : [],
       );
     } catch {
@@ -267,14 +270,20 @@ export default function ProfilePanel() {
     if (!currentUser.id) return;
 
     fetchUnreadNotifications();
-    const timer = window.setInterval(fetchUnreadNotifications, 30000);
+    const timer = window.setInterval(fetchUnreadNotifications, 3000);
+    window.addEventListener("focus", fetchUnreadNotifications);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", fetchUnreadNotifications);
+    };
   }, [currentUser.id]);
 
   // 패널 열릴 때 → 모든 관리 매장의 알림 fetch
   useEffect(() => {
     if (!open || !currentUser.id) return;
+
+    fetchUnreadNotifications();
 
     axiosInstance.get("/store", { params: { user_id: currentUser.id } })
       .then(async (res) => {
@@ -390,7 +399,7 @@ export default function ProfilePanel() {
             .then((r) =>
               setBoardNotifications(
                 Array.isArray(r.data)
-                  ? r.data.filter((n: any) => n.is_read === "N")
+                  ? r.data.filter(isUnreadNotification)
                   : [],
               ),
             )
@@ -460,8 +469,12 @@ export default function ProfilePanel() {
         return updated;
       });
       alert(`${emp.name}님이 승인되었습니다.`);
-    } catch {
-      alert("승인 처리 중 오류가 발생했습니다.");
+    } catch (error: any) {
+      const message =
+        typeof error?.response?.data === "string"
+          ? error.response.data
+          : error?.response?.data?.message;
+      alert(message || "승인 처리 중 오류가 발생했습니다.");
     }
   };
 
@@ -474,8 +487,12 @@ export default function ProfilePanel() {
         sessionStorage.setItem("pendingList", JSON.stringify(updated));
         return updated;
       });
-    } catch {
-      alert("거절 처리 중 오류가 발생했습니다.");
+    } catch (error: any) {
+      const message =
+        typeof error?.response?.data === "string"
+          ? error.response.data
+          : error?.response?.data?.message;
+      alert(message || "거절 처리 중 오류가 발생했습니다.");
     }
   };
 
@@ -498,8 +515,12 @@ export default function ProfilePanel() {
       await axiosInstance.put(`/store_member/${notif.ref_id}/approve`);
       await markNotificationRead(notif.id);
       alert("근무 지점 요청을 승인했습니다.");
-    } catch {
-      alert("승인 처리 중 오류가 발생했습니다.");
+    } catch (error: any) {
+      const message =
+        typeof error?.response?.data === "string"
+          ? error.response.data
+          : error?.response?.data?.message;
+      alert(message || "승인 처리 중 오류가 발생했습니다.");
     }
   };
 
@@ -513,8 +534,12 @@ export default function ProfilePanel() {
     try {
       await axiosInstance.delete(`/store_member/${notif.ref_id}/reject`);
       await markNotificationRead(notif.id);
-    } catch {
-      alert("거절 처리 중 오류가 발생했습니다.");
+    } catch (error: any) {
+      const message =
+        typeof error?.response?.data === "string"
+          ? error.response.data
+          : error?.response?.data?.message;
+      alert(message || "거절 처리 중 오류가 발생했습니다.");
     }
   };
 

@@ -2,7 +2,6 @@ package com.dm.backend.service;
 
 import com.dm.backend.mapper.StoreMemberMapper;
 import com.dm.backend.mapper.UserMapper;
-import com.dm.backend.service.NotificationService;
 import com.dm.backend.vo.NotificationVO;
 import com.dm.backend.vo.StoreMemberVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,64 +22,51 @@ public class StoreMemberService {
     @Autowired
     private NotificationService notificationService;
 
-    // =========================
-    // [직원]
-    // =========================
-
-    // 매장 근무 신청
-    // 이미 신청 중이거나 근무 중인 경우 신청 불가
-   public void approveRegister(StoreMemberVo storeMemberVo) {
-
-    int count = storeMemberMapper.existsMember(
-            storeMemberVo.getStore_id(),
-            storeMemberVo.getUser_id()
-    );
-
-    if (count > 0) {
-        throw new RuntimeException("이미 신청했거나 근무중인 매장입니다.");
-    }
-
-    if (storeMemberVo.getId() == null || storeMemberVo.getId().isBlank()) {
-        storeMemberVo.setId(
-                "SM_" + UUID.randomUUID()
-                        .toString()
-                        .replace("-", "")
-                        .substring(0, 18)
+    public void approveRegister(StoreMemberVo storeMemberVo) {
+        int count = storeMemberMapper.existsMember(
+                storeMemberVo.getStore_id(),
+                storeMemberVo.getUser_id()
         );
-    }
 
-    storeMemberVo.setApproval_status("PENDING");
-    storeMemberVo.setMember_role("STAFF");
-    storeMemberVo.setUser_level("NEWBIE");
-
-    if (storeMemberVo.getPay_type() == null) {
-        storeMemberVo.setPay_type("HOURLY");
-    }
-
-    if (storeMemberVo.getPay_amount() == null) {
-        storeMemberVo.setPay_amount(10320);
-    }
-
-    storeMemberMapper.approveRegister(storeMemberVo);
-
-    List<StoreMemberVo> admins =
-            storeMemberMapper.getAdmins(
+        if (count > 0) {
+            StoreMemberVo existing = storeMemberMapper.getMemberInfo(
+                    storeMemberVo.getUser_id(),
                     storeMemberVo.getStore_id()
             );
 
-    for (StoreMemberVo admin : admins) {
-        createNotification(
-                admin.getUser_id(),
-                storeMemberVo.getStore_id(),
-                "STAFF_APPROVAL_REQUEST",
-                "직원 가입 요청",
-                storeMemberVo.getUser_id() + "님이 매장 근무를 요청했습니다.",
-                storeMemberVo.getId()
-        );
-    }
-}
+            if (existing != null && "PENDING".equalsIgnoreCase(existing.getApproval_status())) {
+                notifyAdminsForStaffRequest(existing);
+                return;
+            }
 
-    // 근무 가능 요일 설정
+            throw new RuntimeException("이미 요청했거나 근무 중인 매장입니다.");
+        }
+
+        if (storeMemberVo.getId() == null || storeMemberVo.getId().isBlank()) {
+            storeMemberVo.setId(
+                    "SM_" + UUID.randomUUID()
+                            .toString()
+                            .replace("-", "")
+                            .substring(0, 18)
+            );
+        }
+
+        storeMemberVo.setApproval_status("PENDING");
+        storeMemberVo.setMember_role("STAFF");
+        storeMemberVo.setUser_level("NEWBIE");
+
+        if (storeMemberVo.getPay_type() == null) {
+            storeMemberVo.setPay_type("HOURLY");
+        }
+
+        if (storeMemberVo.getPay_amount() == null) {
+            storeMemberVo.setPay_amount(10320);
+        }
+
+        storeMemberMapper.approveRegister(storeMemberVo);
+        notifyAdminsForStaffRequest(storeMemberVo);
+    }
+
     public void updateAvailableDays(
             String store_id,
             String user_id,
@@ -92,16 +78,8 @@ public class StoreMemberService {
                 available_days
         );
     }
-    // =========================
-    // [관리자]
-    // =========================
 
-    // 직원 승인
-    // 직원 거절
-    // 직원 역할 변경
-    // 직원 레벨 변경
     public void updateStoreMember(StoreMemberVo storeMemberVo) {
-
         storeMemberMapper.updateStoreMember(storeMemberVo);
 
         userMapper.approveUser(
@@ -118,8 +96,6 @@ public class StoreMemberService {
         );
     }
 
-    // 직원 삭제
-    // 매장 직원 제거
     public void approveRequestById(String id) {
         StoreMemberVo member = storeMemberMapper.getMemberById(id);
         if (member == null) {
@@ -157,23 +133,38 @@ public class StoreMemberService {
         );
     }
 
-    // 경민 수정 6/5 12:00
     public StoreMemberVo getMemberInfo(String user_id, String store_id) {
         return storeMemberMapper.getMemberInfo(user_id, store_id);
     }
 
-    // 경민 수정 6/5 12:00
     public void updatePayInfo(StoreMemberVo vo) {
         storeMemberMapper.updatePayInfo(vo);
     }
 
-    // 대타 가능 직원 조회
     public List<StoreMemberVo> getAvailableMemberList(
             String store_id
     ) {
         return storeMemberMapper.getAvailableMemberList(
                 store_id
         );
+    }
+
+    private void notifyAdminsForStaffRequest(StoreMemberVo storeMemberVo) {
+        List<StoreMemberVo> admins =
+                storeMemberMapper.getAdmins(
+                        storeMemberVo.getStore_id()
+                );
+
+        for (StoreMemberVo admin : admins) {
+            createNotification(
+                    admin.getUser_id(),
+                    storeMemberVo.getStore_id(),
+                    "STAFF_APPROVAL_REQUEST",
+                    "직원 근무 요청",
+                    storeMemberVo.getUser_id() + "님이 매장 근무를 요청했습니다.",
+                    storeMemberVo.getId()
+            );
+        }
     }
 
     private void createNotification(
@@ -191,6 +182,7 @@ public class StoreMemberService {
                 "NOTI_" + UUID.randomUUID()
                         .toString()
                         .replace("-", "")
+                        .substring(0, 16)
         );
         notification.setUser_id(userId);
         notification.setStore_id(storeId);

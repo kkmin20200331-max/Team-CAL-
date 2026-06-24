@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -193,7 +193,7 @@ const SubstituteManagement: React.FC = () => {
       shift_id: "",
       store_id: modalStoreId,
       requester_user_id: user.id,
-      reason: `인원 ${modalCount}명 필요`,
+      reason: `[${modalDate}] 인원 ${modalCount}명 필요`,
       status: "open",
     };
 

@@ -86,3 +86,11 @@ WHEN NOT MATCHED THEN
     VALUES (source.STORE_ID, source.CAMERA_ID, source.RECORD_TIME, source.PEOPLE_COUNT);
 
 COMMIT;
+
+
+
+UPDATE users
+SET role = 'STAFF'
+WHERE role = 'GUEST';
+
+COMMIT;

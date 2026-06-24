@@ -59,11 +59,11 @@ export default function BranchSelection() {
         const pending: PendingEmployee[] = [];
         for (const store of storeList) {
           try {
-            const guestRes = await axiosInstance.get("/users/guest", {
+            const pendingRes = await axiosInstance.get("/users/pending", {
               params: { store_id: store.id, role: "ADMIN" },
             });
-            const guests = Array.isArray(guestRes.data) ? guestRes.data : [];
-            guests.forEach((g: any) => {
+            const pendingStaff = Array.isArray(pendingRes.data) ? pendingRes.data : [];
+            pendingStaff.forEach((g: any) => {
               pending.push({
                 id: g.id,
                 name: g.name,

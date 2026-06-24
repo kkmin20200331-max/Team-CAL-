@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useState, useCallback } from 'react';
 import {
   createBoardAPI,
   createBoardPostAPI,
@@ -69,7 +69,7 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
   const [boards, setBoards] = useState<BoardSummary[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const loadPosts = async (storeId: string) => {
+  const loadPosts = useCallback(async (storeId: string) => {
     if (!storeId) {
       setBoards([]);
       setPosts([]);
@@ -94,9 +94,9 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const ensureBoard = async (category: Post['category'], storeId: string, writerId: string) => {
+  const ensureBoard = useCallback(async (category: Post['category'], storeId: string, writerId: string) => {
     const existing = boards.find((board) => normalizeCategory(board.name) === category);
     if (existing) return existing;
 
@@ -110,9 +110,9 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
     await createBoardAPI(board);
     setBoards((prev) => [...prev, board]);
     return board;
-  };
+  }, [boards]);
 
-  const addPost = async (
+  const addPost = useCallback(async (
     newPostData: Omit<Post, 'id' | 'date' | 'authorId'>,
     options: AddPostOptions,
   ) => {
@@ -129,9 +129,9 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
     });
 
     await loadPosts(options.storeId);
-  };
+  }, [ensureBoard, loadPosts]);
 
-  const updatePost = async (updatedPost: Post) => {
+  const updatePost = useCallback(async (updatedPost: Post) => {
     await updateBoardPostAPI({
       id: updatedPost.id,
       title: updatedPost.title,
@@ -141,13 +141,13 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
     });
 
     setPosts((prevPosts) => prevPosts.map((post) => (post.id === updatedPost.id ? updatedPost : post)));
-  };
+  }, []);
 
-  const updatePinStatus = async (postId: string, isPinned: boolean) => {
+  const updatePinStatus = useCallback(async (postId: string, isPinned: boolean) => {
     const post = posts.find((item) => item.id === postId);
     if (!post) return;
     await updatePost({ ...post, isPinned });
-  };
+  }, [posts, updatePost]);
 
   const value = {
     posts,

@@ -68,6 +68,10 @@ public class StoreService {
         return storeMapper.getStoreByUserId(user_id);
     }
 
+    public List<StoreVo> getStoreMemberships(String user_id) {
+        return storeMapper.getStoreMemberships(user_id);
+    }
+
     // =========================
     // [공통]
     // =========================

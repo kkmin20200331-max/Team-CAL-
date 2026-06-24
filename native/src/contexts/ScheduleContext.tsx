@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useState, useCallback } from 'react';
 import { Shift } from '../types/Schedule';
 
 type ScheduleEmployee = {
@@ -38,15 +38,15 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<ScheduleEmployee[]>([]);
 
-  const updateEmployeeStatus = (employeeId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING') => {
+  const updateEmployeeStatus = useCallback((employeeId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING') => {
     setEmployees((prev) => prev.map((employee) => (
       employee.id === employeeId ? { ...employee, status: newStatus } : employee
     )));
-  };
+  }, []);
 
-  const removeEmployee = (employeeId: string) => {
+  const removeEmployee = useCallback((employeeId: string) => {
     setEmployees((prev) => prev.filter((employee) => employee.id !== employeeId));
-  };
+  }, []);
 
   const value = {
     employees,

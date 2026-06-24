@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ShiftWithUser {
   time: string;
@@ -47,7 +48,7 @@ const TodayScheduleCard = ({ schedule, onPress, colors }: Props) => {
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.header}>
         <Text style={styles.title}>오늘의 스케줄</Text>
-        <Text style={styles.arrow}>〉</Text>
+        <Ionicons name="chevron-forward-outline" size={18} color={colors.subText} />
       </View>
       <View style={styles.content}>
         {renderShiftGroup("오전", schedule.morning)}
@@ -71,6 +72,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   header: {
     flexDirection: 'row',
@@ -80,12 +83,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: colors.text,
-  },
-  arrow: {
-    fontSize: 18,
-    color: colors.subText,
   },
   content: {
     gap: 12,
