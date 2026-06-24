@@ -295,11 +295,6 @@ const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
             <Text style={styles.confirmButtonText}>선택 완료</Text>
           </TouchableOpacity>
         )}
-        {userInfo?.role === 'ADMIN' && stores.length === 0 && (
-          <TouchableOpacity style={styles.confirmButton} onPress={() => navigation.navigate('AddBranch')}>
-            <Text style={styles.confirmButtonText}>지점 등록</Text>
-          </TouchableOpacity>
-        )}
         <TouchableOpacity style={styles.secondaryButton} onPress={() => setReloadKey(prev => prev + 1)}>
           <Text style={styles.secondaryButtonText}>새로고침</Text>
         </TouchableOpacity>

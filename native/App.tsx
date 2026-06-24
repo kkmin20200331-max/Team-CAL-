@@ -36,7 +36,7 @@ import ContractScreen from './src/screens/mypage/ContractScreen';
 import HealthCertScreen from './src/screens/mypage/HealthCertScreen';
 import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
 import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
-import SubstituteMatchingScreen from './src/screens/schedule/SubstituteMatchingScreen';
+import SubstituteScreen from './src/screens/schedule/SubstituteScreen';
 import LeaveRequestManagementScreen from './src/screens/admin/LeaveRequestManagementScreen';
 import MySubstitutePostDetailScreen from './src/screens/schedule/MySubstitutePostDetailScreen';
 
@@ -160,6 +160,8 @@ function AdminTabNavigator() {
           let iconName: any = 'grid';
           if (route.name === 'AdminDashboard') {
             iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          } else if (route.name === 'AdminSchedule') {
+            iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'EmployeeManagement') {
             iconName = focused ? 'people' : 'people-outline';
           } else if (route.name === 'AdminMyPage') {
@@ -190,9 +192,6 @@ function BoardNavigator() {
 function StaffTabNavigator() {
   const { colors } = useTheme();
   return (
-    <StaffTab.Navigator screenOptions={{ headerShown: false }}>
-      <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '대시보드' }} />
-      <StaffTab.Screen name="StaffSchedule" component={ScheduleScreen} options={{ title: '근무 관리' }} />
     <StaffTab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -226,7 +225,7 @@ function StaffTabNavigator() {
       })}
     >
       <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '홈' }} />
-      <StaffTab.Screen name="StaffSchedule" component={StaffScheduleScreen} options={{ title: '스케줄' }} />
+      <StaffTab.Screen name="StaffSchedule" component={ScheduleScreen} options={{ title: '스케줄' }} />
       <StaffTab.Screen name="Notifications" component={NotificationScreen} options={{ title: '알림' }} />
       <StaffTab.Screen name="StaffMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
     </StaffTab.Navigator>
@@ -255,21 +254,11 @@ function MainNavigator() {
       <MainStack.Screen name="Payroll" component={PayrollScreen} />
       <MainStack.Screen name="PayrollDetail" component={PayrollDetailScreen} />
       <MainStack.Screen name="WeeklyPayrollDetail" component={WeeklyPayrollDetailScreen} />
-      <MainStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
       <MainStack.Screen name="ProfileEdit" component={asScreen(ProfileEditScreen)} />
       <MainStack.Screen name="Contract" component={ContractScreen} />
       <MainStack.Screen name="HealthCert" component={HealthCertScreen} />
       <MainStack.Screen name="QRCheckIn" component={QRCheckInScreen} />
-      <MainStack.Screen name="SubstituteMatching" component={SubstituteMatchingScreen} />
-    </MainStack.Navigator>
-  );
-}
-
-function BranchSetupNavigator() {
-  return (
-    <MainStack.Navigator screenOptions={{ headerShown: false }}>
-      <MainStack.Screen name="BranchSelect" component={BranchSelectScreen} />
-      <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
+      <MainStack.Screen name="Substitute" component={SubstituteScreen} />
     </MainStack.Navigator>
   );
 }
@@ -282,22 +271,14 @@ function AppContent() {
     return <AuthNavigator />;
   }
 
-  // 1. 가장 먼저, 승인 대기 상태인지 확인
   if (userStatus === 'PENDING') {
-  if (!hasSelectedBranch) {
-    return <BranchSetupNavigator />;
-  }
-
-  if (userStatus !== 'ACTIVE') {
     return <PendingScreen handleLogout={logout} />;
   }
 
-  // 2. 그 다음, 직원이면서 아직 매장 신청을 안했는지 확인
-  if (userInfo.role === 'STAFF' && !hasSelectedBranch) {
+  if (!hasSelectedBranch) {
     return <BranchSelectScreen />;
   }
 
-  // 3. 모든 조건을 통과하면 메인 앱으로 진입
   return <MainNavigator />;
 }
 
@@ -317,9 +298,9 @@ export default function App() {
                   <NavigationContainer>
                     <AppContent />
                   </NavigationContainer>
+                  <Toast config={toastConfig} />
                 </ScheduleProvider>
               </BoardProvider>
-              <Toast config={toastConfig} />
             </NotificationProvider>
           </AppProvider>
         </LanguageProvider>

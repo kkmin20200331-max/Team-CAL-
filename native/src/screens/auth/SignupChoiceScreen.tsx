@@ -8,7 +8,7 @@ const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
 
-  const handleSelectRole = (role: 'STAFF' | 'ADMIN') => {
+  const handleSelectRole = (role: 'STAFF') => {
     navigation.navigate('Signup', { role });
   };
 
@@ -23,8 +23,8 @@ const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>어떤 유형으로{'\n'}가입하시겠어요?</Text>
-        <Text style={styles.subtitle}>하나를 선택하여 다음으로 진행해주세요.</Text>
+        <Text style={styles.title}>직원으로 가입</Text>
+        <Text style={styles.subtitle}>매장에서 근무하는 직원으로 가입을 진행합니다.</Text>
 
         <TouchableOpacity
           style={[styles.choiceButton, styles.staffButton]}
@@ -35,6 +35,8 @@ const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
           <Text style={styles.choiceButtonDescription}>매장 스케줄에 따라 근무하는 직원입니다.</Text>
         </TouchableOpacity>
 
+        {/* 
+        관리자 가입 기능은 웹에서만 제공하도록 정책이 변경되어 앱에서는 주석 처리합니다.
         <TouchableOpacity
           style={[styles.choiceButton, styles.adminButton]}
           onPress={() => handleSelectRole('ADMIN')}
@@ -43,6 +45,7 @@ const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
           <Text style={styles.choiceButtonText}>관리자 (Admin)</Text>
           <Text style={styles.choiceButtonDescription}>매장을 소유하고 직원을 관리하는 사장님입니다.</Text>
         </TouchableOpacity>
+        */}
       </View>
     </SafeAreaView>
   );
@@ -82,11 +85,13 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     marginBottom: 8,
     lineHeight: 40,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: colors.subText,
     marginBottom: 40,
+    textAlign: 'center',
   },
   choiceButton: {
     borderRadius: 12,

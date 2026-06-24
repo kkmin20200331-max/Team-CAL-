@@ -78,7 +78,7 @@ insert into users (
 
 select * from users;
 
-DELETE FROM users WHERE name = 'testsm';
+DELETE FROM users WHERE name = 'adminsm';
 
 DELETE FROM users WHERE username = '1234';
 

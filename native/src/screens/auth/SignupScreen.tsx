@@ -34,6 +34,7 @@ export default function SignupScreen({ navigation, route }: Props) {
     isFranchise: true,
     brandName: "",
     branchName: "",
+    address: "", // 주소 상태 추가
     openTime: new Date(),
     closeTime: new Date(),
     maxCapacity: "",
@@ -68,14 +69,14 @@ export default function SignupScreen({ navigation, route }: Props) {
   const handleSignup = async () => {
     if (isSubmitting) return;
 
-    const { id, password, passwordCheck, name, phone, isFranchise, brandName, branchName, openTime, closeTime, maxCapacity } = inputs;
+    const { id, password, passwordCheck, name, phone, isFranchise, brandName, branchName, address, openTime, closeTime, maxCapacity } = inputs;
 
     if (!id || !password || !passwordCheck || !name || !phone) {
       Alert.alert("입력 오류", "모든 필수 항목을 입력해주세요.");
       return;
     }
-    if (role === 'ADMIN' && (!brandName || !branchName)) {
-      Alert.alert("입력 오류", "브랜드명과 지점명을 모두 입력해주세요.");
+    if (role === 'ADMIN' && (!brandName || !branchName || !address)) {
+      Alert.alert("입력 오류", "브랜드명, 지점명, 주소를 모두 입력해주세요.");
       return;
     }
     if (password !== passwordCheck) {
@@ -100,13 +101,14 @@ export default function SignupScreen({ navigation, route }: Props) {
         signupData.isFranchise = isFranchise;
         signupData.brandName = brandName;
         signupData.branchName = branchName;
+        signupData.address = address; // 주소 정보 추가
         signupData.openTime = formatTime(openTime);
         signupData.closeTime = formatTime(closeTime);
         signupData.maxCapacity = parseInt(maxCapacity, 10) || 0;
         signupData.storeCategory = storeCategory;
       }
       
-      await signupAPI(signupData);
+      const response = await signupAPI(signupData);
 
       Toast.show({
         type: 'success',
@@ -114,13 +116,7 @@ export default function SignupScreen({ navigation, route }: Props) {
         text2: `${name}님 환영합니다!`,
       });
 
-      login(
-        {
-          ...signupData,
-          role,
-        },
-        false,
-      );
+      login(response.data, false);
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -198,6 +194,7 @@ export default function SignupScreen({ navigation, route }: Props) {
               </View>
               <TextInput style={styles.input} placeholder="브랜드명 (예: 컴포즈커피)" placeholderTextColor={colors.subText} value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
               <TextInput style={styles.input} placeholder="지점명 (예: 미금점)" placeholderTextColor={colors.subText} value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
+              <TextInput style={styles.input} placeholder="매장 주소" placeholderTextColor={colors.subText} value={inputs.address} onChangeText={(text) => handleInputChange('address', text)} />
               
               <View style={styles.timeContainer}>
                 <View style={styles.timeInputWrapper}>
