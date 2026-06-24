@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { format, addMonths, startOfMonth, getDaysInMonth, startOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { getAttendanceRecordsAPI } from '../../../api/auth';
+import { useApp } from '../../contexts/AppContext';
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -12,6 +13,8 @@ const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation:
   const { employeeId, employeeName } = route.params;
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
+  const { userInfo } = useApp();
+  const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [records, setRecords] = useState<any[]>([]);
@@ -25,7 +28,7 @@ const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation:
         
         // 백엔드 API 호출 활성화
         // 가정: 백엔드는 { date, check_in, check_out, status } 형태의 배열을 반환
-        const { data } = await getAttendanceRecordsAPI(employeeId, monthStr);
+        const { data } = await getAttendanceRecordsAPI(employeeId, monthStr, storeId);
         
         // 백엔드 데이터(snake_case)를 프론트엔드(camelCase)에 맞게 변환
         const formattedData = data.map((item: any) => ({

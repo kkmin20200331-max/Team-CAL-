@@ -6,6 +6,11 @@ interface Branch {
   id: string;
   brandName: string;
   branchName: string;
+  address?: string;
+  openTime?: string;
+  closeTime?: string;
+  capacity?: number;
+  storeCategory?: string;
 }
 
 interface AppContextType {

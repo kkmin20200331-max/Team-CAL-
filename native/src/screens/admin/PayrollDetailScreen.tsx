@@ -43,8 +43,8 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
 
     const totalHours = totalMinutes / 60;
     const totalPay = employee.payType === 'SALARY' 
-      ? employee.payRate 
-      : Math.round(totalHours * employee.payRate);
+      ? (employee.payRate || 0)
+      : Math.round(totalHours * (employee.payRate || 0));
 
     return {
       employee,
@@ -112,7 +112,7 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
             </View>
             <View style={styles.detailItem}>
               <Text style={styles.detailLabel}>적용 시급/월급</Text>
-              <Text style={styles.detailValue}>{employee.payRate.toLocaleString()}원</Text>
+              <Text style={styles.detailValue}>{(employee.payRate || 0).toLocaleString()}원</Text>
             </View>
           </View>
         </View>

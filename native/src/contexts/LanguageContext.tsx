@@ -184,6 +184,48 @@ const ko = {
   reason: '사유',
   requestManagement: '요청 관리',
   noRequests: '처리할 요청이 없습니다.',
+  badgeNew: '새글',
+  badgeImportant: '중요',
+  saveCompleteTitle: '저장 완료',
+  saveCompleteMsg: '개인정보가 성공적으로 수정되었습니다.',
+  editFailTitle: '수정 실패',
+  editFailMsg: '개인정보 수정 중 오류가 발생했습니다.',
+  accountInfoReadonly: '계정 정보 (수정 불가)',
+  idLabel: '아이디',
+  branchLabel: '근무 매장',
+  roleLabel: '권한',
+  adminRole: '관리자',
+  staffRole: '직원',
+  myInfoSection: '개인정보 수정',
+  nameLabel: '이름',
+  namePlaceholder: '이름을 입력하세요',
+  phoneLabel: '전화번호',
+  phonePlaceholder: '전화번호를 입력하세요',
+  changePasswordSection: '비밀번호 변경',
+  currentPasswordLabel: '현재 비밀번호',
+  currentPasswordPlaceholder: '현재 비밀번호 입력',
+  newPasswordLabel: '새 비밀번호',
+  newPasswordPlaceholder: '새 비밀번호 입력',
+  editCompleteBtn: '수정 완료',
+  subReqConfirmTitle: '대타 신청 확인',
+  subReqConfirmMsg: '이 근무에 대타 지원을 하시겠습니까?',
+  subApplySuccessTitle: '지원 완료',
+  subApplySuccessMsg: '대타 지원이 정상적으로 완료되었습니다.',
+  subPointUnit: 'P',
+  subPointTotal: '누적 포인트',
+  subEmptyReq: '등록된 대타 요청이 없습니다.',
+  subEmptyHist: '대타 내역이 존재하지 않습니다.',
+  subTabRequest: '대타 요청',
+  subTabHistory: '매칭 내역',
+  valid: '유효함',
+  pendingApproval: '승인 대기중',
+  expired: '만료됨',
+  needsRenewal: '갱신 필요',
+  expiryDate: '만료일',
+  uploadNew: '새로운 사진 업로드',
+  workPlace: '근무지',
+  startDate: '시작일',
+  wage: '시급',
 };
 
 export type Language = '한국어' | 'English' | '日本語';
@@ -192,7 +234,7 @@ type TranslationData = typeof ko;
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: keyof TranslationData) => string;
+  t: (key: any) => string;
   isTranslating: boolean;
 }
 
@@ -281,9 +323,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const t = (key: keyof TranslationData): string => {
+  const t = (key: any): string => {
     const langCode = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
-    const translationSet = translations[langCode] || translations.ko;
+    const translationSet = (translations[langCode] || translations.ko) as any;
     return translationSet[key] || String(key);
   };
 

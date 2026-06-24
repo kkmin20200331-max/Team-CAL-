@@ -7,7 +7,7 @@ import { useApp } from '../../contexts/AppContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllStoresAPI, getMyStoreMembershipsAPI, getStoresAPI, requestStoreJoinAPI } from '../../../api/auth';
 
-const BranchSelectScreen = ({ navigation }: { navigation: any }) => {
+const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
 

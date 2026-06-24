@@ -149,7 +149,7 @@ export default function StoreEditScreen({ navigation }: { navigation: any }) {
           </View>
 
           <Text style={styles.inputLabel}>최대 수용 인원 (선택)</Text>
-          <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('capacity', text)} keyboardType="number-pad" />
+          <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.capacity} onChangeText={(text) => handleInputChange('capacity', text)} keyboardType="number-pad" />
 
           <TouchableOpacity style={styles.button} onPress={handleSave}>
             <Text style={styles.buttonText}>저장하기</Text>

@@ -261,3 +261,31 @@ export const uploadFileAPI = (formData: FormData) =>
     },
   });
 
+// 추가 보강 API
+export const getStaffListAPI = (storeId: string) =>
+  API.get('/users', { params: { store_id: storeId } });
+
+export const registerShiftAPI = (data: any) =>
+  API.post('/shift', data);
+
+export const updateShiftAPI = (data: any) =>
+  API.put('/shift', data);
+
+export const deleteShiftAPI = (id: string) =>
+  API.delete('/shift', { params: { id } });
+
+export const getLeaveRequestsAPI = (storeId: string) =>
+  API.get('/leave_request', { params: { store_id: storeId } });
+
+export const processLeaveRequestAPI = (id: string, status: string) =>
+  API.put(`/leave_request/${id}`, null, { params: { status } });
+
+export const getAttendanceRecordsAPI = (userId: string, yearMonth: string, storeId?: string) =>
+  API.get('/attendance/monthly', { params: { user_id: userId, yearMonth, store_id: storeId } });
+
+export const updateStoreAPI = (data: any) =>
+  API.put('/store', data);
+
+export const getSubstituteApplicantsAPI = getSubstituteApplicationsAPI;
+export const applyForSubstituteAPI = applySubstituteAPI;
+

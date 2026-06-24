@@ -60,8 +60,9 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
       { text: t('applyBtn'), onPress: async () => {
         try {
           await applyForSubstituteAPI({
-            post_id: post.id,
-            applicant_id: userInfo.id,
+            id: Math.random().toString(36).substring(2, 9),
+            substitute_post_id: post.id,
+            applicant_user_id: userInfo.id,
             status: 'PENDING',
           });
           Toast.show({ type: 'success', text1: t('applySuccess') });

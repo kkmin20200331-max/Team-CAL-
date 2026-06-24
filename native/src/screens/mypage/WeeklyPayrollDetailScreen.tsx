@@ -44,12 +44,12 @@ const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigati
       return {
         ...shift,
         dailyHours: (dailyMinutes / 60).toFixed(1),
-        dailyPay: Math.round((dailyMinutes / 60) * employee.payRate),
+        dailyPay: Math.round((dailyMinutes / 60) * (employee.payRate || 0)),
       };
     });
 
     const totalHours = totalMinutes / 60;
-    const totalPay = Math.round(totalHours * employee.payRate);
+    const totalPay = Math.round(totalHours * (employee.payRate || 0));
 
     return {
       employee,
@@ -118,7 +118,7 @@ const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigati
             </View>
             <View style={styles.detailItem}>
               <Text style={styles.detailLabel}>{t('appliedRate')}</Text>
-              <Text style={styles.detailValue}>{employee.payRate.toLocaleString()}{t('currency')}</Text>
+              <Text style={styles.detailValue}>{(employee.payRate || 0).toLocaleString()}{t('currency')}</Text>
             </View>
           </View>
         </View>
