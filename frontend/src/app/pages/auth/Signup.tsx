@@ -51,6 +51,9 @@ const translations = {
     storeAddress: "매장 주소",
     storeType: "업종",
     businessNumber: "사업자등록번호",
+    validateBusiness: "인증",
+    businessValSuccess: "인증 성공",
+    errorValidateBusiness: "사업자등록번호 인증을 완료해주세요.",
     selectStore: "근무할 매장 선택",
     errorEmpty: "모든 항목을 입력해주세요.",
     errorCheckNickname: "닉네임 중복 확인을 해주세요.",
@@ -92,6 +95,9 @@ const translations = {
     storeAddress: "Store Address",
     storeType: "Business Type",
     businessNumber: "Business Number",
+    validateBusiness: "Verify",
+    businessValSuccess: "Verified",
+    errorValidateBusiness: "Please verify your business number.",
     selectStore: "Select Workplace",
     errorEmpty: "Please fill in all fields.",
     errorCheckNickname: "Please check nickname availability.",
@@ -133,6 +139,9 @@ const translations = {
     storeAddress: "店舗住所",
     storeType: "業種",
     businessNumber: "事業者登録番号",
+    validateBusiness: "認証",
+    businessValSuccess: "認証完了",
+    errorValidateBusiness: "事業者登録番号の検証をしてください。",
     selectStore: "勤務店舗を選択",
     errorEmpty: "すべての項目を入力してください。",
     errorCheckNickname: "ニックネームの重複確認をしてください。",
@@ -256,6 +265,9 @@ export default function Signup() {
   const [storeAddress, setStoreAddress] = useState("");
   const [storeType, setStoreType] = useState("CAFE");
   const [businessNumber, setBusinessNumber] = useState("");
+  const [businessValidated, setBusinessValidated] = useState(false);
+  const [businessChecking, setBusinessChecking] = useState(false);
+  const [businessMsg, setBusinessMsg] = useState("");
 
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState("");
@@ -286,6 +298,34 @@ export default function Signup() {
   const handleNicknameChange = (val: string) => {
     setNickname(val);
     setNicknameStatus("idle");
+  };
+
+  const handleBusinessNumberChange = (val: string) => {
+    setBusinessNumber(val);
+    setBusinessValidated(false);
+    setBusinessMsg("");
+  };
+
+  const handleValidateBusiness = async () => {
+    if (!businessNumber.trim()) {
+      setErrorMsg(t.errorEmpty);
+      return;
+    }
+    setErrorMsg("");
+    setBusinessChecking(true);
+    setBusinessMsg("");
+    try {
+      const res = await axiosInstance.post("/users/validate-business", {
+        businessNumber: businessNumber,
+      });
+      setBusinessValidated(true);
+      setBusinessMsg(res.data.message);
+    } catch (err: any) {
+      setBusinessValidated(false);
+      setBusinessMsg(err.response?.data?.message || "유효하지 않은 사업자 번호입니다.");
+    } finally {
+      setBusinessChecking(false);
+    }
   };
 
   const handleCheckNickname = async () => {
@@ -345,6 +385,10 @@ export default function Signup() {
     if (role === "admin") {
       if (!brandName || !storeAddress || !businessNumber || (isFranchise && !branchName) || !maxCapacity) {
         setErrorMsg(t.errorEmpty);
+        return;
+      }
+      if (!businessValidated) {
+        setErrorMsg(t.errorValidateBusiness);
         return;
       }
     } else {
@@ -803,34 +847,80 @@ export default function Signup() {
                     />
                   </Field>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 12,
-                      marginBottom: 18,
-                    }}
-                  >
-                    <div>
-                      <div style={labelStyle}>{t.storeType}</div>
-                      <input
-                        type="text"
-                        value={storeType}
-                        onChange={(e) => setStoreType(e.target.value)}
-                        placeholder="CAFE"
-                        style={inputStyle} className="signup-input"
-                      />
-                    </div>
-                    <div>
-                      <div style={labelStyle}>{t.businessNumber}</div>
+                  <div style={{ marginBottom: 18 }}>
+                    <div style={labelStyle}>{t.storeType}</div>
+                    <input
+                      type="text"
+                      value={storeType}
+                      onChange={(e) => setStoreType(e.target.value)}
+                      placeholder="CAFE"
+                      style={inputStyle} className="signup-input"
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 18 }}>
+                    <div style={labelStyle}>{t.businessNumber}</div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       <input
                         type="text"
                         value={businessNumber}
-                        onChange={(e) => setBusinessNumber(e.target.value)}
+                        onChange={(e) => handleBusinessNumberChange(e.target.value)}
                         placeholder="123-45-67890"
-                        style={inputStyle} className="signup-input"
+                        style={{ ...inputStyle, flex: 1, width: "auto" }} className="signup-input"
                       />
+                      <button
+                        type="button"
+                        onClick={handleValidateBusiness}
+                        disabled={businessChecking}
+                        style={{
+                          width: 102.51,
+                          height: 37.53,
+                          flexShrink: 0,
+                          background: GREEN,
+                          border: "none",
+                          borderRadius: 9,
+                          color: "#fff",
+                          fontFamily: FONT,
+                          fontWeight: 300,
+                          fontSize: 14,
+                          cursor: "pointer",
+                          opacity: businessChecking ? 0.6 : 1,
+                          boxShadow: INPUT_SHADOW,
+                        }}
+                      >
+                        {businessChecking ? "..." : t.validateBusiness}
+                      </button>
+                      {businessValidated && (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: "#16a34a",
+                            background: "#f0fdf4",
+                            border: "1px solid #86efac",
+                            borderRadius: 6,
+                            padding: "3px 8px",
+                            whiteSpace: "nowrap",
+                            flexShrink: 0,
+                          }}
+                        >
+                          OK
+                        </span>
+                      )}
                     </div>
+                    {businessMsg && (
+                      <div
+                        style={{
+                          fontSize: 12,
+                          marginTop: 6,
+                          color: businessValidated ? "#16a34a" : "#dc2626",
+                          fontFamily: FONT,
+                          fontWeight: 400
+                        }}
+                      >
+                        {businessMsg}
+                      </div>
+                    )}
                   </div>
 
                   <div
