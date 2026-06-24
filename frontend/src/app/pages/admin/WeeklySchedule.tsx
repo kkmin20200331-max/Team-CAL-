@@ -91,7 +91,7 @@ const getStatusStyle = (status: string, isDark: boolean) => {
     case "confirmed": return { background: isDark ? 'rgba(24,160,34,0.2)' : '#E6F5C8', border: '2px solid #18A022', color: isDark ? '#4cd964' : '#07790F' };
     case "pending": return { background: isDark ? 'rgba(245,158,11,0.2)' : '#fef9c3', border: '2px solid #f59e0b', color: '#92400e' };
     case "cancelled": return { background: isDark ? 'rgba(239,68,68,0.2)' : '#fee2e2', border: '2px dashed #ef4444', color: '#7f1d1d' };
-    default: return { background: isDark ? '#3a3a3c' : '#f3f4f6', border: '2px solid #d1d5db', color: '#111' };
+    default: return { background: isDark ? '#50505a' : '#f3f4f6', border: '2px solid #d1d5db', color: '#111' };
   }
 };
 
@@ -186,13 +186,15 @@ export default function WeeklySchedule() {
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const cardBg = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const pageBg = isDark ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const contentBg = isDark ? '#3c3c46' : '#fff';
+  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const cardBg = isDark ? '#3c3c46' : 'rgba(255,255,255,0.5)';
   const textColor = isDark ? '#fff' : '#111';
   const subTextColor = isDark ? '#aaa' : '#555';
-  const cellBorder = isDark ? '#3a3a3c' : '#d4edda';
-  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
+  const cellBorder = isDark ? '#50505a' : '#d4edda';
+  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
 
   return (
     <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
@@ -201,14 +203,14 @@ export default function WeeklySchedule() {
         {/* 사이드바 */}
         <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: sidebarBg, borderRadius: 20, border: `1px solid ${sidebarBorder}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
           <div style={{ marginBottom: 16, position: 'relative' }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
                 {stores.map(s => (
-                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#3a3a3c' : LIGHT_GREEN}` }}>
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#50505a' : LIGHT_GREEN}` }}>
                     {s.name}
                   </div>
                 ))}
@@ -227,7 +229,7 @@ export default function WeeklySchedule() {
         </div>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -266,7 +268,7 @@ export default function WeeklySchedule() {
               placeholder={t.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#3a3a3c' : '#fff', color: textColor, fontSize: 14, outline: 'none' }}
+              style={{ paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#50505a' : '#fff', color: textColor, fontSize: 14, outline: 'none' }}
             />
           </div>
         </div>
@@ -316,7 +318,7 @@ export default function WeeklySchedule() {
                 ) : (
                   filteredEmployees.map((employee) => (
                     <tr key={employee.id}>
-                      <td style={{ position: 'sticky', left: 0, zIndex: 10, background: isDark ? '#2c2c2e' : '#fff', padding: '12px 16px', borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}` }}>
+                      <td style={{ position: 'sticky', left: 0, zIndex: 10, background: isDark ? '#3c3c46' : '#fff', padding: '12px 16px', borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{ width: 36, height: 36, borderRadius: '50%', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
                             {employee.name[0]}

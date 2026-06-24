@@ -93,9 +93,9 @@ export default function BranchSelection() {
   };
 
   const pageBg = isDark
-    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)'
     : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const cardBg = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
+  const cardBg = isDark ? '#3c3c46' : 'rgba(255,255,255,0.5)';
   const textColor = isDark ? '#fff' : '#111';
   const subTextColor = isDark ? '#aaa' : '#555';
 
@@ -115,7 +115,7 @@ export default function BranchSelection() {
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             width: '100%', marginBottom: 24, padding: '14px 0',
-            background: isDark ? '#3a3a3c' : LIGHT_GREEN,
+            background: isDark ? '#50505a' : LIGHT_GREEN,
             border: `1px solid ${BORDER_GREEN}`, borderRadius: 54,
             color: DARK_GREEN, fontSize: 16, fontWeight: 600, cursor: 'pointer',
           }}

@@ -111,6 +111,8 @@ export default function CctvAnalysis() {
   const { branchId } = useParams();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const contentBg = isDark ? '#3c3c46' : '#fff';
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -313,20 +315,20 @@ export default function CctvAnalysis() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
         {/* 사이드바 */}
-        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)', borderRadius: 20, border: `1px solid ${isDark ? '#3a3a3c' : BORDER_GREEN}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
+        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)', borderRadius: 20, border: `1px solid ${isDark ? '#50505a' : BORDER_GREEN}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
           <div style={{ marginBottom: 16, position: 'relative' }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
                 {stores.map(s => (
-                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: isDark ? '#fff' : '#111', borderBottom: `1px solid ${isDark ? '#3a3a3c' : LIGHT_GREEN}` }}>
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: isDark ? '#fff' : '#111', borderBottom: `1px solid ${isDark ? '#50505a' : LIGHT_GREEN}` }}>
                     {s.name}
                   </div>
                 ))}
@@ -345,7 +347,7 @@ export default function CctvAnalysis() {
         </div>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -406,7 +408,7 @@ export default function CctvAnalysis() {
               icon: <Eye size={22} color={DARK_GREEN} />,
             },
           ].map(({ label, value, sub, badge, icon }) => (
-            <div key={label} style={{ background: isDark ? 'rgba(44,44,46,0.9)' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '16px 18px' }}>
+            <div key={label} style={{ background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '16px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 12, color: isDark ? '#aaa' : '#6b7280', margin: 0 }}>{label}</p>
@@ -641,7 +643,7 @@ export default function CctvAnalysis() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? 'rgba(44,44,46,0.6)' : LIGHT_GREEN, padding: 12 }}>
+              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? 'rgba(52,52,60,0.7)' : LIGHT_GREEN, padding: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: DARK_GREEN }}>
                   <MapPin size={14} />
                   {config.location}
@@ -659,7 +661,7 @@ export default function CctvAnalysis() {
                   {JSON.stringify(startPayload, null, 2)}
                 </pre>
               </div>
-              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? '#1c1c1e' : '#fff', padding: 12 }}>
+              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? '#30303a' : '#fff', padding: 12 }}>
                 <p style={{ marginBottom: 6, fontSize: 11, fontWeight: 700, color: isDark ? '#aaa' : DARK_GREEN }}>last response</p>
                 <pre style={{ maxHeight: 160, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: 11, lineHeight: 1.6, color: isDark ? '#ccc' : '#374151' }}>
                   {lastResponse}

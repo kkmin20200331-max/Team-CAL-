@@ -202,12 +202,14 @@ export default function EmployeeManagement() {
     (e) => !memberMap[e.id]?.pay_amount,
   ).length;
 
-  const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const cardBg = isDark ? '#2c2c2e' : 'rgba(230,245,200,0.35)';
+  const pageBg = isDark ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const contentBg = isDark ? '#3c3c46' : '#fff';
+  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const cardBg = isDark ? '#3c3c46' : 'rgba(230,245,200,0.35)';
   const textColor = isDark ? '#fff' : '#111';
   const subTextColor = isDark ? '#aaa' : '#555';
-  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
+  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
 
   const getPayDisplay = (info?: StoreMemberVo) => {
     if (!info?.pay_amount) return <span style={{ color: '#f59e0b', fontSize: 12 }}>미설정</span>;
@@ -237,14 +239,14 @@ export default function EmployeeManagement() {
         {/* 사이드바 */}
         <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: sidebarBg, borderRadius: 20, border: `1px solid ${sidebarBorder}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
           <div style={{ marginBottom: 16, position: 'relative' }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
                 {stores.map(s => (
-                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#3a3a3c' : LIGHT_GREEN}` }}>
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#50505a' : LIGHT_GREEN}` }}>
                     {s.name}
                   </div>
                 ))}
@@ -263,7 +265,7 @@ export default function EmployeeManagement() {
         </div>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
           <div style={{ marginBottom: 24 }}>
             <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
               {currentBranch} <ChevronRight size={12} /> 직원 관리
@@ -299,7 +301,7 @@ export default function EmployeeManagement() {
             placeholder="이름 또는 전화번호로 검색..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.7)', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#50505a' : 'rgba(255,255,255,0.7)', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
 
@@ -324,7 +326,7 @@ export default function EmployeeManagement() {
                   {filtered.map((emp) => {
                     const info = memberMap[emp.id];
                     return (
-                      <tr key={emp.id} style={{ borderBottom: `1px solid ${isDark ? '#3a3a3c' : '#e8f5e9'}` }}>
+                      <tr key={emp.id} style={{ borderBottom: `1px solid ${isDark ? '#50505a' : '#e8f5e9'}` }}>
                         <td style={{ padding: '12px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{emp.name[0]}</div>
@@ -369,7 +371,7 @@ export default function EmployeeManagement() {
       {!!editTarget && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setEditTarget(null)} />
-          <div style={{ position: 'relative', background: isDark ? '#2c2c2e' : '#fff', borderRadius: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', width: '100%', maxWidth: 420, margin: '0 16px', padding: 28 }}>
+          <div style={{ position: 'relative', background: isDark ? '#3c3c46' : '#fff', borderRadius: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', width: '100%', maxWidth: 420, margin: '0 16px', padding: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: textColor }}>{editTarget?.name}님 급여 설정</h2>
               <button onClick={() => setEditTarget(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subTextColor }}><X size={20} /></button>
@@ -384,7 +386,7 @@ export default function EmployeeManagement() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 8 }}>{payType === "HOURLY" ? "시급 (원)" : "월급 (원)"}</label>
-                <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder={payType === "HOURLY" ? "예: 10030" : "예: 2500000"} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, background: isDark ? '#3a3a3c' : '#fff', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder={payType === "HOURLY" ? "예: 10030" : "예: 2500000"} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, background: isDark ? '#50505a' : '#fff', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                 {payAmount && Number(payAmount) > 0 && (
                   <p style={{ fontSize: 12, color: subTextColor, marginTop: 6 }}>{payType === "HOURLY" ? `시간당 ${Number(payAmount).toLocaleString()}원` : `월 ${(Number(payAmount) / 10000).toFixed(1)}만원`}</p>
                 )}

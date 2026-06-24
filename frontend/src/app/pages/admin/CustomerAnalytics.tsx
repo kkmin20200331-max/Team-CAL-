@@ -277,6 +277,8 @@ export default function CustomerAnalytics() {
   const { branchId } = useParams();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const contentBg = isDark ? '#3c3c46' : '#fff';
   const [activeTab, setActiveTab] = useState<TabKey>("live");
   const [peopleLogs, setPeopleLogs] = useState<PeopleLog[]>([]);
   const [weeklyLogs, setWeeklyLogs] = useState<PeopleLog[]>([]);
@@ -290,10 +292,10 @@ export default function CustomerAnalytics() {
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
 
   const pageBg = isDark
-    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
+    ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)'
     : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const sidebarBg = isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#3a3a3c' : BORDER_GREEN;
+  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
   const textColor = isDark ? '#fff' : '#111';
 
   const currentBranch =
@@ -604,8 +606,8 @@ export default function CustomerAnalytics() {
             {branchDropdownOpen && stores.length > 0 && (
               <div style={{
                 position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50,
-                background: isDark ? '#1c1c1e' : '#fff',
-                border: `1px solid ${isDark ? '#3a3a3c' : BORDER_GREEN}`,
+                background: isDark ? '#30303a' : '#fff',
+                border: `1px solid ${isDark ? '#50505a' : BORDER_GREEN}`,
                 borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
               }}>
                 {stores.map(s => (
@@ -629,11 +631,11 @@ export default function CustomerAnalytics() {
                     {s.name}
                   </button>
                 ))}
-                <div style={{ borderTop: `1px solid ${isDark ? '#3a3a3c' : '#e5e7eb'}` }} />
+                <div style={{ borderTop: `1px solid ${isDark ? '#50505a' : '#e5e7eb'}` }} />
                 <button
                   onClick={() => { setBranchDropdownOpen(false); navigate('/admin/branch-selection'); }}
                   style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#888' : '#aaa', fontSize: 12 }}
-                  onMouseOver={e => { e.currentTarget.style.background = isDark ? '#2c2c2e' : '#f5f5f5'; }}
+                  onMouseOver={e => { e.currentTarget.style.background = isDark ? '#3c3c46' : '#f5f5f5'; }}
                   onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
                 >
                   + 지점 선택 페이지로
@@ -672,7 +674,7 @@ export default function CustomerAnalytics() {
         {/* Main white card */}
         <div style={{
           flex: 1, minWidth: 0,
-          background: 'rgba(255,255,255,0.97)',
+          background: mainBg,
           borderRadius: 24,
           padding: '28px 28px 32px',
           boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
