@@ -53,7 +53,7 @@ public class FileC {
     }
 
     @GetMapping("/{id}/signed-url")
-    public Map<String, String> getSignedUrl(
+    public Map<String, String> createSignedUrl(
             @PathVariable String id
     ) {
         String url = fileService.createSignedUrl(id);
@@ -88,13 +88,6 @@ public class FileC {
             @PathVariable String userId
     ) {
         return fileService.getFilesByUserId(userId);
-    }
-
-    @GetMapping("/store/{storeId}")
-    public List<FileVO> getFilesByStoreId(
-            @PathVariable String storeId
-    ) {
-        return fileService.getFilesByStoreId(storeId);
     }
 
     // =========================

@@ -1,6 +1,7 @@
 package com.dm.backend.controller;
 
 import com.dm.backend.service.UserService;
+import com.dm.backend.service.BusinessValidationService;
 import com.dm.backend.vo.UserVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,26 @@ public class UserC {
     @Autowired
     private UserService userservice;
 
+    @Autowired
+    private BusinessValidationService businessValidationService;
+
+    // =========================
+    // [공통] 사업자등록번호 진위여부 검증
+    // =========================
+    @PostMapping("/validate-business")
+    public ResponseEntity<?> validateBusiness(@RequestBody Map<String, String> request) {
+        String businessNumber = request.get("businessNumber");
+        BusinessValidationService.BusinessValidationResult result = businessValidationService.validate(businessNumber);
+        if (result.isValid()) {
+            return ResponseEntity.ok(result);
+        } else {
+            return ResponseEntity.status(400).body(result);
+        }
+    }
+
+    // =========================
+    // [공통] 회원가입 신청
+    // =========================
     @PostMapping
     public ResponseEntity<?> registerUser(@RequestBody UserVo userVo) {
         try {
@@ -35,6 +56,9 @@ public class UserC {
         }
     }
 
+    // =========================
+    // [공통] 로그인
+    // =========================
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserVo userVo) {
         UserVo result = userservice.login(userVo);
@@ -54,6 +78,9 @@ public class UserC {
         return ResponseEntity.ok(result);
     }
 
+    // =========================
+    // [공통] 닉네임 중복 확인
+    // =========================
     @GetMapping("/check-nickname")
     public ResponseEntity<?> checkNickname(@RequestParam String nickname) {
         boolean exists = userservice.checkNickname(nickname);
@@ -63,6 +90,9 @@ public class UserC {
         return ResponseEntity.ok().build();
     }
 
+    // =========================
+    // [공통] 아이디(username) 중복 확인
+    // =========================
     @GetMapping("/check-username")
     public ResponseEntity<?> checkUsername(@RequestParam String username) {
         boolean exists = userservice.checkUsername(username);
@@ -72,26 +102,41 @@ public class UserC {
         return ResponseEntity.ok().build();
     }
 
+    // =========================
+    // [관리자] 직원 정보 수정(승인 등)
+    // =========================
     @PutMapping
     public void approveStaff(@RequestBody UserVo userVo) {
         userservice.approveStaff(userVo);
     }
 
+    // =========================
+    // [관리자] 회원가입 승인
+    // =========================
     @PutMapping("/approve")
     public void approveUser(@RequestParam String id) {
         userservice.approveUser(id);
     }
 
+    // =========================
+    // [관리자/직원] 유저 정보 삭제 (회원탈퇴 등)
+    // =========================
     @DeleteMapping
     public void delUser(@RequestParam String id) {
         userservice.delUser(id);
     }
 
+    // =========================
+    // [관리자] 매장 소속 직원 목록 조회
+    // =========================
     @GetMapping
     public List<UserVo> getStaff(@RequestParam String store_id) {
         return userservice.getStaff(store_id);
     }
 
+    // =========================
+    // [관리자] 매장 게스트(승인대기) 목록 조회
+    // =========================
     @GetMapping("/guest")
     public List<UserVo> getGuest(
             @RequestParam String store_id,
@@ -100,6 +145,9 @@ public class UserC {
         return userservice.getPendingStaff(store_id, role);
     }
 
+    // =========================
+    // [관리자] 매장 승인 대기 직원 목록 조회
+    // =========================
     @GetMapping("/pending")
     public List<UserVo> getPendingStaff(
             @RequestParam String store_id,

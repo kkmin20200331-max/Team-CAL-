@@ -18,6 +18,7 @@ import {
   Clock,
   FileText,
   UserCheck,
+  Pencil,
 } from "lucide-react";
 import { Switch } from "../../components/ui/switch";
 import LineLoginButton from "../auth/LineLoginButton";
@@ -193,8 +194,21 @@ export default function ProfilePanel() {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => currentUser.profile_image || sessionStorage.getItem("admin_profile_image") || ''
+    () => {
+      const freshUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
+      return freshUser.profile_image || sessionStorage.getItem("profile_image") || '';
+    }
   );
+
+  useEffect(() => {
+    const refresh = () => {
+      const freshUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
+      const img = freshUser.profile_image || sessionStorage.getItem("profile_image") || '';
+      setProfileImage(img);
+    };
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, []);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -209,7 +223,7 @@ export default function ProfilePanel() {
       );
       const url = response.data?.profile_image;
       setProfileImage(url);
-      sessionStorage.setItem("admin_profile_image", url);
+      sessionStorage.setItem("profile_image", url);
       const updatedUser = { ...currentUser, profile_image: url };
       sessionStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {
@@ -1101,6 +1115,35 @@ export default function ProfilePanel() {
                   ))}
                 </div>
               </div>
+
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/admin/edit-profile");
+                }}
+                style={{
+                  width: "100%",
+                  padding: "13px 0",
+                  borderRadius: 14,
+                  border: "none",
+                  background: `linear-gradient(135deg, #18A022 0%, #07790F 100%)`,
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  boxShadow: "0 2px 12px rgba(24,160,34,0.25)",
+                  transition: "opacity 0.15s",
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.opacity = "0.88")}
+                onMouseOut={(e) => (e.currentTarget.style.opacity = "1")}
+              >
+                <Pencil style={{ width: 16, height: 16 }} />
+                회원정보 수정하기
+              </button>
 
               <LineLoginButton />
 

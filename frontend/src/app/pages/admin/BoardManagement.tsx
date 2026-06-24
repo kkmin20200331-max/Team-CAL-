@@ -347,9 +347,9 @@ const BoardManagement: React.FC = () => {
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
 
         {/* 사이드바 */}
-        <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${sidebarBorder}`, borderRadius: 20, padding: '20px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)', position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
-          <div style={{ position: 'relative', marginBottom: 18 }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? 'rgba(255,255,255,0.06)' : LIGHT_GREEN, border: `1px solid ${sidebarBorder}`, borderRadius: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, color: isDark ? '#fff' : DARK_GREEN, fontSize: 12, fontWeight: 700 }}>
+        <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${sidebarBorder}`, borderRadius: 20, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)', position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
+          <div style={{ position: 'relative', marginBottom: 16 }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
@@ -366,7 +366,11 @@ const BoardManagement: React.FC = () => {
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path);
             return (
-              <button key={item.label} onClick={() => navigate(item.path)} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '11px 14px', marginBottom: 4, background: isActive ? GREEN : 'transparent', border: 'none', borderRadius: 12, cursor: 'pointer', color: isActive ? '#fff' : (isDark ? '#ccc' : DARK_GREEN), fontSize: 14, fontWeight: 600, transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}>
+              <button key={item.label} onClick={() => navigate(item.path)}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '11px 14px', marginBottom: 4, background: isActive ? GREEN : 'transparent', border: 'none', borderRadius: 12, cursor: 'pointer', color: isActive ? '#fff' : (isDark ? '#ccc' : DARK_GREEN), fontSize: 14, fontWeight: 600, textAlign: 'left', transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}
+                onMouseOver={e => { if (!isActive) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : LIGHT_GREEN; }}
+                onMouseOut={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+              >
                 <item.icon size={16} color={isActive ? '#fff' : GREEN} />
                 {item.label}
               </button>
