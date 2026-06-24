@@ -2,7 +2,6 @@ package com.dm.backend.mapper;
 
 import com.dm.backend.vo.UserVo;
 import org.apache.ibatis.annotations.*;
-import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -13,10 +12,11 @@ public interface UserMapper {
     // [공통]
     // =========================
 
-    //중복체크를 위한 카운트
+    // 중복 체크용 카운트
     @Select("SELECT COUNT(*) FROM users WHERE username = #{username}")
     int countByUsername(String username);
-    //중복체크를 위한 카운트
+
+    // 중복 체크용 카운트
     @Select("SELECT COUNT(*) FROM users WHERE name = #{name}")
     int countByName(String name);
 
@@ -43,7 +43,7 @@ public interface UserMapper {
     // [관리자]
     // =========================
 
-    // 경민 수정 5/29 15:05 - 승인된 직원 목록 조회 (대문자 STAFF)
+    // 승인된 직원 목록 조회
     @Select("SELECT * FROM users WHERE role = 'STAFF' and id IN (select user_id from store_member where approval_status = 'APPROVED' and store_id = #{store_id})")
     List<UserVo> getStaff(String store_id);
 
@@ -58,4 +58,8 @@ public interface UserMapper {
     // 프로필 이미지 URL 업데이트
     @Update("UPDATE users SET profile_image = #{profile_image} WHERE id = #{id}")
     void updateProfileImage(@Param("id") String id, @Param("profile_image") String profileImage);
+
+    // 계정 상태 변경
+    @Update("UPDATE users SET status = #{status} WHERE id = #{id}")
+    void updateUserStatus(@Param("id") String id, @Param("status") String status);
 }

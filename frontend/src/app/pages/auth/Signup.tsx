@@ -48,6 +48,9 @@ const translations = {
     openTime: "오픈 시간",
     closeTime: "마감 시간",
     maxCapacity: "최대 수용 인원 (명)",
+    storeAddress: "매장 주소",
+    storeType: "업종",
+    businessNumber: "사업자등록번호",
     selectStore: "근무할 매장 선택",
     errorEmpty: "모든 항목을 입력해주세요.",
     errorCheckNickname: "닉네임 중복 확인을 해주세요.",
@@ -57,6 +60,7 @@ const translations = {
     errorDuplicate: "이미 존재하는 아이디입니다.",
     errorServer: "서버 오류가 발생했습니다.",
     successAlert: "회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.",
+    adminPendingAlert: "관리자 가입 신청이 접수되었습니다. 마스터 승인 후 로그인할 수 있습니다.",
     strong: "강함",
     weak: "약함",
     loadingStores: "매장 목록을 불러오는 중...",
@@ -85,6 +89,9 @@ const translations = {
     openTime: "Opening Time",
     closeTime: "Closing Time",
     maxCapacity: "Max Capacity",
+    storeAddress: "Store Address",
+    storeType: "Business Type",
+    businessNumber: "Business Number",
     selectStore: "Select Workplace",
     errorEmpty: "Please fill in all fields.",
     errorCheckNickname: "Please check nickname availability.",
@@ -94,6 +101,7 @@ const translations = {
     errorDuplicate: "This username is already taken.",
     errorServer: "Server error occurred.",
     successAlert: "Registration complete! Moving to login page.",
+    adminPendingAlert: "Admin application submitted. You can log in after master approval.",
     strong: "Strong",
     weak: "Weak",
     loadingStores: "Loading stores...",
@@ -122,6 +130,9 @@ const translations = {
     openTime: "開店時間",
     closeTime: "閉店時間",
     maxCapacity: "最大収容人数 (人)",
+    storeAddress: "店舗住所",
+    storeType: "業種",
+    businessNumber: "事業者登録番号",
     selectStore: "勤務店舗を選択",
     errorEmpty: "すべての項目を入力してください。",
     errorCheckNickname: "ニックネームの重複確認をしてください。",
@@ -131,6 +142,7 @@ const translations = {
     errorDuplicate: "既に存在するユーザー名です。",
     errorServer: "サーバーエラーが発生しました。",
     successAlert: "会員登録が完了しました！ログインページに移動します。",
+    adminPendingAlert: "管理者登録申請を受け付けました。マスター承認後にログインできます。",
     strong: "強い",
     weak: "弱い",
     loadingStores: "店舗リストを読み込み中...",
@@ -241,6 +253,9 @@ export default function Signup() {
   const [openTime, setOpenTime] = useState("09:00");
   const [closeTime, setCloseTime] = useState("22:00");
   const [maxCapacity, setMaxCapacity] = useState("");
+  const [storeAddress, setStoreAddress] = useState("");
+  const [storeType, setStoreType] = useState("CAFE");
+  const [businessNumber, setBusinessNumber] = useState("");
 
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState("");
@@ -328,7 +343,7 @@ export default function Signup() {
     e.preventDefault();
     setErrorMsg("");
     if (role === "admin") {
-      if (!brandName || (isFranchise && !branchName) || !maxCapacity) {
+      if (!brandName || !storeAddress || !businessNumber || (isFranchise && !branchName) || !maxCapacity) {
         setErrorMsg(t.errorEmpty);
         return;
       }
@@ -349,6 +364,9 @@ export default function Signup() {
           ? {
               brandName,
               branchName: isFranchise ? branchName : null,
+              storeAddress,
+              storeType,
+              businessNumber,
               openTime,
               closeTime,
               maxCapacity: Number(maxCapacity),
@@ -362,7 +380,7 @@ export default function Signup() {
           user_id: res.data.id,
         });
       }
-      alert(t.successAlert);
+      alert(role === "admin" ? t.adminPendingAlert : t.successAlert);
       navigate("/auth/login");
     } catch (err: any) {
       if (err.response?.status === 409) {
@@ -774,6 +792,46 @@ export default function Signup() {
                       }}
                     />
                   </Field>
+
+                  <Field labelStyle={labelStyle} label={t.storeAddress}>
+                    <input
+                      type="text"
+                      value={storeAddress}
+                      onChange={(e) => setStoreAddress(e.target.value)}
+                      placeholder="서울시 강남구 ..."
+                      style={inputStyle} className="signup-input"
+                    />
+                  </Field>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <div>
+                      <div style={labelStyle}>{t.storeType}</div>
+                      <input
+                        type="text"
+                        value={storeType}
+                        onChange={(e) => setStoreType(e.target.value)}
+                        placeholder="CAFE"
+                        style={inputStyle} className="signup-input"
+                      />
+                    </div>
+                    <div>
+                      <div style={labelStyle}>{t.businessNumber}</div>
+                      <input
+                        type="text"
+                        value={businessNumber}
+                        onChange={(e) => setBusinessNumber(e.target.value)}
+                        placeholder="123-45-67890"
+                        style={inputStyle} className="signup-input"
+                      />
+                    </div>
+                  </div>
 
                   <div
                     style={{
