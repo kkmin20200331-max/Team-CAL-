@@ -18,4 +18,15 @@ public class UserVo {
     private String role;
     private String status;
     private LocalDateTime created_at;
+
+    private String profile_image;
+
+    private String brandName;
+    private String branchName;
+    private String storeAddress;
+    private String storeType;
+    private String businessNumber;
+    private String openTime;
+    private String closeTime;
+    private Integer maxCapacity;
 }

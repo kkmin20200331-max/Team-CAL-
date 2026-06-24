@@ -32,7 +32,7 @@ export default function AdminHeader({ children }: Props) {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
   const storeName = sessionStorage.getItem('store_name') || '';
 
-  const headerBg = isDark ? '#2c2c2e' : '#fff';
+  const headerBg = isDark ? '#3c3c46' : '#fff';
   const nameColor = isDark ? '#4cd964' : DARK_GREEN;
   const shadow = isDark ? '0 1px 0 rgba(255,255,255,0.06)' : '0 1px 0 rgba(0,162,0,0.12)';
 

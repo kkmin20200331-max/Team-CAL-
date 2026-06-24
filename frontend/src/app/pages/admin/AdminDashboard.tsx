@@ -609,12 +609,14 @@ export default function AdminDashboard() {
   };
 
   const pageBg = isDark
-    ? "linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)"
+    ? "linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)"
     : "linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)";
   const subTextColor = isDark ? "#aaa" : "#666";
-  const sidebarBg = isDark ? "rgba(44,44,46,0.95)" : "rgba(255,255,255,0.85)";
-  const sidebarBorder = isDark ? "#3a3a3c" : BORDER_GREEN;
-  const cardBg = isDark ? "rgba(44,44,46,0.6)" : "rgba(230,245,200,0.35)";
+  const sidebarBg = isDark ? "rgba(52,52,60,0.97)" : "rgba(255,255,255,0.85)";
+  const sidebarBorder = isDark ? "#50505a" : BORDER_GREEN;
+  const contentBg = isDark ? '#3c3c46' : '#fff';
+  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const cardBg = isDark ? "rgba(52,52,60,0.7)" : "rgba(230,245,200,0.35)";
 
   const getStatusBadgeStyle = (status: string) => {
     const s = (status || "").toUpperCase();
@@ -775,8 +777,8 @@ export default function AdminDashboard() {
                   left: 0,
                   right: 0,
                   zIndex: 50,
-                  background: isDark ? "#1c1c1e" : "#fff",
-                  border: `1px solid ${isDark ? "#3a3a3c" : BORDER_GREEN}`,
+                  background: isDark ? "#30303a" : "#fff",
+                  border: `1px solid ${isDark ? "#50505a" : BORDER_GREEN}`,
                   borderRadius: 12,
                   overflow: "hidden",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
@@ -817,7 +819,7 @@ export default function AdminDashboard() {
                 ))}
                 <div
                   style={{
-                    borderTop: `1px solid ${isDark ? "#3a3a3c" : "#e5e7eb"}`,
+                    borderTop: `1px solid ${isDark ? "#50505a" : "#e5e7eb"}`,
                   }}
                 />
                 <button
@@ -838,7 +840,7 @@ export default function AdminDashboard() {
                   }}
                   onMouseOver={(e) => {
                     e.currentTarget.style.background = isDark
-                      ? "#2c2c2e"
+                      ? "#3c3c46"
                       : "#f5f5f5";
                   }}
                   onMouseOut={(e) => {
@@ -1592,70 +1594,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Quick Actions */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 16,
-          }}
-        >
-          {[
-            {
-              icon: CalendarDays,
-              label: t.viewSchedule,
-              path: selectedBranchId
-                ? `/admin/schedule/monthly/${selectedBranchId}`
-                : "/admin/branch-selection",
-            },
-            {
-              icon: UserPlus,
-              label: t.recruitSubNav,
-              path: selectedBranchId
-                ? `/admin/substitute/${selectedBranchId}`
-                : "/admin/branch-selection",
-            },
-            {
-              icon: BarChart3,
-              label: t.customerAnalytics,
-              path: selectedBranchId
-                ? `/admin/analytics/${selectedBranchId}`
-                : "/admin/branch-selection",
-            },
-            {
-              icon: Video,
-              label: "CCTV 분석",
-              path: selectedBranchId
-                ? `/admin/cctv/${selectedBranchId}`
-                : "/admin/branch-selection",
-            },
-          ].map(({ icon: Icon, label, path }) => (
-            <button
-              key={label}
-              onClick={() => navigate(path)}
-              style={{
-                height: 96,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                background: cardBg,
-                border: `1px solid ${BORDER_GREEN}`,
-                borderRadius: 20,
-                cursor: "pointer",
-                fontSize: 13,
-                fontWeight: 600,
-                color: DARK_GREEN,
-                boxShadow: "0px 4px 7.7px rgba(188,192,188,0.25)",
-              }}
-            >
-              <Icon size={22} color={GREEN} />
-              <span>{label}</span>
-            </button>
-          ))}
         </div>
       </div>
     </div>

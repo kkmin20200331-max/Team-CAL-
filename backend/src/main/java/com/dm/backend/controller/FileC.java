@@ -98,6 +98,47 @@ public class FileC {
     }
 
     // =========================
+    // [Supabase 업로드]
+    // =========================
+
+    @PostMapping("/supabase/upload")
+    public ResponseEntity<?> uploadToSupabase(
+            @RequestParam String user_id,
+            @RequestParam String file_type,
+            @RequestParam("file") MultipartFile file
+    ) {
+        try {
+            FileVO vo = fileService.uploadToSupabase(user_id, file_type, file);
+            return ResponseEntity.ok(vo);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // =========================
+    // [서명 URL (다운로드/미리보기)]
+    // =========================
+
+    @GetMapping("/{id}/url")
+    public ResponseEntity<?> getLegacySignedUrl(@PathVariable String id) {
+        try {
+            return ResponseEntity.ok(Map.of("url", fileService.getSignedUrl(id)));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // =========================
+    // [Supabase 파일 삭제]
+    // =========================
+
+    @DeleteMapping("/supabase/{id}")
+    public ResponseEntity<?> deleteFromSupabase(@PathVariable String id) {
+        fileService.deleteFromSupabase(id);
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    // =========================
     // [근로계약서]
     // =========================
 

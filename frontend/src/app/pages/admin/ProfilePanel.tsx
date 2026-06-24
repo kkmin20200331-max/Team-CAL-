@@ -1,15 +1,11 @@
 import axiosInstance from "../../../lib/axiosInstance";
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { useTheme } from "next-themes";
-import { useLanguage } from "../../i18n/useLanguage";
-import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-} from "../../components/ui/avatar";
-import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router';
+import { useTheme } from 'next-themes';
+import { useLanguage } from '../../i18n/useLanguage';
+import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
 import {
   X,
   Bell,
@@ -119,7 +115,6 @@ interface LeaveRequestVO {
   status: string;
   requested_at: any;
   processed_at: any;
-  // 프론트에서 추가
   store_id: string;
   store_name: string;
 }
@@ -178,37 +173,48 @@ export default function ProfilePanel() {
     );
   };
 
-  const panelBg = isDark ? "#1c1c1e" : "white";
-  const textMain = isDark ? "#fff" : "#111827";
-  const textSub = isDark ? "#aaa" : "#6b7280";
-  const divider = isDark ? "#3a3a3c" : "#e5e7eb";
-  const closeBg = isDark ? "#2c2c2e" : "#E6F5C8";
-  const closeIcon = isDark ? "#aaa" : "#07790F";
-  const cardBg = isDark ? "#2c2c2e" : "#f9fafb";
-  const cardBorder = isDark ? "#3a3a3c" : "#e5e7eb";
-  const logoutBg = isDark ? "#2c2c2e" : "#f5f5f5";
-  const logoutHov = isDark ? "#3a3a3c" : "#ebebeb";
-  const logoutTxt = isDark ? "#ccc" : "#555";
+  const panelBg = isDark ? "#2a2a2e" : "white";
+  const textMain = isDark ? "#f0f0f0" : "#111827";
+  const textSub = isDark ? "#b0b0b8" : "#6b7280";
+  const divider = isDark ? "#44444a" : "#e5e7eb";
+  const closeBg = isDark ? "#3a3a40" : "#E6F5C8";
+  const closeIcon = isDark ? "#ccc" : "#07790F";
+  const cardBg = isDark ? "#35353c" : "#f9fafb";
+  const cardBorder = isDark ? "#4a4a52" : "#e5e7eb";
+  const logoutBg = isDark ? "#35353c" : "#f5f5f5";
+  const logoutHov = isDark ? "#44444a" : "#ebebeb";
+  const logoutTxt = isDark ? "#d0d0d8" : "#555";
+  const darkCard = "#35353c";
+  const darkCardBorder = "#4a8a50";
 
   const [open, setOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentUser = JSON.parse(sessionStorage.getItem("user") || "{}");
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => sessionStorage.getItem("admin_profile_image") || "",
+    () => currentUser.profile_image || sessionStorage.getItem("admin_profile_image") || ''
   );
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
-      sessionStorage.setItem("admin_profile_image", base64);
-      setProfileImage(base64);
-    };
-    reader.readAsDataURL(file);
+    if (!file || !currentUser.id) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await axiosInstance.post(
+        `/users/${currentUser.id}/profile-image`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      const url = response.data?.profile_image;
+      setProfileImage(url);
+      sessionStorage.setItem("admin_profile_image", url);
+      const updatedUser = { ...currentUser, profile_image: url };
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (err) {
+      console.error('프로필 이미지 업로드 실패:', err);
+    }
   };
 
   // ── 직원 가입 승인 대기 ──
@@ -245,51 +251,35 @@ export default function ProfilePanel() {
   const [boardNotifications, setBoardNotifications] = useState<
     BoardNotification[]
   >([]);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   const isUnreadNotification = (n: any) =>
     n.is_read === "N" || n.isRead === "N" || n.is_read === false || n.isRead === false;
 
   const fetchUnreadNotifications = async () => {
     if (!currentUser.id) return;
-
     try {
-      const r = await axiosInstance.get("/notification", {
-        params: { user_id: currentUser.id },
-      });
-      setBoardNotifications(
-        Array.isArray(r.data)
-          ? r.data.filter(isUnreadNotification)
-          : [],
-      );
-    } catch {
-      // Keep the panel usable even if notification polling fails.
-    }
+      const r = await axiosInstance.get("/notification", { params: { user_id: currentUser.id } });
+      setBoardNotifications(Array.isArray(r.data) ? r.data.filter(isUnreadNotification) : []);
+    } catch {}
   };
 
   useEffect(() => {
     if (!currentUser.id) return;
-
     fetchUnreadNotifications();
     const timer = window.setInterval(fetchUnreadNotifications, 3000);
     window.addEventListener("focus", fetchUnreadNotifications);
-
-    return () => {
-      window.clearInterval(timer);
-      window.removeEventListener("focus", fetchUnreadNotifications);
-    };
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", fetchUnreadNotifications); };
   }, [currentUser.id]);
 
-  // 패널 열릴 때 → 모든 관리 매장의 알림 fetch
   useEffect(() => {
     if (!open || !currentUser.id) return;
-
+    setNotifLoading(true);
     fetchUnreadNotifications();
-
     axiosInstance.get("/store", { params: { user_id: currentUser.id } })
       .then(async (res) => {
         const stores: StoreVO[] = Array.isArray(res.data) ? res.data : [];
 
-        // 각 매장의 휴무 신청 + 직원 목록 병렬 조회
         const [leaveResults, userResults] = await Promise.all([
           Promise.allSettled(
             stores.map((store) =>
@@ -311,14 +301,12 @@ export default function ProfilePanel() {
           ),
         ]);
 
-        // 휴무 신청 합치기
         const allLeaves: LeaveRequestVO[] = [];
         leaveResults.forEach((r) => {
           if (r.status === "fulfilled") allLeaves.push(...r.value);
         });
         setLeaveRequests(allLeaves);
 
-        // 직원 이름 맵
         const nameMap: Record<string, string> = {};
         userResults.forEach((r) => {
           if (r.status === "fulfilled") {
@@ -331,7 +319,6 @@ export default function ProfilePanel() {
         });
         setUserNameMap(nameMap);
 
-        // unique shift_id 별 근무 정보 조회
         const uniqueShiftIds = [...new Set(allLeaves.map((lr) => lr.shift_id))];
         if (uniqueShiftIds.length > 0) {
           const shiftResults = await Promise.allSettled(
@@ -345,7 +332,6 @@ export default function ProfilePanel() {
           setShiftMap(newShiftMap);
         }
 
-        // ── 대타 지원 알림 조회 ──
         const subPostResults = await Promise.allSettled(
           stores.map((store) =>
             axiosInstance.get("/substitute", { params: { store_id: store.id } }).then(
@@ -393,7 +379,6 @@ export default function ProfilePanel() {
         await Promise.allSettled(appFetches);
         setSubstituteApps(allPendingApps);
 
-        // ── 게시판 푸시 알림 ──
         if (currentUser.id) {
           axiosInstance.get("/notification", { params: { user_id: currentUser.id } })
             .then((r) =>
@@ -406,7 +391,8 @@ export default function ProfilePanel() {
             .catch(() => {});
         }
       })
-      .catch((err) => console.error("[ProfilePanel] 알림 조회 실패:", err));
+      .catch((err) => console.error("[ProfilePanel] 알림 조회 실패:", err))
+      .finally(() => setNotifLoading(false));
   }, [open]);
 
   const handleApproveLeave = async (leave: LeaveRequestVO) => {
@@ -433,7 +419,6 @@ export default function ProfilePanel() {
     }
   };
 
-  // ── 대타 지원 승인/거절 ──
   const handleApproveSubstitute = async (app: SubstitutePendingApp) => {
     try {
       await axiosInstance.put("/substitute/manager", null, {
@@ -456,7 +441,6 @@ export default function ProfilePanel() {
     }
   };
 
-  // ── 직원 가입 승인/거절 ──
   const handleApprove = async (emp: PendingEmployee) => {
     try {
       await axiosInstance.put("/users/approve", null, { params: { id: emp.id } });
@@ -571,58 +555,57 @@ export default function ProfilePanel() {
   return (
     <>
       {/* 프로필 아이콘 */}
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          position: "relative",
-          borderRadius: "50%",
-          border: "3px solid #E6F5C8",
-          width: 64,
-          height: 64,
-          overflow: "hidden",
-          background: "#80D180",
-          cursor: "pointer",
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {profileImage ? (
-          <img
-            src={profileImage}
-            alt="profile"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        ) : (
-          <span style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>
-            {currentUser?.name?.[0] ?? "?"}
+      <div style={{ position: 'relative', display: 'inline-block', flexShrink: 0 }}>
+        <button
+          onClick={() => setOpen(true)}
+          style={{
+            borderRadius: '50%',
+            border: '3px solid #E6F5C8',
+            width: 64, height: 64, overflow: 'hidden',
+            background: '#80D180', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          {profileImage
+            ? <img src={profileImage} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{currentUser?.name?.[0] ?? '?'}</span>
+          }
+        </button>
+        {totalBadge > 0 && (
+          <span style={{
+            position: 'absolute', top: 0, right: 0,
+            minWidth: 18, height: 18, padding: '0 4px',
+            background: '#e53e3e', borderRadius: 9,
+            border: '2px solid #fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 10, color: '#fff', fontWeight: 700, lineHeight: 1,
+          }}>
+            {totalBadge > 9 ? '9+' : totalBadge}
           </span>
         )}
-        {totalBadge > 0 && (
-          <span
-            style={{
-              position: "absolute",
-              top: 2,
-              right: 2,
-              width: 12,
-              height: 12,
-              background: "#e53e3e",
-              borderRadius: "50%",
-              border: "2px solid #fff",
-            }}
-          />
-        )}
-      </button>
+      </div>
+
+      {/* 슬라이드 패널 오버레이 */}
+      {open && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.35)' }}
+          onClick={() => setOpen(false)}
+        />
+      )}
 
       {/* 슬라이드 패널 */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0" onClick={() => setOpen(false)} />
-          <div
-            className="relative z-50 w-[420px] h-full shadow-2xl flex flex-col"
-            style={{ background: panelBg }}
-          >
+      <div
+        style={{
+          position: 'fixed', top: 0, right: 0, height: '100%', width: 420,
+          background: panelBg, zIndex: 50,
+          boxShadow: '-4px 0 32px rgba(0,0,0,0.24)',
+          display: 'flex', flexDirection: 'column',
+          transform: open ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.3s ease',
+        }}
+      >
+        <div className="flex flex-col h-full">
+
             {/* 헤더 */}
             <div
               className="flex items-center justify-between px-6 py-5"
@@ -653,7 +636,7 @@ export default function ProfilePanel() {
             </div>
 
             {/* 프로필 정보 */}
-            <div className="flex flex-col items-center px-6 pb-6 pt-2">
+            <div className="flex flex-col items-center px-6 pb-12 pt-8">
               <div
                 className="relative cursor-pointer group mb-3"
                 onClick={() => fileInputRef.current?.click()}
@@ -690,8 +673,8 @@ export default function ProfilePanel() {
               <span
                 className="mt-2 px-3 py-1 text-xs font-semibold rounded-full"
                 style={{
-                  background: isDark ? "#2c3e2c" : "#E6F5C8",
-                  color: isDark ? "#4cd964" : "#07790F",
+                  background: isDark ? darkCard : "#E6F5C8",
+                  color: isDark ? "#7dd87d" : "#07790F",
                 }}
               >
                 관리자
@@ -711,19 +694,19 @@ export default function ProfilePanel() {
                   알림
                 </h3>
                 {totalBadge > 0 && (
-                  <Badge className="bg-red-500 text-white text-xs">
+                  <Badge className="text-white text-xs" style={{ background: "#C0392B" }}>
                     {totalBadge}
                   </Badge>
                 )}
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {totalBadge === 0 && (
                   <div
-                    className="flex flex-col items-center py-8"
-                    style={{ color: textSub }}
+                    className="flex flex-col items-center justify-center"
+                    style={{ paddingTop: 100, paddingBottom: 100, color: textSub }}
                   >
-                    <CheckCircle className="w-8 h-8 mb-2 text-green-400" />
+                    <CheckCircle className="w-8 h-8 mb-2" style={{ color: "#18A022" }} />
                     <p className="text-xs">대기 중인 요청이 없습니다.</p>
                   </div>
                 )}
@@ -732,13 +715,12 @@ export default function ProfilePanel() {
                 {pendingList.map((emp) => (
                   <div
                     key={emp.id}
-                    className="rounded-xl p-3 space-y-2"
+                    className="rounded-xl p-4 space-y-3"
                     style={{
                       border: `1px solid ${cardBorder}`,
                       background: cardBg,
                     }}
                   >
-                    {/* 지점명 */}
                     <div
                       className="flex items-center gap-1 text-xs font-semibold"
                       style={{ color: "#18A022" }}
@@ -800,22 +782,22 @@ export default function ProfilePanel() {
                   return (
                     <div
                       key={app.app_id}
-                      className="rounded-xl p-3 space-y-2"
+                      className="rounded-xl p-4 space-y-3"
                       style={{
-                        border: `1px solid ${isDark ? "#7c4a1a" : "#fed7aa"}`,
-                        background: isDark ? "rgba(120,60,10,0.2)" : "#fff7ed",
+                        border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
+                        background: isDark ? darkCard : "#E6F5C8",
                       }}
                     >
-                      <div className="flex items-center gap-1 text-xs text-orange-700 font-semibold">
+                      <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#07790F" }}>
                         <Store className="w-3 h-3" />
                         {app.store_name}
-                        <span className="ml-1 text-orange-500 font-normal">
+                        <span className="ml-1 font-normal" style={{ color: "#18A022" }}>
                           · 대타 지원
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center shrink-0">
-                          <UserCheck className="w-4 h-4 text-orange-600" />
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#E6F5C8" }}>
+                          <UserCheck className="w-4 h-4" style={{ color: "#07790F" }} />
                         </div>
                         <div>
                           <p
@@ -834,8 +816,8 @@ export default function ProfilePanel() {
                           className="text-xs rounded p-2"
                           style={{
                             color: textSub,
-                            background: isDark ? "#2c2c2e" : "#fff",
-                            border: `1px solid ${isDark ? "#7c4a1a" : "#fed7aa"}`,
+                            background: isDark ? "#3c3c46" : "#fff",
+                            border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
                           }}
                         >
                           "{app.message}"
@@ -844,7 +826,7 @@ export default function ProfilePanel() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1 text-xs h-7"
+                          className="flex-1 text-white gap-1 text-xs h-7" style={{ background: "#18A022" }}
                           onClick={() => handleApproveSubstitute(app)}
                         >
                           <CheckCircle className="w-3 h-3" />
@@ -853,7 +835,7 @@ export default function ProfilePanel() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 text-red-500 border-red-300 hover:bg-red-50 gap-1 text-xs h-7"
+                          className="flex-1 gap-1 text-xs h-7" style={{ color: "#C0392B", borderColor: "#C0392B" }}
                           onClick={() => handleRejectSubstitute(app)}
                         >
                           <XCircle className="w-3 h-3" />
@@ -920,7 +902,7 @@ export default function ProfilePanel() {
                   return (
                     <div
                     key={notif.id}
-                    className="rounded-xl p-3 space-y-1"
+                    className="rounded-xl p-4 space-y-2"
                     style={{
                       border: `1px solid #00A200`,
                       background: isDark ? "rgba(24,160,34,0.12)" : "#E6F5C8",
@@ -970,27 +952,26 @@ export default function ProfilePanel() {
                   return (
                     <div
                       key={leave.id}
-                      className="rounded-xl p-3 space-y-2"
+                      className="rounded-xl p-4 space-y-3"
                       style={{
-                        border: `1px solid ${isDark ? "#1a4a1a" : "#bbf7d0"}`,
-                        background: isDark ? "rgba(10,40,10,0.3)" : "#f0fdf4",
+                        border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
+                        background: isDark ? darkCard : "#E6F5C8",
                       }}
                     >
-                      {/* 지점명 */}
-                      <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
+                      <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#07790F" }}>
                         <Store className="w-3 h-3" />
                         {leave.store_name}
-                        <span className="ml-1 text-green-400 font-normal">
+                        <span className="ml-1 font-normal" style={{ color: "#18A022" }}>
                           · 휴무 신청
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center shrink-0">
-                          <User className="w-4 h-4 text-green-600" />
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#E6F5C8" }}>
+                          <User className="w-4 h-4" style={{ color: "#07790F" }} />
                         </div>
-                        <div>
+                        <div className="flex flex-col gap-1">
                           <p
-                            className="font-semibold text-xs"
+                            className="font-semibold text-sm"
                             style={{ color: textMain }}
                           >
                             {empName}
@@ -1016,8 +997,8 @@ export default function ProfilePanel() {
                         className="text-xs rounded p-2"
                         style={{
                           color: textSub,
-                          background: isDark ? "#2c2c2e" : "#fff",
-                          border: `1px solid ${isDark ? "#1a4a1a" : "#bbf7d0"}`,
+                          background: isDark ? darkCard : "#fff",
+                          border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
                         }}
                       >
                         "{leave.reason}"
@@ -1025,7 +1006,7 @@ export default function ProfilePanel() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1 text-xs h-7"
+                          className="flex-1 text-white gap-1 text-xs h-7" style={{ background: "#18A022" }}
                           onClick={() => handleApproveLeave(leave)}
                         >
                           <CheckCircle className="w-3 h-3" />
@@ -1034,7 +1015,7 @@ export default function ProfilePanel() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 text-red-500 border-red-300 hover:bg-red-50 gap-1 text-xs h-7"
+                          className="flex-1 gap-1 text-xs h-7" style={{ color: "#C0392B", borderColor: "#C0392B" }}
                           onClick={() => handleRejectLeave(leave)}
                         >
                           <XCircle className="w-3 h-3" />
@@ -1046,8 +1027,6 @@ export default function ProfilePanel() {
                 })}
               </div>
             </div>
-            {/* 라인 연동 */}
-            <LineLoginButton />
             <div style={{ borderTop: `1px solid ${divider}` }} />
 
             {/* 로그아웃 / 탈퇴 */}
@@ -1123,6 +1102,8 @@ export default function ProfilePanel() {
                 </div>
               </div>
 
+              <LineLoginButton />
+
               <button
                 onClick={handleLogout}
                 style={{
@@ -1163,7 +1144,6 @@ export default function ProfilePanel() {
             </div>
           </div>
         </div>
-      )}
     </>
   );
 }

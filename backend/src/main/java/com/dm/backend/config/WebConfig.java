@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -19,6 +20,14 @@ public class WebConfig implements WebMvcConfigurer {
             "http://10.*:*",
             "http://192.168.*:*"
     );
+
+    // =========================
+    // 외부 HTTP 호출용 RestTemplate
+    // =========================
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
 
     @Bean
     public CorsFilter corsFilter() {

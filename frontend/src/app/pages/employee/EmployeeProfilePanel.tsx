@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import axiosInstance from "../../../lib/axiosInstance";
 import { useNavigate } from "react-router";
 import { useTheme } from "next-themes";
 import { X, Camera, LogOut, MapPin, User, Pencil } from "lucide-react";
@@ -122,20 +123,28 @@ export default function EmployeeProfilePanel() {
   const storeName = sessionStorage.getItem("store_name") || "";
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => sessionStorage.getItem("employee_profile_image") || "",
+    () => currentUser?.profile_image || sessionStorage.getItem("employee_profile_image") || "",
   );
   const [open, setOpen] = useState(false);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
-      sessionStorage.setItem("employee_profile_image", base64);
-      setProfileImage(base64);
-    };
-    reader.readAsDataURL(file);
+    if (!file || !currentUser?.id) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await axiosInstance.post(
+        `/users/${currentUser.id}/profile-image`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      const url = response.data?.profile_image;
+      setProfileImage(url);
+      const updatedUser = { ...currentUser, profile_image: url };
+      sessionStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (err) {
+      console.error('프로필 이미지 업로드 실패:', err);
+    }
   };
 
   const handleLogout = () => {
