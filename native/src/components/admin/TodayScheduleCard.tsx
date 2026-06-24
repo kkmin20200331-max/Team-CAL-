@@ -1,15 +1,10 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-<<<<<<< HEAD
-import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-=======
 import { Ionicons } from '@expo/vector-icons';
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
 
 interface ShiftWithUser {
   time: string;
-  user?: {
+  user?: { // user가 optional일 수 있음을 명시
     name: string;
     color: string;
   };
@@ -24,11 +19,10 @@ interface TodayScheduleProps {
 type Props = {
   schedule: TodayScheduleProps;
   onPress: () => void;
+  colors: any;
 };
 
-const TodayScheduleCard = ({ schedule, onPress }: Props) => {
-  const { colors } = useTheme();
-  const { t } = useLanguage();
+const TodayScheduleCard = ({ schedule, onPress, colors }: Props) => {
   const styles = getThemedStyles(colors);
 
   const renderShiftGroup = (title: string, shifts: ShiftWithUser[]) => (
@@ -38,8 +32,9 @@ const TodayScheduleCard = ({ schedule, onPress }: Props) => {
         {shifts.length > 0 ? (
           shifts.map((shift, index) => (
             <View key={index} style={styles.employeeChip}>
-              <View style={[styles.colorDot, { backgroundColor: shift?.user?.color || colors.subText }]} />
-              <Text style={styles.employeeName}>{shift?.user?.name || t('unknown')}</Text>
+              {/* [오류 수정] 옵셔널 체이닝(?.)을 사용하여 안전하게 정보 접근 */}
+              <View style={[styles.colorDot, { backgroundColor: shift?.user?.color || '#A1A1AA' }]} />
+              <Text style={styles.employeeName}>{shift?.user?.name || '직원없음'}</Text>
             </View>
           ))
         ) : (
@@ -52,20 +47,15 @@ const TodayScheduleCard = ({ schedule, onPress }: Props) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.header}>
-<<<<<<< HEAD
-        <Text style={styles.title}>{t('todaySchedule')}</Text>
-        <Text style={styles.arrow}>〉</Text>
-=======
         <Text style={styles.title}>오늘의 스케줄</Text>
         <Ionicons name="chevron-forward-outline" size={18} color={colors.subText} />
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
       </View>
       <View style={styles.content}>
-        {renderShiftGroup(t('morning'), schedule.morning)}
+        {renderShiftGroup("오전", schedule.morning)}
         <View style={styles.divider} />
-        {renderShiftGroup(t('afternoon'), schedule.afternoon)}
+        {renderShiftGroup("오후", schedule.afternoon)}
         <View style={styles.divider} />
-        {renderShiftGroup(t('closing'), schedule.closing)}
+        {renderShiftGroup("마감", schedule.closing)}
       </View>
     </TouchableOpacity>
   );
@@ -96,12 +86,6 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
-<<<<<<< HEAD
-  arrow: {
-    fontSize: 20,
-    color: colors.subText,
-  },
-=======
   content: {
     gap: 12,
   },

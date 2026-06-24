@@ -1,23 +1,14 @@
-import React, { useState } from 'react';
-<<<<<<< HEAD
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-=======
+﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
+// Expo Camera 최신 API
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Toast from 'react-native-toast-message';
-<<<<<<< HEAD
-import { useTheme } from '../../contexts/ThemeContext';
-import { useApp } from '../../contexts/AppContext';
-import { attendanceCheckAPI } from '../../../api/auth';
-=======
 import { checkAttendanceByQrAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Ionicons from '@expo/vector-icons/Ionicons';
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
 
 type QRCheckInScreenNavigationProp = StackNavigationProp<any, 'QRCheckIn'>;
 
@@ -26,23 +17,14 @@ type Props = {
 };
 
 const QRCheckInScreen = ({ navigation }: Props) => {
-<<<<<<< HEAD
-  const { colors } = useTheme();
-  const styles = getThemedStyles(colors);
-  const { userInfo } = useApp();
-  
-=======
   const { userInfo } = useApp();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
   // 카메라 권한 상태와 권한 요청 함수를 가져옵니다.
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   const [permission, requestPermission] = useCameraPermissions();
+  // 중복 스캔(여러 번 연속으로 찍히는 것)을 방지하기 위한 상태
   const [scanned, setScanned] = useState(false);
-<<<<<<< HEAD
-  const [loading, setLoading] = useState(false);
-=======
   const [processing, setProcessing] = useState(false);
 
   const extractQrToken = (data: string) => {
@@ -53,12 +35,13 @@ const QRCheckInScreen = ({ navigation }: Props) => {
       return data;
     }
   };
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
 
+  // 1. 카메라 권한 로딩 중일 때
   if (!permission) {
     return <View style={styles.container} />;
   }
 
+  // 2. 카메라 권한이 거부되었거나 아직 묻지 않았을 때
   if (!permission.granted) {
     return (
       <View style={styles.container}>
@@ -71,37 +54,6 @@ const QRCheckInScreen = ({ navigation }: Props) => {
     );
   }
 
-<<<<<<< HEAD
-  const handleBarCodeScanned = async ({ data: storeId }: { data: string }) => {
-    if (!userInfo || !userInfo.id) {
-      Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
-      return;
-    }
-
-    setScanned(true);
-    setLoading(true);
-
-    try {
-      // URL: /api/attendance/check (POST)
-      // Body: { store_id: "...", user_id: "..." }
-      // DB: ATTENDANCE 테이블에서 마지막 기록을 확인하여 출근 또는 퇴근 처리
-      const response = await attendanceCheckAPI(storeId, userInfo.id);
-      
-      // 백엔드에서 "출근 처리되었습니다." 또는 "퇴근 처리되었습니다." 메시지를 반환
-      Alert.alert("처리 완료", response.data, [
-        { text: "확인", onPress: () => navigation.goBack() }
-      ]);
-
-    } catch (error: any) {
-      console.error("출퇴근 처리 오류:", error);
-      const errorMessage = error.response?.data || "출퇴근 처리에 실패했습니다.";
-      Alert.alert("오류", errorMessage, [
-        { text: "다시 시도", onPress: () => {
-          setScanned(false);
-          setLoading(false);
-        }}
-      ]);
-=======
   // 3. QR 코드가 성공적으로 스캔되었을 때 실행되는 함수
   const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
     setScanned(true); // 중복 스캔 방지
@@ -138,47 +90,30 @@ const QRCheckInScreen = ({ navigation }: Props) => {
       setScanned(false);
     } finally {
       setProcessing(false);
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* 카메라 뷰 */}
       <CameraView 
         style={styles.camera} 
-        facing="back"
+        facing="back" // 후면 카메라 사용
         barcodeScannerSettings={{
-          barcodeTypes: ["qr"],
+          barcodeTypes: ["qr"], // QR 코드만 스캔하도록 설정
         }}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       >
+        
+        {/* 카메라 위에 띄울 UI (가이드라인, 닫기 버튼 등) */}
         <View style={styles.overlay}>
+          {/* 상단 닫기 버튼 */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="#FFF" />
             </TouchableOpacity>
           </View>
 
-<<<<<<< HEAD
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.white} />
-              <Text style={styles.loadingText}>출퇴근 기록 처리 중...</Text>
-            </View>
-          ) : (
-            <>
-              <View style={styles.targetFrame}>
-                <View style={[styles.corner, styles.topLeft]} />
-                <View style={[styles.corner, styles.topRight]} />
-                <View style={[styles.corner, styles.bottomLeft]} />
-                <View style={[styles.corner, styles.bottomRight]} />
-              </View>
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>사각 영역 안에 QR 코드를 맞춰주세요.</Text>
-              </View>
-            </>
-          )}
-=======
           {/* 중앙 사각형 타겟 가이드라인 */}
           <View style={styles.targetFrame}>
             <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
@@ -190,21 +125,17 @@ const QRCheckInScreen = ({ navigation }: Props) => {
           {/* 하단 안내 문구 */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              {processing ? '출퇴근 처리 중입니다...' : '사각 영역 안에 QR 코드를 맞춰주세요.'}
+              {processing ? '출퇴근 처리 중입니다...' : '사각형 영역 안에 QR 코드를 맞춰주세요'}
             </Text>
           </View>
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
         </View>
+
       </CameraView>
     </SafeAreaView>
   );
 };
 
-<<<<<<< HEAD
-const getThemedStyles = (colors: any) => StyleSheet.create({
-=======
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -216,16 +147,6 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   },
   message: {
     textAlign: 'center',
-<<<<<<< HEAD
-    paddingBottom: 20,
-    color: colors.white,
-  },
-  permissionButton: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    marginHorizontal: 40,
-    borderRadius: 8,
-=======
     paddingHorizontal: 40,
     paddingBottom: 24,
     color: colors.text,
@@ -237,7 +158,6 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     paddingHorizontal: 28,
     paddingVertical: 14,
     borderRadius: 12,
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
     alignItems: 'center',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
@@ -246,7 +166,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     elevation: 4,
   },
   permissionButtonText: {
-    color: colors.white,
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
   },
@@ -256,11 +176,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   },
   overlay: {
     flex: 1,
-<<<<<<< HEAD
-    backgroundColor: 'rgba(0,0,0,0.5)',
-=======
-    backgroundColor: 'rgba(0,0,0,0.65)', // 살짝 더 어둡게 하여 포커스 극대화
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
+    backgroundColor: 'rgba(0,0,0,0.65)', // 인식률 높게 어둡게 하여 집중도 극대화
     justifyContent: 'space-between',
   },
   header: {
@@ -272,26 +188,14 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     width: 40,
     height: 40,
     borderRadius: 20,
-<<<<<<< HEAD
-  },
-  closeButtonText: {
-    color: colors.white,
-    fontWeight: 'bold',
-=======
     justifyContent: 'center',
     alignItems: 'center',
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   },
   footer: {
     padding: 40,
     alignItems: 'center',
   },
   footerText: {
-<<<<<<< HEAD
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '500',
-=======
     color: '#FFF',
     fontSize: 15,
     fontWeight: '600',
@@ -300,8 +204,8 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     paddingVertical: 10,
     borderRadius: 20,
     overflow: 'hidden',
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   },
+  // --- QR 타겟 프레임 디자인 ---
   targetFrame: {
     alignSelf: 'center',
     width: 260,
@@ -313,29 +217,13 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   },
   corner: {
     position: 'absolute',
-<<<<<<< HEAD
-    width: 40,
-    height: 40,
-    borderColor: colors.white,
-=======
     width: 32,
     height: 32,
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   },
   topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4 },
   topRight: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4 },
   bottomLeft: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4 },
   bottomRight: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4 },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: colors.white,
-    marginTop: 10,
-    fontSize: 16,
-  },
 });
 
 export default QRCheckInScreen;

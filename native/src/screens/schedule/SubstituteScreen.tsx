@@ -1,11 +1,9 @@
-<<<<<<< HEAD
-=======
-import React, { useState, useCallback, useEffect } from 'react';
+﻿import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
 import { useApp } from '../../contexts/AppContext';
 import { format, parseISO } from 'date-fns';
@@ -239,7 +237,7 @@ const SubstituteScreen = ({ navigation }: any) => {
         </TouchableOpacity>
       </View>
 
-      {/* 탭 내용 영역 */}
+      {/* 메인 내용 영역 */}
       {loadingData ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -381,4 +379,3 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
 });
 
 export default SubstituteScreen;
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88

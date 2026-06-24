@@ -1,22 +1,19 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-<<<<<<< HEAD
-import { useTheme } from '../../contexts/ThemeContext';
-=======
 import { Ionicons } from '@expo/vector-icons';
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
 
 type Props = {
   isAlertVisible: boolean;
   navigation: any;
   handleAcceptSubstitute: () => void;
   setIsAlertVisible: (visible: boolean) => void;
+  colors: any;
+  isDarkMode: boolean;
   t: (key: string) => string;
 };
 
-const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitute, setIsAlertVisible, t }: Props) => {
-  const { colors } = useTheme();
-  const styles = getThemedStyles(colors);
+const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitute, setIsAlertVisible, colors, isDarkMode, t }: Props) => {
+  const styles = getThemedStyles(colors, isDarkMode);
 
   if (!isAlertVisible) {
     return null;
@@ -25,10 +22,10 @@ const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitut
   const alertColor = isDarkMode ? '#FCD34D' : '#D97706';
 
   return (
-    <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('SubstituteMatching')} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('Substitute')} activeOpacity={0.8}>
       <View style={styles.alertHeader}> 
         <Ionicons name="alert-circle-outline" size={18} color={alertColor} style={styles.alertIcon} />
-        <Text style={styles.alertTitle}>{t('subReqAlertTitle')} 〉</Text>
+        <Text style={styles.alertTitle}>{t('subReqAlertTitle')}</Text>
       </View>
       <Text style={styles.alertDescription}>
         {t('subReqAlertDesc')}
@@ -45,15 +42,11 @@ const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitut
   );
 };
 
-const getThemedStyles = (colors: any) => StyleSheet.create({
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   alertCard: {
-<<<<<<< HEAD
-    backgroundColor: colors.yellowLight,
-=======
     backgroundColor: isDarkMode ? '#2A2010' : '#FFFDF5',
->>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
     borderWidth: 1,
-    borderColor: colors.yellow,
+    borderColor: isDarkMode ? '#92400E' : '#FDE68A',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
@@ -74,11 +67,11 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   alertTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.yellow,
+    color: isDarkMode ? '#FCD34D' : '#D97706',
   },
   alertDescription: {
     fontSize: 14,
-    color: colors.text,
+    color: isDarkMode ? '#E5E7EB' : '#4B5563',
     marginBottom: 16,
     lineHeight: 20,
   },
@@ -88,13 +81,13 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   acceptButton: {
     flex: 1,
-    backgroundColor: colors.yellow,
+    backgroundColor: '#D97706',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   acceptButtonText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 14,
   },
