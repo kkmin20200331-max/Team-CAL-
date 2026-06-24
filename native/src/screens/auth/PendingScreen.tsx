@@ -1,17 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useTheme } from '../../contexts/ThemeContext';
 
 type PendingScreenNavigationProp = StackNavigationProp<any, 'Pending'>;
 
-// ✅ [개선 21] 부모(App.tsx)로부터 받는 handleLogout 함수의 타입을 명확하게 정의합니다.
 type Props = {
-  navigation: PendingScreenNavigationProp;
+  navigation?: PendingScreenNavigationProp;
   handleLogout: () => void;
 };
 
 const PendingScreen = ({ navigation, handleLogout }: Props) => {
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
+
   const handleRefresh = () => {
     // 메모: 승인 상태 조회 API가 연결되면 여기에서 재호출합니다.
   };
@@ -19,9 +23,8 @@ const PendingScreen = ({ navigation, handleLogout }: Props) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        {/* ✅ [개선 22] App.tsx에서 전달받은 완전한 로그아웃 함수(handleLogout)를 사용합니다. */}
         <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="arrow-back-outline" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>승인 대기</Text>
         <View style={styles.headerRightPlaceholder} />
@@ -29,7 +32,7 @@ const PendingScreen = ({ navigation, handleLogout }: Props) => {
 
       <View style={styles.container}>
         <View style={styles.iconPlaceholder}>
-          <Text style={styles.iconText}>⏳</Text>
+          <Ionicons name="hourglass-outline" size={36} color={colors.primary} />
         </View>
 
         <Text style={styles.title}>관리자 승인 대기 중</Text>
@@ -54,10 +57,10 @@ const PendingScreen = ({ navigation, handleLogout }: Props) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   header: {
     height: 56,
@@ -66,20 +69,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   backButton: {
     padding: 8,
   },
-  backButtonText: {
-    fontSize: 24,
-    color: '#1A1A1A',
-    fontWeight: '600',
-  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: colors.text,
   },
   headerRightPlaceholder: {
     width: 40,
@@ -95,24 +94,21 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
   },
-  iconText: {
-    fontSize: 32,
-  },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: colors.text,
     marginBottom: 12,
     textAlign: 'center',
   },
   description: {
     fontSize: 15,
-    color: '#666666',
+    color: colors.subText,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 40,
@@ -123,7 +119,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     width: '100%',
-    backgroundColor: '#8B5CF6',
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -141,7 +137,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#6B7280',
+    color: colors.subText,
     fontSize: 15,
     fontWeight: '500',
     textDecorationLine: 'underline',

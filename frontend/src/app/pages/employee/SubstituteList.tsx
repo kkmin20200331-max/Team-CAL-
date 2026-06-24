@@ -1,6 +1,6 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
 import { useTheme } from 'next-themes';
 import { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
@@ -13,7 +13,6 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN  = '#E6F5C8';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
 
 /* ─── 타입 ─── */
 interface SubstitutePostVO {
@@ -91,13 +90,13 @@ export default function SubstituteList() {
 
   useEffect(() => {
     if (!storeId) { setLoadingPosts(false); return; }
-    API.get('/substitute', { params: { store_id: storeId } })
+    axiosInstance.get('/substitute', { params: { store_id: storeId } })
       .then(async (r) => {
         const open = (Array.isArray(r.data) ? r.data : []).filter((p: SubstitutePostVO) => p.status === 'open');
         const enriched: EnrichedPost[] = await Promise.all(
           open.map(async (p: SubstitutePostVO) => {
             if (!p.shift_id) return { ...p };
-            try { const sr = await API.get(`/shift/${p.shift_id}`); return { ...p, shift: sr.data }; }
+            try { const sr = await axiosInstance.get(`/shift/${p.shift_id}`); return { ...p, shift: sr.data }; }
             catch { return { ...p }; }
           }),
         );
@@ -110,13 +109,13 @@ export default function SubstituteList() {
 
   useEffect(() => {
     if (!user.id || !storeId) return;
-    API.get('/store_member/pay', { params: { user_id: user.id, store_id: storeId } })
+    axiosInstance.get('/store_member/pay', { params: { user_id: user.id, store_id: storeId } })
       .then((r) => setMemberInfo(r.data)).catch(() => {});
   }, [user.id, storeId]);
 
   useEffect(() => {
     if (!user.id) return;
-    API.get('/substitute/staff', { params: { user_id: user.id } })
+    axiosInstance.get('/substitute/staff', { params: { user_id: user.id } })
       .then((r) => setAppliedIds(new Set((Array.isArray(r.data) ? r.data : []).map((a: SubstituteApplicationVO) => a.substitute_post_id))))
       .catch(() => {});
   }, [user.id]);
@@ -137,7 +136,7 @@ export default function SubstituteList() {
   const confirmApply = () => {
     if (!selectedPost || !user.id) return;
     setApplying(true);
-    API.post('/substitute/staff/apply', {
+    axiosInstance.post('/substitute/staff/apply', {
       substitute_post_id: selectedPost.id,
       applicant_user_id: user.id,
       message: '',

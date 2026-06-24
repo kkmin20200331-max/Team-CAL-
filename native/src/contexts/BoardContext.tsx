@@ -1,13 +1,35 @@
-import React, { createContext, useState, ReactNode, useContext } from 'react';
+import { format } from 'date-fns';
+import React, { createContext, ReactNode, useContext, useState, useCallback } from 'react';
+import {
+  createBoardAPI,
+  createBoardPostAPI,
+  getBoardPostListAPI,
+  getBoardPostsAPI,
+  updateBoardPostAPI,
+} from '../../api/auth';
 import { Post } from '../types/Post';
-import { format, subDays } from 'date-fns';
+
+type BoardSummary = {
+  id: string;
+  store_id: string;
+  name: string;
+  created_by?: string;
+};
+
+type AddPostOptions = {
+  storeId: string;
+  writerId: string;
+};
 
 interface BoardContextType {
   posts: Post[];
+  boards: BoardSummary[];
+  loading: boolean;
   setPosts: React.Dispatch<React.SetStateAction<Post[]>>;
-  addPost: (newPost: Omit<Post, 'id' | 'date' | 'authorId'>) => void;
-  updatePost: (updatedPost: Post) => void;
-  updatePinStatus: (postId: string, isPinned: boolean) => void;
+  loadPosts: (storeId: string) => Promise<void>;
+  addPost: (newPost: Omit<Post, 'id' | 'date' | 'authorId'>, options: AddPostOptions) => Promise<void>;
+  updatePost: (updatedPost: Post) => Promise<void>;
+  updatePinStatus: (postId: string, isPinned: boolean) => Promise<void>;
 }
 
 const BoardContext = createContext<BoardContextType | undefined>(undefined);
@@ -24,45 +46,115 @@ interface BoardProviderProps {
   children: ReactNode;
 }
 
-const currentUserId = 'my_test_id'; // Or get from a user context
+const validCategories = ['NOTICE', 'MENU', 'EVENT', 'MANUAL', 'LOST'] as const;
 
-const initialPosts: Post[] = [
-    { id: '1', authorId: currentUserId, category: 'NOTICE', title: 'boardDummy3Title', date: format(subDays(new Date(), 1), 'yyyy.MM.dd'), content: 'boardDummy3Content', badge: 'badgeImportant', isPinned: true },
-    { id: '2', authorId: currentUserId, category: 'MENU', title: 'boardDummy1Title', date: format(subDays(new Date(), 2), 'yyyy.MM.dd'), content: 'boardDummy1Content', badge: 'badgeNew', isPinned: false },
-    { id: '3', authorId: currentUserId, category: 'NOTICE', title: 'boardDummy2Title', date: format(subDays(new Date(), 5), 'yyyy.MM.dd'), content: 'boardDummy2Content', badge: null, isPinned: false },
-    { id: '4', authorId: 'admin', category: 'MANUAL', title: 'boardDummy4Title', date: format(subDays(new Date(), 10), 'yyyy.MM.dd'), content: 'boardDummy4Content', badge: null, isPinned: false },
-    { id: '5', authorId: 'admin', category: 'EVENT', title: 'boardDummy5Title', date: format(subDays(new Date(), 12), 'yyyy.MM.dd'), content: 'boardDummy5Content', badge: null, isPinned: false },
-    { id: '6', authorId: 'admin', category: 'NOTICE', title: 'boardDummy6Title', date: format(subDays(new Date(), 15), 'yyyy.MM.dd'), content: 'boardDummy6Content', badge: null, isPinned: false },
-];
+const normalizeCategory = (name?: string): Post['category'] => {
+  const upper = String(name || '').toUpperCase();
+  return validCategories.includes(upper as any) ? (upper as Post['category']) : 'NOTICE';
+};
+
+const mapPost = (post: any, board?: BoardSummary): Post => ({
+  id: post.id,
+  category: normalizeCategory(board?.name),
+  title: post.title || '',
+  content: post.content || '',
+  date: post.created_at ? format(new Date(post.created_at), 'yyyy.MM.dd') : format(new Date(), 'yyyy.MM.dd'),
+  authorId: post.writer_id,
+  isPinned: post.is_pinned === 'Y' || post.is_pinned === true,
+  badge: null,
+});
 
 export const BoardProvider = ({ children }: BoardProviderProps) => {
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [boards, setBoards] = useState<BoardSummary[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const addPost = (newPostData: Omit<Post, 'id' | 'date' | 'authorId'>) => {
-    const newPost: Post = {
-      ...newPostData,
-      id: Date.now().toString(),
-      date: format(new Date(), 'yyyy.MM.dd'),
-      authorId: currentUserId,
+  const loadPosts = useCallback(async (storeId: string) => {
+    if (!storeId) {
+      setBoards([]);
+      setPosts([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const boardResponse = await getBoardPostsAPI(storeId);
+      const nextBoards: BoardSummary[] = Array.isArray(boardResponse.data) ? boardResponse.data : [];
+      setBoards(nextBoards);
+
+      const postGroups = await Promise.all(
+        nextBoards.map(async (board) => {
+          const response = await getBoardPostListAPI(board.id);
+          const items = Array.isArray(response.data) ? response.data : [];
+          return items.map((post: any) => mapPost(post, board));
+        }),
+      );
+
+      setPosts(postGroups.flat());
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const ensureBoard = useCallback(async (category: Post['category'], storeId: string, writerId: string) => {
+    const existing = boards.find((board) => normalizeCategory(board.name) === category);
+    if (existing) return existing;
+
+    const board = {
+      id: `B_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+      store_id: storeId,
+      name: category,
+      created_by: writerId,
     };
-    setPosts(prevPosts => [newPost, ...prevPosts]);
-  };
 
-  const updatePost = (updatedPost: Post) => {
-    setPosts(prevPosts =>
-      prevPosts.map(p => (p.id === updatedPost.id ? updatedPost : p))
-    );
-  };
+    await createBoardAPI(board);
+    setBoards((prev) => [...prev, board]);
+    return board;
+  }, [boards]);
 
-  const updatePinStatus = (postId: string, isPinned: boolean) => {
-    setPosts(prevPosts =>
-      prevPosts.map(p => (p.id === postId ? { ...p, isPinned } : p))
-    );
-  };
+  const addPost = useCallback(async (
+    newPostData: Omit<Post, 'id' | 'date' | 'authorId'>,
+    options: AddPostOptions,
+  ) => {
+    const board = await ensureBoard(newPostData.category, options.storeId, options.writerId);
+    const id = `BP_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+    await createBoardPostAPI({
+      id,
+      board_id: board.id,
+      store_id: options.storeId,
+      writer_id: options.writerId,
+      title: newPostData.title,
+      content: newPostData.content,
+    });
+
+    await loadPosts(options.storeId);
+  }, [ensureBoard, loadPosts]);
+
+  const updatePost = useCallback(async (updatedPost: Post) => {
+    await updateBoardPostAPI({
+      id: updatedPost.id,
+      title: updatedPost.title,
+      content: updatedPost.content,
+      status: 'PUBLISHED',
+      is_pinned: updatedPost.isPinned ? 'Y' : 'N',
+    });
+
+    setPosts((prevPosts) => prevPosts.map((post) => (post.id === updatedPost.id ? updatedPost : post)));
+  }, []);
+
+  const updatePinStatus = useCallback(async (postId: string, isPinned: boolean) => {
+    const post = posts.find((item) => item.id === postId);
+    if (!post) return;
+    await updatePost({ ...post, isPinned });
+  }, [posts, updatePost]);
 
   const value = {
     posts,
+    boards,
+    loading,
     setPosts,
+    loadPosts,
     addPost,
     updatePost,
     updatePinStatus,

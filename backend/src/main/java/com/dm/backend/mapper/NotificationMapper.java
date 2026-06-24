@@ -15,7 +15,17 @@ public interface NotificationMapper {
     void createNotification(NotificationVO vo);
 
     @Select("""
-        SELECT * FROM NOTIFICATION
+        SELECT
+            ID AS id,
+            USER_ID AS user_id,
+            STORE_ID AS store_id,
+            TYPE AS type,
+            TITLE AS title,
+            CONTENT AS content,
+            REF_ID AS ref_id,
+            IS_READ AS is_read,
+            CREATED_AT AS created_at
+        FROM NOTIFICATION
         WHERE USER_ID = #{user_id}
         ORDER BY CREATED_AT DESC
         FETCH FIRST 50 ROWS ONLY

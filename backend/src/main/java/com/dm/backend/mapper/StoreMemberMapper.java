@@ -26,10 +26,15 @@ public interface StoreMemberMapper {
 
     //관리자 정보가 필요한 경우 조회
     @Select("""
-                SELECT *
-                FROM STORE_MEMBER
-                WHERE STORE_ID = #{store_id}
-                AND MEMBER_ROLE = 'ADMIN'
+                SELECT sm.*
+                FROM STORE_MEMBER sm
+                JOIN USERS u
+                    ON u.ID = sm.USER_ID
+                WHERE sm.STORE_ID = #{store_id}
+                AND (
+                    sm.MEMBER_ROLE IN ('ADMIN', 'OWNER', 'MANAGER')
+                    OR u.ROLE = 'ADMIN'
+                )
             """)
     List<StoreMemberVo> getAdmins(
             String store_id
@@ -98,6 +103,12 @@ void approveRegister(StoreMemberVo storeMemberVo);
     // 경민 수정 5/29 17:36 - 직원 승인 (user_id + store_id 기준으로 APPROVED 처리)
     @Update("UPDATE store_member SET approval_status = 'APPROVED', member_role = 'STAFF' WHERE user_id = #{user_id} AND store_id = #{store_id}")
     void updateStoreMember(StoreMemberVo storeMemberVo);
+
+    @Select("SELECT * FROM store_member WHERE id = #{id}")
+    StoreMemberVo getMemberById(@Param("id") String id);
+
+    @Delete("delete from store_member where id = #{id}")
+    void deleteStoreMemberById(@Param("id") String id);
 
     // 직원 삭제 / 매장 직원 제거
     @Delete("delete from store_member where store_id = #{store_id} and user_id = #{user_id}")

@@ -1,9 +1,10 @@
-import React, { createContext, useState } from 'react';
-import { useLanguage } from './LanguageContext';
+import React, { createContext, useEffect, useState, useCallback } from 'react';
+import { getNotificationsAPI } from '../../api/auth';
+import { useApp } from './AppContext';
 
 export interface NotificationItem {
   id: string;
-  type: 'SCHEDULE' | 'SYSTEM' | 'NOTICE';
+  type: string;
   title: string;
   message: string;
   createdAt: string;
@@ -14,24 +15,54 @@ export interface NotificationContextType {
   notifications: NotificationItem[];
   setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>;
   unreadCount: number;
+  refreshNotifications: () => Promise<void>;
 }
 
 export const NotificationContext = createContext<NotificationContextType>({} as NotificationContextType);
 
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
-  // 기존 알림 화면에 있던 더미 데이터를 이곳(전역)으로 이사시킵니다.
-  const initialNotifications: NotificationItem[] = [
-    { id: '1', type: 'SCHEDULE', title: 'notifSubReqTitle', message: 'notifSubReqMsg', createdAt: 'time10Min', isRead: false },
-    { id: '2', type: 'NOTICE', title: 'notifNoticeTitle', message: 'notifNoticeMsg', createdAt: 'time1Hour', isRead: false },
-    { id: '3', type: 'SYSTEM', title: 'notifHealthTitle', message: 'notifHealthMsg', createdAt: 'timeYesterday', isRead: true },
-    { id: '4', type: 'SCHEDULE', title: 'notifLeaveTitle', message: 'notifLeaveMsg', createdAt: 'time2Days', isRead: true },
-  ];
+  const { userInfo } = useApp();
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
+  const refreshNotifications = useCallback(async () => {
+    if (!userInfo?.id) {
+      setNotifications([]);
+      return;
+    }
+
+    try {
+      const response = await getNotificationsAPI(userInfo.id);
+      const mapped = Array.isArray(response.data)
+        ? response.data.map((item: any) => ({
+            id: item.id,
+            type: item.type || 'SYSTEM',
+            title: item.title || '알림',
+            message: item.content || '',
+            createdAt: item.created_at || item.createdAt || '',
+            isRead: item.is_read === 'Y' || item.isRead === true,
+          }))
+        : [];
+
+      setNotifications(mapped);
+    } catch (error) {
+      console.error('알림 조회 오류:', error);
+      setNotifications([]);
+    }
+  }, [userInfo?.id]);
+
+  useEffect(() => {
+    refreshNotifications();
+    const intervalId = setInterval(refreshNotifications, 30000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [refreshNotifications]);
+
   const unreadCount = notifications.filter(n => !n.isRead).length; // 안 읽은 알림 개수 계산
 
   return (
-    <NotificationContext.Provider value={{ notifications, setNotifications, unreadCount }}>
+    <NotificationContext.Provider value={{ notifications, setNotifications, unreadCount, refreshNotifications }}>
       {children}
     </NotificationContext.Provider>
   );

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert, RefreshControl, Animated, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
-import { startOfWeek, endOfWeek, parseISO, format, isWithinInterval, subDays, addDays } from 'date-fns';
+import { startOfWeek, endOfWeek, parseISO, format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 import { User } from '../../types/User';
@@ -19,6 +20,7 @@ import SubstituteAlertCard from '../../components/dashboard/SubstituteAlertCard'
 import NoticeSection from '../../components/dashboard/NoticeSection';
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext'; // 1. useBoard 훅 임포트
+import { getMonthlyAttendanceAPI, getMyScheduleAPI, getPayrollAPI } from '../../../api/auth';
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
@@ -26,42 +28,43 @@ type Props = {
   navigation: DashboardScreenNavigationProp;
 };
 
-const generateDummySchedule = (storeName: string, t: (key: string) => string): Shift[] => {
-    const now = new Date();
-    const schedule: Shift[] = [];
-    const statuses: Shift['status'][] = ['COMPLETED', 'COMPLETED', 'IN_PROGRESS', 'SCHEDULED', 'SUBSTITUTE_REQ', 'OFF'];
+const toDateStr = (date: Date) => format(date, 'yyyy-MM-dd');
 
-    for (let i = -3; i <= 3; i++) {
-        const date = addDays(now, i);
-        const status = statuses[(i + 3) % statuses.length];
-        
-        if (status === 'OFF') {
-            schedule.push({
-                id: `shift_${i}`,
-                fullDate: format(date, 'yyyy-MM-dd'),
-                date: format(date, 'dd'),
-                day: format(date, 'eee', { locale: ko }),
-                time: t('offDay'),
-                storeName: '-',
-                status: 'OFF',
-                checkInTime: null,
-                checkOutTime: null,
-            });
-        } else {
-            schedule.push({
-                id: `shift_${i}`,
-                fullDate: format(date, 'yyyy-MM-dd'),
-                date: format(date, 'dd'),
-                day: format(date, 'eee', { locale: ko }),
-                time: '14:00 - 22:00', // 8 hours
-                storeName,
-                status: status,
-                checkInTime: status === 'COMPLETED' || status === 'IN_PROGRESS' ? '13:58' : null,
-                checkOutTime: status === 'COMPLETED' ? '22:03' : null,
-            });
-        }
-    }
-    return schedule;
+const getDatePart = (value?: string) => {
+  if (!value) return '';
+  return value.includes('T') ? value.split('T')[0] : value.split(' ')[0];
+};
+
+const getTimePart = (value?: string) => {
+  if (!value) return '';
+  const time = value.includes('T') ? value.split('T')[1] : value.split(' ')[1];
+  return time ? time.slice(0, 5) : '';
+};
+
+const normalizeShiftStatus = (status?: string): Shift['status'] => {
+  const upper = (status || '').toUpperCase();
+  if (upper === 'COMPLETED') return 'COMPLETED';
+  if (upper === 'WORKING' || upper === 'CHECKED_IN' || upper === 'IN_PROGRESS') return 'IN_PROGRESS';
+  if (upper === 'SUBSTITUTE_REQ') return 'SUBSTITUTE_REQ';
+  return 'SCHEDULED';
+};
+
+const mapShift = (raw: any, storeName: string): Shift => {
+  const fullDate = getDatePart(raw.work_date) || toDateStr(new Date());
+  const start = getTimePart(raw.start_at);
+  const end = getTimePart(raw.end_at);
+
+  return {
+    id: raw.id,
+    fullDate,
+    date: fullDate.slice(8, 10),
+    day: format(parseISO(fullDate), 'eee', { locale: ko }),
+    time: start && end ? `${start} - ${end}` : '-',
+    storeName,
+    status: normalizeShiftStatus(raw.status),
+    checkInTime: raw.check_in_at ? getTimePart(raw.check_in_at) : null,
+    checkOutTime: raw.check_out_at ? getTimePart(raw.check_out_at) : null,
+  };
 };
 
 const DashboardScreen = ({ navigation }: Props) => {
@@ -146,55 +149,78 @@ const DashboardScreen = ({ navigation }: Props) => {
 
   // 5. fetchData에서 게시글 관련 로직 제거
   const fetchData = async () => {
-    if (!userInfo) return;
+    if (!userInfo?.id || !userInfo.store_id) return;
     
     setLoading(true);
 
-    const schedule = generateDummySchedule(storeName, t);
-    setFullSchedule(schedule);
+    try {
+      const now = new Date();
+      const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+      const todayString = toDateStr(now);
+      const yearMonth = todayString.slice(0, 7);
 
-    const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+      const [shiftRes, payrollRes, attendanceRes] = await Promise.allSettled([
+        getMyScheduleAPI(userInfo.id, toDateStr(weekStart), toDateStr(weekEnd)),
+        getPayrollAPI(userInfo.id, userInfo.store_id, toDateStr(weekStart), toDateStr(weekEnd)),
+        getMonthlyAttendanceAPI(userInfo.id, userInfo.store_id, yearMonth),
+      ]);
 
-    let calculatedMinutes = 0;
-    schedule.forEach(item => {
-      const shiftDate = parseISO(item.fullDate);
-      if (isWithinInterval(shiftDate, { start: weekStart, end: weekEnd })) {
-        if (item.status !== 'OFF' && item.status !== 'SUBSTITUTE_REQ' && item.time && item.time.includes(' - ')) {
-          const [start, end] = item.time.split(' - ');
-          const [sH, sM] = start.split(':').map(Number);
-          const [eH, eM] = end.split(':').map(Number);
-          
-          let diff = (eH * 60 + eM) - (sH * 60 + sM);
-          if (diff < 0) diff += 24 * 60;
-          calculatedMinutes += diff;
-        }
-      }
-    });
+      const rawShifts = shiftRes.status === 'fulfilled' && Array.isArray(shiftRes.value.data)
+        ? shiftRes.value.data
+        : [];
+      const schedule = rawShifts
+        .filter((item: any) => item.status !== 'VACANT' && item.status !== 'CANCELLED')
+        .map((item: any) => mapShift(item, storeName));
 
-    const calculatedHours = calculatedMinutes / 60;
-    const stats = {
-      totalHours: calculatedHours,
-      expectedSalary: calculatedHours * (userInfo.payRate || 9860)
-    };
-    setWeeklyStats(stats);
+      const attendanceList = attendanceRes.status === 'fulfilled' && Array.isArray(attendanceRes.value.data)
+        ? attendanceRes.value.data
+        : [];
+      const todayAttendance = attendanceList.find((item: any) => getDatePart(item.work_date) === todayString);
 
-    const todayString = format(now, 'yyyy-MM-dd');
-    const shiftForToday = schedule.find((item: any) => item.fullDate === todayString);
-    
-    if (shiftForToday && shiftForToday.status === 'IN_PROGRESS') {
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        const [startStr, endStr] = shiftForToday.time.split(' - ');
-        const [startH, startM] = startStr.split(':').map(Number);
-        const startMinutes = startH * 60 + startM;
-        if (currentMinutes < startMinutes) {
-            shiftForToday.status = 'SCHEDULED';
-        }
+      const mergedSchedule = schedule.map((item) => {
+        if (item.fullDate !== todayString || !todayAttendance) return item;
+        return {
+          ...item,
+          status: todayAttendance.check_out_at
+            ? 'COMPLETED'
+            : todayAttendance.check_in_at
+              ? 'IN_PROGRESS'
+              : item.status,
+          checkInTime: getTimePart(todayAttendance.check_in_at) || item.checkInTime,
+          checkOutTime: getTimePart(todayAttendance.check_out_at) || item.checkOutTime,
+        };
+      });
+
+      setFullSchedule(mergedSchedule);
+
+      const payroll = payrollRes.status === 'fulfilled' ? payrollRes.value.data : null;
+      const scheduledMinutes = mergedSchedule.reduce((sum, item) => {
+        if (!item.time.includes(' - ')) return sum;
+        const [start, end] = item.time.split(' - ');
+        const [sH, sM] = start.split(':').map(Number);
+        const [eH, eM] = end.split(':').map(Number);
+        let diff = eH * 60 + eM - (sH * 60 + sM);
+        if (diff < 0) diff += 24 * 60;
+        return sum + diff;
+      }, 0);
+
+      setWeeklyStats({
+        totalHours: scheduledMinutes / 60,
+        expectedSalary: Number(payroll?.totalPay || 0),
+      });
+
+      setTodayShift(mergedSchedule.find((item) => item.fullDate === todayString) || null);
+    } catch (error) {
+      console.error('직원 대시보드 로드 오류:', error);
+      Toast.show({
+        type: 'error',
+        text1: '데이터 로드 실패',
+        text2: '근무 정보를 다시 불러오지 못했습니다.',
+      });
+    } finally {
+      setLoading(false);
     }
-    setTodayShift(shiftForToday ? { ...shiftForToday } : null);
-
-    setLoading(false);
   };
 
   const handleNotification = () => navigation.navigate('Notifications');
@@ -217,10 +243,11 @@ const DashboardScreen = ({ navigation }: Props) => {
         />
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.qrButton} onPress={handleQRCheckIn}>
+            <Ionicons name="qr-code-outline" size={15} color={colors.text} style={{ marginRight: 6 }} />
             <Text style={styles.qrButtonText}>{t('qrCheckIn')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.notificationButton} onPress={handleNotification}>
-            <Text style={styles.notificationIcon}>🔔</Text>
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
             {unreadCount > 0 && <View style={styles.badge} />}
           </TouchableOpacity>
         </View>

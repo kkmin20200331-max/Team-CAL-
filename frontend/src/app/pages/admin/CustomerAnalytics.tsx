@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../lib/axiosInstance";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
@@ -116,7 +117,6 @@ type AiInsightResponse = {
   source?: "rule-based" | "dummy" | "llm" | "llm-fallback";
 };
 
-const API_BASE = "http://localhost:8080/api";
 const AI_INSIGHT_API = `${API_BASE}/ai-insights`;
 
 const branchNames: Record<string, string> = {
@@ -290,6 +290,10 @@ export default function CustomerAnalytics() {
   const [aiLoading, setAiLoading] = useState(false);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const pageBg = isDark
     ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)'
@@ -299,7 +303,8 @@ export default function CustomerAnalytics() {
   const textColor = isDark ? '#fff' : '#111';
 
   const currentBranch =
-    branchNames[branchId || "migeum"] ||
+    stores.find((s) => s.id === selectedBranchId)?.name ||
+    branchNames[selectedBranchId || "migeum"] ||
     sessionStorage.getItem("store_name") ||
     "선택 매장";
 
@@ -307,24 +312,24 @@ export default function CustomerAnalytics() {
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
   }, []);
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : "/admin/branch-selection" },
   ];
 
-  const storeId = resolveStoreId(branchId);
+  const storeId = resolveStoreId(selectedBranchId);
   const trafficByHour = useMemo(
     () => buildTrafficByHour(peopleLogs),
     [peopleLogs],
@@ -514,12 +519,12 @@ export default function CustomerAnalytics() {
     try {
       await loadLiveData();
       const today = toDateText(new Date());
-      const response = await fetch(`${AI_INSIGHT_API}/analyze/llm`, {
+      const response = await fetch(`${API_BASE}/ai-insights/analyze/llm`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           store_id: String(storeId),
-          shift_store_id: resolveShiftStoreId(branchId),
+          shift_store_id: resolveShiftStoreId(selectedBranchId),
           date: today,
           start_date: `${today} 00:00:00`,
           end_date: `${today} 23:59:59`,
@@ -621,12 +626,12 @@ export default function CustomerAnalytics() {
                     }}
                     style={{
                       display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left',
-                      background: s.id === branchId ? LIGHT_GREEN : 'transparent',
+                      background: s.id === selectedBranchId ? LIGHT_GREEN : 'transparent',
                       border: 'none', cursor: 'pointer',
                       color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600,
                     }}
                     onMouseOver={e => { e.currentTarget.style.background = LIGHT_GREEN; }}
-                    onMouseOut={e => { e.currentTarget.style.background = s.id === branchId ? LIGHT_GREEN : 'transparent'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = s.id === selectedBranchId ? LIGHT_GREEN : 'transparent'; }}
                   >
                     {s.name}
                   </button>

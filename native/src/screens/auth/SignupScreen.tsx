@@ -5,10 +5,10 @@ import { signupAPI } from '../../../api/auth';
 import axios from 'axios';
 import { useTheme } from '../../contexts/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
 import { useApp } from '../../contexts/AppContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -43,6 +43,7 @@ export default function SignupScreen({ navigation, route }: Props) {
 
   const [isTimePickerVisible, setTimePickerVisible] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'openTime' | 'closeTime'>('openTime');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (name: string, value: any) => {
     setInputs(prev => ({ ...prev, [name]: value }));
@@ -65,6 +66,8 @@ export default function SignupScreen({ navigation, route }: Props) {
   };
 
   const handleSignup = async () => {
+    if (isSubmitting) return;
+
     const { id, password, passwordCheck, name, phone, isFranchise, brandName, branchName, openTime, closeTime, maxCapacity } = inputs;
 
     if (!id || !password || !passwordCheck || !name || !phone) {
@@ -81,6 +84,7 @@ export default function SignupScreen({ navigation, route }: Props) {
     }
 
     try {
+      setIsSubmitting(true);
       const userId = `U_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 9)}`.slice(0, 21);
       const signupData: any = {
         id: userId,
@@ -110,36 +114,47 @@ export default function SignupScreen({ navigation, route }: Props) {
         text2: `${name}님 환영합니다!`,
       });
 
-      if (role === 'ADMIN') {
-        const branches = [{ id: 'branch_1', brandName, branchName }];
-        await AsyncStorage.setItem(`admin_branch_info_${id}`, JSON.stringify(branches));
-
-        const userInfoForLogin = {
+      login(
+        {
           ...signupData,
-          branches: branches,
-          activeBranchId: 'branch_1',
-        };
-        login(userInfoForLogin, true);
-      } else {
-        login(signupData, false);
-      }
+          role,
+        },
+        false,
+      );
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
-        Alert.alert("가입 실패", `서버 오류: ${error.response.status}`);
+        const status = error.response.status;
+        const serverMessage =
+          typeof error.response.data === 'string'
+            ? error.response.data
+            : error.response.data?.message;
+
+        if (status === 409) {
+          Alert.alert('가입 실패', serverMessage || '이미 사용 중인 정보입니다.');
+        } else if (status === 403) {
+          Alert.alert(
+            '가입 실패',
+            '요청이 차단되었습니다. 백엔드 서버를 재시작하고 CORS 설정이 적용됐는지 확인해주세요.',
+          );
+        } else {
+          Alert.alert('가입 실패', serverMessage || `서버 오류: ${status}`);
+        }
       } else if (axios.isAxiosError(error) && error.request) {
-        Alert.alert("가입 실패", "백엔드 서버에 연결할 수 없습니다.");
+        Alert.alert('가입 실패', '백엔드 서버에 연결할 수 없습니다.');
       } else {
-        Alert.alert("가입 실패", "알 수 없는 오류가 발생했습니다.");
+        Alert.alert('가입 실패', '알 수 없는 오류가 발생했습니다.');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>◀</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
+          <Ionicons name="chevron-back-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {role === 'ADMIN' ? '관리자 회원가입' : '직원 회원가입'}
@@ -156,11 +171,11 @@ export default function SignupScreen({ navigation, route }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.sectionTitle}>기본 정보</Text>
-          <TextInput style={styles.input} placeholder="아이디" value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} />
-          <TextInput style={styles.input} placeholder="비밀번호" value={inputs.password} onChangeText={(text) => handleInputChange('password', text)} secureTextEntry={true} />
-          <TextInput style={styles.input} placeholder="비밀번호 확인" value={inputs.passwordCheck} onChangeText={(text) => handleInputChange('passwordCheck', text)} secureTextEntry={true} />
-          <TextInput style={styles.input} placeholder="이름 (예: 김선민)" value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
-          <TextInput style={styles.input} placeholder="전화번호 (예: 010-1234-5678)" value={inputs.phone} onChangeText={(text) => handleInputChange('phone', text)} keyboardType="phone-pad" />
+          <TextInput style={styles.input} placeholder="아이디" placeholderTextColor={colors.subText} value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} />
+          <TextInput style={styles.input} placeholder="비밀번호" placeholderTextColor={colors.subText} value={inputs.password} onChangeText={(text) => handleInputChange('password', text)} secureTextEntry={true} />
+          <TextInput style={styles.input} placeholder="비밀번호 확인" placeholderTextColor={colors.subText} value={inputs.passwordCheck} onChangeText={(text) => handleInputChange('passwordCheck', text)} secureTextEntry={true} />
+          <TextInput style={styles.input} placeholder="이름 (예: 김선민)" placeholderTextColor={colors.subText} value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
+          <TextInput style={styles.input} placeholder="전화번호 (예: 010-1234-5678)" placeholderTextColor={colors.subText} value={inputs.phone} onChangeText={(text) => handleInputChange('phone', text)} keyboardType="phone-pad" />
 
           {role === 'ADMIN' && (
             <>
@@ -169,7 +184,7 @@ export default function SignupScreen({ navigation, route }: Props) {
               <Text style={styles.inputLabel}>업종 카테고리</Text>
               <TouchableOpacity style={styles.pickerButton} onPress={() => setCategoryModalVisible(true)}>
                 <Text style={styles.pickerButtonText}>{storeCategory}</Text>
-                <Text style={styles.pickerButtonIcon}>▼</Text>
+                <Ionicons name="chevron-down-outline" size={16} color={colors.subText} />
               </TouchableOpacity>
 
               <View style={styles.toggleContainer}>
@@ -181,8 +196,8 @@ export default function SignupScreen({ navigation, route }: Props) {
                   value={inputs.isFranchise}
                 />
               </View>
-              <TextInput style={styles.input} placeholder="브랜드명 (예: 컴포즈커피)" value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
-              <TextInput style={styles.input} placeholder="지점명 (예: 미금점)" value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
+              <TextInput style={styles.input} placeholder="브랜드명 (예: 컴포즈커피)" placeholderTextColor={colors.subText} value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
+              <TextInput style={styles.input} placeholder="지점명 (예: 미금점)" placeholderTextColor={colors.subText} value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
               
               <View style={styles.timeContainer}>
                 <View style={styles.timeInputWrapper}>
@@ -200,13 +215,24 @@ export default function SignupScreen({ navigation, route }: Props) {
               </View>
 
               <Text style={styles.inputLabel}>최대 수용 인원 (선택)</Text>
-              <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('maxCapacity', text)} keyboardType="number-pad" />
+              <TextInput style={styles.input} placeholder="숫자만 입력" placeholderTextColor={colors.subText} value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('maxCapacity', text)} keyboardType="number-pad" />
             </>
           )}
 
-          <TouchableOpacity style={styles.button} onPress={handleSignup}>
-            <Text style={styles.buttonText}>가입 완료</Text>
-          </TouchableOpacity>
+          <Pressable
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.button,
+              pressed && styles.buttonPressed,
+              isSubmitting && styles.buttonDisabled,
+            ]}
+            onPress={handleSignup}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.buttonText}>
+              {isSubmitting ? '가입 처리 중...' : '가입 완료'}
+            </Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -259,8 +285,9 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
-  backButton: { fontSize: 24, color: colors.primary, width: 40 },
+  backButtonContainer: { width: 40, justifyContent: 'center' },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   formContainer: { 
     padding: 20,
@@ -270,14 +297,20 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   input: { borderWidth: 1, borderColor: colors.border, padding: 15, borderRadius: 8, marginBottom: 15, backgroundColor: colors.card, color: colors.text, fontSize: 16 },
   inputLabel: { fontSize: 16, color: colors.subText, marginBottom: 8 },
   button: { 
-    backgroundColor: '#6EE7B7',
+    backgroundColor: colors.primary,
     padding: 15, 
     borderRadius: 8, 
     alignItems: 'center', 
     marginTop: 20 
   },
+  buttonPressed: {
+    opacity: 0.82,
+  },
+  buttonDisabled: {
+    opacity: 0.55,
+  },
   buttonText: { 
-    color: '#064E3B',
+    color: '#FFFFFF',
     fontSize: 16, 
     fontWeight: 'bold' 
   },
@@ -328,10 +361,6 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
-  pickerButtonIcon: {
-    fontSize: 16,
-    color: colors.subText,
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -343,6 +372,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modalTitle: {
     fontSize: 18,

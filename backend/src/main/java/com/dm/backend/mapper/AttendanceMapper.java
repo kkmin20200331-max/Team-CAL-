@@ -81,7 +81,7 @@ public interface AttendanceMapper {
                     #{id},
                     #{store_id},
                     #{user_id},
-                    #{shift_id},
+                    #{shift_id,jdbcType=VARCHAR},
                     TRUNC(SYSDATE),
                     #{check_in_at},
                     #{status}

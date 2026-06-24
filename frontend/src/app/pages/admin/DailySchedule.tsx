@@ -1,6 +1,7 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
+import { API_BASE } from "../../../lib/axiosInstance";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
 import {
   Calendar, Clock, User,
   AlertCircle, CheckCircle, XCircle,
@@ -18,7 +19,6 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface ShiftVO {
   id: string;
@@ -50,21 +50,25 @@ const DailySchedule: React.FC = () => {
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
@@ -90,18 +94,18 @@ const DailySchedule: React.FC = () => {
   });
 
   useEffect(() => {
-    if (branchId) {
+    if (selectedBranchId) {
       fetchShifts();
       fetchEmployees();
     }
-  }, [selectedDate, branchId]);
+  }, [selectedDate, selectedBranchId]);
 
   const fetchShifts = async () => {
     try {
       setLoading(true);
-      const res = await API.get("/shift", {
+      const res = await axiosInstance.get("/shift", {
         params: {
-          store_id: branchId,
+          store_id: selectedBranchId,
           start_date: selectedDate,
           end_date: selectedDate,
         },
@@ -116,20 +120,20 @@ const DailySchedule: React.FC = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await API.get("/users", { params: { store_id: branchId } });
+      const res = await axiosInstance.get("/users", { params: { store_id: selectedBranchId } });
       setEmployees(Array.isArray(res.data) ? res.data : []);
     } catch {}
   };
 
   useEffect(() => {
-    if (!branchId) return;
-    API.get(`/store/${branchId}`)
+    if (!selectedBranchId) return;
+    axiosInstance.get(`/store/${selectedBranchId}`)
       .then(res => {
         const d = res.data || {};
         if (d.open_time && d.close_time) setStoreHours({ open: d.open_time, close: d.close_time });
       })
       .catch(() => {});
-  }, [branchId]);
+  }, [selectedBranchId]);
 
   const getEmployeeName = (user_id: string) =>
     employees.find(e => e.id === user_id)?.name ?? t.unknown;
@@ -172,9 +176,9 @@ const DailySchedule: React.FC = () => {
     if (!form.user_id) { alert(t.errSelectEmployee); return; }
     try {
       if (modalMode === "add") {
-        await API.post("/shift", {
+        await axiosInstance.post("/shift", {
           id: "SFT_" + Date.now(),
-          store_id: branchId,
+          store_id: selectedBranchId,
           user_id: form.user_id,
           work_date: selectedDate,
           start_at: `${selectedDate} ${form.start_time}:00`,
@@ -183,7 +187,7 @@ const DailySchedule: React.FC = () => {
         });
         alert(t.shiftAdded);
       } else if (editingShift) {
-        await API.put("/shift", {
+        await axiosInstance.put("/shift", {
           ...editingShift,
           user_id: form.user_id,
           start_at: `${selectedDate} ${form.start_time}:00`,
@@ -202,7 +206,7 @@ const DailySchedule: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm(t.confirmDelete)) return;
     try {
-      await API.delete("/shift", { params: { id } });
+      await axiosInstance.delete("/shift", { params: { id } });
       fetchShifts();
     } catch {
       alert(t.errDelete);
@@ -363,10 +367,10 @@ const DailySchedule: React.FC = () => {
             <Calendar size={18} color={DARK_GREEN} style={{ cursor: 'pointer' }} onClick={() => { const el = document.getElementById('ds-date-input') as HTMLInputElement | null; el?.showPicker?.(); }} />
             <input id="ds-date-input" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ border: 'none', background: 'transparent', fontSize: 14, color: textColor, outline: 'none' }} />
           </div>
-          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)}>
+          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection')}>
             {t.monthlyView}
           </button>
-          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}>
+          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(selectedBranchId ? `/admin/schedule/weekly/${selectedBranchId}` : '/admin/branch-selection')}>
             {t.weeklyView}
           </button>
         </div>

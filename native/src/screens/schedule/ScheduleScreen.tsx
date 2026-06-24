@@ -1,25 +1,60 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
-import { User } from '../../types/User';
 import { Shift } from '../../types/Schedule';
-import { format, addDays, startOfWeek, getDay, getDaysInMonth, getMonth, getYear, setMonth, setYear, startOfMonth, parseISO } from 'date-fns';
+import { format, addDays, startOfWeek, getDay, getDaysInMonth, getMonth, getYear, setMonth, startOfMonth, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { useApp } from '../../contexts/AppContext';
+import { getMyScheduleAPI, requestLeaveAPI } from '../../../api/auth';
 
 const today = new Date();
 const formatDate = (d: Date) => format(d, 'yyyy-MM-dd');
 const initialSelectedDate = formatDate(today);
 const KOREAN_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-// 1. 삭제되었던 generateWeekDates 함수 복원
 const generateWeekDates = (base: Date) => {
   const sunday = startOfWeek(base, { weekStartsOn: 0 });
   return Array.from({ length: 7 }).map((_, i) => {
     const d = addDays(sunday, i);
     return { fullDate: formatDate(d), date: String(d.getDate()), dayIndex: d.getDay() };
+  });
+};
+
+const getTimePart = (value?: string) => {
+  if (!value) return '';
+  const time = value.includes('T') ? value.split('T')[1] : value.split(' ')[1];
+  return time ? time.slice(0, 5) : '';
+};
+
+const normalizeStatus = (status?: string): Shift['status'] => {
+  const upper = (status || '').toUpperCase();
+  if (upper === 'COMPLETED') return 'COMPLETED';
+  if (upper === 'WORKING' || upper === 'CHECKED_IN' || upper === 'IN_PROGRESS') return 'IN_PROGRESS';
+  if (upper === 'SUBSTITUTE_REQ') return 'SUBSTITUTE_REQ';
+  return 'SCHEDULED';
+};
+
+const mapShift = (raw: any, storeName: string): Shift => {
+  const fullDate = raw.work_date?.includes('T')
+    ? raw.work_date.split('T')[0]
+    : raw.work_date?.split(' ')[0] || formatDate(new Date());
+  const start = getTimePart(raw.start_at);
+  const end = getTimePart(raw.end_at);
+
+  return getRealTimeItem({
+    id: raw.id,
+    fullDate,
+    date: String(Number(fullDate.slice(8, 10))),
+    day: KOREAN_DAYS[getDay(parseISO(fullDate))],
+    time: start && end ? `${start} - ${end}` : '-',
+    storeName,
+    status: normalizeStatus(raw.status),
+    checkInTime: getTimePart(raw.check_in_at) || null,
+    checkOutTime: getTimePart(raw.check_out_at) || null,
   });
 };
 
@@ -46,59 +81,8 @@ const getRealTimeItem = (item: Shift): Shift => {
   return { ...item, status: newStatus };
 };
 
-const generateDummyScheduleForWeek = (baseDate: Date, storeName: string): Shift[] => {
-  const weekDates = generateWeekDates(baseDate);
-  return weekDates.map((dayInfo, index) => {
-    const dayOfWeek = dayInfo.dayIndex;
-    let shift: Partial<Shift> = {
-      id: `${dayInfo.fullDate}-${index}`,
-      fullDate: dayInfo.fullDate,
-      date: dayInfo.date,
-      day: KOREAN_DAYS[dayOfWeek],
-      storeName: storeName,
-    };
-    if (dayOfWeek % 4 === 0) {
-      shift.time = '휴무';
-      shift.status = 'OFF';
-    } else {
-      shift.time = '14:00 - 22:00';
-      shift.status = 'SCHEDULED';
-    }
-    return getRealTimeItem(shift as Shift);
-  });
-};
-
-const generateDummyScheduleForMonth = (date: Date, storeName: string): Shift[] => {
-    const monthStart = startOfMonth(date);
-    const daysInMonth = getDaysInMonth(date);
-    const schedule: Shift[] = [];
-
-    for (let i = 0; i < daysInMonth; i++) {
-        const currentDate = addDays(monthStart, i);
-        const dayOfWeek = getDay(currentDate);
-        let shift: Partial<Shift> = {
-            id: `month_shift_${formatDate(currentDate)}`,
-            fullDate: formatDate(currentDate),
-            date: String(currentDate.getDate()),
-            day: KOREAN_DAYS[dayOfWeek],
-            storeName: storeName,
-        };
-
-        if (dayOfWeek % 4 === 0) {
-            shift.time = '휴무';
-            shift.status = 'OFF';
-        } else {
-            shift.time = '14:00 - 22:00';
-            shift.status = 'SCHEDULED';
-        }
-        schedule.push(getRealTimeItem(shift as Shift));
-    }
-    return schedule;
-};
-
-
-const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null } } }) => {
-  const { userInfo } = route?.params || {};
+const ScheduleScreen = () => {
+  const { userInfo } = useApp();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
@@ -116,11 +100,44 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
   const [isMonthModalVisible, setMonthModalVisible] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    const newSchedule = generateDummyScheduleForWeek(baseDate, storeName);
-    setScheduleData(newSchedule);
-    setLoading(false);
-  }, [baseDate, storeName]);
+    let alive = true;
+
+    const loadSchedule = async () => {
+      if (!userInfo?.id) {
+        setScheduleData([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const weekDates = generateWeekDates(baseDate);
+        const startDate = weekDates[0].fullDate;
+        const endDate = weekDates[6].fullDate;
+        const response = await getMyScheduleAPI(userInfo.id, startDate, endDate);
+        const shifts = Array.isArray(response.data)
+          ? response.data
+              .filter((item: any) => item.status !== 'VACANT' && item.status !== 'CANCELLED')
+              .map((item: any) => mapShift(item, storeName))
+          : [];
+
+        if (alive) setScheduleData(shifts);
+      } catch (error) {
+        console.error('스케줄 조회 오류:', error);
+        if (alive) {
+          setScheduleData([]);
+          Toast.show({ type: 'error', text1: '스케줄 조회 실패', text2: '근무표를 불러오지 못했습니다.' });
+        }
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+
+    loadSchedule();
+
+    return () => {
+      alive = false;
+    };
+  }, [baseDate, storeName, userInfo?.id]);
 
   const renderStatusBadge = (status: string) => {
     const statusMap = {
@@ -147,13 +164,46 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
       Toast.show({ type: 'error', text1: '알림', text2: '사유를 입력해주세요.' });
       return;
     }
-    const newStatus = modalType === 'SUBSTITUTE' ? 'SUBSTITUTE_REQ' : 'OFF';
-    setScheduleData(prev => prev.map(shift => 
-      shift.id === selectedShift!.id ? { ...shift, status: newStatus, time: modalType === 'LEAVE' ? '휴무' : shift.time } : shift
-    ));
-    Toast.show({ type: 'success', text1: '신청 완료', text2: '점주에게 요청이 전송되었습니다.' });
-    setReqModalVisible(false);
-    setSelectedShift(null);
+    if (!selectedShift || !userInfo?.id) return;
+
+    try {
+      if (modalType === 'LEAVE') {
+        await requestLeaveAPI({
+          shift_id: selectedShift.id,
+          user_id: userInfo.id,
+          reason,
+        });
+        setScheduleData(prev => prev.map(shift =>
+          shift.id === selectedShift.id ? { ...shift, status: 'OFF', time: '휴무' } : shift
+        ));
+      } else {
+        const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
+        const postId = `SP_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+        const { createSubstitutePostAPI } = require('../../../api/auth');
+        await createSubstitutePostAPI({
+          id: postId,
+          shift_id: selectedShift.id,
+          store_id: storeId,
+          requester_user_id: userInfo.id,
+          reason,
+          status: 'PENDING',
+        });
+        setScheduleData(prev => prev.map(shift =>
+          shift.id === selectedShift.id ? { ...shift, status: 'SUBSTITUTE_REQ' } : shift
+        ));
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: '신청 완료',
+        text2: modalType === 'LEAVE' ? '휴무 신청이 전송되었습니다.' : '대타 요청 상태로 표시했습니다.',
+      });
+      setReqModalVisible(false);
+      setSelectedShift(null);
+    } catch (error) {
+      console.error('신청 오류:', error);
+      Toast.show({ type: 'error', text1: '신청 실패', text2: '잠시 후 다시 시도해주세요.' });
+    }
   };
 
   const moveWeek = (offset: number) => {
@@ -175,13 +225,21 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
         {renderStatusBadge(item.status)}
       </View>
       <View style={styles.cardBody}>
-        <View style={styles.infoRow}><Text style={styles.infoIcon}>🕒</Text><Text style={styles.infoText}>{item.time}</Text></View>
-        {item.status !== 'OFF' && <View style={styles.infoRow}><Text style={styles.infoIcon}>📍</Text><Text style={styles.infoText}>{item.storeName}</Text></View>}
+        <View style={styles.infoRow}>
+          <Ionicons name="time-outline" size={16} color={colors.subText} style={styles.infoIcon} />
+          <Text style={styles.infoText}>{item.time}</Text>
+        </View>
+        {item.status !== 'OFF' && (
+          <View style={styles.infoRow}>
+            <Ionicons name="location-outline" size={16} color={colors.subText} style={styles.infoIcon} />
+            <Text style={styles.infoText}>{item.storeName}</Text>
+          </View>
+        )}
       </View>
       {item.status === 'SCHEDULED' && (
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenModal(item, 'LEAVE')}><Text style={styles.actionButtonText}>휴가 신청</Text></TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.substituteButton]} onPress={() => handleOpenModal(item, 'SUBSTITUTE')}><Text style={styles.actionButtonText}>대타 신청</Text></TouchableOpacity>
+          <TouchableOpacity style={[styles.actionButton, styles.substituteButton]} onPress={() => handleOpenModal(item, 'SUBSTITUTE')}><Text style={[styles.actionButtonText, { color: '#FFFFFF' }]}>대타 신청</Text></TouchableOpacity>
         </View>
       )}
     </View>
@@ -197,7 +255,9 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
       </View>
       <View style={styles.calendarContainer}>
         <View style={styles.weekDaysContainer}>
-          <TouchableOpacity onPress={() => moveWeek(-1)} style={styles.arrowButton}><Text style={styles.arrowText}>◀</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => moveWeek(-1)} style={styles.arrowButton}>
+            <Ionicons name="chevron-back-outline" size={20} color={colors.subText} />
+          </TouchableOpacity>
           {generateWeekDates(baseDate).map((item) => {
             const isSelected = item.fullDate === selectedDate;
             const isWeekend = item.dayIndex === 0 ? '#EF4444' : item.dayIndex === 6 ? '#3B82F6' : colors.subText;
@@ -208,15 +268,32 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
               </TouchableOpacity>
             );
           })}
-          <TouchableOpacity onPress={() => moveWeek(1)} style={styles.arrowButton}><Text style={styles.arrowText}>▶</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => moveWeek(1)} style={styles.arrowButton}>
+            <Ionicons name="chevron-forward-outline" size={20} color={colors.subText} />
+          </TouchableOpacity>
         </View>
       </View>
 
-      {loading ? <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator size="large" color="#2563EB" /></View>
-       : <FlatList data={scheduleData.filter((item) => item.fullDate === selectedDate)} renderItem={renderShiftCard} keyExtractor={item => item.id} contentContainerStyle={styles.listContainer} ListEmptyComponent={<View style={styles.emptyContainer}><Text style={styles.emptyIcon}>🏖️</Text><Text style={styles.emptyText}>예정된 근무가 없습니다.</Text></View>} />
-      }
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={scheduleData.filter((item) => item.fullDate === selectedDate)}
+          renderItem={renderShiftCard}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="calendar-outline" size={48} color={colors.subText} style={{ marginBottom: 16 }} />
+              <Text style={styles.emptyText}>예정된 근무가 없습니다.</Text>
+            </View>
+          }
+        />
+      )}
 
-      <CalendarModal isVisible={isMonthModalVisible} onClose={() => setMonthModalVisible(false)} onDateSelect={onDateSelectFromCalendar} storeName={storeName} colors={colors} />
+      <CalendarModal isVisible={isMonthModalVisible} onClose={() => setMonthModalVisible(false)} onDateSelect={onDateSelectFromCalendar} shifts={scheduleData} colors={colors} />
 
       <Modal animationType="fade" transparent={true} visible={isReqModalVisible} onRequestClose={() => setReqModalVisible(false)}>
         <View style={styles.modalOverlay}>
@@ -235,21 +312,13 @@ const ScheduleScreen = ({ route }: { route: { params?: { userInfo: User | null }
   );
 };
 
-const CalendarModal = ({ isVisible, onClose, onDateSelect, storeName, colors }: any) => {
+const CalendarModal = ({ isVisible, onClose, onDateSelect, shifts, colors }: any) => {
   const [calendarDate, setCalendarDate] = useState(new Date());
-  const [monthlySchedule, setMonthlySchedule] = useState<Shift[]>([]);
   const styles = getThemedStyles(colors);
-
-  useEffect(() => {
-    if (isVisible) {
-      const newMonthlySchedule = generateDummyScheduleForMonth(calendarDate, storeName);
-      setMonthlySchedule(newMonthlySchedule);
-    }
-  }, [isVisible, calendarDate, storeName]);
 
   const markedDates = useMemo(() => {
     const marks: { [key: string]: { dots: { color: string }[] } } = {};
-    monthlySchedule.forEach((item: Shift) => {
+    (Array.isArray(shifts) ? shifts : []).forEach((item: Shift) => {
       const color = item.status === 'OFF' ? 'red' : 'blue';
       if (!marks[item.fullDate]) {
         marks[item.fullDate] = { dots: [] };
@@ -259,7 +328,7 @@ const CalendarModal = ({ isVisible, onClose, onDateSelect, storeName, colors }: 
       }
     });
     return marks;
-  }, [monthlySchedule]);
+  }, [shifts]);
 
   const changeMonth = (offset: number) => {
     setCalendarDate(prev => setMonth(prev, getMonth(prev) + offset));
@@ -294,9 +363,13 @@ const CalendarModal = ({ isVisible, onClose, onDateSelect, storeName, colors }: 
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity style={styles.calendarModalContent} activeOpacity={1}>
           <View style={styles.calendarHeader}>
-            <TouchableOpacity onPress={() => changeMonth(-1)}><Text style={styles.calendarNav}>◀</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => changeMonth(-1)}>
+              <Ionicons name="chevron-back-outline" size={24} color={colors.primary} />
+            </TouchableOpacity>
             <Text style={styles.calendarTitle}>{`${getYear(calendarDate)}년 ${getMonth(calendarDate) + 1}월`}</Text>
-            <TouchableOpacity onPress={() => changeMonth(1)}><Text style={styles.calendarNav}>▶</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => changeMonth(1)}>
+              <Ionicons name="chevron-forward-outline" size={24} color={colors.primary} />
+            </TouchableOpacity>
           </View>
           <View style={styles.weekHeader}>
             {KOREAN_DAYS.map(day => <Text key={day} style={styles.weekDay}>{day}</Text>)}
@@ -316,9 +389,8 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   calendarContainer: { backgroundColor: colors.card, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   weekDaysContainer: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 10 },
   arrowButton: { paddingHorizontal: 5, paddingVertical: 10 },
-  arrowText: { fontSize: 16, color: colors.subText },
   dateBox: { width: 42, height: 65, justifyContent: 'center', alignItems: 'center', borderRadius: 10, backgroundColor: isDarkMode ? '#2A2A2A' : '#F9FAFB' },
-  dateBoxSelected: { backgroundColor: '#2563EB' },
+  dateBoxSelected: { backgroundColor: colors.primary },
   dayText: { fontSize: 13, fontWeight: '600', marginBottom: 4 },
   dateText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   dateTextSelected: { color: '#FFFFFF' },
@@ -339,14 +411,13 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   badgeTextOff: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 12, fontWeight: '600' },
   cardBody: { marginBottom: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  infoIcon: { fontSize: 16, marginRight: 8 },
+  infoIcon: { marginRight: 8 },
   infoText: { fontSize: 15, color: colors.text, fontWeight: '500' },
   buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, gap: 10 },
   actionButton: { flex: 1, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  substituteButton: { backgroundColor: isDarkMode ? '#5B21B6' : '#A78BFA' },
+  substituteButton: { backgroundColor: colors.primary },
   actionButtonText: { color: isDarkMode ? colors.text : '#1F2937', fontSize: 14, fontWeight: '600' },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
-  emptyIcon: { fontSize: 50, marginBottom: 16 },
   emptyText: { fontSize: 16, color: colors.subText, fontWeight: '500' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '85%', backgroundColor: colors.card, borderRadius: 16, padding: 24, elevation: 5 },
@@ -356,12 +427,12 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   modalButtonGroup: { flexDirection: 'row', gap: 12 },
   modalCancelButton: { flex: 1, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   modalCancelText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  modalSubmitButton: { flex: 1, backgroundColor: '#2563EB', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  modalSubmitButton: { flex: 1, backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
   modalSubmitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
   // Calendar Modal Styles
   calendarModalContent: { width: '90%', backgroundColor: colors.card, borderRadius: 16, padding: 20 },
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10 },
-  calendarNav: { fontSize: 20, color: colors.primary, padding: 10 },
+  calendarNav: { padding: 10 },
   calendarTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   weekHeader: { flexDirection: 'row', justifyContent: 'space-around', borderBottomWidth: 1, borderColor: colors.border, paddingBottom: 10, marginBottom: 5 },
   weekDay: { flex: 1, textAlign: 'center', fontSize: 13, color: colors.subText, fontWeight: '600' },

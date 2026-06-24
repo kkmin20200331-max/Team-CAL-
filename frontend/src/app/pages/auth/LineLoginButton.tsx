@@ -1,5 +1,6 @@
 import React from "react";
 import { useTheme } from "next-themes";
+import { API_BASE } from "../../../lib/axiosInstance";
 
 const GREEN = "#18A022";
 const DARK_GREEN = "#07790F";
@@ -13,7 +14,7 @@ const LineLoginButton = () => {
 
   const handleLineLogin = () => {
     window.open(
-      `http://localhost:8080/api/line/login?userId=${user.id}`,
+      `${API_BASE}/line/login?userId=${user.id}`,
       "_blank",
       "width=500,height=700",
     );

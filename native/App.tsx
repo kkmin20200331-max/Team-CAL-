@@ -35,11 +35,13 @@ import ProfileEditScreen from './src/screens/mypage/ProfileEditScreen';
 import QRCheckInScreen from './src/screens/main/QRCheckInScreen';
 import SubstituteScreen from './src/screens/schedule/SubstituteScreen';
 
+import { Ionicons } from '@expo/vector-icons';
+
 // Contexts
 import { AppProvider, useApp } from './src/contexts/AppContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
-import { ThemeProvider } from './src/contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { BoardProvider } from './src/contexts/BoardContext';
 import { ScheduleProvider } from './src/contexts/ScheduleContext';
 
@@ -79,6 +81,8 @@ const toastConfig = {
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
   }),
@@ -112,20 +116,51 @@ const MainStack = createStackNavigator();
 const AdminTab = createBottomTabNavigator();
 const StaffTab = createBottomTabNavigator();
 const BoardStack = createStackNavigator();
+const asScreen = (component: React.ComponentType<any>) => component;
 
 function AuthNavigator() {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="SignupChoice" component={SignupChoiceScreen} />
-      <AuthStack.Screen name="Signup" component={SignupScreen} />
+      <AuthStack.Screen name="Signup" component={asScreen(SignupScreen)} />
     </AuthStack.Navigator>
   );
 }
 
 function AdminTabNavigator() {
+  const { colors } = useTheme();
   return (
-    <AdminTab.Navigator screenOptions={{ headerShown: false }}>
+    <AdminTab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.subText,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          height: Platform.OS === 'ios' ? 84 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ color, size, focused }) => {
+          let iconName: any = 'grid';
+          if (route.name === 'AdminDashboard') {
+            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          } else if (route.name === 'EmployeeManagement') {
+            iconName = focused ? 'people' : 'people-outline';
+          } else if (route.name === 'AdminMyPage') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+          return <Ionicons name={iconName} size={size || 22} color={color} />;
+        },
+      })}
+    >
       <AdminTab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: '대시보드' }} />
       <AdminTab.Screen name="EmployeeManagement" component={EmployeeManagementScreen} options={{ title: '직원관리' }} />
       <AdminTab.Screen name="AdminMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
@@ -137,15 +172,47 @@ function BoardNavigator() {
   return (
     <BoardStack.Navigator screenOptions={{ headerShown: false }}>
       <BoardStack.Screen name="Board" component={BoardScreen} />
-      <BoardStack.Screen name="BoardDetail" component={BoardDetailScreen} />
+      <BoardStack.Screen name="BoardDetail" component={asScreen(BoardDetailScreen)} />
       <BoardStack.Screen name="BoardWrite" component={BoardWriteScreen} />
     </BoardStack.Navigator>
   );
 }
 
 function StaffTabNavigator() {
+  const { colors } = useTheme();
   return (
-    <StaffTab.Navigator screenOptions={{ headerShown: false }}>
+    <StaffTab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.subText,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          height: Platform.OS === 'ios' ? 84 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ color, size, focused }) => {
+          let iconName: any = 'home';
+          if (route.name === 'StaffDashboard') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'StaffSchedule') {
+            iconName = focused ? 'calendar' : 'calendar-outline';
+          } else if (route.name === 'Notifications') {
+            iconName = focused ? 'notifications' : 'notifications-outline';
+          } else if (route.name === 'StaffMyPage') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+          return <Ionicons name={iconName} size={size || 22} color={color} />;
+        },
+      })}
+    >
       <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '홈' }} />
       <StaffTab.Screen name="StaffSchedule" component={StaffScheduleScreen} options={{ title: '스케줄' }} />
       <StaffTab.Screen name="Notifications" component={NotificationScreen} options={{ title: '알림' }} />
@@ -165,17 +232,26 @@ function MainNavigator() {
       )}
       <MainStack.Screen name="AdminSchedule" component={AdminScheduleScreen} />
       <MainStack.Screen name="AdminDailySchedule" component={AdminDailyScheduleScreen} />
-      <MainStack.Screen name="ShiftEditor" component={ShiftEditorScreen} />
+      <MainStack.Screen name="ShiftEditor" component={asScreen(ShiftEditorScreen)} />
       <MainStack.Screen name="EmployeeDetail" component={EmployeeDetailScreen} />
       <MainStack.Screen name="SubstituteManagement" component={SubstituteManagementScreen} />
       <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
       <MainStack.Screen name="BoardNavigator" component={BoardNavigator} />
       <MainStack.Screen name="Payroll" component={PayrollScreen} />
-      <MainStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+      <MainStack.Screen name="ProfileEdit" component={asScreen(ProfileEditScreen)} />
       <MainStack.Screen name="Contract" component={ContractScreen} />
       <MainStack.Screen name="HealthCert" component={HealthCertScreen} />
       <MainStack.Screen name="QRCheckIn" component={QRCheckInScreen} />
       <MainStack.Screen name="Substitute" component={SubstituteScreen} />
+    </MainStack.Navigator>
+  );
+}
+
+function BranchSetupNavigator() {
+  return (
+    <MainStack.Navigator screenOptions={{ headerShown: false }}>
+      <MainStack.Screen name="BranchSelect" component={BranchSelectScreen} />
+      <MainStack.Screen name="AddBranch" component={AddBranchScreen} />
     </MainStack.Navigator>
   );
 }
@@ -189,7 +265,7 @@ function AppContent() {
   }
 
   if (!hasSelectedBranch) {
-    return <BranchSelectScreen />;
+    return <BranchSetupNavigator />;
   }
 
   if (userStatus !== 'ACTIVE') {

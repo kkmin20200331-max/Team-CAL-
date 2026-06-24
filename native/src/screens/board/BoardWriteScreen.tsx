@@ -1,136 +1,150 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import Toast from 'react-native-toast-message';
-import * as Notifications from 'expo-notifications';
+import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Post } from '../../types/Post';
+
+const categories: Array<{ label: string; value: Post['category'] }> = [
+  { label: '공지사항', value: 'NOTICE' },
+  { label: '건의사항', value: 'MENU' },
+  { label: '분실물', value: 'LOST' },
+  { label: '자유게시판', value: 'EVENT' },
+  { label: '매뉴얼', value: 'MANUAL' },
+];
 
 const BoardWriteScreen = ({ route, navigation }: any) => {
   const { isEdit, postId } = route.params || {};
   const { userInfo } = useApp();
   const { posts, addPost, updatePost } = useBoard();
-  
-  const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
-  const postToEdit = isEdit ? posts.find(p => p.id === postId) : null;
+  const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
+  const postToEdit = isEdit ? posts.find((post) => post.id === postId) : null;
 
-  const getInitialCategory = (catCode?: string) => {
-    if (catCode === 'MENU') return '건의사항';
-    if (catCode === 'EVENT') return '자유게시판';
-    if (catCode === 'LOST') return '분실물';
-    return '공지사항';
-  };
-  
-  const [title, setTitle] = useState(isEdit && postToEdit ? t(postToEdit.title) : '');
-  const [content, setContent] = useState(isEdit && postToEdit ? t(postToEdit.content) : '');
-  const [category, setCategory] = useState(isEdit && postToEdit ? getInitialCategory(postToEdit.category) : '공지사항'); 
-  const predefinedCategories = ['공지사항', '건의사항', '분실물', '자유게시판'];
+  const [title, setTitle] = useState(isEdit && postToEdit ? postToEdit.title : '');
+  const [content, setContent] = useState(isEdit && postToEdit ? postToEdit.content : '');
+  const [category, setCategory] = useState<Post['category']>(
+    isEdit && postToEdit ? postToEdit.category : 'NOTICE',
+  );
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
-      Toast.show({ type: 'error', text1: '알림', text2: '제목과 내용을 모두 입력해주세요.' });
+      Toast.show({ type: 'error', text1: '입력 오류', text2: '제목과 내용을 모두 입력해주세요.' });
       return;
     }
 
-    let dummyCategory = 'NOTICE';
-    if (category === '건의사항') dummyCategory = 'MENU';
-    if (category === '자유게시판') dummyCategory = 'EVENT';
-    if (category === '분실물') dummyCategory = 'LOST';
-      
-    if (isEdit && postToEdit) {
-      const updatedPost: Post = {
-        ...postToEdit,
-        category: dummyCategory,
-        title: title,
-        content: content,
-      };
-      updatePost(updatedPost);
-      Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 수정되었습니다.' });
-    } else {
-      const newPostData = {
-        category: dummyCategory,
-        title: title,
-        content: content,
-        badge: 'badgeNew',
-        isPinned: false,
-      };
-      addPost(newPostData);
-      
-      if (category === '공지사항') {
-        try {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: "📢 새로운 공지사항 등록",
-              body: `[공지] ${title}`,
-              data: {
-                screen: 'Board',
-              }
-            },
-            // ✅ [오류 수정] trigger를 null로 설정하여 즉시 발송
-            trigger: null,
-          });
-        } catch (notifError) {
-          console.log("알림 발송 실패:", notifError);
-          Alert.alert("알림 실패", "푸시 알림을 보내는 데 실패했습니다.");
-        }
-      }
-      Toast.show({ type: 'success', text1: '성공', text2: '게시글이 성공적으로 등록되었습니다.' });
+    if (!storeId || !userInfo?.id) {
+      Toast.show({ type: 'error', text1: '저장 실패', text2: '매장 또는 사용자 정보가 없습니다.' });
+      return;
     }
-    navigation.goBack();
+
+    setSubmitting(true);
+
+    try {
+      if (isEdit && postToEdit) {
+        await updatePost({
+          ...postToEdit,
+          category,
+          title: title.trim(),
+          content: content.trim(),
+        });
+        Toast.show({ type: 'success', text1: '수정 완료', text2: '게시글이 수정되었습니다.' });
+      } else {
+        await addPost(
+          {
+            category,
+            title: title.trim(),
+            content: content.trim(),
+            badge: 'badgeNew',
+            isPinned: false,
+          },
+          {
+            storeId,
+            writerId: userInfo.id,
+          },
+        );
+        Toast.show({ type: 'success', text1: '등록 완료', text2: '게시글이 등록되었습니다.' });
+      }
+
+      navigation.goBack();
+    } catch (error) {
+      console.error('게시글 저장 오류:', error);
+      Toast.show({ type: 'error', text1: '저장 실패', text2: '게시글 저장 중 오류가 발생했습니다.' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEdit ? '글 수정하기' : '새 글 쓰기'}</Text>
+        <Text style={styles.headerTitle}>{isEdit ? '글 수정' : '새 글 작성'}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={styles.label}>카테고리 선택</Text>
+        <Text style={styles.label}>카테고리</Text>
         <View style={styles.categoryContainer}>
-          {predefinedCategories.map((cat) => (
-            <TouchableOpacity 
-              key={cat} 
-              style={[styles.categoryButton, category === cat && styles.categoryButtonActive]}
-              onPress={() => setCategory(cat)}
+          {categories.map((item) => (
+            <TouchableOpacity
+              key={item.value}
+              style={[styles.categoryButton, category === item.value && styles.categoryButtonActive]}
+              onPress={() => setCategory(item.value)}
             >
-              <Text style={[styles.categoryText, category === cat && styles.categoryTextActive]}>{cat}</Text>
+              <Text style={[styles.categoryText, category === item.value && styles.categoryTextActive]}>
+                {item.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <Text style={styles.label}>제목</Text>
-        <TextInput 
-          style={styles.input} 
-          placeholder="제목을 입력하세요" 
-          value={title} 
-          onChangeText={setTitle} 
+        <TextInput
+          style={styles.input}
+          placeholder="제목을 입력하세요"
+          value={title}
+          onChangeText={setTitle}
           placeholderTextColor={colors.subText}
         />
 
         <Text style={styles.label}>내용</Text>
-        <TextInput 
-          style={[styles.input, styles.contentInput]} 
-          placeholder="내용을 자세히 작성해주세요." 
-          value={content} 
-          onChangeText={setContent} 
-          multiline 
+        <TextInput
+          style={[styles.input, styles.contentInput]}
+          placeholder="내용을 작성해주세요."
+          value={content}
+          onChangeText={setContent}
+          multiline
           textAlignVertical="top"
           placeholderTextColor={colors.subText}
         />
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>{isEdit ? '수정하기' : '등록하기'}</Text>
+        <TouchableOpacity
+          style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.submitButtonText}>{isEdit ? '수정하기' : '등록하기'}</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -139,24 +153,52 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
 
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: colors.text },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  backButton: { padding: 4, width: 40, justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   container: { padding: 20 },
-  
   label: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 12, marginTop: 20 },
   categoryContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  categoryButton: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', borderWidth: 1, borderColor: 'transparent' },
-  categoryButtonActive: { backgroundColor: '#EFF6FF', borderColor: '#3B82F6' },
+  categoryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: isDarkMode ? '#374151' : '#F3F4F6',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  categoryButtonActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
   categoryText: { fontSize: 14, color: colors.subText, fontWeight: '600' },
-  categoryTextActive: { color: '#2563EB', fontWeight: 'bold' },
-  
-  input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 16, fontSize: 15, color: colors.text },
+  categoryTextActive: { color: colors.primary, fontWeight: 'bold' },
+  input: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 15,
+    color: colors.text,
+  },
   contentInput: { minHeight: 200, paddingTop: 16 },
-  
-  submitButton: { backgroundColor: '#2563EB', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 32, marginBottom: 40 },
-  submitButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }
+  submitButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 32,
+    marginBottom: 40,
+  },
+  submitButtonDisabled: { opacity: 0.7 },
+  submitButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
 });
 
 export default BoardWriteScreen;

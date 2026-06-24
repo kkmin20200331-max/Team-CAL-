@@ -1,6 +1,7 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
+import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import axios from "axios";
 import {
   ChevronLeft, ChevronRight, Calendar,
   UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3, Video,
@@ -21,7 +22,6 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 // 한국 공휴일 (2025~2026)
 const HOLIDAYS: { [key: string]: string } = {
@@ -94,21 +94,25 @@ export default function MonthlySchedule() {
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
@@ -122,20 +126,20 @@ export default function MonthlySchedule() {
   const [aiPreview, setAiPreview] = useState<AiSchedulePreview | null>(null);
 
   useEffect(() => {
-    if (branchId) fetchShifts();
-  }, [currentMonth, branchId]);
+    if (selectedBranchId) fetchShifts();
+  }, [currentMonth, selectedBranchId]);
 
   useEffect(() => {
-    if (branchId) fetchEmployees();
-  }, [branchId]);
+    if (selectedBranchId) fetchEmployees();
+  }, [selectedBranchId]);
 
   const fetchShifts = async () => {
     setLoading(true);
     const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
     const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
     try {
-      const res = await API.get("/shift", {
-        params: { store_id: branchId, start_date: start, end_date: end },
+      const res = await axiosInstance.get("/shift", {
+        params: { store_id: selectedBranchId, start_date: start, end_date: end },
       });
       setShifts(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
@@ -147,7 +151,7 @@ export default function MonthlySchedule() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await API.get("/users", { params: { store_id: branchId } });
+      const res = await axiosInstance.get("/users", { params: { store_id: selectedBranchId } });
       setEmployees(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("직원 조회 실패:", err);
@@ -187,13 +191,13 @@ export default function MonthlySchedule() {
   };
 
   const handleAiPreview = async () => {
-    if (!branchId) return;
+    if (!selectedBranchId) return;
     setAiLoading(true);
     try {
       const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
       const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-      const res = await API.post("/shift/ai-preview", {
-        store_id: branchId,
+      const res = await axiosInstance.post("/shift/ai-preview", {
+        store_id: selectedBranchId,
         start_date: start,
         end_date: end,
       });
@@ -207,13 +211,13 @@ export default function MonthlySchedule() {
   };
 
   const handleAiApply = async () => {
-    if (!branchId || !aiPreview) return;
+    if (!selectedBranchId || !aiPreview) return;
     setAiLoading(true);
     try {
       const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
       const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-      await API.post("/shift/ai-apply", {
-        store_id: branchId,
+      await axiosInstance.post("/shift/ai-apply", {
+        store_id: selectedBranchId,
         start_date: start,
         end_date: end,
         shifts: aiPreview.shifts,
@@ -318,10 +322,10 @@ export default function MonthlySchedule() {
 
         {/* 뷰 전환 버튼 */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 15, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(`/admin/schedule/weekly/${branchId}`)}>
+          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 15, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }} onClick={() => navigate(selectedBranchId ? `/admin/schedule/weekly/${selectedBranchId}` : '/admin/branch-selection')}>
             {t.weeklyView}
           </button>
-          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 15, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={() => navigate(`/admin/schedule/daily/${branchId}/${format(new Date(), 'yyyy-MM-dd')}`)}>
+          <button style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 15, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} onClick={() => navigate(selectedBranchId ? `/admin/schedule/daily/${selectedBranchId}/${format(new Date(), 'yyyy-MM-dd')}` : '/admin/branch-selection')}>
             <Calendar size={16} />{t.dailyView}
           </button>
         </div>
@@ -367,7 +371,7 @@ export default function MonthlySchedule() {
                 return (
                   <div
                     key={index}
-                    onClick={() => isCurrentMonth && navigate(`/admin/schedule/daily/${branchId}/${dateStr}`)}
+                    onClick={() => isCurrentMonth && selectedBranchId && navigate(`/admin/schedule/daily/${selectedBranchId}/${dateStr}`)}
                     style={{
                       minHeight: 90, padding: 8, background: dateBg,
                       borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}`,

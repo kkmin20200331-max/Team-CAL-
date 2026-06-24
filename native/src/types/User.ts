@@ -5,8 +5,8 @@ export interface User {
   name: string;
   phone: string;
   
-  // 역할: 관리자, 직원, 또는 승인 대기자
-  role: 'ADMIN' | 'STAFF' | 'GUEST';
+  // 역할: 관리자 또는 직원
+  role: 'ADMIN' | 'STAFF';
   
   // 계정 상태: 활성, 또는 승인 대기 중
   status: 'ACTIVE' | 'PENDING';
@@ -22,4 +22,9 @@ export interface User {
 
   // [선택] 지점 이름 (예: 미금점)
   branchName?: string;
+
+  payRate?: number;
+  payType?: 'HOURLY' | 'SALARY';
+  password?: string;
+  color?: string;
 }

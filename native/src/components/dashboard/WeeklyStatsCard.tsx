@@ -52,6 +52,8 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   statHalf: {
     flex: 1, 
@@ -64,7 +66,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   statValue: {
     fontSize: 24,
     fontWeight: '800',
-    color: isDarkMode ? '#34C759' : '#0cbb00',
+    color: colors.primary,
     marginBottom: 4,
   },
   statLabel: {

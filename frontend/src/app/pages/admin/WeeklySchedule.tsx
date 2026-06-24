@@ -1,6 +1,7 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
+import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
-import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import {
@@ -17,7 +18,6 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 // 한국 공휴일 (2025~2026)
 const HOLIDAYS: { [key: string]: string } = {
@@ -108,21 +108,25 @@ export default function WeeklySchedule() {
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
-    { icon: Video, label: 'CCTV 분석', path: `/admin/cctv/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
@@ -137,18 +141,18 @@ export default function WeeklySchedule() {
   const weekDates = getWeekDates(currentWeek);
 
   useEffect(() => {
-    if (!branchId) return;
+    if (!selectedBranchId) return;
     fetchEmployees();
-  }, [branchId]);
+  }, [selectedBranchId]);
 
   useEffect(() => {
-    if (!branchId) return;
+    if (!selectedBranchId) return;
     fetchShifts();
-  }, [currentWeek, branchId]);
+  }, [currentWeek, selectedBranchId]);
 
   const fetchEmployees = async () => {
     try {
-      const res = await API.get("/users", { params: { store_id: branchId } });
+      const res = await axiosInstance.get("/users", { params: { store_id: selectedBranchId } });
       setEmployees(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("직원 조회 실패:", err);
@@ -160,9 +164,9 @@ export default function WeeklySchedule() {
       setLoading(true);
       const startDate = format(weekDates[0], "yyyy-MM-dd");
       const endDate = format(weekDates[6], "yyyy-MM-dd");
-      const res = await API.get("/shift", {
+      const res = await axiosInstance.get("/shift", {
         params: {
-          store_id: branchId,
+          store_id: selectedBranchId,
           start_date: startDate,
           end_date: endDate,
         },
@@ -275,8 +279,8 @@ export default function WeeklySchedule() {
 
         {/* 뷰 전환 */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-          <button onClick={() => navigate(`/admin/schedule/monthly/${branchId}`)} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.monthlyView}</button>
-          <button onClick={() => navigate(`/admin/schedule/daily/${branchId}/${format(new Date(), 'yyyy-MM-dd')}`)} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.dailyView}</button>
+          <button onClick={() => navigate(selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection')} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.monthlyView}</button>
+          <button onClick={() => navigate(selectedBranchId ? `/admin/schedule/daily/${selectedBranchId}/${format(new Date(), 'yyyy-MM-dd')}` : '/admin/branch-selection')} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.dailyView}</button>
         </div>
 
         <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', overflow: 'hidden' }}>
@@ -294,7 +298,7 @@ export default function WeeklySchedule() {
                     const isSaturday = date.getDay() === 6;
                     const isRed = !!(holiday || isSunday);
                     return (
-                      <th key={index} onClick={() => navigate(`/admin/schedule/daily/${branchId}/${dateStr}`)}
+                      <th key={index} onClick={() => selectedBranchId && navigate(`/admin/schedule/daily/${selectedBranchId}/${dateStr}`)}
                         style={{
                           padding: '14px 12px', textAlign: 'center', cursor: 'pointer',
                           borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}`,
@@ -343,13 +347,13 @@ export default function WeeklySchedule() {
                             background: isRed ? (isDark ? 'rgba(239,68,68,0.05)' : 'rgba(254,202,202,0.15)') : isSaturday ? (isDark ? 'rgba(37,99,235,0.05)' : 'rgba(219,234,254,0.15)') : 'transparent',
                           }}>
                             {dayShifts.length === 0 ? (
-                              <div onClick={() => navigate(`/admin/schedule/daily/${branchId}/${dateStr}`)} style={{ height: 48, borderRadius: 8, cursor: 'pointer' }} />
+                              <div onClick={() => selectedBranchId && navigate(`/admin/schedule/daily/${selectedBranchId}/${dateStr}`)} style={{ height: 48, borderRadius: 8, cursor: 'pointer' }} />
                             ) : (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                 {dayShifts.map((shift) => {
                                   const ss = getStatusStyle(shift.status, isDark);
                                   return (
-                                    <div key={shift.id} onClick={() => navigate(`/admin/schedule/daily/${branchId}/${dateStr}`)}
+                                    <div key={shift.id} onClick={() => selectedBranchId && navigate(`/admin/schedule/daily/${selectedBranchId}/${dateStr}`)}
                                       style={{ ...ss, borderRadius: 8, padding: '6px 4px', fontSize: 11, cursor: 'pointer' }}>
                                       <div style={{ fontWeight: 700 }}>{formatTime(shift.start_at)}</div>
                                       <div style={{ fontWeight: 700 }}>{formatTime(shift.end_at)}</div>

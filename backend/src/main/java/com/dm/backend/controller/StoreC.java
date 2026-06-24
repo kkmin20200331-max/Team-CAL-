@@ -61,6 +61,11 @@ public class StoreC {
         return storeService.getStoreByUserId(user_id);
     }
 
+    @GetMapping("/my-memberships")
+    public List<StoreVo> getMyStoreMemberships(@RequestParam String user_id) {
+        return storeService.getStoreMemberships(user_id);
+    }
+
     // =========================
     // [공통]
     // =========================
