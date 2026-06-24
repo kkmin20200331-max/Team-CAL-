@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PasswordInput from "../../components/PasswordInput";
-import axios from "axios";
+import axiosInstance from "../../../lib/axiosInstance";
 import { useTheme } from "next-themes";
 import {
   Select,
@@ -12,6 +12,7 @@ import {
 } from "../../components/ui/select";
 import { Switch } from "../../components/ui/switch";
 import { signupAPI } from "../../components/api/auth";
+import { getAllStoresAPI, createStoreMemberAPI } from "../../components/api/store";
 
 const BG = "#EEF5DD";
 const GREEN = "#00A200";
@@ -245,14 +246,25 @@ export default function Signup() {
   const [selectedStoreId, setSelectedStoreId] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // new loading and error state for store list
+  const [storesLoading, setStoresLoading] = useState(false);
+  const [storesError, setStoresError] = useState("");
+
   const t = translations[language as keyof typeof translations];
 
   useEffect(() => {
     if (role === "employee") {
-      axios
-        .get("http://localhost:8080/api/store/all")
-        .then((res) => setStores(Array.isArray(res.data) ? res.data : []))
-        .catch(() => {});
+      setStoresLoading(true);
+      setStoresError("");
+      getAllStoresAPI()
+        .then((res) => {
+          setStores(Array.isArray(res.data) ? res.data : []);
+        })
+        .catch((err) => {
+          console.error('Failed to load stores', err);
+          setStoresError(t.loadingStores + ' (오류)');
+        })
+        .finally(() => setStoresLoading(false));
     }
   }, [role]);
 
@@ -269,7 +281,7 @@ export default function Signup() {
     setErrorMsg("");
     setNicknameChecking(true);
     try {
-      await axios.get("http://localhost:8080/api/users/check-nickname", {
+      await axiosInstance.get("/users/check-nickname", {
         params: { nickname },
       });
       setNicknameStatus("ok");
@@ -344,7 +356,7 @@ export default function Signup() {
           : {}),
       });
       if (role === "employee") {
-        await axios.post("http://localhost:8080/api/store_member", {
+        await createStoreMemberAPI({
           id: "SM_" + Date.now(),
           store_id: selectedStoreId,
           user_id: res.data.id,
@@ -353,9 +365,15 @@ export default function Signup() {
       alert(t.successAlert);
       navigate("/auth/login");
     } catch (err: any) {
-      setErrorMsg(
-        err.response?.status === 409 ? t.errorDuplicate : t.errorServer,
-      );
+      if (err.response?.status === 409) {
+        setErrorMsg(
+          typeof err.response.data === "string" && err.response.data
+            ? err.response.data
+            : t.errorDuplicate,
+        );
+      } else {
+        setErrorMsg(t.errorServer);
+      }
     }
   };
 
@@ -800,37 +818,37 @@ export default function Signup() {
 
               {role === "employee" && (
                 <Field labelStyle={labelStyle} label={t.selectStore}>
-                  <Select
-                    value={selectedStoreId}
-                    onValueChange={setSelectedStoreId}
-                  >
-                    <SelectTrigger
-                      style={{
-                        height: 37.53,
-                        background: INPUT_BG,
-                        border: "none",
-                        borderRadius: 9,
-                        fontSize: 15,
-                        color: "#333",
-                        boxShadow: INPUT_SHADOW,
-                      }}
+                  {storesLoading ? (
+                    <div style={{ color: '#666', fontSize: 13 }}>{t.loadingStores}...</div>
+                  ) : storesError ? (
+                    <div style={{ color: '#e03434', fontSize: 13 }}>{storesError}</div>
+                  ) : (
+                    <Select
+                      value={selectedStoreId}
+                      onValueChange={setSelectedStoreId}
                     >
-                      <SelectValue placeholder={t.storePlaceholder} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stores.length === 0 ? (
-                        <SelectItem value="none" disabled>
-                          {t.loadingStores}
-                        </SelectItem>
-                      ) : (
-                        stores.map((s) => (
+                      <SelectTrigger
+                        style={{
+                          height: 37.53,
+                          background: INPUT_BG,
+                          border: "none",
+                          borderRadius: 9,
+                          fontSize: 15,
+                          color: "#333",
+                          boxShadow: INPUT_SHADOW,
+                        }}
+                      >
+                        <SelectValue placeholder={t.storePlaceholder} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stores.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.name}
                           </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </Field>
               )}
 
@@ -872,21 +890,27 @@ export default function Signup() {
                 </button>
                 <button
                   type="submit"
+                  disabled={role === "employee" && !selectedStoreId}
                   style={{
                     flex: 2,
                     height: 67.03,
-                    background: GREEN,
+                    background: role === "employee" && !selectedStoreId ? '#90c090' : GREEN,
                     border: "none",
                     borderRadius: 9,
                     color: "#fff",
                     fontFamily: FONT_CAL,
                     fontWeight: 400,
                     fontSize: 16,
-                    cursor: "pointer",
+                    cursor: role === "employee" && !selectedStoreId ? "not-allowed" : "pointer",
+                    opacity: role === "employee" && !selectedStoreId ? 0.6 : 1,
                     transition: "opacity 0.15s",
                   }}
-                  onMouseOver={(e) => (e.currentTarget.style.opacity = "0.88")}
-                  onMouseOut={(e) => (e.currentTarget.style.opacity = "1")}
+                  onMouseOver={(e) => {
+                    if (!(role === "employee" && !selectedStoreId)) e.currentTarget.style.opacity = "0.88";
+                  }}
+                  onMouseOut={(e) => {
+                    if (!(role === "employee" && !selectedStoreId)) e.currentTarget.style.opacity = "1";
+                  }}
                 >
                   {t.signup}
                 </button>

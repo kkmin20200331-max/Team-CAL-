@@ -1,161 +1,217 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SectionList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  SectionList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useApp } from '../../contexts/AppContext';
-import { getStaffListAPI, getGuestListAPI } from '../../../api/auth';
 import { useFocusEffect } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
+import { getStorePendingStaffAPI, getStoreStaffAPI } from '../../../api/auth';
+import { useApp } from '../../contexts/AppContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import Ionicons from '@expo/vector-icons/Ionicons';
+
+type StaffRow = {
+  id: string;
+  name: string;
+  username?: string;
+  phone?: string;
+  role?: string;
+  status?: string;
+  sectionStatus: 'ACTIVE' | 'PENDING';
+};
 
 const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   const { userInfo } = useApp();
+  const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
 
-  const [activeEmployees, setActiveEmployees] = useState([]);
-  const [pendingEmployees, setPendingEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [activeStaff, setActiveStaff] = useState<StaffRow[]>([]);
+  const [pendingStaff, setPendingStaff] = useState<StaffRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchEmployees = async () => {
-    if (!userInfo || !userInfo.store_id) return;
+  const loadEmployees = useCallback(async () => {
+    if (!storeId) {
+      setActiveStaff([]);
+      setPendingStaff([]);
+      return;
+    }
 
     setLoading(true);
     try {
-      // 1. 활동 중인 직원 목록 API 호출
-      // URL: /api/users?store_id={store_id}
-      // DB: STORE_MEMBER 테이블에서 status가 'ACTIVE'인 직원을 USERS 테이블과 조인하여 조회
-      const activeRes = await getStaffListAPI(userInfo.store_id);
-      setActiveEmployees(activeRes.data);
+      const [staffRes, pendingRes] = await Promise.allSettled([
+        getStoreStaffAPI(storeId),
+        getStorePendingStaffAPI(storeId),
+      ]);
 
-      // 2. 승인 대기 직원 목록 API 호출
-      // URL: /api/users/guest?store_id={store_id}&role=GUEST
-      // DB: STORE_MEMBER 테이블에서 status가 'PENDING'인 직원을 USERS 테이블과 조인하여 조회
-      const pendingRes = await getGuestListAPI(userInfo.store_id, 'GUEST');
-      setPendingEmployees(pendingRes.data);
+      const mapStaff = (item: any, sectionStatus: 'ACTIVE' | 'PENDING'): StaffRow => ({
+        id: item.id,
+        name: item.name || item.username || item.id,
+        username: item.username,
+        phone: item.phone,
+        role: item.role,
+        status: item.status,
+        sectionStatus,
+      });
 
+      setActiveStaff(
+        staffRes.status === 'fulfilled' && Array.isArray(staffRes.value.data)
+          ? staffRes.value.data.map((item: any) => mapStaff(item, 'ACTIVE'))
+          : [],
+      );
+      setPendingStaff(
+        pendingRes.status === 'fulfilled' && Array.isArray(pendingRes.value.data)
+          ? pendingRes.value.data.map((item: any) => mapStaff(item, 'PENDING'))
+          : [],
+      );
     } catch (error) {
-      console.error("직원 목록을 불러오는 중 오류 발생:", error);
+      console.error('직원 목록 조회 실패:', error);
+      Toast.show({
+        type: 'error',
+        text1: '직원 목록 조회 실패',
+        text2: '백엔드에서 직원 정보를 불러오지 못했습니다.',
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
 
-  // 화면에 들어올 때마다 데이터를 새로고침
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
+
   useFocusEffect(
     useCallback(() => {
-      fetchEmployees();
-    }, [userInfo])
+      loadEmployees();
+    }, [loadEmployees]),
   );
 
-  const sections = [
-    { title: '승인 대기', data: pendingEmployees },
-    { title: '활동 중인 직원', data: activeEmployees },
-  ].filter(section => section.data.length > 0);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadEmployees();
+    setRefreshing(false);
+  };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('EmployeeDetail', { employee: item, onGoBack: fetchEmployees })}>
+  const sections = useMemo(() => {
+    const next = [];
+    if (pendingStaff.length > 0) next.push({ title: '승인 대기', data: pendingStaff });
+    if (activeStaff.length > 0) next.push({ title: '근무 중인 직원', data: activeStaff });
+    return next;
+  }, [activeStaff, pendingStaff]);
+
+  const renderItem = ({ item }: { item: StaffRow }) => (
+    <TouchableOpacity
+      style={styles.itemContainer}
+      onPress={() => navigation.navigate('EmployeeDetail', { employee: item })}
+    >
       <View style={styles.itemInfo}>
-        <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemRole}>{item.nickname}</Text>
+        <View
+          style={[
+            styles.colorDot,
+            { backgroundColor: item.sectionStatus === 'PENDING' ? '#F59E0B' : colors.primary },
+          ]}
+        />
+        <View>
+          <Text style={styles.itemName}>{item.name}</Text>
+          <Text style={styles.itemMeta}>
+            {[item.username, item.phone].filter(Boolean).join(' · ') || item.id}
+          </Text>
+        </View>
       </View>
-      <Text style={styles.arrow}>〉</Text>
+      <Text style={styles.itemRole}>
+        {item.sectionStatus === 'PENDING' ? '대기' : item.role || 'STAFF'}
+      </Text>
     </TouchableOpacity>
   );
-
-  const renderSectionHeader = ({ section: { title } }: { section: { title: string } }) => (
-    <Text style={styles.sectionHeader}>{title} ({section.data.length})</Text>
-  );
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>직원 목록을 불러오는 중...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonWrapper}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>직원 관리</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={loadEmployees}>
+          <Text style={styles.refreshText}>새로고침</Text>
+        </TouchableOpacity>
       </View>
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-        renderSectionHeader={renderSectionHeader}
-        contentContainerStyle={styles.listContainer}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={() => (
-          <View style={styles.centered}>
-            <Text style={styles.emptyText}>소속된 직원이 없습니다.</Text>
-          </View>
-        )}
-      />
+
+      {loading && sections.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.emptyText}>직원 정보를 불러오는 중입니다.</Text>
+        </View>
+      ) : (
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          renderSectionHeader={({ section }) => (
+            <Text style={styles.sectionHeader}>{section.title}</Text>
+          )}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          contentContainerStyle={styles.listContainer}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>직원이 없습니다.</Text>
+              <Text style={styles.emptyText}>선택된 매장에 등록된 직원이 없습니다.</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
 
-const getThemedStyles = (colors: any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 10, color: colors.text },
-  emptyText: { fontSize: 16, color: colors.subText },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: { fontSize: 24, color: colors.text, width: 40 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
-  listContainer: { paddingHorizontal: 16 },
-  sectionHeader: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.subText,
-    paddingVertical: 12,
-    paddingTop: 24,
-    backgroundColor: colors.background,
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    backgroundColor: colors.card,
-    paddingHorizontal: 16,
-  },
-  itemInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  itemRole: {
-    fontSize: 14,
-    color: colors.subText,
-    marginLeft: 8,
-  },
-  arrow: {
-    fontSize: 20,
-    color: colors.subText,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border,
-  },
-});
+const getThemedStyles = (colors: any) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    backButtonWrapper: { width: 72, justifyContent: 'center', alignItems: 'flex-start' },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
+    refreshText: { color: colors.primary, fontSize: 14, fontWeight: '700', width: 72, textAlign: 'right' },
+    listContainer: { paddingHorizontal: 16, paddingBottom: 24 },
+    sectionHeader: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.subText,
+      paddingVertical: 12,
+      paddingTop: 24,
+      backgroundColor: colors.background,
+    },
+    itemContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 16,
+      backgroundColor: colors.card,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+    },
+    itemInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+    colorDot: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
+    itemName: { fontSize: 16, fontWeight: '700', color: colors.text },
+    itemMeta: { fontSize: 12, color: colors.subText, marginTop: 3 },
+    itemRole: { fontSize: 13, color: colors.subText, marginLeft: 8, fontWeight: '700' },
+    separator: { height: 8 },
+    emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+    emptyTitle: { fontSize: 18, color: colors.text, fontWeight: '800', marginBottom: 8 },
+    emptyText: { fontSize: 14, color: colors.subText, textAlign: 'center', marginTop: 10 },
+  });
 
 export default EmployeeManagementScreen;

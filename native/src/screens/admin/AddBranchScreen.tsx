@@ -1,85 +1,90 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput, Modal, Pressable } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../contexts/ThemeContext';
+import Toast from 'react-native-toast-message';
+import { createStoreAPI, getStoresAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
-import { registerStoreAPI } from '../../../api/auth';
-import TimePickerModal from '../../components/common/TimePickerModal';
-import { format } from 'date-fns';
+import { useTheme } from '../../contexts/ThemeContext';
 
-const STORE_CATEGORIES = ["카페", "음식점", "패스트푸드", "의류/잡화", "서비스", "기타"];
+const STORE_CATEGORIES = ['카페', '음식점', '편의점', '의류/잡화', '서비스', '기타'];
 
 const AddBranchScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
-  const { userInfo } = useApp();
+  const { userInfo, login } = useApp();
 
-  const [inputs, setInputs] = useState({
-    brandName: '',
-    branchName: '',
-    address: '',
-    capacity: '',
-    openTime: new Date(),
-    closeTime: new Date(),
-  });
+  const [brandName, setBrandName] = useState('');
+  const [branchName, setBranchName] = useState('');
   const [storeCategory, setStoreCategory] = useState(STORE_CATEGORIES[0]);
   const [isCategoryModalVisible, setCategoryModalVisible] = useState(false);
-  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
-  const [pickerTarget, setPickerTarget] = useState<'openTime' | 'closeTime'>('openTime');
-
-  const handleInputChange = (name: string, value: any) => {
-    setInputs(prev => ({ ...prev, [name]: value }));
-  };
-
-  const formatTime = (date: Date) => {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
-
-  const showTimepicker = (target: 'openTime' | 'closeTime') => {
-    setPickerTarget(target);
-    setTimePickerVisible(true);
-  };
-
-  const handleTimeConfirm = (selectedDate: Date) => {
-    handleInputChange(pickerTarget, selectedDate);
-    setTimePickerVisible(false);
-  };
+  const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    const { brandName, branchName, address, capacity, openTime, closeTime } = inputs;
+    if (!userInfo?.id) {
+      Alert.alert('오류', '로그인 정보가 없습니다. 다시 로그인해주세요.');
+      return;
+    }
 
-    if (!brandName.trim() || !branchName.trim() || !address.trim()) {
-      Alert.alert("입력 오류", "브랜드명, 지점명, 주소는 필수 항목입니다.");
+    if (!brandName.trim() || !branchName.trim()) {
+      Alert.alert('입력 오류', '브랜드명과 지점명을 모두 입력해주세요.');
       return;
     }
-    if (!userInfo) {
-      Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
-      return;
-    }
+
+    setSaving(true);
 
     try {
-      const storeData = {
-        id: `store-${Date.now()}`,
-        name: `${brandName} ${branchName}`,
+      const storeId = `S_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+      await createStoreAPI({
+        id: storeId,
+        name: brandName.trim(),
         type: storeCategory,
-        address,
-        capacity: parseInt(capacity, 10) || 0,
-        open_time: formatTime(openTime),
-        close_time: formatTime(closeTime),
-        user_id: userInfo.id, // 매장을 생성한 관리자의 ID
-      };
+        address: branchName.trim(),
+        capacity: 0,
+        owner_user_id: userInfo.id,
+      });
 
-      await registerStoreAPI(storeData);
-      
-      Alert.alert("성공", "새로운 매장이 등록되었습니다.");
-      // TODO: 매장 목록을 새로고침하는 로직 필요 (예: AppContext에 함수 추가)
+      const storesResponse = await getStoresAPI(userInfo.id);
+      const stores = Array.isArray(storesResponse.data) ? storesResponse.data : [];
+      const branches = stores.map((store: any) => ({
+        id: store.id,
+        brandName: store.name || '매장',
+        branchName: store.address || store.id,
+      }));
+
+      login(
+        {
+          ...userInfo,
+          branches,
+          activeBranchId: storeId,
+          store_id: storeId,
+        } as any,
+        branches.length > 0,
+      );
+
+      Toast.show({
+        type: 'success',
+        text1: '지점 등록 완료',
+        text2: `${brandName.trim()} ${branchName.trim()} 지점이 등록되었습니다.`,
+      });
+
       navigation.goBack();
-
     } catch (error) {
-      console.error("매장 등록 실패:", error);
-      Alert.alert("오류", "매장 등록 중 문제가 발생했습니다.");
+      console.error('지점 등록 오류:', error);
+      Alert.alert('저장 실패', '지점 등록 중 오류가 발생했습니다.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -87,95 +92,168 @@ const AddBranchScreen = ({ navigation }: { navigation: any }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>◀</Text>
+          <Text style={styles.backButton}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>새 지점 추가</Text>
+        <Text style={styles.headerTitle}>지점 추가</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <Text style={styles.label}>브랜드명</Text>
-        <TextInput style={styles.input} placeholder="예: 컴포즈커피" value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
-        
-        <Text style={styles.label}>지점명</Text>
-        <TextInput style={styles.input} placeholder="예: 서현점" value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
+        <TextInput
+          style={styles.input}
+          placeholder="예: 시프트 커피"
+          value={brandName}
+          onChangeText={setBrandName}
+        />
 
-        <Text style={styles.label}>주소</Text>
-        <TextInput style={styles.input} placeholder="매장 주소를 입력하세요" value={inputs.address} onChangeText={(text) => handleInputChange('address', text)} />
+        <Text style={styles.label}>지점명 또는 주소</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="예: 강남점"
+          value={branchName}
+          onChangeText={setBranchName}
+        />
 
         <Text style={styles.label}>업종 카테고리</Text>
         <TouchableOpacity style={styles.pickerButton} onPress={() => setCategoryModalVisible(true)}>
           <Text style={styles.pickerButtonText}>{storeCategory}</Text>
-          <Text style={styles.pickerButtonIcon}>▼</Text>
+          <Text style={styles.pickerButtonIcon}>⌄</Text>
         </TouchableOpacity>
 
-        <View style={styles.timeContainer}>
-          <View style={styles.timeInputWrapper}>
-            <Text style={styles.label}>오픈 시간</Text>
-            <TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('openTime')}>
-              <Text style={styles.timeText}>{formatTime(inputs.openTime)}</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.timeInputWrapper}>
-            <Text style={styles.label}>마감 시간</Text>
-            <TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('closeTime')}>
-              <Text style={styles.timeText}>{formatTime(inputs.closeTime)}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <Text style={styles.label}>최대 수용 인원 (선택)</Text>
-        <TextInput style={styles.input} placeholder="숫자만 입력" value={inputs.capacity} onChangeText={(text) => handleInputChange('capacity', text)} keyboardType="number-pad" />
-
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>저장</Text>
+        <TouchableOpacity
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          {saving ? <ActivityIndicator color="#064E3B" /> : <Text style={styles.saveButtonText}>저장</Text>}
         </TouchableOpacity>
       </ScrollView>
 
-      <Modal animationType="fade" transparent={true} visible={isCategoryModalVisible} onRequestClose={() => setCategoryModalVisible(false)}>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isCategoryModalVisible}
+        onRequestClose={() => setCategoryModalVisible(false)}
+      >
         <Pressable style={styles.modalOverlay} onPress={() => setCategoryModalVisible(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>업종 선택</Text>
             {STORE_CATEGORIES.map((cat) => (
-              <TouchableOpacity key={cat} style={[styles.modalOption, storeCategory === cat && styles.modalOptionSelected]} onPress={() => { setStoreCategory(cat); setCategoryModalVisible(false); }}>
-                <Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>{cat}</Text>
+              <TouchableOpacity
+                key={cat}
+                style={[styles.modalOption, storeCategory === cat && styles.modalOptionSelected]}
+                onPress={() => {
+                  setStoreCategory(cat);
+                  setCategoryModalVisible(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>
+                  {cat}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
         </Pressable>
       </Modal>
-
-      {isTimePickerVisible && (
-        <TimePickerModal isVisible={isTimePickerVisible} initialDate={pickerTarget === 'openTime' ? inputs.openTime : inputs.closeTime} onClose={() => setTimePickerVisible(false)} onConfirm={handleTimeConfirm} />
-      )}
     </SafeAreaView>
   );
 };
 
 const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backButton: { fontSize: 24, color: colors.primary, width: 40 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.primaryLight,
+    backgroundColor: colors.card,
+  },
+  backButton: { fontSize: 28, color: colors.primary, width: 40 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   content: { padding: 20 },
   label: { fontSize: 16, color: colors.subText, marginBottom: 8, marginLeft: 4 },
-  input: { borderWidth: 1, borderColor: colors.border, padding: 16, borderRadius: 8, marginBottom: 24, backgroundColor: colors.card, fontSize: 18, color: colors.text },
-  saveButton: { backgroundColor: '#6EE7B7', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
-  saveButtonText: { color: '#000000', fontSize: 16, fontWeight: 'bold' },
-  pickerButton: { borderWidth: 1, borderColor: colors.border, padding: 16, borderRadius: 8, marginBottom: 24, backgroundColor: colors.card, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pickerButtonText: { fontSize: 18, color: colors.text },
-  pickerButtonIcon: { fontSize: 16, color: colors.subText },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '80%', backgroundColor: colors.card, borderRadius: 12, padding: 20 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: colors.text },
-  modalOption: { paddingVertical: 14, alignItems: 'center', borderRadius: 8 },
-  modalOptionSelected: { backgroundColor: colors.primaryLight },
-  modalOptionText: { fontSize: 16, color: colors.text },
-  modalOptionTextSelected: { color: colors.primary, fontWeight: 'bold' },
-  timeContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, gap: 16 },
-  timeInputWrapper: { flex: 1 },
-  timeButton: { borderWidth: 1, borderColor: colors.border, padding: 16, borderRadius: 8, backgroundColor: colors.card, alignItems: 'center' },
-  timeText: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+    backgroundColor: colors.card,
+    fontSize: 18,
+    color: colors.text,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  pickerButton: {
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+    backgroundColor: colors.card,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pickerButtonText: {
+    fontSize: 18,
+    color: colors.text,
+  },
+  pickerButtonIcon: {
+    fontSize: 18,
+    color: colors.subText,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+    color: colors.text,
+  },
+  modalOption: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  modalOptionSelected: {
+    backgroundColor: colors.primaryLight,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  modalOptionTextSelected: {
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
 });
 
 export default AddBranchScreen;

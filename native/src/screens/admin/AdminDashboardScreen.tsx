@@ -1,143 +1,192 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../contexts/ThemeContext';
-import { format } from 'date-fns';
 import { useIsFocused } from '@react-navigation/native';
-import { useApp } from '../../contexts/AppContext';
-import { useSchedule } from '../../contexts/ScheduleContext';
+import { format } from 'date-fns';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { getStoreShiftsAPI, getStoreStaffAPI } from '../../../api/auth';
 import TodayScheduleCard from '../../components/admin/TodayScheduleCard';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { getLeaveRequestsAPI } from '../../../api/auth'; // API import
+import { useApp } from '../../contexts/AppContext';
+import { useTheme } from '../../contexts/ThemeContext';
+
+const colorPalette = ['#4A90E2', '#50E3C2', '#F5A623', '#BD10E0', '#9013FE', '#FF7A00', '#00C4FF'];
+
+const normalizeShift = (shift: any) => {
+  const start = shift.start_time || shift.startTime || '';
+  const end = shift.end_time || shift.endTime || '';
+  return {
+    ...shift,
+    id: shift.id,
+    userId: shift.user_id || shift.userId,
+    date: shift.work_date || shift.date,
+    time: shift.time || (start && end ? `${start.slice(0, 5)}-${end.slice(0, 5)}` : ''),
+    status: shift.status || 'CONFIRMED',
+    reason: shift.reason || '',
+  };
+};
 
 const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const { colors, isDarkMode } = useTheme();
-  const { t } = useLanguage();
-  const styles = getThemedStyles(colors, isDarkMode);
+  const styles = getThemedStyles(colors);
   const isFocused = useIsFocused();
-
   const { userInfo, setActiveBranch } = useApp();
-  const { shifts, employees } = useSchedule(); // TodayScheduleCard는 Context 기반이므로 유지
 
-  const [currentlyWorking, setCurrentlyWorking] = useState(0);
-  const [pendingRequestCount, setPendingRequestCount] = useState(0);
-  const [todaySchedule, setTodaySchedule] = useState({ morning: [], afternoon: [], closing: [] });
+  const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
+  const [loading, setLoading] = useState(false);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [todayShifts, setTodayShifts] = useState<any[]>([]);
+  const [currentlyWorking, setCurrentlyWorking] = useState(0);
+  const [substituteRequests, setSubstituteRequests] = useState(0);
+  const [todaySchedule, setTodaySchedule] = useState<{
+    morning: any[];
+    afternoon: any[];
+    closing: any[];
+  }>({ morning: [], afternoon: [], closing: [] });
   const [isBranchModalVisible, setBranchModalVisible] = useState(false);
 
-  const activeBranch = useMemo(() => {
-    return userInfo?.branches?.find(b => b.id === userInfo.activeBranchId);
-  }, [userInfo]);
+  const activeBranch = useMemo(() => (
+    userInfo?.branches?.find((branch) => branch.id === userInfo.activeBranchId)
+  ), [userInfo]);
 
   useEffect(() => {
-    if (!isFocused || !userInfo) return;
+    if (!isFocused || !storeId) return;
 
-    // --- 휴무 신청 건수 API 연동 ---
-    const fetchPendingRequests = async () => {
-      if (!userInfo.store_id) return;
+    let alive = true;
+
+    const loadDashboard = async () => {
+      setLoading(true);
+
       try {
-        // URL: /api/leave_request?store_id={store_id}
-        // DB: LEAVE_REQUESTS 테이블에서 status가 'PENDING'인 요청 조회
-        const res = await getLeaveRequestsAPI(userInfo.store_id);
-        setPendingRequestCount(res.data.length);
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const [shiftResponse, staffResponse] = await Promise.all([
+          getStoreShiftsAPI(storeId, today, today),
+          getStoreStaffAPI(storeId),
+        ]);
+
+        if (!alive) return;
+
+        const staff = Array.isArray(staffResponse.data) ? staffResponse.data : [];
+        const staffWithColor = staff.map((member: any, index: number) => ({
+          ...member,
+          id: member.id || member.user_id,
+          name: member.name || member.username || '직원',
+          color: colorPalette[index % colorPalette.length],
+        }));
+        const staffMap = new Map(staffWithColor.map((member: any) => [member.id, member]));
+
+        const processed = (Array.isArray(shiftResponse.data) ? shiftResponse.data : [])
+          .map(normalizeShift)
+          .filter((shift: any) => shift.status !== 'OFF')
+          .map((shift: any) => {
+            const user = staffMap.get(shift.userId);
+            return {
+              ...shift,
+              user: {
+                name: user?.name || shift.user_name || '직원',
+                color: user?.color || '#A1A1AA',
+              },
+            };
+          });
+
+        setEmployees(staffWithColor);
+        setTodayShifts(processed);
+
+        const grouped = { morning: [] as any[], afternoon: [] as any[], closing: [] as any[] };
+        processed.forEach((shift: any) => {
+          const startTime = shift.time?.split('-')[0]?.trim();
+          const startHour = Number(startTime?.split(':')[0]);
+          if (Number.isNaN(startHour)) return;
+          if (startHour < 12) grouped.morning.push(shift);
+          else if (startHour < 18) grouped.afternoon.push(shift);
+          else grouped.closing.push(shift);
+        });
+        setTodaySchedule(grouped);
+
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const workingNowCount = processed.filter((shift: any) => {
+          const [startStr, endStr] = shift.time.split('-');
+          if (!startStr || !endStr) return false;
+          const [startH, startM] = startStr.trim().split(':').map(Number);
+          const [endH, endM] = endStr.trim().split(':').map(Number);
+          const startMinutes = startH * 60 + startM;
+          const endMinutes = endH * 60 + endM;
+          return currentMinutes >= startMinutes && currentMinutes < endMinutes;
+        }).length;
+        setCurrentlyWorking(workingNowCount);
+        setSubstituteRequests(processed.filter((shift: any) => shift.status === 'SUBSTITUTE_REQ').length);
       } catch (error) {
-        console.error("휴무 신청 목록 조회 실패:", error);
-        setPendingRequestCount(0);
+        console.error('관리자 대시보드 로드 오류:', error);
+        if (alive) {
+          setEmployees([]);
+          setTodayShifts([]);
+          setTodaySchedule({ morning: [], afternoon: [], closing: [] });
+          setCurrentlyWorking(0);
+          setSubstituteRequests(0);
+        }
+      } finally {
+        if (alive) setLoading(false);
       }
     };
-    fetchPendingRequests();
-    
-    // --- 기존 대시보드 로직 (오늘 근무 현황 등) ---
-    const now = new Date();
-    const todayStr = format(now, 'yyyy-MM-dd');
 
-    const processedTodayShifts = shifts
-      .filter(s => s.date === todayStr && s.status !== 'OFF')
-      .map(s => {
-        const user = employees.find(e => e.id === s.userId);
-        return { ...s, user: { name: user?.name || 'N/A', color: user?.color || '#A1A1AA' } };
-      });
-    setTodayShifts(processedTodayShifts);
+    loadDashboard();
 
-    const scheduleByTime: any = { morning: [], afternoon: [], closing: [] };
-    processedTodayShifts.forEach(shift => {
-      if (!shift.time || !shift.time.includes(' - ')) return;
-      const timeParts = shift.time.split(' - ');
-      if (timeParts.length < 2) return;
-      const startTime = timeParts[0];
-      if (!startTime || !startTime.includes(':')) return;
-      const startHourNum = parseInt(startTime.split(':')[0], 10);
-      if (isNaN(startHourNum)) return;
-      if (startHourNum < 12) scheduleByTime.morning.push(shift);
-      else if (startHourNum >= 12 && startHourNum < 18) scheduleByTime.afternoon.push(shift);
-      else scheduleByTime.closing.push(shift);
-    });
-    setTodaySchedule(scheduleByTime);
-
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const workingNowCount = processedTodayShifts.filter(shift => {
-      if (!shift.time || !shift.time.includes(' - ')) return false;
-      const [startStr, endStr] = shift.time.split(' - ');
-      if (!startStr || !endStr || !startStr.includes(':') || !endStr.includes(':')) return false;
-      const [startH, startM] = startStr.split(':').map(Number);
-      const [endH, endM] = endStr.split(':').map(Number);
-      if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) return false;
-      const startMinutes = startH * 60 + startM;
-      const endMinutes = endH * 60 + endM;
-      return currentMinutes >= startMinutes && currentMinutes < endMinutes;
-    }).length;
-    setCurrentlyWorking(workingNowCount);
-    
-  }, [isFocused, userInfo, shifts, employees]);
+    return () => {
+      alive = false;
+    };
+  }, [isFocused, storeId]);
 
   const handleNavigateToDailySchedule = () => {
     navigation.navigate('AdminDailySchedule', {
       date: format(new Date(), 'yyyy-MM-dd'),
-      shifts: todayShifts, 
-      employees: employees,
+      shifts: todayShifts,
+      employees,
     });
   };
 
   const menuItems = [
-    { title: t('employeeManagement'), icon: '👥', screen: 'EmployeeManagement' },
-    { title: t('monthlySchedule'), icon: '📅', screen: 'AdminSchedule' },
-    { title: t('payroll'), icon: '💰', screen: 'Payroll' },
-    { title: t('internalBoard'), icon: '📢', screen: 'BoardNavigator' },
+    { title: '직원 관리', icon: 'people-outline', screen: 'EmployeeManagement' },
+    { title: '월간 근무표', icon: 'calendar-outline', screen: 'AdminSchedule' },
+    { title: '급여 정산', icon: 'cash-outline', screen: 'Payroll' },
+    { title: '사내 게시판', icon: 'document-text-outline', screen: 'BoardNavigator' },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('adminDashboard')}</Text>
+          <Text style={styles.headerTitle}>관리자 대시보드</Text>
           <TouchableOpacity style={styles.branchSelector} onPress={() => setBranchModalVisible(true)}>
-            <Text style={styles.storeName}>
-              {activeBranch?.brandName || t('brand')} {activeBranch?.branchName || t('branch')} ▼
-            </Text>
+            <View style={styles.branchSelectorContent}>
+              <Text style={styles.storeName}>
+                {activeBranch ? `${activeBranch.brandName} ${activeBranch.branchName}` : '지점 선택'}
+              </Text>
+              <Ionicons name="chevron-down-outline" size={16} color={colors.primary} style={{ marginLeft: 4 }} />
+            </View>
           </TouchableOpacity>
         </View>
 
         <View style={styles.summaryContainer}>
           <TouchableOpacity style={styles.summaryBox} onPress={handleNavigateToDailySchedule}>
-            <Text style={styles.summaryValue}>{currentlyWorking}명</Text>
-            <Text style={styles.summaryLabel}>{t('currentlyWorking')}</Text>
+            {loading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.summaryValue}>{currentlyWorking}명</Text>}
+            <Text style={styles.summaryLabel}>현재 근무중</Text>
           </TouchableOpacity>
-          {/* "처리할 요청" 카드 클릭 시 휴무 신청 관리 화면으로 이동 */}
-          <TouchableOpacity style={styles.summaryBox} onPress={() => navigation.navigate('LeaveRequestManagement')}>
-            <Text style={styles.summaryValue}>{pendingRequestCount}건</Text>
-            <Text style={styles.summaryLabel}>{t('requestProcessing')}</Text>
+          <TouchableOpacity style={styles.summaryBox} onPress={() => navigation.navigate('SubstituteManagement')}>
+            {loading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.summaryValue}>{substituteRequests}건</Text>}
+            <Text style={styles.summaryLabel}>대타 요청</Text>
           </TouchableOpacity>
         </View>
-        
-        <TodayScheduleCard 
+
+        <TodayScheduleCard
           schedule={todaySchedule}
           onPress={handleNavigateToDailySchedule}
+          colors={colors}
         />
 
         <View style={styles.menuGrid}>
-          {menuItems.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.card} onPress={() => navigation.navigate(item.screen)}>
-              <Text style={styles.cardIcon}>{item.icon}</Text>
+          {menuItems.map((item) => (
+            <TouchableOpacity key={item.screen} style={styles.card} onPress={() => navigation.navigate(item.screen)}>
+              <Ionicons name={item.icon as any} size={28} color={colors.primary} style={styles.cardIcon} />
               <Text style={styles.cardLabel}>{item.title}</Text>
             </TouchableOpacity>
           ))}
@@ -146,14 +195,14 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
 
       <Modal
         animationType="slide"
-        transparent={true}
+        transparent
         visible={isBranchModalVisible}
         onRequestClose={() => setBranchModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t('selectBranch')}</Text>
-            {userInfo?.branches?.map(branch => (
+            <Text style={styles.modalTitle}>지점 선택</Text>
+            {userInfo?.branches?.map((branch) => (
               <TouchableOpacity
                 key={branch.id}
                 style={[styles.branchItem, branch.id === activeBranch?.id && styles.branchItemActive]}
@@ -162,20 +211,22 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
                   setBranchModalVisible(false);
                 }}
               >
-                <Text style={[styles.branchName, branch.id === activeBranch?.id && styles.branchNameActive]}>{branch.brandName} {branch.branchName}</Text>
+                <Text style={[styles.branchModalText, branch.id === activeBranch?.id && styles.branchTextActive]}>
+                  {branch.brandName} {branch.branchName}
+                </Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.addBranchButton}
               onPress={() => {
                 setBranchModalVisible(false);
                 navigation.navigate('AddBranch');
               }}
             >
-              <Text style={styles.addBranchButtonText}>{t('addNewBranch')}</Text>
+              <Text style={styles.addBranchButtonText}>+ 지점 추가</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.closeButton} onPress={() => setBranchModalVisible(false)}>
-              <Text style={styles.closeButtonText}>{t('close')}</Text>
+              <Text style={styles.closeButtonText}>닫기</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -184,30 +235,31 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   );
 };
 
-const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContainer: { padding: 16 },
-  header: { marginBottom: 24 },
-  headerTitle: { fontSize: 28, fontWeight: 'bold', color: colors.text },
-  branchSelector: { marginTop: 4 },
-  storeName: { fontSize: 18, color: colors.text, fontWeight: '600' },
-  summaryContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
-  summaryBox: { alignItems: 'center', backgroundColor: colors.card, padding: 20, borderRadius: 12, width: '45%' },
-  summaryValue: { fontSize: 24, fontWeight: 'bold', color: colors.text },
-  summaryLabel: { fontSize: 14, color: colors.subText, marginTop: 8 },
+  header: { marginBottom: 24, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, padding: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: colors.text },
+  branchSelector: { marginTop: 6 },
+  branchSelectorContent: { flexDirection: 'row', alignItems: 'center' },
+  storeName: { fontSize: 16, color: colors.primary, fontWeight: '600' },
+  summaryContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+  summaryBox: { alignItems: 'center', backgroundColor: colors.card, padding: 20, borderRadius: 16, width: '48%', minHeight: 96, borderWidth: 1, borderColor: colors.border, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  summaryValue: { fontSize: 24, fontWeight: '800', color: colors.primary },
+  summaryLabel: { fontSize: 13, color: colors.subText, marginTop: 8, fontWeight: '500' },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  card: { width: '48%', height: 120, backgroundColor: colors.card, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 16, padding: 16 },
-  cardIcon: { fontSize: 32, marginBottom: 8 },
+  card: { width: '48%', height: 120, backgroundColor: colors.card, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 16, padding: 16, borderWidth: 1, borderColor: colors.border, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  cardIcon: { marginBottom: 8 },
   cardLabel: { fontSize: 14, fontWeight: '600', color: colors.text, textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 30 },
+  modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 30, borderWidth: 1, borderColor: colors.border },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, textAlign: 'center', marginBottom: 20 },
-  branchItem: { padding: 16, borderRadius: 8, marginBottom: 10 },
-  branchItemActive: { backgroundColor: colors.primary },
-  branchName: { fontSize: 18, color: colors.text },
-  branchNameActive: { color: colors.white, fontWeight: 'bold' },
-  addBranchButton: { padding: 16, borderRadius: 8, backgroundColor: isDarkMode ? colors.border : '#E5E7EB', alignItems: 'center', marginTop: 10 },
-  addBranchButtonText: { fontSize: 16, color: colors.text, fontWeight: '600' },
+  branchItem: { padding: 16, borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  branchItemActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  branchModalText: { fontSize: 16, color: colors.text },
+  branchTextActive: { color: '#FFFFFF', fontWeight: 'bold' },
+  addBranchButton: { padding: 16, borderRadius: 8, backgroundColor: colors.primaryLight, alignItems: 'center', marginTop: 10 },
+  addBranchButtonText: { fontSize: 16, color: colors.primary, fontWeight: '600' },
   closeButton: { marginTop: 20, alignItems: 'center' },
   closeButtonText: { fontSize: 16, color: colors.subText },
 });

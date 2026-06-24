@@ -15,6 +15,8 @@ public class FileVO {
 
     private String user_id;
 
+    private String store_id;
+
     private String file_type;
 
     private String original_name;
@@ -24,6 +26,16 @@ public class FileVO {
     private Long file_size;
 
     private String mime_type;
+
+    private String status;
+
+    private String ocr_status;
+
+    private Date expiry_date;
+
+    private String notes;
+
+    private String extracted_data;
 
     private Date created_at;
 

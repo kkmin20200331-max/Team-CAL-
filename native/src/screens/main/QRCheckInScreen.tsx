@@ -1,12 +1,23 @@
 import React, { useState } from 'react';
+<<<<<<< HEAD
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+=======
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Toast from 'react-native-toast-message';
+<<<<<<< HEAD
 import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
 import { attendanceCheckAPI } from '../../../api/auth';
+=======
+import { checkAttendanceByQrAPI } from '../../../api/auth';
+import { useApp } from '../../contexts/AppContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import Ionicons from '@expo/vector-icons/Ionicons';
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
 
 type QRCheckInScreenNavigationProp = StackNavigationProp<any, 'QRCheckIn'>;
 
@@ -15,13 +26,34 @@ type Props = {
 };
 
 const QRCheckInScreen = ({ navigation }: Props) => {
+<<<<<<< HEAD
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   const { userInfo } = useApp();
   
+=======
+  const { userInfo } = useApp();
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
+
+  // 카메라 권한 상태와 권한 요청 함수를 가져옵니다.
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+<<<<<<< HEAD
   const [loading, setLoading] = useState(false);
+=======
+  const [processing, setProcessing] = useState(false);
+
+  const extractQrToken = (data: string) => {
+    try {
+      const parsed = new URL(data);
+      return parsed.searchParams.get('token') || data;
+    } catch {
+      return data;
+    }
+  };
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
 
   if (!permission) {
     return <View style={styles.container} />;
@@ -30,6 +62,7 @@ const QRCheckInScreen = ({ navigation }: Props) => {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
+        <Ionicons name="camera-outline" size={64} color={colors.subText} style={styles.permissionIcon} />
         <Text style={styles.message}>출퇴근 QR 코드를 스캔하려면 카메라 권한이 필요합니다.</Text>
         <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
           <Text style={styles.permissionButtonText}>카메라 권한 허용하기</Text>
@@ -38,6 +71,7 @@ const QRCheckInScreen = ({ navigation }: Props) => {
     );
   }
 
+<<<<<<< HEAD
   const handleBarCodeScanned = async ({ data: storeId }: { data: string }) => {
     if (!userInfo || !userInfo.id) {
       Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
@@ -67,6 +101,44 @@ const QRCheckInScreen = ({ navigation }: Props) => {
           setLoading(false);
         }}
       ]);
+=======
+  // 3. QR 코드가 성공적으로 스캔되었을 때 실행되는 함수
+  const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
+    setScanned(true); // 중복 스캔 방지
+    setProcessing(true);
+
+    if (!userInfo?.id) {
+      Toast.show({
+        type: 'error',
+        text1: '로그인 정보가 없습니다.',
+        text2: '다시 로그인 후 시도해주세요.',
+      });
+      setProcessing(false);
+      setScanned(false);
+      return;
+    }
+
+    try {
+      const qrToken = extractQrToken(data);
+      const response = await checkAttendanceByQrAPI(userInfo.id, qrToken);
+
+      Toast.show({
+        type: 'success',
+        text1: '출퇴근 처리 완료',
+        text2: response.data?.message || '정상 처리되었습니다.',
+      });
+
+      navigation.goBack();
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: '출퇴근 처리 실패',
+        text2: error.response?.data?.message || 'QR 코드를 다시 스캔해주세요.',
+      });
+      setScanned(false);
+    } finally {
+      setProcessing(false);
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
     }
   };
 
@@ -83,10 +155,11 @@ const QRCheckInScreen = ({ navigation }: Props) => {
         <View style={styles.overlay}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕ 닫기</Text>
+              <Ionicons name="close" size={24} color="#FFF" />
             </TouchableOpacity>
           </View>
 
+<<<<<<< HEAD
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.white} />
@@ -105,20 +178,45 @@ const QRCheckInScreen = ({ navigation }: Props) => {
               </View>
             </>
           )}
+=======
+          {/* 중앙 사각형 타겟 가이드라인 */}
+          <View style={styles.targetFrame}>
+            <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
+            <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
+            <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
+            <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
+          </View>
+
+          {/* 하단 안내 문구 */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              {processing ? '출퇴근 처리 중입니다...' : '사각 영역 안에 QR 코드를 맞춰주세요.'}
+            </Text>
+          </View>
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
         </View>
       </CameraView>
     </SafeAreaView>
   );
 };
 
+<<<<<<< HEAD
 const getThemedStyles = (colors: any) => StyleSheet.create({
+=======
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#000',
+    alignItems: 'center',
+    backgroundColor: isDarkMode ? '#121212' : '#F9FAFB',
+  },
+  permissionIcon: {
+    marginBottom: 20,
   },
   message: {
     textAlign: 'center',
+<<<<<<< HEAD
     paddingBottom: 20,
     color: colors.white,
   },
@@ -127,18 +225,42 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     padding: 15,
     marginHorizontal: 40,
     borderRadius: 8,
+=======
+    paddingHorizontal: 40,
+    paddingBottom: 24,
+    color: colors.text,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  permissionButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 12,
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
     alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   permissionButtonText: {
     color: colors.white,
     fontWeight: 'bold',
+    fontSize: 16,
   },
   camera: {
     flex: 1,
+    width: '100%',
   },
   overlay: {
     flex: 1,
+<<<<<<< HEAD
     backgroundColor: 'rgba(0,0,0,0.5)',
+=======
+    backgroundColor: 'rgba(0,0,0,0.65)', // 살짝 더 어둡게 하여 포커스 극대화
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
     justifyContent: 'space-between',
   },
   header: {
@@ -146,38 +268,59 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   closeButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    width: 40,
+    height: 40,
     borderRadius: 20,
+<<<<<<< HEAD
   },
   closeButtonText: {
     color: colors.white,
     fontWeight: 'bold',
+=======
+    justifyContent: 'center',
+    alignItems: 'center',
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   },
   footer: {
     padding: 40,
     alignItems: 'center',
   },
   footerText: {
+<<<<<<< HEAD
     color: colors.white,
     fontSize: 16,
     fontWeight: '500',
+=======
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '600',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    overflow: 'hidden',
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   },
   targetFrame: {
     alignSelf: 'center',
-    width: 250,
-    height: 250,
+    width: 260,
+    height: 260,
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)', 
+    borderColor: 'rgba(255,255,255,0.15)', 
     position: 'relative',
   },
   corner: {
     position: 'absolute',
+<<<<<<< HEAD
     width: 40,
     height: 40,
     borderColor: colors.white,
+=======
+    width: 32,
+    height: 32,
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   },
   topLeft: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4 },
   topRight: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4 },

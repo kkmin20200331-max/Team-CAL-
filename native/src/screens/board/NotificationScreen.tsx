@@ -3,22 +3,35 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Pressable, R
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NotificationContext, NotificationItem } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useTheme } from '../../contexts/ThemeContext';
-import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import Swipeable from 'react-native-gesture-handler/Swipeable'; // ✅ 스와이프 기능 추가
+import { markAllNotificationsAsReadAPI, markNotificationAsReadAPI } from '../../../api/auth';
+import { useApp } from '../../contexts/AppContext';
 
 const NotificationListScreen = () => {
-  const { notifications, setNotifications } = useContext(NotificationContext);
+  // ✅ 1. 알림 데이터를 나홀로 상태가 아닌 전역 상태(Context)에서 가져옵니다.
+  const { notifications, setNotifications, refreshNotifications } = useContext(NotificationContext);
+  const { userInfo } = useApp();
+  
+  // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();
-  const { colors } = useTheme();
-  const styles = getThemedStyles(colors);
+
+  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
   
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
 
-  const handlePressNotification = (item: NotificationItem) => {
+  // 알림 클릭 시 실행
+  const handlePressNotification = async (item: NotificationItem) => {
     setSelectedNotification(item);
     setModalVisible(true);
+    markNotificationAsReadAPI(item.id).catch((error) => {
+      console.error('알림 읽음 처리 오류:', error);
+    });
     
+    // 🔥 [핵심 추가] 클릭한 알림의 id와 일치하는 아이템만 isRead를 true로 변경합니다.
     setNotifications((prevNotifications: NotificationItem[]) => 
       prevNotifications.map((noti: NotificationItem) => 
         noti.id === item.id ? { ...noti, isRead: true } : noti
@@ -31,21 +44,36 @@ const NotificationListScreen = () => {
     setSelectedNotification(null);
   };
 
+  // ✅ 모든 알림 읽음 처리
   const handleMarkAllAsRead = () => {
+    if (userInfo?.id) {
+      markAllNotificationsAsReadAPI(userInfo.id).catch((error) => {
+        console.error('전체 알림 읽음 처리 오류:', error);
+      });
+    }
     setNotifications((prev: NotificationItem[]) => prev.map((noti: NotificationItem) => ({ ...noti, isRead: true })));
   };
 
+  // ✅ 알림 삭제 처리
   const handleDeleteNotification = (id: string) => {
     setNotifications((prev: NotificationItem[]) => prev.filter((noti: NotificationItem) => noti.id !== id));
     closeModal();
   };
 
+  // ✅ 당겨서 새로고침 상태 및 핸들러 추가
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    try {
+      await refreshNotifications();
+    } catch (error) {
+      console.error('알림 새로고침 오류:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshNotifications]);
 
+  // ✅ 스와이프했을 때 나타날 오른쪽 [삭제] 버튼 UI
   const renderRightActions = (id: string) => {
     return (
       <TouchableOpacity 
@@ -67,14 +95,14 @@ const NotificationListScreen = () => {
         <View style={styles.contentContainer}>
           <View style={styles.titleRow}>
             <Text style={[styles.titleText, !item.isRead && styles.unreadTitleText]}>
-              {t(item.title as any)}
+              {t(item.title) === item.title ? item.title : t(item.title)}
             </Text>
             {!item.isRead && <View style={styles.unreadDot} />}
           </View>
           <Text style={styles.messageText} numberOfLines={2}>
-            {item.message}
+            {t(item.message) === item.message ? item.message : t(item.message)}
           </Text>
-          <Text style={styles.timeText}>{item.createdAt}</Text>
+          <Text style={styles.timeText}>{t(item.createdAt) === item.createdAt ? item.createdAt : t(item.createdAt)}</Text>
         </View>
       </TouchableOpacity>
     </Swipeable>
@@ -89,11 +117,13 @@ const NotificationListScreen = () => {
         </TouchableOpacity>
       </View>
 
+      {/* 2. 고정 더미 대신 상태(notifications) 데이터를 연결합니다. */}
       <FlatList
         data={notifications}
         renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
+        // ✅ FlatList에 RefreshControl 속성 추가
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -118,13 +148,14 @@ const NotificationListScreen = () => {
                   <Text style={styles.modalIcon}>
                     {selectedNotification.type === 'SCHEDULE' ? '📅' : selectedNotification.type === 'NOTICE' ? '📢' : '⚙️'}
                   </Text>
-                  <Text style={styles.modalTitle}>{t(selectedNotification.title as any)}</Text>
-                  <Text style={styles.modalTime}>{selectedNotification.createdAt}</Text>
+                  <Text style={styles.modalTitle}>{t(selectedNotification.title) === selectedNotification.title ? selectedNotification.title : t(selectedNotification.title)}</Text>
+                  <Text style={styles.modalTime}>{t(selectedNotification.createdAt) === selectedNotification.createdAt ? selectedNotification.createdAt : t(selectedNotification.createdAt)}</Text>
                 </View>
                 <View style={styles.modalBody}>
-                  <Text style={styles.modalMessage}>{selectedNotification.message}</Text>
+                  <Text style={styles.modalMessage}>{t(selectedNotification.message) === selectedNotification.message ? selectedNotification.message : t(selectedNotification.message)}</Text>
                 </View>
                 
+                {/* 하단 버튼 그룹 (삭제 / 확인) */}
                 <View style={styles.modalButtonGroup}>
                   <Pressable 
                     style={styles.deleteButton} 
@@ -145,14 +176,15 @@ const NotificationListScreen = () => {
   );
 };
 
-const getThemedStyles = (colors: any) => StyleSheet.create({
+// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: colors.primaryLight, backgroundColor: colors.card },
   headerText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   markAllText: { fontSize: 14, color: colors.primary, fontWeight: '600' },
   listContent: { paddingVertical: 10 },
   notificationItem: { flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
-  unreadBackground: { backgroundColor: colors.primaryLight },
+  unreadBackground: { backgroundColor: isDarkMode ? '#1E293B' : '#F0F8FF' }, // 다크 모드일 땐 어두운 남색
   contentContainer: { flex: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
   titleText: { fontSize: 15, fontWeight: '600', color: colors.subText, flex: 1, marginRight: 10 },
@@ -170,13 +202,14 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   modalBody: { minHeight: 80, marginBottom: 24 },
   modalMessage: { fontSize: 15, lineHeight: 24, color: colors.text },
   modalButtonGroup: { flexDirection: 'row', gap: 12 },
-  deleteButton: { flex: 1, backgroundColor: colors.redLight, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  deleteButtonText: { color: colors.red, fontSize: 15, fontWeight: 'bold' },
-  closeButton: { flex: 1, backgroundColor: colors.blue, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
-  closeButtonText: { color: colors.white, fontSize: 16, fontWeight: 'bold' },
+  deleteButton: { flex: 1, backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2', paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  deleteButtonText: { color: isDarkMode ? '#FECACA' : '#DC2626', fontSize: 15, fontWeight: 'bold' },
+  closeButton: { flex: 1, backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  closeButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 
-  deleteAction: { backgroundColor: colors.red, justifyContent: 'center', alignItems: 'center', width: 80 },
-  deleteActionText: { color: colors.white, fontWeight: 'bold', fontSize: 15 },
+  // --- 스와이프 삭제 액션 스타일 ---
+  deleteAction: { backgroundColor: '#EF4444', justifyContent: 'center', alignItems: 'center', width: 80 },
+  deleteActionText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 15 },
 });
 
 export default NotificationListScreen;

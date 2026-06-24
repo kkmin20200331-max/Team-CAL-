@@ -1,164 +1,196 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useApp } from '../../contexts/AppContext';
-import { format, startOfMonth, endOfMonth, addMonths } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { getPayrollAPI, getStaffListAPI } from '../../../api/auth';
-import { useFocusEffect } from '@react-navigation/native';
+import { Shift } from '../../types/Schedule';
+import { User } from '../../types/User';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
-const PayrollScreen = ({ navigation }: { navigation: any }) => {
-  const { colors } = useTheme();
-  const styles = getThemedStyles(colors);
-  const { userInfo } = useApp();
+interface DailyWage {
+  id: string;
+  date: string;
+  hours: string;
+  amount: number;
+}
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [payrollData, setPayrollData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+interface PayrollSummary {
+  estimatedTotal: number;
+  basePay: number;
+  holidayPay: number;
+  substituteBonus: number;
+}
 
-  const fetchPayrollData = async (month: Date) => {
-    if (!userInfo || !userInfo.store_id) return;
-    setLoading(true);
-    try {
-      // 1. 먼저 급여를 계산할 모든 직원을 가져옵니다.
-      const staffRes = await getStaffListAPI(userInfo.store_id);
-      const employees = staffRes.data;
+const PayrollScreen = ({ route, navigation }: any) => {
+  const { t } = useLanguage();
+  const { schedule, userInfo }: { schedule: Shift[], userInfo: User } = route.params || {};
+  
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
-      const startDate = format(startOfMonth(month), 'yyyy-MM-dd');
-      const endDate = format(endOfMonth(month), 'yyyy-MM-dd');
+  const [summary, setSummary] = useState<PayrollSummary | null>(null);
+  const [dailyWages, setDailyWages] = useState<DailyWage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-      // 2. 각 직원에 대해 병렬로 급여 API를 호출합니다.
-      const payrollPromises = employees.map((employee: any) => 
-        getPayrollAPI(employee.id, userInfo.store_id, startDate, endDate)
-          .then(res => ({ ...employee, payroll: res.data }))
-          .catch(err => {
-            console.error(`${employee.name} 급여 계산 실패:`, err);
-            return { ...employee, payroll: null }; // 실패 시 null 처리
-          })
-      );
-      
-      const results = await Promise.all(payrollPromises);
-      setPayrollData(results);
-
-    } catch (error) {
-      console.error("급여 데이터 조회 실패:", error);
-      Alert.alert("오류", "급여 데이터를 불러오는 데 실패했습니다.");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (schedule && userInfo && schedule.length > 0) {
+      calculatePayroll();
+    } else {
+      setIsLoading(false);
     }
-  };
+  }, [schedule, userInfo]);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchPayrollData(selectedMonth);
-    }, [userInfo, selectedMonth])
-  );
+  const calculatePayroll = () => {
+    setIsLoading(true);
+    
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    const payRate = userInfo.payRate || 9860;
 
-  const changeMonth = (offset: number) => {
-    setSelectedMonth(prev => addMonths(prev, offset));
-  };
+    let totalMinutes = 0;
+    const wages: DailyWage[] = [];
 
-  const handleNavigateToDetail = (employeeId: string) => {
-    navigation.navigate('PayrollDetail', {
-      employeeId,
-      month: selectedMonth.toISOString(),
+    schedule.forEach(item => {
+      const shiftDate = parseISO(item.fullDate);
+      if (isWithinInterval(shiftDate, { start: monthStart, end: monthEnd })) {
+        if (item.status !== 'OFF' && item.status !== 'SUBSTITUTE_REQ' && item.time && item.time.includes(' - ')) {
+          const [start, end] = item.time.split(' - ');
+          const [sH, sM] = start.split(':').map(Number);
+          const [eH, eM] = end.split(':').map(Number);
+          
+          let diff = (eH * 60 + eM) - (sH * 60 + sM);
+          if (diff < 0) diff += 24 * 60;
+          
+          totalMinutes += diff;
+          const dailyHours = diff / 60;
+          const dailyAmount = dailyHours * payRate;
+
+          wages.push({
+            id: item.id,
+            date: format(shiftDate, "M월 d일 (eee)", { locale: ko }),
+            hours: `${dailyHours.toFixed(1)}시간`,
+            amount: Math.round(dailyAmount),
+          });
+        }
+      }
     });
+
+    const totalHours = totalMinutes / 60;
+    const totalPay = totalHours * payRate;
+
+    setSummary({
+      estimatedTotal: Math.round(totalPay),
+      basePay: Math.round(totalPay),
+      holidayPay: 0,
+      substituteBonus: 0,
+    });
+
+    setDailyWages(wages.sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime()));
+    setIsLoading(false);
   };
 
-  const renderEmployeePayroll = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.card} onPress={() => handleNavigateToDetail(item.id)}>
-      <View style={styles.employeeInfo}>
-        <Text style={styles.employeeName}>{item.name}</Text>
-        <Text style={styles.employeeRole}>{item.nickname}</Text>
+  const renderDailyWage = ({ item }: { item: DailyWage }) => (
+    <View style={styles.dailyRow}>
+      <View>
+        <Text style={styles.dailyDate}>{item.date}</Text>
+        <Text style={styles.dailyHours}>{item.hours}</Text>
       </View>
-      {item.payroll ? (
-        <View style={styles.payrollInfo}>
-          <View style={styles.infoBox}>
-            <Text style={styles.infoLabel}>총 근무시간</Text>
-            <Text style={styles.infoValue}>{item.payroll.total_hours?.toFixed(1) || 'N/A'} 시간</Text>
-          </View>
-          <View style={styles.infoBox}>
-            <Text style={styles.infoLabel}>예상 급여 (세전)</Text>
-            <Text style={[styles.infoValue, styles.totalPay]}>{item.payroll.total_pay?.toLocaleString() || 0} 원</Text>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.payrollInfo}>
-          <Text style={styles.errorText}>계산 실패</Text>
-        </View>
-      )}
-    </TouchableOpacity>
+      <Text style={styles.dailyAmount}>{item.amount.toLocaleString()}{t('currency')}</Text>
+    </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>급여 정산</Text>
+        <Text style={styles.headerTitle}>{t('payrollTitle')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.monthSelector}>
-        <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.arrowButton}>
-          <Text style={styles.arrowText}>◀</Text>
-        </TouchableOpacity>
-        <Text style={styles.monthText}>{format(selectedMonth, 'yyyy년 M월', { locale: ko })}</Text>
-        <TouchableOpacity onPress={() => changeMonth(1)} style={styles.arrowButton}>
-          <Text style={styles.arrowText}>▶</Text>
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>급여 내역을 계산 중입니다...</Text>
+        </View>
+      ) : !summary || dailyWages.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.emptyText}>이번 달 근무 기록이 없습니다.</Text>
+        </View>
       ) : (
-        <FlatList
-          data={payrollData}
-          renderItem={renderEmployeePayroll}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListHeaderComponent={
-            <View style={styles.listHeader}>
-              <Text style={styles.headerCol1}>직원 정보</Text>
-              <Text style={styles.headerCol2}>정산 내역</Text>
-            </View>
-          }
-          ListEmptyComponent={
-            <View style={{alignItems: 'center', marginTop: 50}}>
-              <Text style={{color: colors.subText}}>활동중인 직원이 없습니다.</Text>
-            </View>
-          }
-        />
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>{t('estMonthlySalary')}</Text>
+          <Text style={styles.summaryAmount}>{summary.estimatedTotal.toLocaleString()}<Text style={styles.summaryCurrency}>{t('currency')}</Text></Text>
+          
+          <View style={styles.divider} />
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('basePay')}</Text>
+            <Text style={styles.detailValue}>{summary.basePay.toLocaleString()}{t('currency')}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('holidayPay')}</Text>
+            <Text style={styles.detailValue}>{summary.holidayPay.toLocaleString()}{t('currency')}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('substituteBonus')}</Text>
+            <Text style={[styles.detailValue, { color: isDarkMode ? '#86EFAC' : '#16A34A' }]}>+{summary.substituteBonus.toLocaleString()}{t('currency')}</Text>
+          </View>
+        </View>
+
+        <View style={styles.listSection}>
+          <Text style={styles.sectionTitle}>{t('dailyWageDetail')}</Text>
+          <View style={styles.listCard}>
+            {dailyWages.map((wage, index) => (
+              <React.Fragment key={wage.id}>
+                {renderDailyWage({ item: wage })}
+                {index < dailyWages.length - 1 && <View style={styles.listDivider} />}
+              </React.Fragment>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
       )}
     </SafeAreaView>
   );
 };
 
-const getThemedStyles = (colors: any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backButton: { fontSize: 24, color: colors.text, width: 40 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
-  monthSelector: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 20, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
-  arrowButton: { padding: 10 },
-  arrowText: { fontSize: 18, color: colors.text, fontWeight: 'bold' },
-  monthText: { fontSize: 20, fontWeight: 'bold', color: colors.text },
-  listContainer: { padding: 16 },
-  listHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, marginBottom: 10 },
-  headerCol1: { flex: 1, fontSize: 14, color: colors.subText, fontWeight: '600' },
-  headerCol2: { flex: 2, fontSize: 14, color: colors.subText, fontWeight: '600', textAlign: 'right' },
-  card: { backgroundColor: colors.card, borderRadius: 12, padding: 20, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
-  employeeInfo: { flex: 1 },
-  employeeName: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  employeeRole: { fontSize: 14, color: colors.subText, marginTop: 4 },
-  payrollInfo: { flex: 2, alignItems: 'flex-end' },
-  infoBox: { alignItems: 'flex-end', marginBottom: 8 },
-  infoLabel: { fontSize: 12, color: colors.subText },
-  infoValue: { fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 2 },
-  totalPay: { color: colors.text, fontSize: 18, fontWeight: 'bold' },
-  errorText: { color: colors.red, fontStyle: 'italic' },
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  header: { 
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border
+  },
+  backButton: { padding: 4, width: 40, justifyContent: 'center', alignItems: 'flex-start' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  container: { padding: 20 },
+  
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 12, fontSize: 15, color: colors.subText },
+
+  summaryCard: { backgroundColor: colors.card, borderRadius: 16, padding: 24, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  summaryTitle: { fontSize: 14, color: colors.subText, marginBottom: 8, fontWeight: '600' },
+  summaryAmount: { fontSize: 32, fontWeight: '900', color: colors.text },
+  summaryCurrency: { fontSize: 20, fontWeight: '600', color: colors.subText },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: 16 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  detailLabel: { fontSize: 14, color: colors.subText },
+  detailValue: { fontSize: 15, fontWeight: '600', color: colors.text },
+
+  listSection: { marginBottom: 40 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  listCard: { backgroundColor: colors.card, borderRadius: 16, padding: 20, elevation: 1 },
+  dailyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 },
+  dailyDate: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 4 },
+  dailyHours: { fontSize: 13, color: colors.subText },
+  dailyAmount: { fontSize: 16, fontWeight: '700', color: colors.text },
+  listDivider: { height: 1, backgroundColor: colors.border, marginVertical: 12 },
+  emptyText: { textAlign: 'center', paddingVertical: 20, color: colors.subText },
 });
 
 export default PayrollScreen;

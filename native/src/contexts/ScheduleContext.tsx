@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { createContext, useState, ReactNode, useContext, useEffect } from 'react';
 import { format, getDaysInMonth } from 'date-fns';
 import { Shift } from '../types/Schedule';
@@ -47,7 +48,25 @@ const generateDummyShifts = (month: Date): Shift[] => {
 
 interface ScheduleContextType {
   employees: (User & { color: string, payType: 'HOURLY' | 'SALARY', payRate: number })[];
+=======
+import React, { createContext, ReactNode, useContext, useState, useCallback } from 'react';
+import { Shift } from '../types/Schedule';
+
+type ScheduleEmployee = {
+  id: string;
+  name: string;
+  role?: string;
+  color?: string;
+  payType?: 'HOURLY' | 'SALARY';
+  payRate?: number;
+  status?: 'ACTIVE' | 'INACTIVE' | 'PENDING';
+};
+
+interface ScheduleContextType {
+  employees: ScheduleEmployee[];
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   shifts: Shift[];
+  setEmployees: React.Dispatch<React.SetStateAction<ScheduleEmployee[]>>;
   setShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
   updateEmployeeStatus: (employeeId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING') => Promise<void>;
   removeEmployee: (employeeId: string) => void;
@@ -73,6 +92,7 @@ interface ScheduleProviderProps {
 }
 
 export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
+<<<<<<< HEAD
   const { userInfo } = useApp();
   const [shifts, setShifts] = useState<Shift[]>(() => generateDummyShifts(new Date()));
   const [employees, setEmployees] = useState(() => dummyEmployees);
@@ -146,9 +166,25 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
     // }
   };
   
+=======
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [employees, setEmployees] = useState<ScheduleEmployee[]>([]);
+
+  const updateEmployeeStatus = useCallback((employeeId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING') => {
+    setEmployees((prev) => prev.map((employee) => (
+      employee.id === employeeId ? { ...employee, status: newStatus } : employee
+    )));
+  }, []);
+
+  const removeEmployee = useCallback((employeeId: string) => {
+    setEmployees((prev) => prev.filter((employee) => employee.id !== employeeId));
+  }, []);
+
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   const value = {
     employees,
     shifts,
+    setEmployees,
     setShifts,
     updateEmployeeStatus,
     removeEmployee,

@@ -1,9 +1,8 @@
+import { API_BASE } from "../../../lib/axiosInstance";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
-  ChevronLeft,
   Camera,
-  ChevronRight,
   CircleStop,
   Clock,
   Eye,
@@ -15,6 +14,12 @@ import {
   Settings,
   Users,
   Video,
+  Calendar,
+  UserPlus,
+  Wallet,
+  FileText,
+  MessageSquare,
+  BarChart3,
 } from "lucide-react";
 import AdminHeader from "./AdminHeader";
 import { useTheme } from "next-themes";
@@ -36,6 +41,11 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 
+const GREEN = '#18A022';
+const DARK_GREEN = '#07790F';
+const BORDER_GREEN = '#00A200';
+const LIGHT_GREEN = '#E6F5C8';
+
 type SourceType = "WEBCAM" | "RTSP" | "VIDEO_FILE";
 
 type CameraConfig = {
@@ -52,7 +62,7 @@ type CameraConfig = {
 };
 
 type CameraStartPayload = {
-  storeId: number;
+  storeId: string;
   cameraId: string;
   source: string;
   sourceType: SourceType;
@@ -79,20 +89,7 @@ type CctvStatus = CctvMetrics & {
   lastError?: string;
 };
 
-const CCTV_API = "http://localhost:8080/api/cctv";
 const OPENCV_CAMERA_STREAM = "http://localhost:8000/api/v1/camera/stream";
-
-const branchNames: Record<string, string> = {
-  migeum: "컴포즈 미금점",
-  sunae: "컴포즈 수내점",
-  dongcheon: "컴포즈 동천점",
-};
-
-const branchStoreIds: Record<string, number> = {
-  migeum: 1,
-  sunae: 2,
-  dongcheon: 3,
-};
 
 const initialConfig: CameraConfig = {
   cameraId: "CAM-001",
@@ -107,18 +104,38 @@ const initialConfig: CameraConfig = {
   confidence: 0.3,
 };
 
-const resolveStoreId = (branchId?: string) => {
-  if (!branchId) return 1;
-  const numericId = Number(branchId);
-  if (Number.isFinite(numericId) && numericId > 0) return numericId;
-  return branchStoreIds[branchId] || 1;
-};
-
 export default function CctvAnalysis() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { branchId } = useParams();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
+
+  const menuItems = [
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : "/admin/branch-selection" },
+  ];
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
+      .then(r => r.json())
+      .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
+      .catch(() => {});
+  }, []);
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState("-");
@@ -129,11 +146,18 @@ export default function CctvAnalysis() {
   const [lastSavedAt, setLastSavedAt] = useState("저장 전");
   const [lastResponse, setLastResponse] = useState("응답 대기");
   const [errorMessage, setErrorMessage] = useState("");
-  const [config, setConfig] = useState<CameraConfig>(initialConfig);
-
-  const storeId = resolveStoreId(branchId);
+  const storeId = selectedBranchId;
+  const CONFIG_KEY = `cctv_config_${storeId}`;
+  const [config, setConfig] = useState<CameraConfig>(() => {
+    try {
+      const saved = localStorage.getItem(
+        `cctv_config_${selectedBranchId || sessionStorage.getItem("store_id") || ""}`,
+      );
+      return saved ? { ...initialConfig, ...JSON.parse(saved) } : initialConfig;
+    } catch { return initialConfig; }
+  });
   const currentBranch =
-    branchNames[branchId || "migeum"] ||
+    stores.find((s) => s.id === storeId)?.name ||
     sessionStorage.getItem("store_name") ||
     "선택 매장";
 
@@ -170,7 +194,7 @@ export default function CctvAnalysis() {
   };
 
   const requestCctv = async (path: string, options?: RequestInit) => {
-    const response = await fetch(`${CCTV_API}${path}`, options);
+    const response = await fetch(`${API_BASE}/cctv${path}`, options);
     const data = await parseJsonOrText(response);
 
     if (!response.ok) {
@@ -237,11 +261,11 @@ export default function CctvAnalysis() {
   }, []);
 
   const handleSave = () => {
+    try {
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+    } catch {}
     setLastSavedAt(
-      new Date().toLocaleTimeString("ko-KR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
     );
   };
 
@@ -295,29 +319,56 @@ export default function CctvAnalysis() {
 
   return (
     <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
-      <AdminHeader>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button onClick={() => navigate(`/admin/dashboard/${branchId || "migeum"}`)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}><ChevronLeft size={20} /></button>
+      <AdminHeader />
+      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
+        {/* 사이드바 */}
+        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: isDark ? 'rgba(44,44,46,0.95)' : 'rgba(255,255,255,0.85)', borderRadius: 20, border: `1px solid ${isDark ? '#3a3a3c' : BORDER_GREEN}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
+          <div style={{ marginBottom: 16, position: 'relative' }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#3a3a3c' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
+              <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
+            </button>
+            {branchDropdownOpen && (
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#2c2c2e' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+                {stores.map(s => (
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: isDark ? '#fff' : '#111', borderBottom: `1px solid ${isDark ? '#3a3a3c' : LIGHT_GREEN}` }}>
+                    {s.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {menuItems.map(({ icon: Icon, label, path }) => {
+            const isActive = location.pathname.startsWith(`/admin/cctv/`) ? label === 'CCTV 분석' : (location.pathname === path || location.pathname.startsWith(path));
+            return (
+              <button key={label} onClick={() => navigate(path)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, border: 'none', marginBottom: 4, cursor: 'pointer', fontSize: 14, fontWeight: isActive ? 700 : 500, background: isActive ? GREEN : 'transparent', color: isActive ? '#fff' : (isDark ? '#fff' : '#111'), transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}>
+                <Icon size={16} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 메인 카드 */}
+        <div style={{ flex: 1, minWidth: 0, background: 'rgba(255,255,255,0.97)', borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{currentBranch} <ChevronRight size={12} style={{ display: 'inline' }} /> CCTV 분석</div>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#F2F5EB', display: 'flex', alignItems: 'center', gap: 10 }}><Video size={32} />CCTV 분석 제어</h1>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>분석 시작 시 Spring 백엔드로 JSON body를 전송하고, Spring이 OpenCV 서버의 카메라 루프를 실행합니다.</p>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, display: 'flex', alignItems: 'center', gap: 10 }}><Video size={28} />CCTV 분석 제어</h1>
+              <p style={{ fontSize: 14, color: isDark ? '#aaa' : '#555', marginTop: 4 }}>{currentBranch} · 실시간 고객 인원 분석</p>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                <button onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  <Save size={16} />설정 저장
+                </button>
+                <span style={{ fontSize: 11, color: '#aaa' }}>최근 저장: {lastSavedAt}</span>
+              </div>
+              <button disabled={isSubmitting} onClick={isRunning ? handleStop : handleStart} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: isRunning ? '#ef4444' : GREEN, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>
+                {isRunning ? <CircleStop size={16} /> : <Play size={16} />}
+                {isSubmitting ? "요청 중" : isRunning ? "분석 중지" : "분석 시작"}
+              </button>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="outline" className="gap-2" onClick={handleSave} style={{ border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: '#fff' }}>
-              <Save className="h-4 w-4" />설정 저장
-            </Button>
-            <Button className={`gap-2`} disabled={isSubmitting} onClick={isRunning ? handleStop : handleStart} style={{ background: isRunning ? '#dc2626' : 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: '#fff' }}>
-              {isRunning ? <CircleStop className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              {isSubmitting ? "요청 중" : isRunning ? "분석 중지" : "분석 시작"}
-            </Button>
-          </div>
-        </div>
-      </AdminHeader>
-
-      <main className="mx-auto max-w-7xl px-4 py-6 md:px-6">
         {errorMessage && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {errorMessage}
@@ -351,12 +402,12 @@ export default function CctvAnalysis() {
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm text-slate-500">Store ID</p>
-                  <p className="mt-2 text-3xl font-bold text-slate-950">
-                    {storeId}
+                  <p className="text-sm text-slate-500">분석 매장</p>
+                  <p className="mt-2 text-lg font-bold text-slate-950 leading-snug">
+                    {currentBranch}
                   </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    요청 body에 포함
+                  <p className="mt-2 text-xs text-slate-400 truncate max-w-[140px]">
+                    ID: {storeId || "미설정"}
                   </p>
                 </div>
                 <Users className="h-6 w-6 text-blue-600" />
@@ -627,7 +678,7 @@ export default function CctvAnalysis() {
                   {config.name}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  POST {CCTV_API}/start
+                  POST {API_BASE}/cctv/start
                 </p>
               </div>
               <div className="rounded-lg border bg-slate-950 p-3">
@@ -672,7 +723,8 @@ export default function CctvAnalysis() {
             </CardContent>
           </Card>
         </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }

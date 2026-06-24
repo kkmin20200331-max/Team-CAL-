@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
@@ -14,8 +15,13 @@ const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+<<<<<<< HEAD
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>←</Text>
+=======
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
+          <Ionicons name="chevron-back-outline" size={24} color={colors.primary} />
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
         </TouchableOpacity>
         <Text style={styles.headerTitle}>회원가입</Text>
         <View style={{ width: 40 }} />
@@ -29,7 +35,7 @@ const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
           style={[styles.choiceButton, styles.staffButton]}
           onPress={() => handleSelectRole('STAFF')}
         >
-          <Text style={styles.choiceIcon}>👥</Text>
+          <Ionicons name="people-outline" size={40} color={colors.primary} style={styles.choiceIcon} />
           <Text style={styles.choiceButtonText}>직원 (Staff)</Text>
           <Text style={styles.choiceButtonDescription}>매장 스케줄에 따라 근무하는 직원입니다.</Text>
         </TouchableOpacity>
@@ -38,7 +44,7 @@ const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
           style={[styles.choiceButton, styles.adminButton]}
           onPress={() => handleSelectRole('ADMIN')}
         >
-          <Text style={styles.choiceIcon}>👑</Text>
+          <Ionicons name="briefcase-outline" size={40} color={colors.primary} style={styles.choiceIcon} />
           <Text style={styles.choiceButtonText}>관리자 (Admin)</Text>
           <Text style={styles.choiceButtonDescription}>매장을 소유하고 직원을 관리하는 점주입니다.</Text>
         </TouchableOpacity>
@@ -59,11 +65,17 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    backgroundColor: colors.card,
   },
+<<<<<<< HEAD
   backButton: {
     fontSize: 24,
     color: colors.text,
+=======
+  backButtonContainer: {
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
     width: 40,
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 20,
@@ -92,6 +104,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     padding: 24,
     marginBottom: 20,
     alignItems: 'center',
+<<<<<<< HEAD
     borderWidth: 2,
   },
   staffButton: {
@@ -101,9 +114,19 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   adminButton: {
     backgroundColor: colors.yellowLight,
     borderColor: colors.yellow,
+=======
+    borderWidth: 1,
+  },
+  staffButton: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  adminButton: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
   },
   choiceIcon: {
-    fontSize: 32,
     marginBottom: 12,
   },
   choiceButtonText: {

@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-1.5-flash"
     llm_timeout_sec: float = 20.0
+    naver_ocr_invoke_url: str = ""
+    naver_ocr_secret: str = ""
+    naver_ocr_timeout_sec: float = 30.0
 
     @property
     def default_model_name(self) -> str:

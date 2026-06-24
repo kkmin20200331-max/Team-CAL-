@@ -49,6 +49,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   statHalf: {
     flex: 1, 
@@ -61,7 +63,11 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '800',
+<<<<<<< HEAD
     color: colors.green,
+=======
+    color: colors.primary,
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
     marginBottom: 4,
   },
   statLabel: {

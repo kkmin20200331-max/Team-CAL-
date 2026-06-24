@@ -1,3 +1,4 @@
+﻿import { API_BASE } from "../../../lib/axiosInstance";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
@@ -18,6 +19,7 @@ import {
   Wallet,
   MessageSquare,
   BarChart3,
+  Video,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import AdminHeader from './AdminHeader';
@@ -81,6 +83,54 @@ interface WeeklyPayRequest {
   reason: string;
 }
 
+interface ApiPayrollEntry {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  position: string;
+  location: string;
+  period: string;
+  regularHours: number;
+  overtimeHours: number;
+  holidayHours: number;
+  hourlyRate: number;
+  basePay: number;
+  overtimePay: number;
+  holidayPay: number;
+  tax: number;
+  insurance: number;
+  pension: number;
+  totalPay: number;
+  status: "pending" | "approved" | "paid" | "rejected";
+  requestedDate: string;
+  paidDate?: string;
+}
+
+interface MonthlyPayrollPoint {
+  month: string;
+  amount: number;
+}
+
+const getCurrentPeriod = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getRecentPeriods = (count: number) => {
+  const periods: string[] = [];
+  const now = new Date();
+
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    periods.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+  }
+
+  return periods;
+};
+
+const formatWon = (amount: number) =>
+  `${Math.round(Number(amount || 0)).toLocaleString()}원`;
+
 const PayrollManagement: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -89,12 +139,14 @@ const PayrollManagement: React.FC = () => {
   const t = translations.payrollManagement[language];
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const [selectedPeriod, setSelectedPeriod] = useState('2024-03');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedPeriod, setSelectedPeriod] = useState(getCurrentPeriod());
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'payroll' | 'weekly' | 'analytics'>('payroll');
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const [payrollLoading, setPayrollLoading] = useState(false);
+  const [payrollError, setPayrollError] = useState('');
+  const [monthlyPayrollData, setMonthlyPayrollData] = useState<MonthlyPayrollPoint[]>([]);
 
   const pageBg = isDark
     ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
@@ -105,138 +157,146 @@ const PayrollManagement: React.FC = () => {
 
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const selectedBranchId =
+    branchId && branchId !== "undefined"
+      ? branchId
+      : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   useEffect(() => {
     if (!currentUser?.id) return;
-    fetch(`http://localhost:8080/api/store?user_id=${currentUser.id}`)
+    fetch(`${API_BASE}/store?user_id=${currentUser.id}`)
       .then(r => r.json())
       .then(data => setStores(Array.isArray(data) ? data.map((s: any) => ({ id: s.id, name: s.name })) : []))
       .catch(() => {});
   }, []);
 
+  const mapPayrollEntry = (entry: ApiPayrollEntry): PayrollEntry => ({
+    id: entry.id,
+    employeeId: entry.employeeId,
+    employeeName: entry.employeeName,
+    position: entry.position || '직원',
+    location: currentBranch,
+    period: entry.period,
+    regularHours: Number(entry.regularHours || 0),
+    overtimeHours: Number(entry.overtimeHours || 0),
+    holidayHours: Number(entry.holidayHours || 0),
+    hourlyRate: Number(entry.hourlyRate || 0),
+    basePay: Number(entry.basePay || 0),
+    overtimePay: Number(entry.overtimePay || 0),
+    holidayPay: Number(entry.holidayPay || 0),
+    deductions: {
+      tax: Number(entry.tax || 0),
+      insurance: Number(entry.insurance || 0),
+      pension: Number(entry.pension || 0),
+    },
+    totalPay: Number(entry.totalPay || 0),
+    status: entry.status || 'pending',
+    requestedDate: entry.requestedDate,
+    paidDate: entry.paidDate,
+  });
+
+  const fetchPayrollEntries = async (period: string) => {
+    if (!selectedBranchId) return [];
+
+    const response = await fetch(
+      `${API_BASE}/payroll/store?store_id=${encodeURIComponent(selectedBranchId)}&year_month=${encodeURIComponent(period)}`
+    );
+
+    if (!response.ok) {
+      throw new Error('급여 정보를 불러오지 못했습니다.');
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data.map(mapPayrollEntry) : [];
+  };
+
+  useEffect(() => {
+    if (!selectedBranchId) return;
+
+    setPayrollLoading(true);
+    setPayrollError('');
+
+    fetchPayrollEntries(selectedPeriod)
+      .then(setPayrollEntries)
+      .catch((error) => {
+        setPayrollEntries([]);
+        setPayrollError(error instanceof Error ? error.message : '급여 정보를 불러오지 못했습니다.');
+      })
+      .finally(() => setPayrollLoading(false));
+  }, [selectedBranchId, selectedPeriod]);
+
+  useEffect(() => {
+    if (!selectedBranchId) return;
+
+    const refreshPayroll = () => {
+      if (document.visibilityState === 'hidden') return;
+
+      fetchPayrollEntries(selectedPeriod)
+        .then(setPayrollEntries)
+        .catch(() => {});
+    };
+
+    window.addEventListener('focus', refreshPayroll);
+    document.addEventListener('visibilitychange', refreshPayroll);
+
+    return () => {
+      window.removeEventListener('focus', refreshPayroll);
+      document.removeEventListener('visibilitychange', refreshPayroll);
+    };
+  }, [selectedBranchId, selectedPeriod]);
+
+  useEffect(() => {
+    if (!selectedBranchId) return;
+
+    Promise.all(
+      getRecentPeriods(6).map(period =>
+        fetchPayrollEntries(period).then(entries => ({
+          month: `${Number(period.slice(5, 7))}월`,
+          amount: entries.reduce((sum, entry) => sum + entry.totalPay, 0),
+        }))
+      )
+    )
+      .then(setMonthlyPayrollData)
+      .catch(() => setMonthlyPayrollData([]));
+  }, [selectedBranchId]);
+
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: `/admin/schedule/monthly/${branchId}` },
-    { icon: UserPlus, label: '대타 모집', path: `/admin/substitute/${branchId}` },
-    { icon: Users, label: '직원 관리', path: `/admin/employees/${branchId}` },
-    { icon: Wallet, label: '급여 관리', path: `/admin/payroll/${branchId}` },
-    { icon: FileText, label: '문서 관리', path: `/admin/documents/${branchId}` },
-    { icon: MessageSquare, label: '게시판', path: `/admin/board/${branchId}` },
-    { icon: BarChart3, label: 'AI 고객 분석', path: `/admin/analytics/${branchId}` },
+    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
-  // Mock data - 급여 내역
-  const [payrollEntries, setPayrollEntries] = useState<PayrollEntry[]>([
-    {
-      id: "PAY001",
-      employeeId: "EMP001",
-      employeeName: "김민수",
-      position: "주방장",
-      location: "강남점",
-      period: "2024-03",
-      regularHours: 160,
-      overtimeHours: 12,
-      holidayHours: 8,
-      hourlyRate: 20000,
-      basePay: 3200000,
-      overtimePay: 360000,
-      holidayPay: 320000,
-      deductions: { tax: 387000, insurance: 145000, pension: 193000 },
-      totalPay: 3155000,
-      status: "paid",
-      requestedDate: "2024-03-25",
-      paidDate: "2024-03-31",
-    },
-    {
-      id: "PAY002",
-      employeeId: "EMP002",
-      employeeName: "이지은",
-      position: "서빙",
-      location: "강남점",
-      period: "2024-03",
-      regularHours: 80,
-      overtimeHours: 5,
-      holidayHours: 0,
-      hourlyRate: 12000,
-      basePay: 960000,
-      overtimePay: 90000,
-      holidayPay: 0,
-      deductions: { tax: 52500, insurance: 31500, pension: 42000 },
-      totalPay: 924000,
-      status: "approved",
-      requestedDate: "2024-03-28",
-    },
-    {
-      id: "PAY003",
-      employeeId: "EMP003",
-      employeeName: "박철수",
-      position: "매니저",
-      location: "홍대점",
-      period: "2024-03",
-      regularHours: 160,
-      overtimeHours: 20,
-      holidayHours: 16,
-      hourlyRate: 18000,
-      basePay: 2880000,
-      overtimePay: 540000,
-      holidayPay: 576000,
-      deductions: { tax: 398400, insurance: 149100, pension: 199800 },
-      totalPay: 3449700,
-      status: "pending",
-      requestedDate: "2024-03-29",
-    },
-  ]);
+  const [payrollEntries, setPayrollEntries] = useState<PayrollEntry[]>([]);
 
-  // Mock data - 주급 요청
-  const [weeklyPayRequests, setWeeklyPayRequests] = useState<WeeklyPayRequest[]>([
-    {
-      id: "WPR001",
-      employeeId: "EMP002",
-      employeeName: "이지은",
-      weekStart: "2024-03-18",
-      weekEnd: "2024-03-24",
-      requestedAmount: 240000,
-      approvedAmount: 240000,
-      status: "approved",
-      requestDate: "2024-03-24",
-      reason: "긴급 생활비",
-    },
-    {
-      id: "WPR002",
-      employeeId: "EMP004",
-      employeeName: "최영희",
-      weekStart: "2024-03-25",
-      weekEnd: "2024-03-31",
-      requestedAmount: 200000,
-      status: "pending",
-      requestDate: "2024-03-30",
-      reason: "학비 납부",
-    },
-  ]);
+  const [weeklyPayRequests] = useState<WeeklyPayRequest[]>([]);
 
-  // Chart data
-  const monthlyPayrollData = [
-    { month: "10월", amount: 12500000 },
-    { month: "11월", amount: 13200000 },
-    { month: "12월", amount: 14100000 },
-    { month: "1월", amount: 13800000 },
-    { month: "2월", amount: 13500000 },
-    { month: "3월", amount: 14500000 },
-  ];
-
-  const payrollByPosition = [
-    { name: "주방장", value: 6400000, percentage: 44 },
-    { name: "매니저", value: 3200000, percentage: 22 },
-    { name: "서빙", value: 2880000, percentage: 20 },
-    { name: "주방보조", value: 2020000, percentage: 14 },
-  ];
+  const payrollByPosition = Object.values(
+    payrollEntries.reduce<Record<string, { name: string; value: number; percentage: number }>>((acc, entry) => {
+      const key = entry.position || '직원';
+      if (!acc[key]) {
+        acc[key] = { name: key, value: 0, percentage: 0 };
+      }
+      acc[key].value += entry.totalPay;
+      return acc;
+    }, {})
+  ).map(item => ({
+    ...item,
+    percentage: payrollEntries.length
+      ? Math.round((item.value / Math.max(payrollEntries.reduce((sum, entry) => sum + entry.totalPay, 0), 1)) * 100)
+      : 0,
+  }));
 
   const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"];
 
   const filteredPayroll = payrollEntries.filter((entry) => {
     const matchesSearch = entry.employeeName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "all" || entry.status === filterStatus;
     const matchesPeriod = entry.period === selectedPeriod;
-    return matchesSearch && matchesStatus && matchesPeriod;
+    return matchesSearch && matchesPeriod;
   });
 
   const getStatusBadge = (status: string) => {
@@ -256,11 +316,11 @@ const PayrollManagement: React.FC = () => {
 
   const calculateStats = () => {
     const totalPayroll = filteredPayroll.reduce((sum, entry) => sum + entry.totalPay, 0);
-    const pending = filteredPayroll.filter((e) => e.status === "pending").length;
-    const approved = filteredPayroll.filter((e) => e.status === "approved").length;
-    const paid = filteredPayroll.filter((e) => e.status === "paid").length;
+    const employeeCount = filteredPayroll.length;
+    const regularHours = filteredPayroll.reduce((sum, entry) => sum + entry.regularHours, 0);
+    const overtimeHours = filteredPayroll.reduce((sum, entry) => sum + entry.overtimeHours, 0);
     const weeklyPending = weeklyPayRequests.filter((r) => r.status === "pending").length;
-    return { totalPayroll, pending, approved, paid, weeklyPending };
+    return { totalPayroll, employeeCount, regularHours, overtimeHours, weeklyPending };
   };
 
   const stats = calculateStats();
@@ -317,12 +377,12 @@ const PayrollManagement: React.FC = () => {
                     }}
                     style={{
                       display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left',
-                      background: s.id === branchId ? LIGHT_GREEN : 'transparent',
+                      background: s.id === selectedBranchId ? LIGHT_GREEN : 'transparent',
                       border: 'none', cursor: 'pointer',
                       color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600,
                     }}
                     onMouseOver={e => { e.currentTarget.style.background = LIGHT_GREEN; }}
-                    onMouseOut={e => { e.currentTarget.style.background = s.id === branchId ? LIGHT_GREEN : 'transparent'; }}
+                    onMouseOut={e => { e.currentTarget.style.background = s.id === selectedBranchId ? LIGHT_GREEN : 'transparent'; }}
                   >
                     {s.name}
                   </button>
@@ -383,10 +443,10 @@ const PayrollManagement: React.FC = () => {
           {/* Statistics Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
             {[
-              { label: t.totalPay, value: `${(stats.totalPayroll / 10000).toFixed(0)}만원` },
-              { label: t.paid, value: String(stats.paid) },
-              { label: t.approved, value: String(stats.approved) },
-              { label: t.pending, value: String(stats.pending) },
+              { label: t.totalPay, value: formatWon(stats.totalPayroll) },
+              { label: '직원 수', value: String(stats.employeeCount) },
+              { label: '총 근무시간', value: `${stats.regularHours.toFixed(1)}h` },
+              { label: '연장시간', value: `${stats.overtimeHours.toFixed(1)}h` },
               { label: t.weeklyRequest, value: String(stats.weeklyPending) },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
@@ -445,34 +505,42 @@ const PayrollManagement: React.FC = () => {
                       style={{ width: '100%', paddingLeft: 36, paddingRight: 14, paddingTop: 10, paddingBottom: 10, borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, background: 'rgba(255,255,255,0.8)', outline: 'none', color: textColor, boxSizing: 'border-box' }}
                     />
                   </div>
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, fontSize: 14, background: 'rgba(255,255,255,0.8)', outline: 'none', color: textColor }}
-                  >
-                    <option value="all">{t.allStatus}</option>
-                    <option value="pending">{t.statusPending}</option>
-                    <option value="approved">{t.statusApproved}</option>
-                    <option value="paid">{t.statusPaid}</option>
-                    <option value="rejected">{t.statusRejected}</option>
-                  </select>
                 </div>
               </div>
 
               {/* Payroll Table */}
               <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
                 <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 16 }}>{t.payrollList(filteredPayroll.length)}</p>
+                {payrollError && (
+                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#c2410c', borderRadius: 12, padding: '12px 14px', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+                    {payrollError}
+                  </div>
+                )}
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: LIGHT_GREEN }}>
-                        {[t.colEmployee, t.colPositionStore, t.colHours, t.colBase, t.colOvertime, t.colDeduction, t.colNet, t.colStatus, t.colActions].map(col => (
+                        {[t.colEmployee, t.colPositionStore, t.colHours, t.colBase, t.colOvertime, t.colDeduction, t.colNet].map(col => (
                           <th key={col} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>{col}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredPayroll.map((entry, idx) => (
+                      {payrollLoading && (
+                        <tr>
+                          <td colSpan={7} style={{ padding: '32px 16px', textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
+                            급여 정보를 불러오는 중입니다.
+                          </td>
+                        </tr>
+                      )}
+                      {!payrollLoading && filteredPayroll.length === 0 && (
+                        <tr>
+                          <td colSpan={7} style={{ padding: '32px 16px', textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
+                            해당 월의 급여 데이터가 없습니다.
+                          </td>
+                        </tr>
+                      )}
+                      {!payrollLoading && filteredPayroll.map((entry, idx) => (
                         <tr key={entry.id} style={{ background: idx % 2 === 0 ? 'rgba(230,245,200,0.2)' : 'transparent', borderBottom: `1px solid ${LIGHT_GREEN}` }}>
                           <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>
                             <div style={{ fontWeight: 600 }}>{entry.employeeName}</div>
@@ -487,24 +555,10 @@ const PayrollManagement: React.FC = () => {
                             <div style={{ color: '#2563eb' }}>{t.overtimeHours(entry.overtimeHours)}</div>
                             <div style={{ color: GREEN }}>{t.holidayHours(entry.holidayHours)}</div>
                           </td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{(entry.basePay / 10000).toFixed(0)}만원</td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{((entry.overtimePay + entry.holidayPay) / 10000).toFixed(0)}만원</td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: '#ef4444' }}>{((entry.deductions.tax + entry.deductions.insurance + entry.deductions.pension) / 10000).toFixed(0)}만원</td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: DARK_GREEN, fontWeight: 700 }}>{(entry.totalPay / 10000).toFixed(0)}만원</td>
-                          <td style={{ padding: '12px 16px' }}>{getStatusBadge(entry.status)}</td>
-                          <td style={{ padding: '12px 16px' }}>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              <button style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: DARK_GREEN }}>
-                                <FileText size={14} />
-                              </button>
-                              {entry.status === 'pending' && (
-                                <button style={{ background: GREEN, border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', color: '#fff', fontSize: 13, fontWeight: 700 }}>{t.approveBtn}</button>
-                              )}
-                              {entry.status === 'approved' && (
-                                <button style={{ background: GREEN, border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', color: '#fff', fontSize: 13, fontWeight: 700 }}>{t.payBtn}</button>
-                              )}
-                            </div>
-                          </td>
+                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{formatWon(entry.basePay)}</td>
+                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{formatWon(entry.overtimePay + entry.holidayPay)}</td>
+                          <td style={{ padding: '12px 16px', fontSize: 14, color: '#ef4444' }}>{formatWon(entry.deductions.tax + entry.deductions.insurance + entry.deductions.pension)}</td>
+                          <td style={{ padding: '12px 16px', fontSize: 14, color: DARK_GREEN, fontWeight: 700 }}>{formatWon(entry.totalPay)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -522,6 +576,11 @@ const PayrollManagement: React.FC = () => {
                 <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.weeklyRequestList}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {weeklyPayRequests.length === 0 && (
+                  <div style={{ background: 'rgba(255,255,255,0.8)', borderRadius: 12, padding: '24px 16px', border: `1px solid ${LIGHT_GREEN}`, textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
+                    주급 요청 데이터가 없습니다.
+                  </div>
+                )}
                 {weeklyPayRequests.map((request) => (
                   <div key={request.id} style={{ background: 'rgba(255,255,255,0.8)', borderRadius: 12, padding: '16px', border: `1px solid ${LIGHT_GREEN}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -539,8 +598,8 @@ const PayrollManagement: React.FC = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
                       {[
                         { label: t.workPeriod, value: `${request.weekStart} ~ ${request.weekEnd}` },
-                        { label: t.requestAmount, value: `${(request.requestedAmount / 10000).toFixed(0)}만원` },
-                        { label: t.approvedAmount, value: request.approvedAmount ? `${(request.approvedAmount / 10000).toFixed(0)}만원` : '-' },
+                        { label: t.requestAmount, value: formatWon(request.requestedAmount) },
+                        { label: t.approvedAmount, value: request.approvedAmount ? formatWon(request.approvedAmount) : '-' },
                         { label: t.requestDate, value: request.requestDate },
                       ].map(({ label, value }) => (
                         <div key={label}>
@@ -628,7 +687,7 @@ const PayrollManagement: React.FC = () => {
                           <span style={{ fontSize: 14, fontWeight: 600, color: textColor }}>{item.name}</span>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN }}>{(item.value / 10000).toFixed(0)}만원</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN }}>{formatWon(item.value)}</div>
                           <div style={{ fontSize: 13, color: '#8BA68D' }}>{item.percentage}%</div>
                         </div>
                       </div>

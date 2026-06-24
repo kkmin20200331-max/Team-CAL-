@@ -1,8 +1,8 @@
+﻿import axiosInstance from "../../../lib/axiosInstance";
 import { useTheme } from 'next-themes';
 import { useState, useEffect, useMemo } from 'react';
 import EmployeeHeader from './EmployeeHeader';
 import { useNavigate } from 'react-router';
-import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -13,7 +13,6 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 interface BoardVO {
   id: string;
@@ -86,12 +85,12 @@ export default function EmployeeBoard() {
     if (!storeId) return;
     setLoading(true);
     // board 목록 전체 가져와서 이름으로 매칭
-    API.get('/board', { params: { store_id: storeId } })
+    axiosInstance.get('/board', { params: { store_id: storeId } })
       .then(res => {
         const boardList: BoardVO[] = Array.isArray(res.data) ? res.data : [];
         return Promise.all(
           boardList.map((board) =>
-            API.get("/board_post", { params: { board_id: board.id } })
+            axiosInstance.get("/board_post", { params: { board_id: board.id } })
               .then((r) => {
                 const list: BoardPostVO[] = Array.isArray(r.data) ? r.data : [];
                 return list.map((p) => ({

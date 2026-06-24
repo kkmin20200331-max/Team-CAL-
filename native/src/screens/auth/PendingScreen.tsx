@@ -1,29 +1,30 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../../contexts/ThemeContext';
 
 type PendingScreenNavigationProp = StackNavigationProp<any, 'Pending'>;
 
 type Props = {
-  navigation: PendingScreenNavigationProp;
+  navigation?: PendingScreenNavigationProp;
   handleLogout: () => void;
 };
 
 const PendingScreen = ({ navigation, handleLogout }: Props) => {
-  const { colors } = useTheme();
-  const styles = getThemedStyles(colors);
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
   const handleRefresh = () => {
-    // 승인 상태 조회 API 호출
+    // 메모: 승인 상태 조회 API가 연결되면 여기에서 재호출합니다.
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="arrow-back-outline" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>승인 대기</Text>
         <View style={styles.headerRightPlaceholder} />
@@ -31,7 +32,7 @@ const PendingScreen = ({ navigation, handleLogout }: Props) => {
 
       <View style={styles.container}>
         <View style={styles.iconPlaceholder}>
-          <Text style={styles.iconText}>⏳</Text>
+          <Ionicons name="hourglass-outline" size={36} color={colors.primary} />
         </View>
 
         <Text style={styles.title}>관리자 승인 대기 중</Text>
@@ -56,7 +57,7 @@ const PendingScreen = ({ navigation, handleLogout }: Props) => {
   );
 };
 
-const getThemedStyles = (colors: any) => StyleSheet.create({
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -69,14 +70,10 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   backButton: {
     padding: 8,
-  },
-  backButtonText: {
-    fontSize: 24,
-    color: colors.text,
-    fontWeight: '600',
   },
   headerTitle: {
     fontSize: 18,
@@ -97,16 +94,13 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.card,
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
   },
-  iconText: {
-    fontSize: 32,
-  },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
@@ -132,7 +126,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   primaryButtonText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

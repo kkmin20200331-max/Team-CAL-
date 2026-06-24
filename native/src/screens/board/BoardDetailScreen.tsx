@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useTheme } from '../../contexts/ThemeContext';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Post } from '../../types/Post';
+import React, { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
 import { useApp } from '../../contexts/AppContext';
-import Toast from "react-native-toast-message";
-import { getBoardPostByIdAPI, deleteBoardPostAPI } from '../../../api/auth';
-import { useFocusEffect } from '@react-navigation/native';
-import { format } from 'date-fns';
+import { useBoard } from '../../contexts/BoardContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import { Post } from '../../types/Post';
 
 type BoardDetailScreenNavigationProp = StackNavigationProp<any, 'BoardDetail'>;
 
@@ -18,153 +16,148 @@ type Props = {
   route: {
     params: {
       postId: string;
-      onGoBack?: () => void;
     };
   };
 };
 
 const BoardDetailScreen = ({ route, navigation }: Props) => {
-  const { postId, onGoBack } = route.params;
+  const { postId } = route.params;
   const { userInfo } = useApp();
-  const { t } = useLanguage();
-  const { colors } = useTheme();
-  const styles = getThemedStyles(colors);
+  const { posts, updatePinStatus } = useBoard();
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
 
   const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  const fetchPost = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await getBoardPostByIdAPI(postId);
-      setPost(res.data);
-    } catch (error) {
-      console.error("게시글 상세 조회 실패:", error);
-      Alert.alert("오류", "게시글을 불러오는 데 실패했습니다.");
-      navigation.goBack();
-    } finally {
-      setLoading(false);
-    }
-  }, [postId, navigation]);
+  useEffect(() => {
+    setPost(posts.find((item) => item.id === postId) || null);
+  }, [postId, posts]);
 
-  useFocusEffect(fetchPost);
-
-  const isAuthor = post?.user_id === userInfo?.id;
-
-  const handleDeletePost = () => {
+  const handleTogglePin = async () => {
     if (!post) return;
-    Alert.alert(
-      "게시글 삭제",
-      "이 게시글을 정말 삭제하시겠습니까?",
-      [
-        { text: "취소", style: "cancel" },
-        {
-          text: "삭제",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteBoardPostAPI(post.id);
-              Toast.show({ type: 'info', text1: '게시글이 삭제되었습니다.' });
-              if (onGoBack) onGoBack();
-              navigation.goBack();
-            } catch (error) {
-              console.error("게시글 삭제 실패:", error);
-              Alert.alert("오류", "게시글 삭제에 실패했습니다.");
-            }
-          },
-        },
-      ]
-    );
-  };
+    const nextPinned = !post.isPinned;
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.primary} /></View>
-      </SafeAreaView>
-    );
-  }
+    try {
+      await updatePinStatus(post.id, nextPinned);
+      Toast.show({
+        type: 'success',
+        text1: nextPinned ? '상단 고정 완료' : '상단 고정 해제',
+      });
+    } catch (error) {
+      console.error('게시글 고정 변경 오류:', error);
+      Alert.alert('처리 실패', '게시글 고정 상태를 변경하지 못했습니다.');
+    }
+  };
 
   if (!post) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}><Text style={{color: colors.text}}>게시글을 찾을 수 없습니다.</Text></View>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.emptyText}>게시글을 찾을 수 없습니다.</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>←</Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>게시글 상세</Text>
+        {userInfo?.role === 'ADMIN' ? (
+          <TouchableOpacity onPress={handleTogglePin} style={styles.pinButton}>
+            <Ionicons 
+              name={post.isPinned ? "pin" : "pin-outline"} 
+              size={22} 
+              color={colors.primary} 
+            />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{t('boardDetailTitle')}</Text>
-          <View style={styles.headerRight}>
-            {isAuthor && (
-              <>
-                <TouchableOpacity onPress={() => navigation.navigate('BoardWrite', { isEdit: true, postToEdit: post, onGoBack: fetchPost })}>
-                  <Text style={styles.headerButtonText}>수정</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleDeletePost}>
-                  <Text style={[styles.headerButtonText, styles.deleteButtonText]}>삭제</Text>
-                </TouchableOpacity>
-              </>
-            )}
+        ) : (
+          <View style={{ width: 60 }} />
+        )}
+      </View>
+
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.postContainer}>
+          <Text style={styles.postTitle}>{post.title}</Text>
+          <View style={styles.postMeta}>
+            <Text style={styles.postAuthor}>작성자: {post.authorId || '알 수 없음'}</Text>
+            <Text style={styles.postDate}>{post.date}</Text>
+          </View>
+          <View style={styles.postContentContainer}>
+            <Text style={styles.postContent}>{post.content}</Text>
           </View>
         </View>
-
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-          <View style={styles.postContainer}>
-            <Text style={styles.postTitle}>{post.title}</Text>
-            <View style={styles.postMeta}>
-              <Text style={styles.postAuthor}>{t('writer')}: {post.user_name || '알 수 없음'}</Text>
-              <Text style={styles.postDate}>{format(new Date(post.created_at), 'yyyy.MM.dd HH:mm')}</Text>
-            </View>
-            <View style={styles.postContentContainer}>
-              <Text style={styles.postContent}>{post.content}</Text>
-            </View>
-          </View>
-
-          <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>{t('comments')}</Text>
-            <View style={styles.emptyContainer}>
-              <Text style={styles.noCommentsText}>댓글 기능은 현재 준비 중입니다.</Text>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-const getThemedStyles = (colors: any) => StyleSheet.create({
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
-  backButton: { padding: 4, width: 40 },
-  backButtonText: { fontSize: 24, color: colors.text },
+  emptyText: { color: colors.subText, fontSize: 15, fontWeight: '600' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  backButton: { padding: 4, width: 40, justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 16, minWidth: 80, justifyContent: 'flex-end' },
-  headerButtonText: { fontSize: 16, color: colors.primary, fontWeight: '600' },
-  deleteButtonText: { color: colors.red },
+  pinButton: {
+    width: 60,
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
   container: { flex: 1, padding: 20 },
-  postContainer: { backgroundColor: colors.card, borderRadius: 12, padding: 20, marginBottom: 20 },
-  postTitle: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 10 },
-  postMeta: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 15 },
-  postAuthor: { fontSize: 13, color: colors.subText },
-  postDate: { fontSize: 13, color: colors.subText },
-  postContentContainer: { minHeight: 200 },
-  postContent: { fontSize: 16, color: colors.text, lineHeight: 24 },
-  commentsSection: { backgroundColor: colors.card, borderRadius: 12, padding: 20, marginBottom: 20 },
-  commentsTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 15 },
-  emptyContainer: { paddingVertical: 20, alignItems: 'center' },
-  noCommentsText: { fontSize: 14, color: colors.subText, textAlign: 'center' },
+  postContainer: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDarkMode ? 0 : 0.05,
+    shadowRadius: 8,
+  },
+  postTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 10,
+  },
+  postMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingBottom: 12,
+  },
+  postAuthor: {
+    fontSize: 13,
+    color: colors.subText,
+  },
+  postDate: {
+    fontSize: 13,
+    color: colors.subText,
+  },
+  postContentContainer: {
+    minHeight: 160,
+  },
+  postContent: {
+    fontSize: 16,
+    color: colors.text,
+    lineHeight: 24,
+  },
 });
 
 export default BoardDetailScreen;

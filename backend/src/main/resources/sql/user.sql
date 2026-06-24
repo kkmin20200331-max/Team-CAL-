@@ -87,3 +87,6 @@ COMMIT;
 UPDATE users SET password = '123' WHERE username = 'admin01';
 
 ALTER TABLE users MODIFY (username VARCHAR2(40));
+
+ALTER TABLE users
+    ADD profile_image VARCHAR2(500 CHAR);

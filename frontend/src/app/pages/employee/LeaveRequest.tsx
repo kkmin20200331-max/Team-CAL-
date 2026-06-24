@@ -1,6 +1,6 @@
+import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import axios from 'axios';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -18,7 +18,6 @@ import { format, addMonths, subMonths } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import EmployeeHeader from './EmployeeHeader';
 
-const API = axios.create({ baseURL: "http://localhost:8080/api" });
 
 const toDateStr = (d: Date) => {
   const y = d.getFullYear();
@@ -76,8 +75,8 @@ export default function LeaveRequest() {
   const navigate = useNavigate();
   const language = useLanguage();
   const t = translations.leaveRequest[language];
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const storeName = localStorage.getItem('store_name') || '';
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const storeName = sessionStorage.getItem('store_name') || '';
 
   const [myShifts, setMyShifts] = useState<ShiftVO[]>([]);
   const [leaveHistory, setLeaveHistory] = useState<LeaveRequestVO[]>([]);
@@ -98,7 +97,7 @@ export default function LeaveRequest() {
     const today = new Date();
     const later = new Date(today);
     later.setMonth(today.getMonth() + 2);
-    API.get("/shift/staff", {
+    axiosInstance.get("/shift/staff", {
       params: {
         user_id: user.id,
         start_date: toDateStr(today),
@@ -119,7 +118,7 @@ export default function LeaveRequest() {
   const fetchHistory = async () => {
     setLoadingHistory(true);
     try {
-      const res = await API.get("/leave_request/staff", {
+      const res = await axiosInstance.get("/leave_request/staff", {
         params: {
           user_id: user.id,
           year: historyMonth.getFullYear(),
@@ -171,7 +170,7 @@ export default function LeaveRequest() {
 
     setSubmitStatus("loading");
     try {
-      await API.post("/leave_request", {
+      await axiosInstance.post("/leave_request", {
         id: crypto.randomUUID(),
         shift_id: selectedShiftId,
         user_id: user.id,
@@ -192,7 +191,7 @@ export default function LeaveRequest() {
   const handleCancel = async (leaveId: string) => {
     if (!confirm(t.confirmCancel)) return;
     try {
-      await API.delete("/leave_request", { params: { id: leaveId } });
+      await axiosInstance.delete("/leave_request", { params: { id: leaveId } });
       fetchHistory();
     } catch {
       alert(t.errCancel);

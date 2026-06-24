@@ -1,117 +1,137 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Post } from '../../types/Post';
-import { useSchedule } from '../../contexts/ScheduleContext';
-import { useTheme } from '../../contexts/ThemeContext';
 
 type Props = {
   posts: Post[];
   handleOpenPost: (post: Post) => void;
   navigation: any;
+  colors: any;
+  isDarkMode: boolean;
   t: (key: string) => string;
+  CATEGORIES: any[];
 };
 
-const NoticeSection = ({ posts, handleOpenPost, navigation, t }: Props) => {
-  const { colors } = useTheme();
-  const styles = getThemedStyles(colors);
-  const { employees } = useSchedule();
+const NoticeSection = ({ posts, handleOpenPost, navigation, colors, isDarkMode, t, CATEGORIES }: Props) => {
+  const styles = getThemedStyles(colors, isDarkMode);
 
-  const getAuthorName = (authorId: string) => {
-    const author = employees?.find(emp => emp.username === authorId);
-    return author?.name || authorId;
-  };
-
-  const latestNotices = posts.filter(post => post.category === 'NOTICE').slice(0, 3);
+  const postsToShow = posts.slice(0, 3);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('latestNotices')}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('BoardNavigator', { screen: 'Board' })}>
-          <Text style={styles.viewAll}>{t('viewAll')}</Text>
+    <View style={styles.noticeSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{t('notice')}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('BoardNavigator')}>
+          <Text style={styles.moreText}>{t('more')}</Text>
         </TouchableOpacity>
       </View>
-      {latestNotices.length > 0 ? (
-        latestNotices.map((post, index) => (
-          <TouchableOpacity 
-            key={post.id} 
-            style={[styles.noticeItem, index === latestNotices.length - 1 && { borderBottomWidth: 0 }]} 
-            onPress={() => handleOpenPost(post)}
-          >
-            <View style={styles.noticeContent}>
-              <Text style={styles.noticeTitle}>{t(post.title)}</Text>
-              <Text style={styles.noticeMeta}>
-                {getAuthorName(post.authorId)} | {post.date}
+      
+      {postsToShow.map((post, index) => (
+        <React.Fragment key={post.id}>
+          <TouchableOpacity style={styles.noticeItem} onPress={() => handleOpenPost(post)} activeOpacity={0.7}>
+            <View style={styles.noticeTextContainer}>
+              {post.isPinned && <Ionicons name="pin" size={14} color="#EF4444" style={styles.pinIcon} />}
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryBadgeText}>{t(CATEGORIES.find(c => c.id === post.category)?.label || 'boardTabNotice')}</Text>
+              </View>
+              <Text style={styles.noticeItemTitle} numberOfLines={1}>
+                {t(post.title).length > 14 ? t(post.title).substring(0, 14) + '..' : t(post.title)}
               </Text>
+              {post.badge && (
+                <View style={styles.newBadge}><Text style={styles.newBadgeText}>{t(post.badge)}</Text></View>
+              )}
             </View>
-            {post.isPinned && <Text style={styles.pinIcon}>📌</Text>}
+            <Text style={styles.noticeDate}>{post.date}</Text>
           </TouchableOpacity>
-        ))
-      ) : (
-        <Text style={styles.emptyText}>{t('noNotices')}</Text>
-      )}
+          {index < postsToShow.length - 1 && <View style={styles.noticeDivider} />}
+        </React.Fragment>
+      ))}
     </View>
   );
 };
 
-const getThemedStyles = (colors: any) => StyleSheet.create({
-  container: {
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
+  noticeSection: {
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 40,
+    marginTop: 8,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  header: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
+  moreText: {
+    fontSize: 13,
+    color: colors.subText,
+    fontWeight: '500',
   },
-  viewAll: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text,
-    fontWeight: '600',
   },
   noticeItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
-  noticeContent: {
+  noticeTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    marginRight: 10,
-  },
-  noticeTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  noticeMeta: {
-    fontSize: 12,
-    color: colors.subText,
+    paddingRight: 10,
   },
   pinIcon: {
-    fontSize: 18,
+    marginRight: 6,
   },
-  emptyText: {
-    fontSize: 14,
+  categoryBadge: {
+    backgroundColor: isDarkMode ? '#1F293D' : '#E5E7EB',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  categoryBadgeText: {
+    color: isDarkMode ? '#D1D5DB' : '#4B5563',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  noticeItemTitle: {
+    fontSize: 15,
+    color: colors.text,
+  },
+  newBadge: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  newBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  noticeDate: {
+    fontSize: 13,
     color: colors.subText,
-    textAlign: 'center',
-    paddingVertical: 20,
+  },
+  noticeDivider: {
+    height: 1,
+    backgroundColor: colors.border,
   },
 });
 

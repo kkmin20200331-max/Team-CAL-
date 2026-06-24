@@ -1,7 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+<<<<<<< HEAD
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+=======
+import { Ionicons } from '@expo/vector-icons';
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
 
 interface ShiftWithUser {
   time: string;
@@ -48,8 +52,13 @@ const TodayScheduleCard = ({ schedule, onPress }: Props) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.header}>
+<<<<<<< HEAD
         <Text style={styles.title}>{t('todaySchedule')}</Text>
         <Text style={styles.arrow}>〉</Text>
+=======
+        <Text style={styles.title}>오늘의 스케줄</Text>
+        <Ionicons name="chevron-forward-outline" size={18} color={colors.subText} />
+>>>>>>> 5ec2e913c168e6eac4f8c589eca3b390569a4a88
       </View>
       <View style={styles.content}>
         {renderShiftGroup(t('morning'), schedule.morning)}
@@ -73,6 +82,8 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   header: {
     flexDirection: 'row',
@@ -82,13 +93,15 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: colors.text,
   },
+<<<<<<< HEAD
   arrow: {
     fontSize: 20,
     color: colors.subText,
   },
+=======
   content: {
     gap: 12,
   },

@@ -3,93 +3,133 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image, Act
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import * as ImagePicker from 'expo-image-picker';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useApp } from '../../contexts/AppContext';
-import { uploadHealthCertificateAPI } from '../../../api/auth';
+import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import { useApp } from '../../contexts/AppContext'; // ✅ AppContext 추가
+import { useFocusEffect } from '@react-navigation/native'; // ✅ useFocusEffect 추가
+import { getHealthCertsAPI, uploadFileAPI } from '../../../api/auth'; // ✅ API 추가
 
 const HealthCertScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
-  const { colors } = useTheme();
   const { userInfo } = useApp();
-  const styles = getThemedStyles(colors);
-
-  const calculateStatus = (expiryDate: string | null) => {
+  
+  // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
+  const { colors, isDarkMode } = useTheme();
+  const styles = getThemedStyles(colors, isDarkMode);
+  
+  // 현재 날짜를 기준으로 만료 상태를 계산하는 함수
+  const calculateStatus = (expiryDate: string | null, backendStatus: string) => {
+    if (backendStatus === 'pending') return 'pendingApproval';
+    if (backendStatus === 'rejected') return 'rejected'; // 반려 상태 추가
     if (!expiryDate) return 'pendingApproval';
+
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0); // 시간 제외 (자정 기준)
     const expiry = new Date(expiryDate);
     
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return 'expired';
-    if (diffDays <= 30) return 'needsRenewal';
-    return 'valid';
+    if (diffDays < 0) return 'expired'; // 이미 지남 (만료)
+    if (diffDays <= 30) return 'needsRenewal'; // 30일 이내 (갱신 요망)
+    return 'valid'; // 30일 초과 (정상)
   };
 
+  // ✅ 승인 상태(approvalStatus)가 추가된 데이터 구조
   interface HealthCert {
     id: string;
     title: string;
-    expiryDate: string | null;
-    approvalStatus: 'verified' | 'pending';
+    expiryDate: string | null; // 승인 대기 중에는 만료일이 없음
+    approvalStatus: 'verified' | 'pending' | 'rejected' | 'expired';
   }
 
-  const [certList, setCertList] = useState<HealthCert[]>([
-    { id: '1', title: '보건증 (최신)', expiryDate: '2027-05-20', approvalStatus: 'verified' },
-    { id: '2', title: '보건증 (갱신 임박)', expiryDate: '2026-06-20', approvalStatus: 'verified' },
-    { id: '3', title: '보건증 (과거)', expiryDate: '2025-01-15', approvalStatus: 'verified' },
-  ]);
+  // ✅ 실 데이터를 저장할 리스트 상태
+  const [certList, setCertList] = useState<HealthCert[]>([]);
 
+  // 선택된 이미지와 업로드 로딩 상태 관리
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
+  // 📂 보건증 데이터 불러오기
+  const loadHealthCerts = async () => {
+    if (!userInfo?.id) return;
+    try {
+      const response = await getHealthCertsAPI(userInfo.id);
+      if (Array.isArray(response.data)) {
+        const mapped = response.data.map((item: any) => {
+          let formattedExpiry = null;
+          if (item.expiry_date) {
+            formattedExpiry = item.expiry_date.substring(0, 10);
+          }
+          return {
+            id: item.id,
+            title: item.original_name || '보건증',
+            expiryDate: formattedExpiry,
+            approvalStatus: (item.status || 'PENDING').toLowerCase() as any,
+          };
+        });
+        setCertList(mapped);
+      }
+    } catch (error) {
+      console.error('보건증 조회 오류:', error);
+    }
+  };
+
+  // 화면 진입 시 로드
+  useFocusEffect(
+    React.useCallback(() => {
+      loadHealthCerts();
+    }, [userInfo?.id])
+  );
+
+  // 📸 갤러리 열기 함수
   const handlePickImage = async () => {
+    // 1. 갤러리 접근 권한 요청
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
       Alert.alert('권한 필요', '갤러리 접근 권한이 필요합니다.');
       return;
     }
 
+    // 2. 갤러리에서 이미지 선택
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.8,
+      allowsEditing: true, // 크롭 등 편집 허용
+      quality: 0.8, // 0~1 사이의 압축률 (서버 전송 용량 최적화)
     });
 
     if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri);
+      setSelectedImage(result.assets[0].uri); // 선택한 이미지 URI 저장
     }
   };
 
+  // 🚀 백엔드 전송 함수
   const handleUploadToBackend = async () => {
-    if (!selectedImage || !userInfo) return;
+    if (!selectedImage || !userInfo?.id) return;
     
     setIsUploading(true);
     try {
       const formData = new FormData();
+      const filename = selectedImage.split('/').pop() || 'health_cert.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+      
       formData.append('file', {
         uri: selectedImage,
-        name: `health-cert-${userInfo.id}.jpg`,
-        type: 'image/jpeg',
+        name: filename,
+        type: type
       } as any);
+
+      formData.append('store_id', userInfo.store_id || 'STORE_DEFAULT');
       formData.append('user_id', userInfo.id);
-      formData.append('store_id', userInfo.activeBranchId || '');
+      formData.append('file_type', 'health-cert');
 
-      await uploadHealthCertificateAPI(formData);
+      await uploadFileAPI(formData);
 
-      const newCert: HealthCert = { 
-        id: Date.now().toString(), 
-        title: '보건증 (신규 업로드)', 
-        expiryDate: null,
-        approvalStatus: 'pending' 
-      };
-      
-      setCertList([newCert, ...certList]);
-      setSelectedImage(null);
-      
+      setSelectedImage(null); // 초기화
       Alert.alert('업로드 완료', '보건증이 업로드되었으며, 관리자 승인 대기 중입니다.');
+      loadHealthCerts();
     } catch (error) {
-      console.error("HealthCert upload error:", error);
+      console.error('보건증 업로드 중 에러:', error);
       Alert.alert('오류', '업로드 중 문제가 발생했습니다.');
     } finally {
       setIsUploading(false);
@@ -107,33 +147,40 @@ const HealthCertScreen = ({ navigation }: any) => {
       </View>
 
       <ScrollView style={styles.container}>
+        {/* 보건증 상태 카드 (리스트 반복 렌더링) */}
         {certList.map((cert) => {
-          const status = cert.approvalStatus === 'pending' ? 'pendingApproval' : calculateStatus(cert.expiryDate);
+          const status = calculateStatus(cert.expiryDate, cert.approvalStatus);
           
           return (
             <View key={cert.id} style={styles.card}>
               <View style={styles.statusRow}>
-                <Text style={styles.cardTitle}>{cert.title}</Text>
+                <Text style={styles.cardTitle} numberOfLines={1}>{cert.title}</Text>
                 <View style={[
                   styles.badge,
                   status === 'expired' && styles.badgeExpired,
                   status === 'needsRenewal' && styles.badgeWarning,
-                  status === 'pendingApproval' && styles.badgePending,
+                  status === 'pendingApproval' && styles.badgePending, 
+                  status === 'rejected' && styles.badgeExpired, 
                 ]}>
                   <Text style={[
                     styles.badgeText,
                     status === 'expired' && styles.badgeTextExpired,
                     status === 'needsRenewal' && styles.badgeTextWarning,
-                    status === 'pendingApproval' && styles.badgeTextPending,
+                    status === 'pendingApproval' && styles.badgeTextPending, 
+                    status === 'rejected' && styles.badgeTextExpired, 
                   ]}>
-                    {t(status)}
+                    {status === 'rejected' ? '반려' : t(status)}
                   </Text>
                 </View>
               </View>
 
               {status === 'pendingApproval' ? (
-                <Text style={[styles.warningText, { color: colors.yellow }]}>
+                <Text style={[styles.warningText, { color: isDarkMode ? '#FDE68A' : '#D97706' }]}>
                   ⏳ 관리자가 확인하고 있으며, 승인 후 만료일이 표시됩니다.
+                </Text>
+              ) : status === 'rejected' ? (
+                <Text style={[styles.warningText, { color: isDarkMode ? '#FECACA' : '#DC2626' }]}>
+                  ❌ 서류가 반려되었습니다. 다시 올바른 이미지를 업로드해주세요.
                 </Text>
               ) : (
                 <>
@@ -141,18 +188,18 @@ const HealthCertScreen = ({ navigation }: any) => {
                     <Text style={styles.infoLabel}>{t('expiryDate')}</Text>
                     <Text style={[
                       styles.infoValue, 
-                      status === 'expired' && { color: colors.red },
-                      status === 'needsRenewal' && { color: colors.yellow }
+                      status === 'expired' && { color: isDarkMode ? '#FECACA' : '#DC2626' },
+                      status === 'needsRenewal' && { color: isDarkMode ? '#FDE68A' : '#D97706' }
                     ]}>
                       {cert.expiryDate}
                     </Text>
                   </View>
 
                   {status === 'expired' && (
-                    <Text style={[styles.warningText, { color: colors.red }]}>⚠️ 보건증 유효기간이 만료되었습니다. 갱신 후 재업로드 해주세요.</Text>
+                    <Text style={[styles.warningText, { color: isDarkMode ? '#FECACA' : '#DC2626' }]}>⚠️ 보건증 유효기간이 만료되었습니다. 갱신 후 재업로드 해주세요.</Text>
                   )}
                   {status === 'needsRenewal' && (
-                    <Text style={[styles.warningText, { color: colors.yellow }]}>⚠️ 보건증 갱신 기한이 30일 이내로 다가왔습니다.</Text>
+                    <Text style={[styles.warningText, { color: isDarkMode ? '#FDE68A' : '#D97706' }]}>⚠️ 보건증 갱신 기한이 30일 이내로 다가왔습니다.</Text>
                   )}
                 </>
               )}
@@ -160,6 +207,13 @@ const HealthCertScreen = ({ navigation }: any) => {
           );
         })}
 
+        {certList.length === 0 && (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text style={{ color: colors.subText, fontSize: 14 }}>등록된 보건증이 없습니다.</Text>
+          </View>
+        )}
+
+        {/* 이미지 업로드 / 미리보기 영역 */}
         {selectedImage ? (
           <View style={styles.previewContainer}>
             <Image source={{ uri: selectedImage }} style={styles.previewImage} />
@@ -169,7 +223,7 @@ const HealthCertScreen = ({ navigation }: any) => {
               </TouchableOpacity>
               <TouchableOpacity style={styles.submitButton} onPress={handleUploadToBackend} disabled={isUploading}>
                 {isUploading ? (
-                  <ActivityIndicator color={colors.white} />
+                  <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text style={styles.submitButtonText}>서버로 전송</Text>
                 )}
@@ -191,7 +245,8 @@ const HealthCertScreen = ({ navigation }: any) => {
   );
 };
 
-const getThemedStyles = (colors: any) => StyleSheet.create({
+// ✅ 테마 색상을 인자로 받아 동적으로 스타일을 생성하도록 변경
+const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
   header: { 
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -203,35 +258,35 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   container: { padding: 20 },
   card: { backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  badge: { backgroundColor: colors.greenLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { color: colors.green, fontSize: 13, fontWeight: '700' },
-  badgeExpired: { backgroundColor: colors.redLight },
-  badgeTextExpired: { color: colors.red },
-  badgeWarning: { backgroundColor: colors.yellowLight },
-  badgeTextWarning: { color: colors.yellow },
-  badgePending: { backgroundColor: colors.yellowLight },
-  badgeTextPending: { color: colors.yellow },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, flex: 1, marginRight: 10 },
+  badge: { backgroundColor: isDarkMode ? '#14532D' : '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  badgeText: { color: isDarkMode ? '#86EFAC' : '#16A34A', fontSize: 13, fontWeight: '700' },
+  badgeExpired: { backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2' },
+  badgeTextExpired: { color: isDarkMode ? '#FECACA' : '#DC2626' },
+  badgeWarning: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7' },
+  badgeTextWarning: { color: isDarkMode ? '#FDE68A' : '#D97706' },
+  badgePending: { backgroundColor: isDarkMode ? '#78350F' : '#FEF3C7' },
+  badgeTextPending: { color: isDarkMode ? '#FDE68A' : '#D97706' },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   infoLabel: { fontSize: 14, color: colors.subText },
   infoValue: { fontSize: 16, fontWeight: '700', color: colors.text },
   warningText: { marginTop: 12, fontSize: 13, fontWeight: '500' },
   uploadBox: {
     backgroundColor: colors.card, borderRadius: 16, padding: 40, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: colors.blueLight, borderStyle: 'dashed', marginBottom: 12
+    borderWidth: 2, borderColor: '#93C5FD', borderStyle: 'dashed', marginBottom: 12
   },
   uploadIcon: { fontSize: 40, marginBottom: 12 },
-  uploadTitle: { fontSize: 16, fontWeight: 'bold', color: colors.blue, marginBottom: 8 },
+  uploadTitle: { fontSize: 16, fontWeight: 'bold', color: colors.primary, marginBottom: 8 },
   uploadDesc: { fontSize: 13, color: colors.subText },
   helpText: { fontSize: 12, color: colors.subText, textAlign: 'center' },
   
   previewContainer: { backgroundColor: colors.card, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 12, elevation: 2 },
-  previewImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain', backgroundColor: colors.background },
+  previewImage: { width: '100%', height: 200, borderRadius: 12, marginBottom: 16, resizeMode: 'contain', backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6' },
   previewButtonGroup: { flexDirection: 'row', gap: 12, width: '100%' },
-  cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: colors.border, borderRadius: 8, alignItems: 'center' },
+  cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', borderRadius: 8, alignItems: 'center' },
   cancelButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  submitButton: { flex: 1, paddingVertical: 14, backgroundColor: colors.blue, borderRadius: 8, alignItems: 'center' },
-  submitButtonText: { color: colors.white, fontSize: 15, fontWeight: '600' },
+  submitButton: { flex: 1, paddingVertical: 14, backgroundColor: colors.primary, borderRadius: 8, alignItems: 'center' },
+  submitButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
 });
 
 export default HealthCertScreen;

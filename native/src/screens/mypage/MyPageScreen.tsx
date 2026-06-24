@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo } from 'react'; // useMemo 임포트
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
@@ -13,20 +14,23 @@ type Props = {
 const MyPageScreen = ({ navigation }: Props) => {
   const { userInfo, logout } = useApp(); 
 
-  const { themeMode, setThemeMode, colors, isDarkMode } = useTheme();
+  const { themeMode, setThemeMode, colors } = useTheme();
   const [themeModalVisible, setThemeModalVisible] = useState(false);
-  const { language, setLanguage, t, isTranslating } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [isPushEnabled, setIsPushEnabled] = useState(true);
 
   const name = userInfo?.name || '사용자';
   const role = userInfo?.role || 'STAFF';
 
+  // ✅ [수정] 활성 지점 정보를 동적으로 찾도록 수정
   const activeBranch = useMemo(() => {
     if (!userInfo) return null;
+    // 관리자인 경우
     if (userInfo.role === 'ADMIN' && userInfo.branches && userInfo.activeBranchId) {
       return userInfo.branches.find(b => b.id === userInfo.activeBranchId);
     }
+    // 직원인 경우 (또는 관리자인데 지점 정보가 없는 예외 케이스)
     return {
       brandName: userInfo.brandName || '브랜드',
       branchName: userInfo.branchName || '지점',
@@ -40,40 +44,28 @@ const MyPageScreen = ({ navigation }: Props) => {
   const renderMenuItem = (icon: string, title: string, onPress: () => void) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.menuLeft}>
-        <Text style={styles.menuIcon}>{icon}</Text>
+        <Ionicons name={icon as any} size={20} color={colors.primary} style={styles.menuIcon} />
         <Text style={styles.menuTitle}>{title}</Text>
       </View>
-      <Text style={styles.menuArrow}>›</Text>
+      <Ionicons name="chevron-forward-outline" size={18} color={colors.subText} />
     </TouchableOpacity>
   );
 
   const renderSwitchItem = (icon: string, title: string, value: boolean, onValueChange: (val: boolean) => void) => (
     <View style={styles.menuItem}>
       <View style={styles.menuLeft}>
-        <Text style={styles.menuIcon}>{icon}</Text>
+        <Ionicons name={icon as any} size={20} color={colors.primary} style={styles.menuIcon} />
         <Text style={styles.menuTitle}>{title}</Text>
       </View>
       <Switch
-        trackColor={{ false: colors.gray, true: colors.green }}
-        thumbColor={colors.white}
-        ios_backgroundColor={colors.gray}
+        trackColor={{ false: '#D1D5DB', true: colors.primary }}
+        thumbColor={'#FFFFFF'}
+        ios_backgroundColor="#D1D5DB"
         onValueChange={onValueChange}
         value={value}
       />
     </View>
   );
-
-  const handleLineConnect = () => {
-    Alert.alert("준비 중인 기능", "LINE 연동 기능은 현재 준비 중입니다.");
-  };
-
-  const handleNavigateToMonthlyDetail = () => {
-    if (!userInfo) return;
-    navigation.navigate('PayrollDetail', {
-      employeeId: userInfo.id,
-      month: new Date().toISOString(),
-    });
-  };
 
   const handleWithdraw = () => {
     Alert.alert(
@@ -118,44 +110,16 @@ const MyPageScreen = ({ navigation }: Props) => {
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('myInfo')}</Text>
-          {renderMenuItem('👤', t('profileEdit'), () => navigation.navigate('ProfileEdit'))}
-          {renderMenuItem('📄', t('contract'), () => navigation.navigate('Contract'))}
-          {renderMenuItem('🏥', t('healthCert'), () => navigation.navigate('HealthCert'))}
-          {role === 'STAFF' && (
-            <>
-              {renderMenuItem('💰', t('myPaystub'), () => handleNavigateToMonthlyDetail())}
-              {renderMenuItem('🤝', t('mySubstituteHistory'), () => navigation.navigate('SubstituteMatching', { initialTab: 'history' }))}
-            </>
-          )}
+          {renderMenuItem('person-outline', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo }))}
+          {renderMenuItem('document-text-outline', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
+          {renderMenuItem('medkit-outline', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
         </View>
-
-        {role === 'ADMIN' && (
-          <>
-            <View style={styles.menuSection}>
-              <Text style={styles.sectionTitle}>{t('storeManagement')}</Text>
-              {renderMenuItem('🏪', t('storeInfoEdit'), () => navigation.navigate('StoreEdit'))}
-            </View>
-            <View style={styles.menuSection}>
-              <Text style={styles.sectionTitle}>{t('employeeManagement')}</Text>
-              {renderMenuItem('📋', t('healthCertManagement'), () => Alert.alert("준비 중", "보건증 관리 화면으로 이동합니다."))}
-              {renderMenuItem('📑', t('contractManagement'), () => Alert.alert("준비 중", "근로계약서 관리 화면으로 이동합니다."))}
-              {renderMenuItem('🌴', t('leaveRequestManagement'), () => Alert.alert("준비 중", "휴무 신청 관리 화면으로 이동합니다."))}
-            </View>
-          </>
-        )}
 
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
-          {renderMenuItem('🌙', `${t('themeMode')} (${t(themeMode as any)})`, () => setThemeModalVisible(true))}
-          {renderMenuItem('🌐', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
-          {renderSwitchItem('🔔', t('pushAlert'), isPushEnabled, setIsPushEnabled)}
-        </View>
-
-        <View style={styles.connectSection}>
-          <TouchableOpacity style={styles.lineButton} onPress={handleLineConnect}>
-            <Image source={require('../../../assets/img/line-icon-144.png')} style={styles.lineLogo} />
-            <Text style={styles.lineButtonText}>{t('lineConnect')}</Text>
-          </TouchableOpacity>
+          {renderMenuItem('moon-outline', `${t('themeMode')} (${themeMode})`, () => setThemeModalVisible(true))}
+          {renderMenuItem('globe-outline', `${t('languageSetting')} (${language})`, () => setLanguageModalVisible(true))}
+          {renderSwitchItem('notifications-outline', t('pushAlert'), isPushEnabled, setIsPushEnabled)}
         </View>
 
         <TouchableOpacity 
@@ -180,16 +144,16 @@ const MyPageScreen = ({ navigation }: Props) => {
         <Pressable style={styles.modalOverlay} onPress={() => setThemeModalVisible(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t('themeSettings')}</Text>
-            {['lightMode', 'darkMode', 'systemSetting'].map((mode) => (
+            {['라이트 모드', '다크 모드', '시스템 설정'].map((mode) => (
               <TouchableOpacity
                 key={mode}
-                style={[styles.modalOption, themeMode === t(mode as any) && styles.modalOptionSelected]}
+                style={[styles.modalOption, themeMode === mode && styles.modalOptionSelected]}
                 onPress={() => {
-                  setThemeMode(t(mode as any));
+                  setThemeMode(mode as any);
                   setThemeModalVisible(false);
                 }}
               >
-                <Text style={[styles.modalOptionText, themeMode === t(mode as any) && styles.modalOptionTextSelected]}>{t(mode as any)}</Text>
+                <Text style={[styles.modalOptionText, themeMode === mode && styles.modalOptionTextSelected]}>{mode}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -218,12 +182,6 @@ const MyPageScreen = ({ navigation }: Props) => {
               </TouchableOpacity>
             ))}
           </View>
-          {isTranslating && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.loadingText}>번역 중...</Text>
-            </View>
-          )}
         </Pressable>
       </Modal>
     </SafeAreaView>
@@ -231,71 +189,150 @@ const MyPageScreen = ({ navigation }: Props) => {
 };
 
 const getThemedStyles = (colors: any) => StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background },
-  container: { flex: 1 },
-  profileSection: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, padding: 24, borderBottomWidth: 1, borderBottomColor: colors.border },
-  avatarPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  avatarImage: { width: 60, height: 60, borderRadius: 30, marginRight: 16, backgroundColor: colors.primaryLight },
-  avatarText: { fontSize: 24, fontWeight: 'bold', color: colors.text },
-  profileInfo: { flex: 1 },
-  userName: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 4 },
-  userRole: { fontSize: 14, color: colors.subText },
-  menuSection: { marginTop: 20, backgroundColor: colors.card, paddingVertical: 8, borderTopWidth: 1, borderBottomWidth: 1, borderColor: colors.border },
-  sectionTitle: { fontSize: 13, fontWeight: 'bold', color: colors.subText, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 20 },
-  menuLeft: { flexDirection: 'row', alignItems: 'center' },
-  menuIcon: { fontSize: 18, marginRight: 12, color: colors.text },
-  menuTitle: { fontSize: 16, color: colors.text },
-  menuArrow: { fontSize: 20, color: colors.subText },
-  
-  connectSection: { marginTop: 20, paddingHorizontal: 20 },
-  lineButton: { 
-    backgroundColor: colors.green,
-    paddingVertical: 10,
-    borderRadius: 8, 
-    alignItems: 'center',
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  container: {
+    flex: 1,
+  },
+  profileSection: {
     flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  avatarPlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primaryLight,
     justifyContent: 'center',
-    gap: 12,
+    alignItems: 'center',
+    marginRight: 16,
   },
-  lineLogo: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
+  avatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+    backgroundColor: colors.primaryLight,
   },
-  lineButtonText: { 
-    color: colors.white,
-    fontSize: 16, 
+  avatarText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.primary,
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  userRole: {
+    fontSize: 14,
+    color: colors.subText,
+  },
+  menuSection: {
+    marginTop: 20,
+    backgroundColor: colors.card,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: colors.subText,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuTitle: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  logoutButton: {
+    marginTop: 30,
+    marginHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#FF3B30',
+    fontSize: 16,
     fontWeight: 'bold',
   },
-
-  logoutButton: { marginTop: 30, marginHorizontal: 20, paddingVertical: 14, backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: colors.red, alignItems: 'center' },
-  logoutButtonText: { color: colors.red, fontSize: 16, fontWeight: 'bold' },
-  withdrawButton: { alignItems: 'center', paddingVertical: 10, marginBottom: 40 },
-  withdrawText: { color: '#9CA3AF', fontSize: 13, textDecorationLine: 'underline' },
-  
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '80%', backgroundColor: colors.modalBg, borderRadius: 12, padding: 20 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: colors.text },
-  modalOption: { paddingVertical: 14, alignItems: 'center', borderRadius: 8 },
-  modalOptionSelected: { backgroundColor: colors.primaryLight },
-  modalOptionText: { fontSize: 16, color: colors.text },
-  modalOptionTextSelected: { color: colors.primary, fontWeight: 'bold' },
-  
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  withdrawButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 40,
+  },
+  withdrawText: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    textDecorationLine: 'underline',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    color: 'white',
-    marginTop: 10,
+  modalContent: {
+    width: '80%',
+    backgroundColor: colors.modalBg,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+    color: colors.text,
+  },
+  modalOption: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  modalOptionSelected: {
+    backgroundColor: colors.primaryLight,
+  },
+  modalOptionText: {
     fontSize: 16,
+    color: colors.text,
+  },
+  modalOptionTextSelected: {
+    color: colors.primary,
+    fontWeight: 'bold',
   },
 });
 
