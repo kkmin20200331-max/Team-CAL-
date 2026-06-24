@@ -12,7 +12,7 @@ class SourceType(StrEnum):
 
 
 class CameraStartRequest(BaseModel):
-    storeId: int = Field(..., ge=1)
+    storeId: str = Field(..., min_length=1)
     cameraId: str = Field(..., min_length=1)
     source: str = Field(..., min_length=1)
     sourceType: SourceType = SourceType.VIDEO_FILE

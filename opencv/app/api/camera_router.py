@@ -15,7 +15,7 @@ router = APIRouter(prefix="/camera", tags=["camera"])
 @router.post("/start")
 def start_camera(
     request: CameraStartRequest | None = Body(default=None),
-    storeId: int | None = Query(default=None, ge=1),
+    storeId: str | None = Query(default=None, min_length=1),
     cameraId: str | None = Query(default=None),
     source: str | None = Query(default=None),
     sourceType: SourceType = SourceType.WEBCAM,
@@ -27,7 +27,7 @@ def start_camera(
 ):
     if request is None:
         request = CameraStartRequest(
-            storeId=storeId or 1,
+            storeId=storeId or "1",
             cameraId=cameraId or "CAM-001",
             source=source or "0",
             sourceType=sourceType,

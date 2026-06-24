@@ -8,7 +8,7 @@ router = APIRouter(prefix="/inference", tags=["inference"])
 
 @router.post("/image")
 async def infer_image(
-    storeId: int,
+    storeId: str = Query(..., min_length=1),
     cameraId: str = "IMAGE-UPLOAD",
     modelName: str = Query(settings.default_model_name, pattern="^(yolo11s|yolov8[ns])$"),
     imageSize: int = Query(640, ge=320, le=1280),

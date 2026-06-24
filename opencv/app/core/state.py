@@ -11,7 +11,7 @@ class InferenceState:
         self.stop_event = Event()
         self.worker: Optional[Thread] = None
         self.running = False
-        self.store_id: Optional[int] = None
+        self.store_id: Optional[str] = None
         self.camera_id: Optional[str] = None
         self.source: Optional[str] = None
         self.source_type: Optional[str] = None
@@ -37,7 +37,7 @@ class InferenceState:
 
     def mark_started(
         self,
-        store_id: int,
+        store_id: str,
         camera_id: str,
         worker: Thread,
         source: str | None = None,

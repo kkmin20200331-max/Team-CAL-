@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 class CameraStartResponse(BaseModel):
     running: bool
-    storeId: int
+    storeId: str
     cameraId: str
     intervalSec: int
     aggregationIntervalSec: int
@@ -15,7 +15,7 @@ class CameraStartResponse(BaseModel):
 
 class CameraStatusResponse(BaseModel):
     running: bool
-    storeId: Optional[int] = None
+    storeId: Optional[str] = None
     cameraId: Optional[str] = None
     lastCustomerCount: Optional[int] = None
     lastConfidenceAvg: Optional[float] = None
@@ -46,7 +46,7 @@ class DetectionBox(BaseModel):
 
 
 class DetectionResponse(BaseModel):
-    storeId: int
+    storeId: str
     cameraId: str
     measuredAt: datetime
     customerCount: int
@@ -69,7 +69,7 @@ class AggregatedSample(BaseModel):
 
 
 class AggregatedCongestionResponse(BaseModel):
-    storeId: int
+    storeId: str
     cameraId: str
     measuredAt: datetime
     windowStartAt: datetime

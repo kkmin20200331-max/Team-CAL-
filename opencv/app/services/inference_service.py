@@ -138,7 +138,7 @@ class InferenceService:
     def infer_image_bytes(
         self,
         image_bytes: bytes,
-        store_id: int,
+        store_id: str,
         camera_id: str,
         model_name: str | None = None,
         image_size: int | None = None,
@@ -385,7 +385,7 @@ class InferenceService:
 
     def _build_payload(
         self,
-        store_id: int,
+        store_id: str,
         camera_id: str,
         source_type: str,
         customer_count: int,
