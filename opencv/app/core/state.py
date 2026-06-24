@@ -11,7 +11,8 @@ class InferenceState:
         self.stop_event = Event()
         self.worker: Optional[Thread] = None
         self.running = False
-        self.store_id: Optional[int] = None
+        # Spring/Oracle store.id와 동일한 문자열 매장 ID를 저장합니다.
+        self.store_id: Optional[str] = None
         self.camera_id: Optional[str] = None
         self.source: Optional[str] = None
         self.source_type: Optional[str] = None
@@ -37,7 +38,8 @@ class InferenceState:
 
     def mark_started(
         self,
-        store_id: int,
+        # 숫자 변환 없이 원본 store_id를 상태와 응답에 그대로 유지합니다.
+        store_id: str,
         camera_id: str,
         worker: Thread,
         source: str | None = None,

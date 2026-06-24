@@ -23,6 +23,9 @@ import java.util.Map;
 @RequestMapping("/api/ai-insights")
 public class AiInsightProxyC {
 
+    // =========================
+    // OpenCV FastAPI 연동 URL
+    // =========================
     private static final String OPEN_CV_AI_INSIGHT_LLM_URL =
             "http://127.0.0.1:8000/api/v1/ai-insights/analyze/llm";
     private static final String OPEN_CV_AI_INSIGHT_RULE_URL =
@@ -35,16 +38,25 @@ public class AiInsightProxyC {
                     .build();
     private final AiInsightPayloadService aiInsightPayloadService;
 
+    // =========================
+    // 룰 기반 AI 인사이트 분석
+    // =========================
     @PostMapping("/analyze")
     public ResponseEntity<String> analyze(@RequestBody AiInsightAnalyzeRequestVO request) {
         return forwardAnalysis(request, OPEN_CV_AI_INSIGHT_RULE_URL);
     }
 
+    // =========================
+    // LLM 기반 AI 인사이트 분석
+    // =========================
     @PostMapping("/analyze/llm")
     public ResponseEntity<String> analyzeWithLlm(@RequestBody AiInsightAnalyzeRequestVO request) {
         return forwardAnalysis(request, OPEN_CV_AI_INSIGHT_LLM_URL);
     }
 
+    // =========================
+    // Spring DB 데이터 → FastAPI payload 변환 후 전달
+    // =========================
     private ResponseEntity<String> forwardAnalysis(
             AiInsightAnalyzeRequestVO request,
             String aiInsightUrl
@@ -90,6 +102,9 @@ public class AiInsightProxyC {
         }
     }
 
+    // =========================
+    // JSON 에러 응답용 문자열 이스케이프
+    // =========================
     private String escapeJson(String value) {
         if (value == null) {
             return "";
