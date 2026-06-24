@@ -31,7 +31,11 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error(`[API 에러] ${error.config?.url}:`, error.message);
+    console.error(`[API 에러] ${error.config?.url}:`, {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
     // 💡 예: error.response?.status === 401(권한 없음)일 때 강제 로그아웃 시키는 등의 전역 에러 처리를 여기서 합니다.
     return Promise.reject(error);
   },
@@ -63,6 +67,9 @@ export const updateProfileAPI = (data: any) => API.put(`/users`, data);
 
 export const getMyStoreAPI = (userId: string) =>
   API.get(`/store/my`, { params: { user_id: userId } });
+
+export const getMyStoreMembershipsAPI = (userId: string) =>
+  API.get(`/store/my-memberships`, { params: { user_id: userId } });
 
 export const getStoresAPI = (userId: string) =>
   API.get(`/store`, { params: { user_id: userId } });
@@ -131,8 +138,8 @@ export const updateBoardPostAPI = (data: any) => API.put(`/board/post`, data);
 export const getStoreStaffAPI = (storeId: string) =>
   API.get(`/users`, { params: { store_id: storeId } });
 
-export const getStoreGuestStaffAPI = (storeId: string) =>
-  API.get(`/users/guest`, { params: { store_id: storeId, role: "admin" } });
+export const getStorePendingStaffAPI = (storeId: string) =>
+  API.get(`/users/pending`, { params: { store_id: storeId, role: "admin" } });
 
 export const getStoreShiftsAPI = (
   storeId: string,
@@ -187,6 +194,8 @@ export const checkAttendanceAPI = (userId: string, storeId: string) =>
 // [게시판] 새 글 작성 API (직원/관리자 공통)
 export const createBoardPostAPI = (data: any) => API.post(`/board/post`, data);
 
+export const getShiftAPI = (id: string) => API.get(`/shift/${id}`);
+
 export const getSubstitutePostsAPI = (storeId: string) =>
   API.get(`/substitute`, { params: { store_id: storeId } });
 
@@ -204,3 +213,51 @@ export const approveSubstituteAPI = (
 
 export const cancelSubstitutePostAPI = (postId: string) =>
   API.delete(`/substitute/manager`, { params: { post_id: postId } });
+
+// 대타 모집글 등록 (직원)
+export const createSubstitutePostAPI = (data: {
+  id: string;
+  shift_id: string;
+  store_id: string;
+  requester_user_id: string;
+  reason?: string;
+  status: string;
+}) => API.post(`/substitute/staff`, data);
+
+// 대타 지원 (직원)
+export const applySubstituteAPI = (data: {
+  id: string;
+  substitute_post_id: string;
+  applicant_user_id: string;
+  message?: string;
+  status: string;
+}) => API.post(`/substitute/staff/apply`, data);
+
+// 대타 지원 취소 (직원)
+export const cancelSubstituteApplicationAPI = (id: string) =>
+  API.delete(`/substitute/staff`, { params: { id } });
+
+// 내 대타 지원 내역 조회 (직원)
+export const getMySubstituteApplicationsAPI = (userId: string, status?: string) =>
+  API.get(`/substitute/staff`, { params: { user_id: userId, status } });
+
+// 내가 작성한 대타 모집글 조회 (직원)
+export const getMySubstitutePostsAPI = (userId: string, status?: string) =>
+  API.get(`/substitute/staff/post`, { params: { user_id: userId, status } });
+
+// 보건증 목록 조회 API
+export const getHealthCertsAPI = (userId: string) =>
+  API.get(`/file/health-cert/${userId}`);
+
+// 근로계약서 목록 조회 API
+export const getContractsAPI = (userId: string) =>
+  API.get(`/file/contract/${userId}`);
+
+// 파일 업로드 API
+export const uploadFileAPI = (formData: FormData) =>
+  API.post(`/file/upload`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+

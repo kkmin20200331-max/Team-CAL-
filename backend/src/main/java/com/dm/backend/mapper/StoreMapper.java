@@ -70,4 +70,16 @@ void registerStore(StoreVo storeVo);
     // 경민 추가 6/2 15:38 - 직원 소속 매장 조회
     @Select("SELECT s.* FROM store s JOIN store_member sm ON s.id = sm.store_id WHERE sm.user_id = #{user_id} AND sm.approval_status = 'APPROVED'")
     StoreVo getStoreByUserId(String user_id);
+
+    @Select("""
+        SELECT
+            s.*,
+            sm.approval_status AS approval_status,
+            sm.member_role AS member_role
+        FROM store s
+        JOIN store_member sm
+            ON s.id = sm.store_id
+        WHERE sm.user_id = #{user_id}
+        """)
+    List<StoreVo> getStoreMemberships(String user_id);
 }

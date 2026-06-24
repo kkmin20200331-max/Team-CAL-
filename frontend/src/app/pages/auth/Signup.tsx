@@ -365,9 +365,15 @@ export default function Signup() {
       alert(t.successAlert);
       navigate("/auth/login");
     } catch (err: any) {
-      setErrorMsg(
-        err.response?.status === 409 ? t.errorDuplicate : t.errorServer,
-      );
+      if (err.response?.status === 409) {
+        setErrorMsg(
+          typeof err.response.data === "string" && err.response.data
+            ? err.response.data
+            : t.errorDuplicate,
+        );
+      } else {
+        setErrorMsg(t.errorServer);
+      }
     }
   };
 

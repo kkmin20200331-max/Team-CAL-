@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
   isAlertVisible: boolean;
@@ -18,10 +19,12 @@ const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitut
     return null;
   }
 
+  const alertColor = isDarkMode ? '#FCD34D' : '#D97706';
+
   return (
     <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('Substitute')} activeOpacity={0.8}>
       <View style={styles.alertHeader}> 
-        <Text style={styles.alertIcon}>🚨</Text>
+        <Ionicons name="alert-circle-outline" size={18} color={alertColor} style={styles.alertIcon} />
         <Text style={styles.alertTitle}>{t('subReqAlertTitle')} 〉</Text>
       </View>
       <Text style={styles.alertDescription}>
@@ -41,12 +44,17 @@ const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitut
 
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   alertCard: {
-    backgroundColor: isDarkMode ? '#3F3119' : '#FFFBEB',
+    backgroundColor: isDarkMode ? '#2A2010' : '#FFFDF5',
     borderWidth: 1,
     borderColor: isDarkMode ? '#92400E' : '#FDE68A',
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
   alertHeader: {
     flexDirection: 'row',
@@ -54,7 +62,6 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     marginBottom: 8,
   },
   alertIcon: {
-    fontSize: 16,
     marginRight: 6,
   },
   alertTitle: {

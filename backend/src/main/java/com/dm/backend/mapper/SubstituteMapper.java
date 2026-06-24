@@ -107,14 +107,14 @@ public interface SubstituteMapper {
     @Insert("""
             INSERT INTO substitute_post
             VALUES(
-                #{id},
-                #{shift_id},
-                #{store_id},
-                #{requester_user_id},
-                #{reason},
-                #{status},
-                #{created_at},
-                #{closed_at}
+                #{id, jdbcType=VARCHAR},
+                #{shift_id, jdbcType=VARCHAR},
+                #{store_id, jdbcType=VARCHAR},
+                #{requester_user_id, jdbcType=VARCHAR},
+                #{reason, jdbcType=VARCHAR},
+                #{status, jdbcType=VARCHAR},
+                #{created_at, jdbcType=TIMESTAMP},
+                #{closed_at, jdbcType=TIMESTAMP}
             )
             """)
     void createPost(SubstitutePostVO postVO);

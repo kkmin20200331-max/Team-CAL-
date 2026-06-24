@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import {
   addDays,
   addMonths,
@@ -27,7 +28,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
-const COLORS = ['#4A90E2', '#50E3C2', '#F5A623', '#BD10E0', '#9013FE', '#10B981'];
+const COLORS = ['#4A90E2', '#50E3C2', '#F5A623', '#BD10E0', '#9013FE', '#00A200'];
 
 const getDatePart = (value?: string) => {
   if (!value) return '';
@@ -187,18 +188,18 @@ const AdminScheduleScreen = ({ navigation }: { navigation: any }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‹</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonWrapper}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.monthControl}>
-          <TouchableOpacity onPress={() => changeMonth(-1)}>
-            <Text style={styles.arrow}>‹</Text>
+          <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.arrowButton}>
+            <Ionicons name="chevron-back" size={20} color={colors.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {format(currentMonth, 'yyyy년 M월', { locale: ko })}
           </Text>
-          <TouchableOpacity onPress={() => changeMonth(1)}>
-            <Text style={styles.arrow}>›</Text>
+          <TouchableOpacity onPress={() => changeMonth(1)} style={styles.arrowButton}>
+            <Ionicons name="chevron-forward" size={20} color={colors.primary} />
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={loadSchedule}>
@@ -247,11 +248,11 @@ const getThemedStyles = (colors: any) =>
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    backButton: { fontSize: 32, color: colors.primary, width: 64 },
-    refreshText: { color: colors.primary, fontSize: 13, fontWeight: '800', width: 64, textAlign: 'right' },
+    backButtonWrapper: { width: 64, justifyContent: 'center', alignItems: 'flex-start' },
+    refreshText: { color: colors.primary, fontSize: 14, fontWeight: '700', width: 64, textAlign: 'right' },
     monthControl: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginHorizontal: 16 },
-    arrow: { fontSize: 28, color: colors.primary, paddingHorizontal: 8 },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginHorizontal: 12 },
+    arrowButton: { padding: 6, justifyContent: 'center', alignItems: 'center' },
     dayLabels: {
       flexDirection: 'row',
       paddingVertical: 8,

@@ -4,17 +4,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
+import { useApp } from '../../contexts/AppContext'; // ✅ AppContext 추가
+import { useFocusEffect } from '@react-navigation/native'; // ✅ useFocusEffect 추가
+import { getHealthCertsAPI, uploadFileAPI } from '../../../api/auth'; // ✅ API 추가
 
 const HealthCertScreen = ({ navigation }: any) => {
   const { t } = useLanguage();
+  const { userInfo } = useApp();
   
   // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
   
   // 현재 날짜를 기준으로 만료 상태를 계산하는 함수
-  const calculateStatus = (expiryDate: string | null) => {
-    if (!expiryDate) return 'pending';
+  const calculateStatus = (expiryDate: string | null, backendStatus: string) => {
+    if (backendStatus === 'pending') return 'pendingApproval';
+    if (backendStatus === 'rejected') return 'rejected'; // 반려 상태 추가
+    if (!expiryDate) return 'pendingApproval';
 
     const today = new Date();
     today.setHours(0, 0, 0, 0); // 시간 제외 (자정 기준)
@@ -33,19 +39,47 @@ const HealthCertScreen = ({ navigation }: any) => {
     id: string;
     title: string;
     expiryDate: string | null; // 승인 대기 중에는 만료일이 없음
-    approvalStatus: 'verified' | 'pending';
+    approvalStatus: 'verified' | 'pending' | 'rejected' | 'expired';
   }
 
-  // ✅ 승인 상태가 포함된 더미 데이터 리스트
-  const [certList, setCertList] = useState<HealthCert[]>([
-    { id: '1', title: '보건증 (최신)', expiryDate: '2027-05-20', approvalStatus: 'verified' },
-    { id: '2', title: '보건증 (갱신 임박)', expiryDate: '2026-06-20', approvalStatus: 'verified' },
-    { id: '3', title: '보건증 (과거)', expiryDate: '2025-01-15', approvalStatus: 'verified' },
-  ]);
+  // ✅ 실 데이터를 저장할 리스트 상태
+  const [certList, setCertList] = useState<HealthCert[]>([]);
 
   // 선택된 이미지와 업로드 로딩 상태 관리
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  // 📂 보건증 데이터 불러오기
+  const loadHealthCerts = async () => {
+    if (!userInfo?.id) return;
+    try {
+      const response = await getHealthCertsAPI(userInfo.id);
+      if (Array.isArray(response.data)) {
+        const mapped = response.data.map((item: any) => {
+          let formattedExpiry = null;
+          if (item.expiry_date) {
+            formattedExpiry = item.expiry_date.substring(0, 10);
+          }
+          return {
+            id: item.id,
+            title: item.original_name || '보건증',
+            expiryDate: formattedExpiry,
+            approvalStatus: (item.status || 'PENDING').toLowerCase() as any,
+          };
+        });
+        setCertList(mapped);
+      }
+    } catch (error) {
+      console.error('보건증 조회 오류:', error);
+    }
+  };
+
+  // 화면 진입 시 로드
+  useFocusEffect(
+    React.useCallback(() => {
+      loadHealthCerts();
+    }, [userInfo?.id])
+  );
 
   // 📸 갤러리 열기 함수
   const handlePickImage = async () => {
@@ -68,33 +102,34 @@ const HealthCertScreen = ({ navigation }: any) => {
     }
   };
 
-  // 🚀 백엔드 전송 시뮬레이션 함수
+  // 🚀 백엔드 전송 함수
   const handleUploadToBackend = async () => {
-    if (!selectedImage) return;
+    if (!selectedImage || !userInfo?.id) return;
     
     setIsUploading(true);
     try {
-      // ✅ [TODO: 실제 백엔드 연동 시 아래 코드를 사용하세요]
-      // const formData = new FormData();
-      // formData.append('file', { uri: selectedImage, name: 'health_cert.jpg', type: 'image/jpeg' } as any);
-      // await axios.post('YOUR_API_URL/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
-
-      // 임시로 1.5초 대기 (서버 통신 흉내)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // ✅ [수정] 업로드 시 '승인 대기' 상태의 새 보건증을 목록 맨 위에 추가
-      const newCert: HealthCert = { 
-        id: Date.now().toString(), 
-        title: '보건증 (신규 업로드)', 
-        expiryDate: null, // OCR 및 관리자 승인 전이므로 만료일 없음
-        approvalStatus: 'pending' 
-      };
+      const formData = new FormData();
+      const filename = selectedImage.split('/').pop() || 'health_cert.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
       
-      setCertList([newCert, ...certList]);
+      formData.append('file', {
+        uri: selectedImage,
+        name: filename,
+        type: type
+      } as any);
+
+      formData.append('store_id', userInfo.store_id || 'STORE_DEFAULT');
+      formData.append('user_id', userInfo.id);
+      formData.append('file_type', 'health-cert');
+
+      await uploadFileAPI(formData);
+
       setSelectedImage(null); // 초기화
-      
       Alert.alert('업로드 완료', '보건증이 업로드되었으며, 관리자 승인 대기 중입니다.');
+      loadHealthCerts();
     } catch (error) {
+      console.error('보건증 업로드 중 에러:', error);
       Alert.alert('오류', '업로드 중 문제가 발생했습니다.');
     } finally {
       setIsUploading(false);
@@ -112,36 +147,40 @@ const HealthCertScreen = ({ navigation }: any) => {
       </View>
 
       <ScrollView style={styles.container}>
-        {/* 보건증 상태 카드 (3개 리스트 반복 렌더링) */}
+        {/* 보건증 상태 카드 (리스트 반복 렌더링) */}
         {certList.map((cert) => {
-          // ✅ 배열 반복문(map) 내부에서는 Hook(useMemo)을 사용할 수 없으므로 일반 변수로 상태를 계산합니다.
-          const status = cert.approvalStatus === 'pending' ? 'pendingApproval' : calculateStatus(cert.expiryDate);
+          const status = calculateStatus(cert.expiryDate, cert.approvalStatus);
           
           return (
             <View key={cert.id} style={styles.card}>
               <View style={styles.statusRow}>
-                <Text style={styles.cardTitle}>{cert.title}</Text>
+                <Text style={styles.cardTitle} numberOfLines={1}>{cert.title}</Text>
                 <View style={[
                   styles.badge,
                   status === 'expired' && styles.badgeExpired,
                   status === 'needsRenewal' && styles.badgeWarning,
-                  status === 'pendingApproval' && styles.badgePending, // 승인 대기 배지 스타일
+                  status === 'pendingApproval' && styles.badgePending, 
+                  status === 'rejected' && styles.badgeExpired, 
                 ]}>
                   <Text style={[
                     styles.badgeText,
                     status === 'expired' && styles.badgeTextExpired,
                     status === 'needsRenewal' && styles.badgeTextWarning,
-                    status === 'pendingApproval' && styles.badgeTextPending, // 승인 대기 텍스트 스타일
+                    status === 'pendingApproval' && styles.badgeTextPending, 
+                    status === 'rejected' && styles.badgeTextExpired, 
                   ]}>
-                    {t(status)}
+                    {status === 'rejected' ? '반려' : t(status)}
                   </Text>
                 </View>
               </View>
 
-              {/* ✅ 승인 대기 중일 때와 아닐 때 다른 내용을 표시 */}
               {status === 'pendingApproval' ? (
                 <Text style={[styles.warningText, { color: isDarkMode ? '#FDE68A' : '#D97706' }]}>
                   ⏳ 관리자가 확인하고 있으며, 승인 후 만료일이 표시됩니다.
+                </Text>
+              ) : status === 'rejected' ? (
+                <Text style={[styles.warningText, { color: isDarkMode ? '#FECACA' : '#DC2626' }]}>
+                  ❌ 서류가 반려되었습니다. 다시 올바른 이미지를 업로드해주세요.
                 </Text>
               ) : (
                 <>
@@ -167,6 +206,12 @@ const HealthCertScreen = ({ navigation }: any) => {
             </View>
           );
         })}
+
+        {certList.length === 0 && (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text style={{ color: colors.subText, fontSize: 14 }}>등록된 보건증이 없습니다.</Text>
+          </View>
+        )}
 
         {/* 이미지 업로드 / 미리보기 영역 */}
         {selectedImage ? (
@@ -213,7 +258,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   container: { padding: 20 },
   card: { backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text, flex: 1, marginRight: 10 },
   badge: { backgroundColor: isDarkMode ? '#14532D' : '#DCFCE7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   badgeText: { color: isDarkMode ? '#86EFAC' : '#16A34A', fontSize: 13, fontWeight: '700' },
   badgeExpired: { backgroundColor: isDarkMode ? '#7F1D1D' : '#FEE2E2' },
@@ -231,7 +276,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderWidth: 2, borderColor: '#93C5FD', borderStyle: 'dashed', marginBottom: 12
   },
   uploadIcon: { fontSize: 40, marginBottom: 12 },
-  uploadTitle: { fontSize: 16, fontWeight: 'bold', color: '#2563EB', marginBottom: 8 },
+  uploadTitle: { fontSize: 16, fontWeight: 'bold', color: colors.primary, marginBottom: 8 },
   uploadDesc: { fontSize: 13, color: colors.subText },
   helpText: { fontSize: 12, color: colors.subText, textAlign: 'center' },
   
@@ -240,7 +285,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   previewButtonGroup: { flexDirection: 'row', gap: 12, width: '100%' },
   cancelButton: { flex: 1, paddingVertical: 14, backgroundColor: isDarkMode ? '#374151' : '#F3F4F6', borderRadius: 8, alignItems: 'center' },
   cancelButtonText: { color: colors.text, fontSize: 15, fontWeight: '600' },
-  submitButton: { flex: 1, paddingVertical: 14, backgroundColor: '#2563EB', borderRadius: 8, alignItems: 'center' },
+  submitButton: { flex: 1, paddingVertical: 14, backgroundColor: colors.primary, borderRadius: 8, alignItems: 'center' },
   submitButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600' },
 });
 
