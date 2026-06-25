@@ -22,6 +22,7 @@ const categories: Array<{ label: string; value: Post['category'] }> = [
   { label: '분실물', value: 'LOST' },
   { label: '자유게시판', value: 'EVENT' },
   { label: '매뉴얼', value: 'MANUAL' },
+  { label: '체크리스트', value: 'CHECKLIST' },
 ];
 
 const BoardWriteScreen = ({ route, navigation }: any) => {

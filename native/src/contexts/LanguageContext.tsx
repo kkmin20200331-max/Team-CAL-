@@ -226,6 +226,13 @@ const ko = {
   workPlace: '근무지',
   startDate: '시작일',
   wage: '시급',
+  boardTabAll: '전체',
+  boardTabNotice: '공지',
+  boardTabMenu: '건의',
+  boardTabEvent: '자유',
+  boardTabManual: '매뉴얼',
+  boardTabLost: '분실물',
+  boardTabChecklist: '체크리스트',
 };
 
 export type Language = '한국어' | 'English' | '日本語';

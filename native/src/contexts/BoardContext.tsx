@@ -46,7 +46,7 @@ interface BoardProviderProps {
   children: ReactNode;
 }
 
-const validCategories = ['NOTICE', 'MENU', 'EVENT', 'MANUAL', 'LOST'] as const;
+const validCategories = ['NOTICE', 'MENU', 'EVENT', 'MANUAL', 'LOST', 'CHECKLIST'] as const;
 
 const normalizeCategory = (name?: string): Post['category'] => {
   const upper = String(name || '').toUpperCase();

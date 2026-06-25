@@ -103,6 +103,7 @@ const DashboardScreen = ({ navigation }: Props) => {
     { id: 'EVENT', label: 'boardTabEvent' },
     { id: 'MANUAL', label: 'boardTabManual' },
     { id: 'LOST', label: 'boardTabLost' },
+    { id: 'CHECKLIST', label: 'boardTabChecklist' },
   ];
 
   // 3. BoardContext의 posts를 정렬하여 사용

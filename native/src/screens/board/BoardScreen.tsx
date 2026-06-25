@@ -34,6 +34,7 @@ const CATEGORIES = [
   { id: 'EVENT', label: '자유' },
   { id: 'MANUAL', label: '매뉴얼' },
   { id: 'LOST', label: '분실물' },
+  { id: 'CHECKLIST', label: '체크리스트' },
 ];
 
 const BoardScreen = ({ route, navigation }: Props) => {
