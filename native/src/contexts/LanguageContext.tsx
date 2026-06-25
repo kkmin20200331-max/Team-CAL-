@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translateTexts } from '../api/translation';
 
-const TRANSLATION_VERSION = '1.2'; // 번역 데이터 버전
+const TRANSLATION_VERSION = '1.3'; // 번역 데이터 버전
 
 const ko = {
   greeting: '안녕하세요',
@@ -234,6 +234,7 @@ const ko = {
   boardTabLost: '분실물',
   boardTabChecklist: '체크리스트',
   more: '더보기',
+  substituteTitle: '대타 구하기',
 };
 
 export type Language = '한국어' | 'English' | '日本語';
