@@ -16,31 +16,53 @@ import { useBoard } from '../../contexts/BoardContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Post } from '../../types/Post';
 
-const categories: Array<{ label: string; value: Post['category'] }> = [
-  { label: '공지사항', value: 'NOTICE' },
-  { label: '건의사항', value: 'MENU' },
-  { label: '분실물', value: 'LOST' },
-  { label: '자유게시판', value: 'EVENT' },
-  { label: '매뉴얼', value: 'MANUAL' },
-  { label: '체크리스트', value: 'CHECKLIST' },
-];
-
 const BoardWriteScreen = ({ route, navigation }: any) => {
   const { isEdit, postId } = route.params || {};
   const { userInfo } = useApp();
-  const { posts, addPost, updatePost } = useBoard();
+  const { posts, addPost, updatePost, boards } = useBoard();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
+  const isAdmin = userInfo?.role === 'ADMIN';
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
   const postToEdit = isEdit ? posts.find((post) => post.id === postId) : null;
 
   const [title, setTitle] = useState(isEdit && postToEdit ? postToEdit.title : '');
   const [content, setContent] = useState(isEdit && postToEdit ? postToEdit.content : '');
-  const [category, setCategory] = useState<Post['category']>(
+  const [category, setCategory] = useState<string>(
     isEdit && postToEdit ? postToEdit.category : 'NOTICE',
   );
+  const [customCategory, setCustomCategory] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const categoryChoices = React.useMemo(() => {
+    const list = [
+      { label: '공지사항', value: 'NOTICE' },
+      { label: '건의사항', value: 'MENU' },
+      { label: '분실물', value: 'LOST' },
+      { label: '자유게시판', value: 'EVENT' },
+      { label: '매뉴얼', value: 'MANUAL' },
+      { label: '체크리스트', value: 'CHECKLIST' },
+    ];
+
+    // 기존 매장에 등록된 커스텀 카테고리(게시판)가 있다면 선택 항목에 동적으로 추가해 줍니다.
+    const predefinedKeys = ['NOTICE', 'MENU', 'EVENT', 'MANUAL', 'LOST', 'CHECKLIST', '공지사항', '건의사항', '자유게시판', '매뉴얼', '분실물', '체크리스트', '공지', '건의'];
+    boards.forEach((board) => {
+      const nameUpper = board.name.toUpperCase();
+      if (!predefinedKeys.includes(nameUpper)) {
+        if (!list.some((item) => item.value === board.name)) {
+          list.push({ label: board.name, value: board.name });
+        }
+      }
+    });
+
+    // 관리자일 경우에만 카테고리 직접 추가 옵션을 제공합니다.
+    if (isAdmin) {
+      list.push({ label: '+ 직접 추가', value: 'CUSTOM' });
+    }
+
+    return list;
+  }, [boards, isAdmin]);
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
@@ -53,13 +75,22 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       return;
     }
 
+    let finalCategory = category;
+    if (category === 'CUSTOM') {
+      if (!customCategory.trim()) {
+        Toast.show({ type: 'error', text1: '입력 오류', text2: '추가할 카테고리명을 입력해주세요.' });
+        return;
+      }
+      finalCategory = customCategory.trim();
+    }
+
     setSubmitting(true);
 
     try {
       if (isEdit && postToEdit) {
         await updatePost({
           ...postToEdit,
-          category,
+          category: finalCategory,
           title: title.trim(),
           content: content.trim(),
         });
@@ -67,7 +98,7 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       } else {
         await addPost(
           {
-            category,
+            category: finalCategory,
             title: title.trim(),
             content: content.trim(),
             badge: 'badgeNew',
@@ -103,7 +134,7 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <Text style={styles.label}>카테고리</Text>
         <View style={styles.categoryContainer}>
-          {categories.map((item) => (
+          {categoryChoices.map((item) => (
             <TouchableOpacity
               key={item.value}
               style={[styles.categoryButton, category === item.value && styles.categoryButtonActive]}
@@ -111,10 +142,20 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
             >
               <Text style={[styles.categoryText, category === item.value && styles.categoryTextActive]}>
                 {item.label}
-              </Text>
+               </Text>
             </TouchableOpacity>
           ))}
         </View>
+
+        {category === 'CUSTOM' && (
+          <TextInput
+            style={[styles.input, { marginTop: 12 }]}
+            placeholder="추가할 카테고리명을 입력하세요 (예: 업무지시)"
+            value={customCategory}
+            onChangeText={setCustomCategory}
+            placeholderTextColor={colors.subText}
+          />
+        )}
 
         <Text style={styles.label}>제목</Text>
         <TextInput

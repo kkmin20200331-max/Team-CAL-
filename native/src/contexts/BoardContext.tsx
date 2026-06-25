@@ -46,11 +46,8 @@ interface BoardProviderProps {
   children: ReactNode;
 }
 
-const validCategories = ['NOTICE', 'MENU', 'EVENT', 'MANUAL', 'LOST', 'CHECKLIST'] as const;
-
-const normalizeCategory = (name?: string): Post['category'] => {
-  const upper = String(name || '').toUpperCase();
-  return validCategories.includes(upper as any) ? (upper as Post['category']) : 'NOTICE';
+const normalizeCategory = (name?: string): string => {
+  return name || 'NOTICE';
 };
 
 const mapPost = (post: any, board?: BoardSummary): Post => ({
@@ -97,8 +94,8 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
     }
   }, []);
 
-  const ensureBoard = useCallback(async (category: Post['category'], storeId: string, writerId: string) => {
-    const existing = boards.find((board) => normalizeCategory(board.name) === category);
+  const ensureBoard = useCallback(async (category: string, storeId: string, writerId: string) => {
+    const existing = boards.find((board) => board.name.toUpperCase() === category.toUpperCase());
     if (existing) return existing;
 
     const board = {
