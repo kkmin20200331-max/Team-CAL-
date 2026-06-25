@@ -202,7 +202,15 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
                         <View>
                           <Text style={styles.commentAuthor}>{item.user_name || item.user_id}</Text>
                           <Text style={styles.commentDate}>
-                            {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
+                            {item.created_at
+                              ? new Date(item.created_at).toLocaleString('ko-KR', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : ''}
                           </Text>
                         </View>
                       </View>

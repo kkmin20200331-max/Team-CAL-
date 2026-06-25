@@ -53,7 +53,9 @@ const CHIP_COLORS = [
 const formatDate = (s: string) => {
   if (!s) return "";
   const d = new Date(s);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const datePart = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const timePart = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${datePart} ${timePart}`;
 };
 
 const checkIsNew = (s: string) => {
