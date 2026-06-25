@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getStoresAPI, loginAPI } from '../../../api/auth';
+import { getStoresAPI, loginAPI, getMyStoreAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -74,6 +74,20 @@ export default function LoginScreen({ navigation }: Props) {
         finalUserInfo.activeBranchId = branches[0]?.id;
         finalUserInfo.store_id = branches[0]?.id;
         hasBranch = branches.length > 0;
+      } else if (finalRole === 'STAFF') {
+        try {
+          const storeResponse = await getMyStoreAPI(data.id);
+          const store = storeResponse.data;
+          if (store && store.id) {
+            finalUserInfo.store_id = store.id;
+            finalUserInfo.activeBranchId = store.id;
+            finalUserInfo.brandName = store.name || '매장';
+            finalUserInfo.branchName = store.address || store.id;
+            hasBranch = true;
+          }
+        } catch (err) {
+          console.error('직원 매장 정보 가져오기 실패:', err);
+        }
       }
 
       login(finalUserInfo, hasBranch);

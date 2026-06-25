@@ -60,6 +60,7 @@ const mapPost = (post: any, board?: BoardSummary): Post => ({
   content: post.content || '',
   date: post.created_at ? format(new Date(post.created_at), 'yyyy.MM.dd') : format(new Date(), 'yyyy.MM.dd'),
   authorId: post.writer_id,
+  author: post.writer_name || post.writer_id,
   isPinned: post.is_pinned === 'Y' || post.is_pinned === true,
   badge: null,
 });
