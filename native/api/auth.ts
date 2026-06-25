@@ -60,6 +60,8 @@ export const signupAPI = (data: {
   maxCapacity?: number;
   selectedBrand?: string;
   selectedBranch?: string;
+  storeAddress?: string;
+  storeType?: string;
 }) => API.post("/users", data);
 
 // ✅ [추가] 개인정보 수정 API

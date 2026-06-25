@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ScrollView, Switch, KeyboardAvoidingView, Platform, Modal, Pressable } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { signupAPI } from '../../../api/auth';
@@ -101,11 +101,11 @@ export default function SignupScreen({ navigation, route }: Props) {
         signupData.isFranchise = isFranchise;
         signupData.brandName = brandName;
         signupData.branchName = branchName;
-        signupData.address = address; // 주소 정보 추가
+        signupData.storeAddress = address; // 주소 정보 추가 (backend: storeAddress)
         signupData.openTime = formatTime(openTime);
         signupData.closeTime = formatTime(closeTime);
         signupData.maxCapacity = parseInt(maxCapacity, 10) || 0;
-        signupData.storeCategory = storeCategory;
+        signupData.storeType = storeCategory; // 업종 정보 추가 (backend: storeType)
       }
       
       const response = await signupAPI(signupData);
