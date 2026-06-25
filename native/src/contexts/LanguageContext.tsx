@@ -304,7 +304,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         const keys = Object.keys(ko) as (keyof TranslationData)[];
         const values = keys.map(key => ko[key]);
         
-        const translatedValues = await translateTexts(values, langCode);
+        // 💡 [임시 주석 처리] 구글 번역 API 사용 비활성화 (향후 정적 i18n 리소스로 교체 예정)
+        // const translatedValues = await translateTexts(values, langCode);
+        const translatedValues = values; // 번역 대신 원본(한글) 값을 그대로 적용
         
         const newTranslation: Partial<TranslationData> = {};
         keys.forEach((key, index) => {
