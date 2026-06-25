@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translateTexts } from '../api/translation';
 
-const TRANSLATION_VERSION = '1.1'; // 번역 데이터 버전
+const TRANSLATION_VERSION = '1.2'; // 번역 데이터 버전
 
 const ko = {
   greeting: '안녕하세요',
@@ -227,12 +227,13 @@ const ko = {
   startDate: '시작일',
   wage: '시급',
   boardTabAll: '전체',
-  boardTabNotice: '공지',
-  boardTabMenu: '건의',
-  boardTabEvent: '자유',
+  boardTabNotice: '공지사항',
+  boardTabMenu: '건의사항',
+  boardTabEvent: '자유게시판',
   boardTabManual: '매뉴얼',
   boardTabLost: '분실물',
   boardTabChecklist: '체크리스트',
+  more: '더보기',
 };
 
 export type Language = '한국어' | 'English' | '日本語';

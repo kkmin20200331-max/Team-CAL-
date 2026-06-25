@@ -29,9 +29,9 @@ type Props = {
 
 const CATEGORIES = [
   { id: 'ALL', label: '전체' },
-  { id: 'NOTICE', label: '공지' },
-  { id: 'MENU', label: '건의' },
-  { id: 'EVENT', label: '자유' },
+  { id: 'NOTICE', label: '공지사항' },
+  { id: 'MENU', label: '건의사항' },
+  { id: 'EVENT', label: '자유게시판' },
   { id: 'MANUAL', label: '매뉴얼' },
   { id: 'LOST', label: '분실물' },
   { id: 'CHECKLIST', label: '체크리스트' },

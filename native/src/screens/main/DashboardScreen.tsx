@@ -69,7 +69,7 @@ const mapShift = (raw: any, storeName: string): Shift => {
 
 const DashboardScreen = ({ navigation }: Props) => {
   const { userInfo } = useApp();
-  const { posts } = useBoard(); // 2. BoardContext에서 posts 상태 가져오기
+  const { posts, loadPosts } = useBoard(); // 2. BoardContext에서 posts 및 loadPosts 가져오기
   const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
@@ -110,7 +110,10 @@ const DashboardScreen = ({ navigation }: Props) => {
   const sortedDashboardPosts = [...posts].sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      
+      const aDate = new Date(a.date.replace(/\./g, '-')).getTime();
+      const bDate = new Date(b.date.replace(/\./g, '-')).getTime();
+      return bDate - aDate;
   });
 
   // 4. 네비게이션 파라미터에서 함수 전달 제거
@@ -156,6 +159,13 @@ const DashboardScreen = ({ navigation }: Props) => {
 
     try {
       const now = new Date();
+      
+      // ✅ [추가] 대시보드 로드 시 게시판 목록도 함께 새로고침하여 첫 렌더링에 노출 보장
+      try {
+        await loadPosts(userInfo.store_id);
+      } catch (err) {
+        console.error('대시보드 게시글 로드 실패:', err);
+      }
       const weekStart = startOfWeek(now, { weekStartsOn: 1 });
       const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
       const todayString = toDateStr(now);
