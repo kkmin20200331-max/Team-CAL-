@@ -130,15 +130,15 @@ const monthBounds = (month: string) => {
   return { start: toDateStr(start), end: toDateStr(end) };
 };
 
-const statusMeta: Record<RowStatus, { label: string; color: string; bg: string }> = {
-  normal: { label: "정상", color: DARK_GREEN, bg: "#E6F5C8" },
-  late: { label: "지각", color: "#B45309", bg: "#FEF3C7" },
-  early: { label: "조퇴", color: "#B45309", bg: "#FFEDD5" },
-  absent: { label: "결근", color: "#B91C1C", bg: "#FEE2E2" },
-  working: { label: "근무중", color: "#1D4ED8", bg: "#DBEAFE" },
-  scheduled: { label: "예정", color: "#475569", bg: "#E2E8F0" },
-  cancelled: { label: "취소", color: "#6B7280", bg: "#E5E7EB" },
-  unscheduled: { label: "퇴근", color: "#0369A1", bg: "#E0F2FE" },
+const statusMeta: Record<RowStatus, { label: string; color: string; bg: string; darkColor: string; darkBg: string; darkBorder: string; lightBorder: string }> = {
+  normal: { label: "정상", color: DARK_GREEN, bg: "#E6F5C8", darkColor: "#4cd964", darkBg: "rgba(24,160,34,0.15)", darkBorder: "rgba(24,160,34,0.3)", lightBorder: "#86efac" },
+  late: { label: "지각", color: "#B45309", bg: "#FEF3C7", darkColor: "#facc15", darkBg: "rgba(234,179,8,0.15)", darkBorder: "rgba(234,179,8,0.3)", lightBorder: "#fde047" },
+  early: { label: "조퇴", color: "#B45309", bg: "#FFEDD5", darkColor: "#fb923c", darkBg: "rgba(249,115,22,0.15)", darkBorder: "rgba(249,115,22,0.3)", lightBorder: "#fdba74" },
+  absent: { label: "결근", color: "#B91C1C", bg: "#FEE2E2", darkColor: "#f87171", darkBg: "rgba(239,68,68,0.15)", darkBorder: "rgba(239,68,68,0.3)", lightBorder: "#fca5a5" },
+  working: { label: "근무중", color: "#1D4ED8", bg: "#DBEAFE", darkColor: "#60a5fa", darkBg: "rgba(59,130,246,0.15)", darkBorder: "rgba(59,130,246,0.3)", lightBorder: "#93c5fd" },
+  scheduled: { label: "예정", color: "#475569", bg: "#E2E8F0", darkColor: "#94a3b8", darkBg: "rgba(100,116,139,0.15)", darkBorder: "rgba(100,116,139,0.3)", lightBorder: "#cbd5e1" },
+  cancelled: { label: "취소", color: "#6B7280", bg: "#E5E7EB", darkColor: "#9ca3af", darkBg: "rgba(107,114,128,0.15)", darkBorder: "rgba(107,114,128,0.3)", lightBorder: "#d1d5db" },
+  unscheduled: { label: "퇴근", color: "#0369A1", bg: "#E0F2FE", darkColor: "#38bdf8", darkBg: "rgba(14,165,233,0.15)", darkBorder: "rgba(14,165,233,0.3)", lightBorder: "#7dd3fc" },
 };
 
 export default function AttendanceManagement() {
@@ -168,11 +168,11 @@ export default function AttendanceManagement() {
   const pageBg = isDark
     ? "linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)"
     : "linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)";
-  const mainBg = isDark ? "rgba(44,44,46,0.96)" : "rgba(255,255,255,0.97)";
-  const cardBg = isDark ? "rgba(58,58,62,0.95)" : "rgba(230,245,200,0.35)";
-  const sidebarBg = isDark ? "rgba(44,44,46,0.95)" : "rgba(255,255,255,0.85)";
+  const mainBg = isDark ? "rgba(8,8,8,0.96)" : "rgba(255,255,255,0.97)";
+  const cardBg = isDark ? "rgba(20,20,20,0.95)" : "rgba(230,245,200,0.35)";
+  const sidebarBg = isDark ? "rgba(8,8,8,0.95)" : "rgba(255,255,255,0.85)";
   const textColor = isDark ? "#fff" : "#111";
-  const subText = isDark ? "#aaa" : "#6B8068";
+  const subText = isDark ? "#c8c8c8" : "#6B8068";
 
   const menuItems = [
     { icon: Calendar, label: "근무표 관리", path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : "/admin/branch-selection" },
@@ -325,9 +325,9 @@ export default function AttendanceManagement() {
     <div style={{ minHeight: "100vh", background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: "flex", gap: 20, padding: "24px 40px 40px", alignItems: "flex-start" }}>
-        <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${isDark ? "#3a3a3c" : BORDER_GREEN}`, borderRadius: 20, padding: "16px 12px", position: "sticky", top: 140, maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}>
+        <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${isDark ? "#1a1a1a" : BORDER_GREEN}`, borderRadius: 20, padding: "16px 12px", position: "sticky", top: 140, maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}>
           <div style={{ position: "relative", marginBottom: 16 }}>
-            <button onClick={() => setBranchDropdownOpen((open) => !open)} style={{ width: "100%", padding: "10px 14px", background: isDark ? "#50505a" : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen((open) => !open)} style={{ width: "100%", padding: "10px 14px", background: isDark ? "#1a1a1a" : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? "▲" : "▼"}</span>
             </button>
@@ -352,7 +352,7 @@ export default function AttendanceManagement() {
           })}
         </aside>
 
-        <main style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: "28px 28px 32px", boxShadow: "0px 8px 40px rgba(0,0,0,0.18)" }}>
+        <main style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: "28px 28px 32px", boxShadow: "0px 8px 40px rgba(0,0,0,0.18)", minHeight: "calc(100vh - 120px)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 13, color: "#8BA68D", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
@@ -363,7 +363,7 @@ export default function AttendanceManagement() {
               </h1>
               <p style={{ fontSize: 13, color: "#8BA68D", margin: 0 }}>근무표와 QR 출퇴근 기록을 비교해 근태 상태를 확인합니다.</p>
             </div>
-            <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${BORDER_GREEN}`, background: isDark ? "#3a3a3c" : "#fff", color: textColor, fontSize: 14, fontWeight: 700 }} />
+            <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${BORDER_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, fontSize: 14, fontWeight: 700 }} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
@@ -374,7 +374,7 @@ export default function AttendanceManagement() {
               { label: "지각", value: stats.late, icon: <Clock size={18} /> },
               { label: "결근", value: stats.absent, icon: <AlertCircle size={18} /> },
             ].map((item) => (
-              <div key={item.label} style={{ background: cardBg, border: `1px solid ${LIGHT_GREEN}`, borderRadius: 16, padding: "16px 18px" }}>
+              <div key={item.label} style={{ background: cardBg, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, borderRadius: 16, padding: "16px 18px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: DARK_GREEN, marginBottom: 10 }}>
                   <span style={{ fontSize: 13, color: subText, fontWeight: 700 }}>{item.label}</span>
                   {item.icon}
@@ -387,9 +387,9 @@ export default function AttendanceManagement() {
           <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220, position: "relative" }}>
               <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#8BA68D" }} />
-              <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="직원명 또는 ID 검색" style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px 11px 36px", borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, background: isDark ? "#3a3a3c" : "#fff", color: textColor, outline: "none" }} />
+              <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="직원명 또는 ID 검색" style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px 11px 36px", borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, outline: "none" }} />
             </div>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RowStatus | "all")} style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, background: isDark ? "#3a3a3c" : "#fff", color: textColor, outline: "none" }}>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RowStatus | "all")} style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, outline: "none" }}>
               <option value="all">전체 상태</option>
               {Object.entries(statusMeta).map(([value, meta]) => (
                 <option key={value} value={value}>{meta.label}</option>
@@ -397,7 +397,7 @@ export default function AttendanceManagement() {
             </select>
           </div>
 
-          <div style={{ overflowX: "auto", background: cardBg, border: `1px solid ${LIGHT_GREEN}`, borderRadius: 16 }}>
+          <div style={{ overflowX: "auto", background: cardBg, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, borderRadius: 16 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 920 }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${LIGHT_GREEN}` }}>
@@ -415,7 +415,7 @@ export default function AttendanceManagement() {
                   filteredRows.map((row) => {
                     const meta = statusMeta[row.status];
                     return (
-                      <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? "#3a3a3c" : "rgba(230,245,200,0.8)"}` }}>
+                      <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? "#1a1a1a" : "rgba(230,245,200,0.8)"}` }}>
                         <td style={{ padding: "14px 16px", color: textColor, fontWeight: 700 }}>{row.date}</td>
                         <td style={{ padding: "14px 16px", color: textColor }}>
                           <div style={{ fontWeight: 800 }}>{row.employeeName}</div>
@@ -426,7 +426,7 @@ export default function AttendanceManagement() {
                         <td style={{ padding: "14px 16px", color: textColor }}>{row.checkOut}</td>
                         <td style={{ padding: "14px 16px", color: textColor }}>{row.workMinutes ? `${Math.floor(row.workMinutes / 60)}h ${row.workMinutes % 60}m` : "-"}</td>
                         <td style={{ padding: "14px 16px" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 12, fontWeight: 800 }}>{meta.label}</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 10px", borderRadius: 999, background: isDark ? meta.darkBg : meta.bg, color: isDark ? meta.darkColor : meta.color, fontSize: 12, fontWeight: 800, border: `1px solid ${isDark ? meta.darkBorder : meta.lightBorder}` }}>{meta.label}</span>
                         </td>
                         <td style={{ padding: "14px 16px", color: subText, fontSize: 13 }}>
                           {row.lateMinutes > 5 ? `${row.lateMinutes}분 지각` : row.earlyMinutes > 5 ? `${row.earlyMinutes}분 조퇴` : row.status === "absent" ? "출근 기록 없음" : "-"}

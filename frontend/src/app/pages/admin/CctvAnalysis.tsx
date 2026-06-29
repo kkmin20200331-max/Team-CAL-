@@ -115,8 +115,13 @@ export default function CctvAnalysis() {
   const { branchId } = useParams();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
-  const contentBg = isDark ? '#3c3c46' : '#fff';
+  const mainBg = isDark ? '#0f0f0f' : 'rgba(255,255,255,0.97)';
+  const contentBg = isDark ? '#141414' : '#fff';
+  const cardBg = isDark ? '#141414' : 'rgba(230,245,200,0.35)';
+  const sidebarBg = isDark ? 'rgba(8,8,8,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#1a1a1a' : BORDER_GREEN;
+  const textColor = isDark ? '#fff' : '#111';
+  const subTextColor = isDark ? '#c8c8c8' : '#555';
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -326,20 +331,20 @@ export default function CctvAnalysis() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
         {/* 사이드바 */}
-        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)', borderRadius: 20, border: `1px solid ${isDark ? '#50505a' : BORDER_GREEN}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
+        <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: isDark ? 'rgba(8,8,8,0.97)' : 'rgba(255,255,255,0.85)', borderRadius: 20, border: `1px solid ${isDark ? '#1a1a1a' : BORDER_GREEN}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
           <div style={{ marginBottom: 16, position: 'relative' }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#1a1a1a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#141414' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
                 {stores.map(s => (
-                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: isDark ? '#fff' : '#111', borderBottom: `1px solid ${isDark ? '#50505a' : LIGHT_GREEN}` }}>
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: isDark ? '#fff' : '#111', borderBottom: `1px solid ${isDark ? '#1a1a1a' : LIGHT_GREEN}` }}>
                     {s.name}
                   </div>
                 ))}
@@ -362,13 +367,13 @@ export default function CctvAnalysis() {
         </div>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)', minHeight: 'calc(100vh - 120px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                 {currentBranch} <ChevronRight size={12} /> CCTV 분석
               </div>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Video size={26} />매장 CCTV 실시간 모니터링
               </h1>
               <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>카메라를 통해 매장 혼잡도를 실시간으로 분석합니다.</p>
@@ -378,7 +383,7 @@ export default function CctvAnalysis() {
                 <button onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                   <Save size={16} />설정 저장
                 </button>
-                <span style={{ fontSize: 11, color: '#aaa' }}>최근 저장: {lastSavedAt}</span>
+                <span style={{ fontSize: 11, color: '#c8c8c8' }}>최근 저장: {lastSavedAt}</span>
               </div>
               <button disabled={isSubmitting} onClick={isRunning ? handleStop : handleStart} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: isRunning ? '#ef4444' : GREEN, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>
                 {isRunning ? <CircleStop size={16} /> : <Play size={16} />}
@@ -387,7 +392,7 @@ export default function CctvAnalysis() {
             </div>
           </div>
         {errorMessage && (
-          <div style={{ marginBottom: 16, borderRadius: 10, border: '1px solid #fca5a5', background: '#fef2f2', padding: '10px 16px', fontSize: 13, color: '#b91c1c' }}>
+          <div style={{ marginBottom: 16, borderRadius: 10, border: `1px solid ${isDark ? 'rgba(239,68,68,0.3)' : '#fca5a5'}`, background: isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2', padding: '10px 16px', fontSize: 13, color: isDark ? '#f87171' : '#b91c1c' }}>
             {errorMessage}
           </div>
         )}
@@ -423,12 +428,12 @@ export default function CctvAnalysis() {
               icon: <Eye size={22} color={DARK_GREEN} />,
             },
           ].map(({ label, value, sub, badge, icon }) => (
-            <div key={label} style={{ background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '16px 18px' }}>
+            <div key={label} style={{ background: isDark ? '#141414' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '16px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 12, color: isDark ? '#aaa' : '#6b7280', margin: 0 }}>{label}</p>
+                  <p style={{ fontSize: 12, color: isDark ? '#c8c8c8' : '#6b7280', margin: 0 }}>{label}</p>
                   <p style={{ fontSize: label === '분석 매장' ? 15 : 22, fontWeight: 800, color: isDark ? '#fff' : DARK_GREEN, margin: '6px 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</p>
-                  <p style={{ fontSize: 11, color: isDark ? '#aaa' : '#6b7280', margin: 0 }}>{sub}</p>
+                  <p style={{ fontSize: 11, color: isDark ? '#c8c8c8' : '#6b7280', margin: 0 }}>{sub}</p>
                 </div>
                 {badge && (
                   <span style={{ background: badge.bg, color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>{badge.text}</span>
@@ -658,15 +663,15 @@ export default function CctvAnalysis() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? 'rgba(52,52,60,0.7)' : LIGHT_GREEN, padding: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: DARK_GREEN }}>
+              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? 'rgba(20,20,20,0.7)' : LIGHT_GREEN, padding: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: isDark ? GREEN : DARK_GREEN }}>
                   <MapPin size={14} />
                   {config.location}
                 </div>
                 <p style={{ marginTop: 6, fontWeight: 700, fontSize: 14, color: isDark ? '#fff' : DARK_GREEN }}>
                   {config.name}
                 </p>
-                <p style={{ marginTop: 4, fontSize: 12, color: isDark ? '#aaa' : '#6b7280' }}>
+                <p style={{ marginTop: 4, fontSize: 12, color: isDark ? '#c8c8c8' : '#6b7280' }}>
                   POST {API_BASE}/cctv/start
                 </p>
               </div>
@@ -676,9 +681,9 @@ export default function CctvAnalysis() {
                   {JSON.stringify(startPayload, null, 2)}
                 </pre>
               </div>
-              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? '#30303a' : '#fff', padding: 12 }}>
-                <p style={{ marginBottom: 6, fontSize: 11, fontWeight: 700, color: isDark ? '#aaa' : DARK_GREEN }}>last response</p>
-                <pre style={{ maxHeight: 160, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: 11, lineHeight: 1.6, color: isDark ? '#ccc' : '#374151' }}>
+              <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? '#0a0a0a' : '#fff', padding: 12 }}>
+                <p style={{ marginBottom: 6, fontSize: 11, fontWeight: 700, color: isDark ? '#c8c8c8' : DARK_GREEN }}>last response</p>
+                <pre style={{ maxHeight: 160, overflow: 'auto', whiteSpace: 'pre-wrap', fontSize: 11, lineHeight: 1.6, color: isDark ? '#c8c8c8' : '#374151' }}>
                   {lastResponse}
                 </pre>
               </div>
@@ -699,7 +704,7 @@ export default function CctvAnalysis() {
                   key={label}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, padding: 12 }}
                 >
-                  <span style={{ fontSize: 13, color: isDark ? '#aaa' : '#6b7280' }}>{label}</span>
+                  <span style={{ fontSize: 13, color: isDark ? '#c8c8c8' : '#6b7280' }}>{label}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: isDark ? '#fff' : DARK_GREEN }}>{value}</span>
                 </div>
               ))}

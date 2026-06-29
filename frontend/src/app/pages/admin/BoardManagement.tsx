@@ -61,19 +61,19 @@ const BoardManagement: React.FC = () => {
   const isDark = theme === 'dark';
 
   const pageBg = isDark
-    ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)'
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
     : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
+  const sidebarBg = isDark ? 'rgba(8,8,8,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#1a1a1a' : BORDER_GREEN;
   const textColor = isDark ? '#fff' : '#111';
-  const subText = isDark ? '#aaa' : '#8BA68D';
-  const cardBg = isDark ? 'rgba(52,52,60,0.7)' : 'rgba(230,245,200,0.35)';
-  const contentBg = isDark ? '#3c3c46' : '#fff';
-  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const subText = isDark ? '#c8c8c8' : '#8BA68D';
+  const cardBg = isDark ? 'rgba(20,20,20,0.7)' : 'rgba(230,245,200,0.35)';
+  const contentBg = isDark ? '#141414' : '#fff';
+  const mainBg = isDark ? '#0f0f0f' : 'rgba(255,255,255,0.97)';
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 14px', borderRadius: 12,
-    border: `1px solid ${LIGHT_GREEN}`, fontSize: 14,
-    background: isDark ? '#50505a' : 'rgba(255,255,255,0.8)',
+    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14,
+    background: isDark ? '#1a1a1a' : 'rgba(255,255,255,0.8)',
     outline: 'none', color: textColor, boxSizing: 'border-box',
   };
 
@@ -359,12 +359,12 @@ const BoardManagement: React.FC = () => {
         {/* 사이드바 */}
         <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${sidebarBorder}`, borderRadius: 20, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)', position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
           <div style={{ position: 'relative', marginBottom: 16 }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#1a1a1a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && stores.length > 0 && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50, background: isDark ? '#30303a' : '#fff', border: `1px solid ${sidebarBorder}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50, background: isDark ? '#0a0a0a' : '#fff', border: `1px solid ${sidebarBorder}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
                 {stores.map(s => (
                   <button key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); setBranchDropdownOpen(false); navigate(`/admin/dashboard/${s.id}`); }} style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: s.id === selectedBranchId ? LIGHT_GREEN : 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600 }}>
                     {s.name}
@@ -389,15 +389,15 @@ const BoardManagement: React.FC = () => {
         </aside>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)', minHeight: 'calc(100vh - 120px)' }}>
 
           {/* 헤더 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <div>
-              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                 {currentBranch} <ChevronRight size={12} /> 게시판
               </div>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <MessageSquare size={26} />공지사항 및 게시글 관리
               </h1>
               <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>매장 공지, 직원 소통 게시글을 관리합니다.</p>
@@ -422,7 +422,7 @@ const BoardManagement: React.FC = () => {
           </div>
 
           {/* 검색 */}
-          <div style={{ background: cardBg, borderRadius: 16, padding: '14px 18px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 20 }}>
+          <div style={{ background: cardBg, borderRadius: 16, padding: '14px 18px', border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, marginBottom: 20 }}>
             <div style={{ position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: subText }} />
               <input type="text" placeholder="제목 또는 내용으로 검색..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ ...inputStyle, paddingLeft: 36 }} />
@@ -441,7 +441,7 @@ const BoardManagement: React.FC = () => {
                 <div style={{ background: contentBg, padding: '24px 24px 20px' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div style={{ flex: 1 }}>
-                      {selectedPost.is_pinned === 'Y' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: LIGHT_GREEN, color: DARK_GREEN, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, marginBottom: 8 }}><Pin size={11} />고정됨</span>}
+                      {selectedPost.is_pinned === 'Y' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, color: isDark ? '#4cd964' : DARK_GREEN, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, marginBottom: 8 }}><Pin size={11} />고정됨</span>}
                       <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>{selectedPost.title}</h2>
                       <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#888' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={13} />{displayName(selectedPost.writer_id, selectedPost.writer_name)}</span>
@@ -522,7 +522,7 @@ const BoardManagement: React.FC = () => {
                   </button>
                 </div>
               ) : posts.map(post => (
-                <div key={post.id} onClick={() => openPostDetail(post)} style={{ background: post.is_pinned === 'Y' ? (isDark ? 'rgba(230,245,200,0.08)' : '#F4FBE8') : (isDark ? 'rgba(52,52,60,0.7)' : '#fff'), borderRadius: 16, padding: '16px 18px', border: post.is_pinned === 'Y' ? `2px solid ${BORDER_GREEN}` : `1px solid ${BORDER_GREEN}`, cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+                <div key={post.id} onClick={() => openPostDetail(post)} style={{ background: post.is_pinned === 'Y' ? (isDark ? 'rgba(230,245,200,0.08)' : '#F4FBE8') : (isDark ? 'rgba(20,20,20,0.7)' : '#fff'), borderRadius: 16, padding: '16px 18px', border: post.is_pinned === 'Y' ? `2px solid ${BORDER_GREEN}` : `1px solid ${BORDER_GREEN}`, cursor: 'pointer', transition: 'box-shadow 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'; }}
                   onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
                 >
@@ -557,7 +557,7 @@ const BoardManagement: React.FC = () => {
       {/* 푸시 알림 모달 */}
       {showPushModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-          <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 480 }}>
+          <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 480 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Bell size={18} />푸시 알림 보내기</h2>
               <button onClick={() => setShowPushModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
@@ -586,7 +586,7 @@ const BoardManagement: React.FC = () => {
       {/* 게시글 작성/수정 모달 */}
       {showPostModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-          <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{editingPost ? '게시글 수정' : '새 게시글 작성'}</h2>
               <button onClick={() => setShowPostModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>

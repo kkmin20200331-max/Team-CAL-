@@ -177,15 +177,15 @@ export default function ProfilePanel() {
   const panelBg = isDark ? "#2a2a2e" : "white";
   const textMain = isDark ? "#f0f0f0" : "#111827";
   const textSub = isDark ? "#b0b0b8" : "#6b7280";
-  const divider = isDark ? "#44444a" : "#e5e7eb";
-  const closeBg = isDark ? "#3a3a40" : "#E6F5C8";
-  const closeIcon = isDark ? "#ccc" : "#07790F";
-  const cardBg = isDark ? "#35353c" : "#f9fafb";
-  const cardBorder = isDark ? "#4a4a52" : "#e5e7eb";
-  const logoutBg = isDark ? "#35353c" : "#f5f5f5";
-  const logoutHov = isDark ? "#44444a" : "#ebebeb";
-  const logoutTxt = isDark ? "#d0d0d8" : "#555";
-  const darkCard = "#35353c";
+  const divider = isDark ? "#222222" : "#e5e7eb";
+  const closeBg = isDark ? "#1a1a1a" : "#E6F5C8";
+  const closeIcon = isDark ? "#fff" : "#07790F";
+  const cardBg = isDark ? "#111111" : "#f9fafb";
+  const cardBorder = isDark ? "#2a2a2a" : "#e5e7eb";
+  const logoutBg = isDark ? "#111111" : "#f5f5f5";
+  const logoutHov = isDark ? "#1e1e1e" : "#ebebeb";
+  const logoutTxt = isDark ? "#e0e0e0" : "#555";
+  const darkCard = "#111111";
   const darkCardBorder = "#4a8a50";
 
   const [open, setOpen] = useState(false);
@@ -675,7 +675,7 @@ export default function ProfilePanel() {
                 className="hidden"
                 onChange={handleImageChange}
               />
-              <p className="text-xs mb-2" style={{ color: "#aaa" }}>
+              <p className="text-xs mb-2" style={{ color: "#c8c8c8" }}>
                 사진을 클릭하여 변경
               </p>
               <h2 className="text-xl font-bold" style={{ color: textMain }}>
@@ -830,7 +830,7 @@ export default function ProfilePanel() {
                           className="text-xs rounded p-2"
                           style={{
                             color: textSub,
-                            background: isDark ? "#3c3c46" : "#fff",
+                            background: isDark ? "#141414" : "#fff",
                             border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
                           }}
                         >

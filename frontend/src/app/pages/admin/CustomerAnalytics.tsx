@@ -277,8 +277,8 @@ export default function CustomerAnalytics() {
   const { branchId } = useParams();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
-  const contentBg = isDark ? '#3c3c46' : '#fff';
+  const mainBg = isDark ? '#0f0f0f' : 'rgba(255,255,255,0.97)';
+  const contentBg = isDark ? '#141414' : '#fff';
   const [activeTab, setActiveTab] = useState<TabKey>("live");
   const [peopleLogs, setPeopleLogs] = useState<PeopleLog[]>([]);
   const [weeklyLogs, setWeeklyLogs] = useState<PeopleLog[]>([]);
@@ -296,11 +296,13 @@ export default function CustomerAnalytics() {
       : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const pageBg = isDark
-    ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)'
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
     : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
+  const sidebarBg = isDark ? 'rgba(8,8,8,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#1a1a1a' : BORDER_GREEN;
   const textColor = isDark ? '#fff' : '#111';
+  const subTextColor = isDark ? '#c8c8c8' : '#555';
+  const cardBg = isDark ? '#141414' : 'rgba(230,245,200,0.35)';
 
   const currentBranch =
     stores.find((s) => s.id === selectedBranchId)?.name ||
@@ -593,15 +595,15 @@ export default function CustomerAnalytics() {
           overflowY: 'auto',
         }}>
           <div style={{ position: 'relative', marginBottom: 16 }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#1a1a1a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && stores.length > 0 && (
               <div style={{
                 position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50,
-                background: isDark ? '#30303a' : '#fff',
-                border: `1px solid ${isDark ? '#50505a' : BORDER_GREEN}`,
+                background: isDark ? '#0a0a0a' : '#fff',
+                border: `1px solid ${isDark ? '#1a1a1a' : BORDER_GREEN}`,
                 borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
               }}>
                 {stores.map(s => (
@@ -615,7 +617,7 @@ export default function CustomerAnalytics() {
                     }}
                     style={{
                       display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left',
-                      background: s.id === selectedBranchId ? LIGHT_GREEN : 'transparent',
+                      background: s.id === selectedBranchId ? (isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN) : 'transparent',
                       border: 'none', cursor: 'pointer',
                       color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600,
                     }}
@@ -625,11 +627,11 @@ export default function CustomerAnalytics() {
                     {s.name}
                   </button>
                 ))}
-                <div style={{ borderTop: `1px solid ${isDark ? '#50505a' : '#e5e7eb'}` }} />
+                <div style={{ borderTop: `1px solid ${isDark ? '#1a1a1a' : '#e5e7eb'}` }} />
                 <button
                   onClick={() => { setBranchDropdownOpen(false); navigate('/admin/branch-selection'); }}
-                  style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#888' : '#aaa', fontSize: 12 }}
-                  onMouseOver={e => { e.currentTarget.style.background = isDark ? '#3c3c46' : '#f5f5f5'; }}
+                  style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#888' : '#c8c8c8', fontSize: 12 }}
+                  onMouseOver={e => { e.currentTarget.style.background = isDark ? '#141414' : '#f5f5f5'; }}
                   onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
                 >
                   + 지점 선택 페이지로
@@ -672,14 +674,15 @@ export default function CustomerAnalytics() {
           borderRadius: 24,
           padding: '28px 28px 32px',
           boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
+          minHeight: 'calc(100vh - 120px)',
         }}>
           {/* Page title row */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                 {currentBranch} <ChevronRight size={12} /> {t.backLabel}
               </div>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Brain size={26} />{t.title}
               </h1>
               <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.subtitle}</p>
@@ -701,7 +704,7 @@ export default function CustomerAnalytics() {
 
           {/* Sync error */}
           {syncError && (
-            <div style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #fca5a5', background: '#fef2f2', padding: '12px 16px', fontSize: 14, color: '#b91c1c' }}>
+            <div style={{ marginBottom: 16, borderRadius: 12, border: `1px solid ${isDark ? 'rgba(239,68,68,0.3)' : '#fca5a5'}`, background: isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2', padding: '12px 16px', fontSize: 14, color: isDark ? '#f87171' : '#b91c1c' }}>
               {syncError}
             </div>
           )}
@@ -717,12 +720,12 @@ export default function CustomerAnalytics() {
           {/* KPI Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
             {kpis.map((item) => (
-              <div key={item.title} style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+              <div key={item.title} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: '#8BA68D', margin: '0 0 8px' }}>{item.title}</p>
-                    <p style={{ fontSize: 26, fontWeight: 800, color: DARK_GREEN, margin: '0 0 6px' }}>{item.value}</p>
-                    <p style={{ fontSize: 12, color: '#8BA68D', margin: 0 }}>{item.delta}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#9dc49d' : '#8BA68D', margin: '0 0 8px' }}>{item.title}</p>
+                    <p style={{ fontSize: 26, fontWeight: 800, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 6px' }}>{item.value}</p>
+                    <p style={{ fontSize: 12, color: isDark ? '#9dc49d' : '#8BA68D', margin: 0 }}>{item.delta}</p>
                   </div>
                   <item.icon size={22} color={item.tone} style={{ flexShrink: 0 }} />
                 </div>
@@ -733,13 +736,13 @@ export default function CustomerAnalytics() {
           {/* Main charts area */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 20 }}>
             {/* Traffic chart */}
-            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <LineChartIcon size={18} color={DARK_GREEN} />
-                  <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.chartTitle}</p>
+                  <LineChartIcon size={18} color={isDark ? GREEN : DARK_GREEN} />
+                  <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.chartTitle}</p>
                 </div>
-                <div style={{ display: 'flex', gap: 4, background: LIGHT_GREEN, borderRadius: 10, padding: 4 }}>
+                <div style={{ display: 'flex', gap: 4, background: isDark ? '#1a2e1a' : LIGHT_GREEN, borderRadius: 10, padding: 4 }}>
                   {TAB_KEYS.map((value) => {
                     const tabLabelMap: Record<TabKey, string> = { live: t.tabLive, pattern: t.tabPattern, insight: t.tabInsight, schedule: t.tabSchedule };
                     return (
@@ -748,8 +751,8 @@ export default function CustomerAnalytics() {
                       onClick={() => setActiveTab(value)}
                       style={{
                         padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
-                        background: activeTab === value ? '#fff' : 'transparent',
-                        color: activeTab === value ? DARK_GREEN : '#8BA68D',
+                        background: activeTab === value ? (isDark ? '#2a2a2a' : '#fff') : 'transparent',
+                        color: activeTab === value ? (isDark ? GREEN : DARK_GREEN) : (isDark ? '#9dc49d' : '#8BA68D'),
                         boxShadow: activeTab === value ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
                       }}
                     >
@@ -774,27 +777,27 @@ export default function CustomerAnalytics() {
             </div>
 
             {/* Current diagnosis */}
-            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <Zap size={18} color="#F97316" />
-                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.diagnosisTitle}</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.diagnosisTitle}</p>
               </div>
-              <div style={{ background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', padding: '14px 16px', marginBottom: 12 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#c2410c', marginBottom: 4 }}>{t.peakTimeTitle}</p>
-                <p style={{ fontSize: 28, fontWeight: 800, color: '#7c2d12', margin: '0 0 8px' }}>{peakHour.time}</p>
-                <p style={{ fontSize: 13, color: '#c2410c', margin: 0 }}>
+              <div style={{ background: isDark ? 'rgba(249,115,22,0.1)' : '#fff7ed', borderRadius: 12, border: `1px solid ${isDark ? 'rgba(249,115,22,0.3)' : '#fed7aa'}`, padding: '14px 16px', marginBottom: 12 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#fb923c' : '#c2410c', marginBottom: 4 }}>{t.peakTimeTitle}</p>
+                <p style={{ fontSize: 28, fontWeight: 800, color: isDark ? '#f97316' : '#7c2d12', margin: '0 0 8px' }}>{peakHour.time}</p>
+                <p style={{ fontSize: 13, color: isDark ? '#fb923c' : '#c2410c', margin: 0 }}>
                   {t.peakDesc(peakHour.visitors, peakHour.recommended, peakHour.wait)}
                 </p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${LIGHT_GREEN}` }}>
+                <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
                   <Calendar size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
                   <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>{t.lastAnalysis}</p>
                   <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>
                     {metrics?.lastMeasuredAt ? metrics.lastMeasuredAt.slice(11, 19) : "-"}
                   </p>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${LIGHT_GREEN}` }}>
+                <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
                   <Wallet size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
                   <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>{t.aiSourceLabel}</p>
                   <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>{aiResult?.source || "대기"}</p>
@@ -805,8 +808,8 @@ export default function CustomerAnalytics() {
 
           {/* Weekly pattern tab */}
           {activeTab === "pattern" && (
-            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 20 }}>
-              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 16 }}>{t.weeklyPatternTitle}</p>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, marginBottom: 20 }}>
+              <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, marginBottom: 16 }}>{t.weeklyPatternTitle}</p>
               <div style={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={weeklyPattern}>
@@ -825,14 +828,14 @@ export default function CustomerAnalytics() {
 
           {/* AI Insights + Operating Metrics */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 20 }}>
-            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                <Sparkles size={18} color={DARK_GREEN} />
-                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.aiInsightTitle}</p>
+                <Sparkles size={18} color={isDark ? GREEN : DARK_GREEN} />
+                <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.aiInsightTitle}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {renderedInsights.map((insight) => (
-                  <div key={insight.title} style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '14px 16px', border: `1px solid ${LIGHT_GREEN}` }}>
+                  <div key={insight.title} style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '14px 16px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -842,7 +845,7 @@ export default function CustomerAnalytics() {
                         <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: '0 0 4px' }}>{insight.title}</p>
                         <p style={{ fontSize: 13, color: '#8BA68D', margin: 0, lineHeight: 1.5 }}>{insight.body}</p>
                       </div>
-                      <Button variant="outline" style={{ border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 8, fontSize: 13, flexShrink: 0 }}>
+                      <Button variant="outline" style={{ border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 8, fontSize: 13, flexShrink: 0 }}>
                         <CheckCircle2 size={14} style={{ marginRight: 4 }} />
                         {insight.action}
                       </Button>
@@ -852,10 +855,10 @@ export default function CustomerAnalytics() {
               </div>
             </div>
 
-            <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <BarChart3 size={18} color={GREEN} />
-                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.operatingMetricsTitle}</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.operatingMetricsTitle}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {operatingMetrics.map((metric) => (
@@ -864,7 +867,7 @@ export default function CustomerAnalytics() {
                       <span style={{ color: '#8BA68D' }}>{metric.label}</span>
                       <span style={{ fontWeight: 700, color: textColor }}>{metric.value}</span>
                     </div>
-                    <div style={{ height: 8, borderRadius: 999, background: LIGHT_GREEN }}>
+                    <div style={{ height: 8, borderRadius: 999, background: isDark ? '#1a2e1a' : LIGHT_GREEN }}>
                       <div style={{ height: 8, borderRadius: 999, background: metric.color, width: metric.width }} />
                     </div>
                   </div>
@@ -874,23 +877,23 @@ export default function CustomerAnalytics() {
           </div>
 
           {/* Schedule Recommendations Table */}
-          <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
+          <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
               <TrendingUp size={18} color="#F97316" />
-              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.scheduleRecommendTitle}</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.scheduleRecommendTitle}</p>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                 <thead>
-                  <tr style={{ background: LIGHT_GREEN }}>
+                  <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
                     {[t.colTime, t.colCurrent, t.colRecommended, t.colStatus, t.colReason].map(col => (
-                      <th key={col} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>{col}</th>
+                      <th key={col} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}>{col}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {scheduleRecommendations.map((row, idx) => (
-                    <tr key={row.time} style={{ borderBottom: `1px solid ${LIGHT_GREEN}`, background: idx % 2 === 0 ? 'rgba(230,245,200,0.2)' : 'transparent' }}>
+                    <tr key={row.time} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : LIGHT_GREEN}`, background: idx % 2 === 0 ? (isDark ? 'rgba(24,160,34,0.05)' : 'rgba(230,245,200,0.2)') : 'transparent' }}>
                       <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 700, color: textColor }}>{row.time}</td>
                       <td style={{ padding: '12px 16px', fontSize: 14, color: '#8BA68D' }}>{row.current}명</td>
                       <td style={{ padding: '12px 16px', fontSize: 14, color: textColor, fontWeight: 600 }}>{row.recommended}명</td>

@@ -63,11 +63,29 @@ const LEVEL_BG: Record<string, string> = {
   CLOSER: '#e0e7ff',
   MANAGER: '#fef3c7',
 };
+const LEVEL_BG_DARK: Record<string, string> = {
+  NEWBIE: 'rgba(107,114,128,0.15)',
+  REGULAR: 'rgba(24,160,34,0.15)',
+  CLOSER: 'rgba(99,102,241,0.15)',
+  MANAGER: 'rgba(234,179,8,0.15)',
+};
 const LEVEL_TEXT: Record<string, string> = {
   NEWBIE: '#6b7280',
   REGULAR: DARK_GREEN,
   CLOSER: '#4f46e5',
   MANAGER: '#92400e',
+};
+const LEVEL_TEXT_DARK: Record<string, string> = {
+  NEWBIE: '#9ca3af',
+  REGULAR: '#4cd964',
+  CLOSER: '#818cf8',
+  MANAGER: '#facc15',
+};
+const LEVEL_BORDER_DARK: Record<string, string> = {
+  NEWBIE: 'rgba(107,114,128,0.3)',
+  REGULAR: 'rgba(24,160,34,0.3)',
+  CLOSER: 'rgba(99,102,241,0.3)',
+  MANAGER: 'rgba(234,179,8,0.3)',
 };
 
 export default function EmployeeManagement() {
@@ -210,14 +228,14 @@ export default function EmployeeManagement() {
     (e) => !memberMap[e.id]?.pay_amount,
   ).length;
 
-  const pageBg = isDark ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const contentBg = isDark ? '#3c3c46' : '#fff';
-  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
-  const cardBg = isDark ? '#3c3c46' : 'rgba(230,245,200,0.35)';
+  const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const contentBg = isDark ? '#141414' : '#fff';
+  const mainBg = isDark ? '#0f0f0f' : 'rgba(255,255,255,0.97)';
+  const cardBg = isDark ? '#141414' : 'rgba(230,245,200,0.35)';
   const textColor = isDark ? '#fff' : '#111';
-  const subTextColor = isDark ? '#aaa' : '#555';
-  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
+  const subTextColor = isDark ? '#c8c8c8' : '#555';
+  const sidebarBg = isDark ? 'rgba(8,8,8,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#1a1a1a' : BORDER_GREEN;
 
   const getPayDisplay = (info?: StoreMemberVo) => {
     if (!info?.pay_amount) return <span style={{ color: '#f59e0b', fontSize: 12 }}>미설정</span>;
@@ -228,7 +246,7 @@ export default function EmployeeManagement() {
 
   const getStatusBadge = (status?: string) => {
     if (status === "APPROVED") return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: GREEN, background: LIGHT_GREEN, padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: isDark ? '#4cd964' : GREEN, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>
         <CheckCircle size={11} />승인됨
       </span>
     );
@@ -247,14 +265,14 @@ export default function EmployeeManagement() {
         {/* 사이드바 */}
         <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: sidebarBg, borderRadius: 20, border: `1px solid ${sidebarBorder}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
           <div style={{ marginBottom: 16, position: 'relative' }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#1a1a1a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#141414' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
                 {stores.map(s => (
-                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#50505a' : LIGHT_GREEN}` }}>
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#1a1a1a' : LIGHT_GREEN}` }}>
                     {s.name}
                   </div>
                 ))}
@@ -277,12 +295,12 @@ export default function EmployeeManagement() {
         </div>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)', minHeight: 'calc(100vh - 120px)' }}>
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
               {currentBranch} <ChevronRight size={12} /> 직원 관리
             </div>
-            <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
               <Users size={26} />직원 현황 및 승인 관리
             </h1>
             <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>소속 직원 목록과 가입 승인을 관리합니다.</p>
@@ -313,7 +331,7 @@ export default function EmployeeManagement() {
             placeholder="이름 또는 전화번호로 검색..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#50505a' : 'rgba(255,255,255,0.7)', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#1a1a1a' : 'rgba(255,255,255,0.7)', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
 
@@ -328,7 +346,7 @@ export default function EmployeeManagement() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ background: LIGHT_GREEN }}>
+                  <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
                     {['직원', '연락처', '레벨', '급여', '상태', '작업'].map((h, i) => (
                       <th key={h} style={{ padding: '12px 16px', textAlign: i === 5 ? 'right' : 'left', fontSize: 12, fontWeight: 700, color: DARK_GREEN }}>{h}</th>
                     ))}
@@ -338,7 +356,7 @@ export default function EmployeeManagement() {
                   {filtered.map((emp) => {
                     const info = memberMap[emp.id];
                     return (
-                      <tr key={emp.id} style={{ borderBottom: `1px solid ${isDark ? '#50505a' : '#e8f5e9'}` }}>
+                      <tr key={emp.id} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : '#e8f5e9'}` }}>
                         <td style={{ padding: '12px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{emp.name[0]}</div>
@@ -351,7 +369,7 @@ export default function EmployeeManagement() {
                         <td style={{ padding: '12px 16px', color: subTextColor }}>{emp.phone}</td>
                         <td style={{ padding: '12px 16px' }}>
                           {info?.user_level ? (
-                            <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600, background: LEVEL_BG[info.user_level] || '#f3f4f6', color: LEVEL_TEXT[info.user_level] || '#6b7280' }}>
+                            <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600, background: isDark ? (LEVEL_BG_DARK[info.user_level] || 'rgba(107,114,128,0.15)') : (LEVEL_BG[info.user_level] || '#f3f4f6'), color: isDark ? (LEVEL_TEXT_DARK[info.user_level] || '#9ca3af') : (LEVEL_TEXT[info.user_level] || '#6b7280'), border: `1px solid ${isDark ? (LEVEL_BORDER_DARK[info.user_level] || 'rgba(107,114,128,0.3)') : 'transparent'}` }}>
                               {LEVEL_LABEL[info.user_level] || info.user_level}
                             </span>
                           ) : <span style={{ color: subTextColor, fontSize: 12 }}>-</span>}
@@ -360,10 +378,10 @@ export default function EmployeeManagement() {
                         <td style={{ padding: '12px 16px' }}>{getStatusBadge(info?.approval_status)}</td>
                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                            <button onClick={() => openEdit(emp)} title="급여 설정" style={{ background: LIGHT_GREEN, border: 'none', borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}>
+                            <button onClick={() => openEdit(emp)} title="급여 설정" style={{ background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, border: 'none', borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDark ? '#4cd964' : DARK_GREEN }}>
                               <Edit2 size={13} />
                             </button>
-                            <button onClick={() => handleDelete(emp)} title="직원 제거" style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ef4444' }}>
+                            <button onClick={() => handleDelete(emp)} title="직원 제거" style={{ background: isDark ? 'rgba(239,68,68,0.15)' : '#fee2e2', border: `1px solid ${isDark ? 'rgba(239,68,68,0.3)' : 'transparent'}`, borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDark ? '#f87171' : '#ef4444' }}>
                               <Trash2 size={13} />
                             </button>
                           </div>
@@ -383,7 +401,7 @@ export default function EmployeeManagement() {
       {!!editTarget && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setEditTarget(null)} />
-          <div style={{ position: 'relative', background: isDark ? '#3c3c46' : '#fff', borderRadius: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', width: '100%', maxWidth: 420, margin: '0 16px', padding: 28 }}>
+          <div style={{ position: 'relative', background: isDark ? '#141414' : '#fff', borderRadius: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', width: '100%', maxWidth: 420, margin: '0 16px', padding: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: textColor }}>{editTarget?.name}님 급여 설정</h2>
               <button onClick={() => setEditTarget(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subTextColor }}><X size={20} /></button>
@@ -398,7 +416,7 @@ export default function EmployeeManagement() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 8 }}>{payType === "HOURLY" ? "시급 (원)" : "월급 (원)"}</label>
-                <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder={payType === "HOURLY" ? "예: 10030" : "예: 2500000"} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, background: isDark ? '#50505a' : '#fff', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder={payType === "HOURLY" ? "예: 10030" : "예: 2500000"} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, background: isDark ? '#1a1a1a' : '#fff', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                 {payAmount && Number(payAmount) > 0 && (
                   <p style={{ fontSize: 12, color: subTextColor, marginTop: 6 }}>{payType === "HOURLY" ? `시간당 ${Number(payAmount).toLocaleString()}원` : `월 ${(Number(payAmount) / 10000).toFixed(1)}만원`}</p>
                 )}
