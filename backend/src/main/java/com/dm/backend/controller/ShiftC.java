@@ -74,6 +74,19 @@ public class ShiftC {
 
     // 고정 스케줄 기반 자동 생성
     @PostMapping("/fixed")
+    public void applyFixedShifts(
+            @RequestParam String store_id,
+            @RequestParam String start_date,
+            @RequestParam String end_date
+    ) {
+        shiftService.applyFixedShifts(
+                store_id,
+                start_date,
+                end_date
+        );
+    }
+
+    @PostMapping("/ai-generate")
     public void generateAutomatedShifts(
             @RequestParam String store_id,
             @RequestParam String start_date,

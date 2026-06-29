@@ -113,6 +113,7 @@ const MyPageScreen = ({ navigation }: Props) => {
           {renderMenuItem('person-outline', t('profileEdit'), () => navigation.navigate('ProfileEdit', { userInfo }))}
           {renderMenuItem('document-text-outline', t('contract'), () => navigation.navigate('Contract', { userInfo }))}
           {renderMenuItem('medkit-outline', t('healthCert'), () => navigation.navigate('HealthCert', { userInfo }))}
+          {role === 'STAFF' && renderMenuItem('people-outline', t('mySubstituteHistory'), () => navigation.navigate('Substitute', { userInfo }))}
         </View>
 
         <View style={styles.menuSection}>

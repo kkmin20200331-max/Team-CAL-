@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -25,7 +25,7 @@ const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitut
     <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('Substitute')} activeOpacity={0.8}>
       <View style={styles.alertHeader}> 
         <Ionicons name="alert-circle-outline" size={18} color={alertColor} style={styles.alertIcon} />
-        <Text style={styles.alertTitle}>{t('subReqAlertTitle')} 〉</Text>
+        <Text style={styles.alertTitle}>{t('subReqAlertTitle')}</Text>
       </View>
       <Text style={styles.alertDescription}>
         {t('subReqAlertDesc')}

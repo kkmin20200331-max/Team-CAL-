@@ -89,11 +89,13 @@ public class ShiftService {
         shiftMapper.registerShift(shiftVO);
     }
 
+    @Transactional
     public List<ShiftVO> getShiftList(
             String store_id,
             String start_date,
             String end_date
     ) {
+        materializeFixedShifts(store_id, start_date, end_date);
         return shiftMapper.getShiftList(
                 store_id,
                 start_date,
@@ -139,6 +141,15 @@ public class ShiftService {
         );
         request.setShifts(previewAiSchedule(request).getShifts());
         applyAiSchedule(request);
+    }
+
+    @Transactional
+    public void applyFixedShifts(
+            String store_id,
+            String start_date,
+            String end_date
+    ) {
+        materializeFixedShifts(store_id, start_date, end_date);
     }
 
     public AiSchedulePreviewVO previewAiSchedule(
@@ -718,6 +729,55 @@ public class ShiftService {
         return LocalTime.parse(value.substring(0, 5));
     }
 
+    private void materializeFixedShifts(
+            String storeId,
+            String startDateValue,
+            String endDateValue
+    ) {
+        LocalDate startDate = LocalDate.parse(startDateValue, DATE_FORMATTER);
+        LocalDate endDate = LocalDate.parse(endDateValue, DATE_FORMATTER);
+        List<FixedscheduleVO> fixedSchedules = fixedscheduleMapper.getFixedScheduleList(storeId).stream()
+                .filter(schedule -> schedule.getActive() == null || "Y".equalsIgnoreCase(schedule.getActive()))
+                .collect(Collectors.toList());
+
+        if (fixedSchedules.isEmpty()) {
+            return;
+        }
+
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            String weekday = toWeekday(date);
+            for (FixedscheduleVO fixedSchedule : fixedSchedules) {
+                if (!weekday.equalsIgnoreCase(fixedSchedule.getWeekday())) {
+                    continue;
+                }
+
+                LocalTime startTime = parseTime(fixedSchedule.getStart_time(), LocalTime.of(9, 0));
+                LocalTime endTime = parseTime(fixedSchedule.getEnd_time(), startTime.plusHours(1));
+                LocalDateTime startAt = LocalDateTime.of(date, startTime);
+                LocalDateTime endAt = LocalDateTime.of(date, endTime);
+
+                ShiftVO shift = new ShiftVO();
+                shift.setId(newFixedShiftId());
+                shift.setStore_id(storeId);
+                shift.setUser_id(fixedSchedule.getUser_id());
+                shift.setWork_date(toDate(date.atStartOfDay()));
+                shift.setStart_at(toDate(startAt));
+                shift.setEnd_at(toDate(endAt));
+                shift.setStatus("confirmed");
+
+                int conflict = shiftMapper.checkShiftConflict(
+                        shift.getUser_id(),
+                        shift.getWork_date(),
+                        shift.getStart_at(),
+                        shift.getEnd_at()
+                );
+                if (conflict == 0) {
+                    shiftMapper.registerShift(shift);
+                }
+            }
+        }
+    }
+
     private boolean overlaps(
             LocalTime startA,
             LocalTime endA,
@@ -762,6 +822,10 @@ public class ShiftService {
 
     private String newShiftId() {
         return "AI_" + UUID.randomUUID().toString().replace("-", "").substring(0, 18);
+    }
+
+    private String newFixedShiftId() {
+        return "FIX_" + UUID.randomUUID().toString().replace("-", "").substring(0, 17);
     }
 
     private record HourlyAssignment(

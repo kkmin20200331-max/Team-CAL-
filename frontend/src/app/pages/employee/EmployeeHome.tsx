@@ -375,6 +375,10 @@ export default function EmployeeHome() {
             <QuickCard style={cardLight} onClick={() => navigate('/employee/board')}
               icon={<BoardCardIcon size={38} />} label={t.boardLabel} />
           </div>
+          <div style={{ display: 'flex', gap: 16, marginTop: 18 }}>
+            <QuickCard style={cardLight} onClick={() => navigate('/employee/attendance')}
+              icon={<Clock size={38} color={GREEN} />} label="내 근태 기록" />
+          </div>
         </div>
 
         {/* ── 今後のシフト SECTION ── */}

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -43,7 +43,7 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
 
   return (
     <View style={styles.card}>
-      {/* 타이틀 행 */}
+      {/* 카드 헤더 */}
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{t('todayWork')}</Text>
         {todayShift && (

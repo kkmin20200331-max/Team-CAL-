@@ -22,6 +22,8 @@ interface ThemeContextProps {
     warningLight: string;
     disabled: string;
     modalBg: string;
+    sunday: string;
+    saturday: string;
   };
 }
 
@@ -51,6 +53,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       warningLight: isDarkMode ? 'rgba(245,158,11,0.15)' : '#FEF3C7',
       disabled: isDarkMode ? '#3A3A3C' : '#E2E8F0',
       modalBg: isDarkMode ? '#2C2C2E' : '#FFFFFF',
+      sunday: isDarkMode ? '#F87171' : '#EF4444',
+      saturday: isDarkMode ? '#60A5FA' : '#3B82F6',
     }),
     [isDarkMode],
   );

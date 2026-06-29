@@ -3,12 +3,12 @@
     "name": "native",
     "slug": "native",
     "version": "1.0.0",
-    "sdkVersion": "54.0.0",
     "orientation": "portrait",
-    "icon": "./assets/img/logo_1.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "teamcal",
     "splash": {
-      "image": "./assets/img/logo_1.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,8 +17,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/img/logo_1.png",
+        "backgroundColor": "#E6F4FE",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -26,10 +26,7 @@
       "usesCleartextTraffic": true
     },
     "web": {
-      "favicon": "./assets/img/logo_1.png"
-    },
-    "plugins": [
-      "@react-native-community/datetimepicker"
-    ]
+      "favicon": "./assets/favicon.png"
+    }
   }
 }
