@@ -90,6 +90,13 @@ public class FileC {
         return fileService.getFilesByUserId(userId);
     }
 
+    @GetMapping("/store/{storeId}")
+    public List<FileVO> getFilesByStoreId(
+            @PathVariable String storeId
+    ) {
+        return fileService.getFilesByStoreId(storeId);
+    }
+
     // =========================
     // [Supabase 업로드]
     // =========================

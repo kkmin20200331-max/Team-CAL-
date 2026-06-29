@@ -12,7 +12,7 @@ public interface BoardMapper {
     // [관리자]
     // =========================
 
-    // 게시판 생성
+    // 게시판 생성 (오라클 DB 호환을 위해 now() 대신 SYSDATE 사용)
     @Insert("""
             insert into board
             values(
@@ -20,7 +20,7 @@ public interface BoardMapper {
                 #{store_id},
                 #{name},
                 #{created_by},
-                now()
+                SYSDATE -- 오라클 DB 환경에 맞춰 SYSDATE로 수정
             )
             """)
     void registerBoard(BoardVO boardVO);

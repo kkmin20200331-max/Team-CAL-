@@ -986,6 +986,7 @@ const adminDashboard = {
     menuItems: {
       dashboard: '대시보드',
       scheduleManagement: '근무표 관리',
+      attendanceManagement: '근태 관리',
       substituteRecruitment: '대타 모집',
       employeeManagement: '직원 관리',
       payrollManagement: '급여 관리',
@@ -1043,6 +1044,7 @@ const adminDashboard = {
     menuItems: {
       dashboard: 'Dashboard',
       scheduleManagement: 'Schedule',
+      attendanceManagement: 'Attendance',
       substituteRecruitment: 'Substitute',
       employeeManagement: 'Employees',
       payrollManagement: 'Payroll',
@@ -1100,6 +1102,7 @@ const adminDashboard = {
     menuItems: {
       dashboard: 'ダッシュボード',
       scheduleManagement: 'シフト管理',
+      attendanceManagement: '勤怠管理',
       substituteRecruitment: '代替者募集',
       employeeManagement: 'スタッフ管理',
       payrollManagement: '給与管理',

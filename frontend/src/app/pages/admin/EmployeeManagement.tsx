@@ -15,6 +15,7 @@ import {
   UserCheck,
   X,
   Calendar,
+  ClipboardCheck,
   UserPlus,
   Wallet,
   FileText,
@@ -89,6 +90,7 @@ export default function EmployeeManagement() {
 
   const menuItems = [
     { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: storeId ? `/admin/schedule/monthly/${storeId}` : '/admin/branch-selection' },
+    { icon: ClipboardCheck, label: translations.adminDashboard[language].menuItems.attendanceManagement, path: storeId ? `/admin/attendance/${storeId}` : '/admin/branch-selection' },
     { icon: UserPlus, label: translations.adminDashboard[language].menuItems.substituteRecruitment, path: storeId ? `/admin/substitute/${storeId}` : '/admin/branch-selection' },
     { icon: Users, label: translations.adminDashboard[language].menuItems.employeeManagement, path: storeId ? `/admin/employees/${storeId}` : '/admin/branch-selection' },
     { icon: Wallet, label: translations.adminDashboard[language].menuItems.payrollManagement, path: storeId ? `/admin/payroll/${storeId}` : '/admin/branch-selection' },

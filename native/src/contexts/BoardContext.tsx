@@ -46,11 +46,8 @@ interface BoardProviderProps {
   children: ReactNode;
 }
 
-const validCategories = ['NOTICE', 'MENU', 'EVENT', 'MANUAL', 'LOST'] as const;
-
-const normalizeCategory = (name?: string): Post['category'] => {
-  const upper = String(name || '').toUpperCase();
-  return validCategories.includes(upper as any) ? (upper as Post['category']) : 'NOTICE';
+const normalizeCategory = (name?: string): string => {
+  return name || 'NOTICE';
 };
 
 const mapPost = (post: any, board?: BoardSummary): Post => ({
@@ -58,8 +55,9 @@ const mapPost = (post: any, board?: BoardSummary): Post => ({
   category: normalizeCategory(board?.name),
   title: post.title || '',
   content: post.content || '',
-  date: post.created_at ? format(new Date(post.created_at), 'yyyy.MM.dd') : format(new Date(), 'yyyy.MM.dd'),
+  date: post.created_at ? format(new Date(post.created_at), 'yyyy.MM.dd HH:mm') : format(new Date(), 'yyyy.MM.dd HH:mm'),
   authorId: post.writer_id,
+  author: post.writer_name || post.writer_id,
   isPinned: post.is_pinned === 'Y' || post.is_pinned === true,
   badge: null,
 });
@@ -96,8 +94,8 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
     }
   }, []);
 
-  const ensureBoard = useCallback(async (category: Post['category'], storeId: string, writerId: string) => {
-    const existing = boards.find((board) => normalizeCategory(board.name) === category);
+  const ensureBoard = useCallback(async (category: string, storeId: string, writerId: string) => {
+    const existing = boards.find((board) => board.name.toUpperCase() === category.toUpperCase());
     if (existing) return existing;
 
     const board = {

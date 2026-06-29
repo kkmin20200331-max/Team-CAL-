@@ -24,6 +24,7 @@ import DailySchedule from "./pages/admin/DailySchedule";
 import SubstituteManagement from "./pages/admin/SubstituteManagement";
 import EmployeeManagement from "./pages/admin/EmployeeManagement";
 import PayrollManagement from "./pages/admin/PayrollManagement";
+import AttendanceManagement from "./pages/admin/AttendanceManagement";
 import DocumentManagement from "./pages/admin/DocumentManagement";
 import BoardManagement from "./pages/admin/BoardManagement";
 import CustomerAnalytics from "./pages/admin/CustomerAnalytics";
@@ -39,6 +40,7 @@ import QRCheckIn from "./pages/employee/QRCheckIn";
 import LeaveRequest from "./pages/employee/LeaveRequest";
 import SubstituteList from "./pages/employee/SubstituteList";
 import EmployeePayroll from "./pages/employee/EmployeePayroll";
+import MyAttendance from "./pages/employee/MyAttendance";
 import EmployeeBoard from "./pages/employee/EmployeeBoard";
 import EditProfile from "./pages/employee/EditProfile";
 import LineError from "./pages/auth/LineError";
@@ -169,6 +171,15 @@ export default function App() {
           />
 
           <Route
+            path="/admin/attendance/:branchId"
+            element={
+              <ProtectedRoute>
+                <AttendanceManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/admin/documents/:branchId"
             element={
               <ProtectedRoute>
@@ -285,6 +296,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <EmployeePayroll />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/employee/attendance"
+            element={
+              <ProtectedRoute>
+                <MyAttendance />
               </ProtectedRoute>
             }
           />

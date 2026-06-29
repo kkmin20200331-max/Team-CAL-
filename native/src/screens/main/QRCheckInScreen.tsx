@@ -2,13 +2,12 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
-// Expo Camera 최신 API
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import Toast from 'react-native-toast-message';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { checkAttendanceByQrAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import Ionicons from '@expo/vector-icons/Ionicons';
 
 type QRCheckInScreenNavigationProp = StackNavigationProp<any, 'QRCheckIn'>;
 
@@ -20,28 +19,22 @@ const QRCheckInScreen = ({ navigation }: Props) => {
   const { userInfo } = useApp();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
-
-  // 카메라 권한 상태와 권한 요청 함수를 가져옵니다.
   const [permission, requestPermission] = useCameraPermissions();
-  // 중복 스캔(여러 번 연속으로 찍히는 것)을 방지하기 위한 상태
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
 
   const extractQrToken = (data: string) => {
-    try {
-      const parsed = new URL(data);
-      return parsed.searchParams.get('token') || data;
-    } catch {
-      return data;
-    }
+    const trimmed = data.trim();
+    if (!trimmed) return '';
+
+    const match = trimmed.match(/[?&]token=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : trimmed;
   };
 
-  // 1. 카메라 권한 로딩 중일 때
   if (!permission) {
     return <View style={styles.container} />;
   }
 
-  // 2. 카메라 권한이 거부되었거나 아직 묻지 않았을 때
   if (!permission.granted) {
     return (
       <View style={styles.container}>
@@ -54,16 +47,17 @@ const QRCheckInScreen = ({ navigation }: Props) => {
     );
   }
 
-  // 3. QR 코드가 성공적으로 스캔되었을 때 실행되는 함수
   const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
-    setScanned(true); // 중복 스캔 방지
+    if (scanned || processing) return;
+
+    setScanned(true);
     setProcessing(true);
 
     if (!userInfo?.id) {
       Toast.show({
         type: 'error',
         text1: '로그인 정보가 없습니다.',
-        text2: '다시 로그인 후 시도해주세요.',
+        text2: '다시 로그인해 주세요.',
       });
       setProcessing(false);
       setScanned(false);
@@ -72,6 +66,10 @@ const QRCheckInScreen = ({ navigation }: Props) => {
 
     try {
       const qrToken = extractQrToken(data);
+      if (!qrToken) {
+        throw new Error('QR 토큰을 찾을 수 없습니다.');
+      }
+
       const response = await checkAttendanceByQrAPI(userInfo.id, qrToken);
 
       Toast.show({
@@ -85,7 +83,7 @@ const QRCheckInScreen = ({ navigation }: Props) => {
       Toast.show({
         type: 'error',
         text1: '출퇴근 처리 실패',
-        text2: error.response?.data?.message || 'QR 코드를 다시 스캔해주세요.',
+        text2: error.response?.data?.message || error.message || 'QR 코드를 다시 스캔해주세요.',
       });
       setScanned(false);
     } finally {
@@ -95,26 +93,21 @@ const QRCheckInScreen = ({ navigation }: Props) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 카메라 뷰 */}
-      <CameraView 
-        style={styles.camera} 
-        facing="back" // 후면 카메라 사용
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr"], // QR 코드만 스캔하도록 설정
-        }}
+      <CameraView
+        style={styles.camera}
+        facing="back"
+        barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       >
         
         {/* 카메라 위에 띄울 UI (가이드라인, 닫기 버튼 등) */}
         <View style={styles.overlay}>
-          {/* 상단 닫기 버튼 */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="#FFF" />
             </TouchableOpacity>
           </View>
 
-          {/* 중앙 사각형 타겟 가이드라인 */}
           <View style={styles.targetFrame}>
             <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
             <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
@@ -122,14 +115,12 @@ const QRCheckInScreen = ({ navigation }: Props) => {
             <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
           </View>
 
-          {/* 하단 안내 문구 */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               {processing ? '출퇴근 처리 중입니다...' : '사각형 영역 안에 QR 코드를 맞춰주세요'}
             </Text>
           </View>
         </View>
-
       </CameraView>
     </SafeAreaView>
   );
@@ -205,14 +196,13 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     borderRadius: 20,
     overflow: 'hidden',
   },
-  // --- QR 타겟 프레임 디자인 ---
   targetFrame: {
     alignSelf: 'center',
     width: 260,
     height: 260,
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)', 
+    borderColor: 'rgba(255,255,255,0.15)',
     position: 'relative',
   },
   corner: {

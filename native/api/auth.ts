@@ -60,6 +60,8 @@ export const signupAPI = (data: {
   maxCapacity?: number;
   selectedBrand?: string;
   selectedBranch?: string;
+  storeAddress?: string;
+  storeType?: string;
 }) => API.post("/users", data);
 
 // ✅ [추가] 개인정보 수정 API
@@ -288,4 +290,21 @@ export const updateStoreAPI = (data: any) =>
 
 export const getSubstituteApplicantsAPI = getSubstituteApplicationsAPI;
 export const applyForSubstituteAPI = applySubstituteAPI;
+
+// ✅ [추가] 게시판 댓글 API 연동 (댓글 조회, 생성, 삭제)
+export const getCommentsAPI = (postId: string) =>
+  API.get("/board/comment", { params: { post_id: postId } });
+
+export const createCommentAPI = (data: {
+  id: string;
+  post_id: string;
+  store_id: string;
+  user_id: string;
+  content: string;
+}) => API.post("/board/comment", data);
+
+export const deleteCommentAPI = (id: string, postId: string, userId: string) =>
+  API.delete("/board/comment", { params: { id, post_id: postId, user_id: userId } });
+
+
 

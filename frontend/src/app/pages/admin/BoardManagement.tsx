@@ -1,12 +1,12 @@
 import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
-﻿import { API_BASE } from "../../../lib/axiosInstance";
+import { API_BASE } from "../../../lib/axiosInstance";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Plus, Search, Edit, Trash2, Pin, Eye, MessageSquare,
   Calendar, User, AlertCircle, CheckCircle, Bell,
-  FileText, Paperclip, UserPlus, Users, Wallet, BarChart3,
+  FileText, Paperclip, ClipboardCheck, UserPlus, Users, Wallet, BarChart3,
   Video, X, Send, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
@@ -38,6 +38,8 @@ interface BoardPostVO {
   is_pinned: string;
   comment_count: number;
   view_count: number;
+  username?: string;
+  writer_name?: string;
 }
 
 interface BoardCommentVO {
@@ -46,6 +48,8 @@ interface BoardCommentVO {
   user_id: string;
   content: string;
   created_at: string;
+  username?: string;
+  user_name?: string;
 }
 
 const BoardManagement: React.FC = () => {
@@ -78,7 +82,7 @@ const BoardManagement: React.FC = () => {
 
   // 유저 이름 맵 (id → name)
   const [userNameMap, setUserNameMap] = useState<Record<string, string>>({});
-  const displayName = (userId: string) => userNameMap[userId] || userId;
+  const displayName = (userId: string, customName?: string) => customName || userNameMap[userId] || userId;
 
   // ---------- 사이드바 ----------
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
@@ -90,6 +94,7 @@ const BoardManagement: React.FC = () => {
 
   const menuItems = [
     { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: ClipboardCheck, label: translations.adminDashboard[language].menuItems.attendanceManagement, path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: UserPlus, label: translations.adminDashboard[language].menuItems.substituteRecruitment, path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: Users, label: translations.adminDashboard[language].menuItems.employeeManagement, path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: Wallet, label: translations.adminDashboard[language].menuItems.payrollManagement, path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
@@ -321,6 +326,7 @@ const BoardManagement: React.FC = () => {
       body: JSON.stringify({
         id: 'CMT_' + Date.now(),
         post_id: selectedPost.id,
+        store_id: selectedPost.store_id || selectedBranchId || '',
         user_id: currentUser.id || '',
         content: commentText.trim(),
       }),
@@ -333,10 +339,11 @@ const BoardManagement: React.FC = () => {
 
   const handleDeleteComment = async (comment: BoardCommentVO) => {
     if (!confirm('댓글을 삭제하시겠습니까?')) return;
-    await fetch(`${API_BASE}/board/comment?id=${comment.id}&post_id=${comment.post_id}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/board/comment?id=${comment.id}&post_id=${comment.post_id}&user_id=${currentUser.id || ''}`, { method: 'DELETE' });
     await fetchComments(comment.post_id);
     setPosts(prev => prev.map(p => p.id === comment.post_id ? { ...p, comment_count: Math.max(0, (p.comment_count || 1) - 1) } : p));
   };
+
 
   const formatDate = (d: string) => {
     if (!d) return '';
@@ -437,7 +444,7 @@ const BoardManagement: React.FC = () => {
                       {selectedPost.is_pinned === 'Y' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: LIGHT_GREEN, color: DARK_GREEN, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, marginBottom: 8 }}><Pin size={11} />고정됨</span>}
                       <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>{selectedPost.title}</h2>
                       <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#888' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={13} />{displayName(selectedPost.writer_id)}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={13} />{displayName(selectedPost.writer_id, selectedPost.writer_name)}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={13} />{formatDate(selectedPost.created_at)}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Eye size={13} />{selectedPost.view_count}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageSquare size={13} />{selectedPost.comment_count}</span>
@@ -468,9 +475,9 @@ const BoardManagement: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <div style={{ width: 26, height: 26, borderRadius: '50%', background: `linear-gradient(135deg, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
-                                {(displayName(c.user_id) || '?')[0].toUpperCase()}
+                                {(displayName(c.user_id, c.user_name) || '?')[0].toUpperCase()}
                               </div>
-                              <span style={{ fontSize: 13, fontWeight: 700, color: textColor }}>{displayName(c.user_id)}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: textColor }}>{displayName(c.user_id, c.user_name)}</span>
                               <span style={{ fontSize: 12, color: subText }}>{formatDate(c.created_at)}</span>
                             </div>
                             {(c.user_id === currentUser.id || currentUser.role === 'ADMIN') && (
@@ -528,7 +535,7 @@ const BoardManagement: React.FC = () => {
                       <h3 style={{ fontSize: 15, fontWeight: 700, color: textColor, margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
                       <p style={{ fontSize: 13, color: subText, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{post.content}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 13, color: subText }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={13} />{displayName(post.writer_id)}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={13} />{displayName(post.writer_id, post.writer_name)}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={13} />{formatDate(post.created_at)}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Eye size={13} />{post.view_count || 0}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageSquare size={13} />{post.comment_count || 0}</span>

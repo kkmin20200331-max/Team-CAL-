@@ -27,19 +27,34 @@ type Props = {
   };
 };
 
-const CATEGORIES = [
-  { id: 'ALL', label: '전체' },
-  { id: 'NOTICE', label: '공지' },
-  { id: 'MENU', label: '건의' },
-  { id: 'EVENT', label: '자유' },
-  { id: 'MANUAL', label: '매뉴얼' },
-  { id: 'LOST', label: '분실물' },
-];
-
 const BoardScreen = ({ route, navigation }: Props) => {
   const { userInfo } = useApp();
-  const { posts, loading, loadPosts } = useBoard();
+  const { posts, boards, loading, loadPosts } = useBoard();
   const { postToOpenId } = route.params || {};
+
+  const CATEGORIES = React.useMemo(() => {
+    const list = [
+      { id: 'ALL', label: '전체' },
+      { id: 'NOTICE', label: '공지사항' },
+      { id: 'MENU', label: '건의사항' },
+      { id: 'EVENT', label: '자유게시판' },
+      { id: 'MANUAL', label: '매뉴얼' },
+      { id: 'LOST', label: '분실물' },
+      { id: 'CHECKLIST', label: '체크리스트' },
+    ];
+
+    const predefinedKeys = ['NOTICE', 'MENU', 'EVENT', 'MANUAL', 'LOST', 'CHECKLIST', '공지사항', '건의사항', '자유게시판', '매뉴얼', '분실물', '체크리스트', '공지', '건의'];
+    boards.forEach((board) => {
+      const upperName = board.name.toUpperCase();
+      if (!predefinedKeys.includes(upperName)) {
+        if (!list.some((item) => item.id === board.name)) {
+          list.push({ id: board.name, label: board.name });
+        }
+      }
+    });
+
+    return list;
+  }, [boards]);
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
 
   const [activeCategory, setActiveCategory] = useState('ALL');

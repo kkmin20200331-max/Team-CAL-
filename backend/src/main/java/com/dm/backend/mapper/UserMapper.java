@@ -62,4 +62,10 @@ public interface UserMapper {
     // 계정 상태 변경
     @Update("UPDATE users SET status = #{status} WHERE id = #{id}")
     void updateUserStatus(@Param("id") String id, @Param("status") String status);
+
+    // ✅ [추가] 사용자 ID로 단일 사용자 조회 (댓글 삭제 시 권한 검증 목적)
+    @Select("SELECT * FROM users WHERE id = #{id}")
+    UserVo getUserById(@Param("id") String id);
 }
+
+

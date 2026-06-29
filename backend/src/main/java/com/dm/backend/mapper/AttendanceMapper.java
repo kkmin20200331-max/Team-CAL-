@@ -20,14 +20,15 @@ public interface AttendanceMapper {
                 FROM ATTENDANCE
                 WHERE STORE_ID = #{store_id}
                 AND USER_ID = #{user_id}
-                AND TRUNC(WORK_DATE) = TRUNC(SYSDATE)
+                AND TRUNC(WORK_DATE) = TRUNC(#{work_date})
                 ORDER BY CHECK_IN_AT DESC
             )
             WHERE ROWNUM = 1
             """)
     AttendanceVO getTodayAttendance(
             @Param("store_id") String store_id,
-            @Param("user_id") String user_id
+            @Param("user_id") String user_id,
+            @Param("work_date") Date work_date
     );
 
     @Select("""
@@ -82,7 +83,7 @@ public interface AttendanceMapper {
                     #{store_id},
                     #{user_id},
                     #{shift_id,jdbcType=VARCHAR},
-                    TRUNC(SYSDATE),
+                    TRUNC(#{work_date}),
                     #{check_in_at},
                     #{status}
                 )
