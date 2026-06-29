@@ -34,6 +34,7 @@ export default function SignupScreen({ navigation, route }: Props) {
     isFranchise: true,
     brandName: "",
     branchName: "",
+    address: "", // 주소 상태 추가
     openTime: new Date(),
     closeTime: new Date(),
     maxCapacity: "",
@@ -68,14 +69,14 @@ export default function SignupScreen({ navigation, route }: Props) {
   const handleSignup = async () => {
     if (isSubmitting) return;
 
-    const { id, password, passwordCheck, name, phone, isFranchise, brandName, branchName, openTime, closeTime, maxCapacity } = inputs;
+    const { id, password, passwordCheck, name, phone, isFranchise, brandName, branchName, address, openTime, closeTime, maxCapacity } = inputs;
 
     if (!id || !password || !passwordCheck || !name || !phone) {
       Alert.alert("입력 오류", "모든 필수 항목을 입력해주세요.");
       return;
     }
-    if (role === 'ADMIN' && (!brandName || !branchName)) {
-      Alert.alert("입력 오류", "브랜드명과 지점명을 모두 입력해주세요.");
+    if (role === 'ADMIN' && (!brandName || !branchName || !address)) {
+      Alert.alert("입력 오류", "브랜드명, 지점명, 주소를 모두 입력해주세요.");
       return;
     }
     if (password !== passwordCheck) {
@@ -100,13 +101,14 @@ export default function SignupScreen({ navigation, route }: Props) {
         signupData.isFranchise = isFranchise;
         signupData.brandName = brandName;
         signupData.branchName = branchName;
+        signupData.storeAddress = address; // 주소 정보 추가 (backend: storeAddress)
         signupData.openTime = formatTime(openTime);
         signupData.closeTime = formatTime(closeTime);
         signupData.maxCapacity = parseInt(maxCapacity, 10) || 0;
-        signupData.storeCategory = storeCategory;
+        signupData.storeType = storeCategory; // 업종 정보 추가 (backend: storeType)
       }
       
-      await signupAPI(signupData);
+      const response = await signupAPI(signupData);
 
       Toast.show({
         type: 'success',
@@ -114,13 +116,7 @@ export default function SignupScreen({ navigation, route }: Props) {
         text2: `${name}님 환영합니다!`,
       });
 
-      login(
-        {
-          ...signupData,
-          role,
-        },
-        false,
-      );
+      login(response.data, false);
 
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
@@ -135,7 +131,7 @@ export default function SignupScreen({ navigation, route }: Props) {
         } else if (status === 403) {
           Alert.alert(
             '가입 실패',
-            '요청이 차단되었습니다. 백엔드 서버를 재시작하고 CORS 설정이 적용됐는지 확인해주세요.',
+            '요청이 차단되었습니다. 백엔드 서버를 재시작하고 CORS 설정이 적용되었는지 확인해주세요.',
           );
         } else {
           Alert.alert('가입 실패', serverMessage || `서버 오류: ${status}`);
@@ -174,7 +170,7 @@ export default function SignupScreen({ navigation, route }: Props) {
           <TextInput style={styles.input} placeholder="아이디" placeholderTextColor={colors.subText} value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} />
           <TextInput style={styles.input} placeholder="비밀번호" placeholderTextColor={colors.subText} value={inputs.password} onChangeText={(text) => handleInputChange('password', text)} secureTextEntry={true} />
           <TextInput style={styles.input} placeholder="비밀번호 확인" placeholderTextColor={colors.subText} value={inputs.passwordCheck} onChangeText={(text) => handleInputChange('passwordCheck', text)} secureTextEntry={true} />
-          <TextInput style={styles.input} placeholder="이름 (예: 김선민)" placeholderTextColor={colors.subText} value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
+          <TextInput style={styles.input} placeholder="이름 (예: 김신입)" placeholderTextColor={colors.subText} value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
           <TextInput style={styles.input} placeholder="전화번호 (예: 010-1234-5678)" placeholderTextColor={colors.subText} value={inputs.phone} onChangeText={(text) => handleInputChange('phone', text)} keyboardType="phone-pad" />
 
           {role === 'ADMIN' && (
@@ -198,6 +194,7 @@ export default function SignupScreen({ navigation, route }: Props) {
               </View>
               <TextInput style={styles.input} placeholder="브랜드명 (예: 컴포즈커피)" placeholderTextColor={colors.subText} value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
               <TextInput style={styles.input} placeholder="지점명 (예: 미금점)" placeholderTextColor={colors.subText} value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
+              <TextInput style={styles.input} placeholder="매장 주소" placeholderTextColor={colors.subText} value={inputs.address} onChangeText={(text) => handleInputChange('address', text)} />
               
               <View style={styles.timeContainer}>
                 <View style={styles.timeInputWrapper}>

@@ -13,12 +13,14 @@ public interface BoardCommentMapper {
     // =========================
 
     // 댓글 목록 (게시글 기준)
+    // ✅ [수정] 댓글 작성자 아이디(username) 및 실명(user_name) 표시를 위해 users 테이블 JOIN 적용
     @Select("""
-        SELECT *
-        FROM BOARD_COMMENT
-        WHERE POST_ID = #{post_id}
-        AND STATUS = 'ACTIVE'
-        ORDER BY CREATED_AT ASC
+        SELECT c.*, u.username, u.name AS user_name
+        FROM BOARD_COMMENT c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.POST_ID = #{post_id}
+        AND c.STATUS = 'ACTIVE'
+        ORDER BY c.CREATED_AT ASC
     """)
     List<BoardCommentVO> getCommentList(
             @Param("post_id") String post_id
@@ -44,7 +46,7 @@ public interface BoardCommentMapper {
             #{post_id},
             #{store_id},
             #{user_id},
-            #{parent_id},
+            #{parent_id, jdbcType=VARCHAR},
             #{content},
             'ACTIVE'
         )
@@ -68,6 +70,18 @@ public interface BoardCommentMapper {
         WHERE ID = #{id}
     """)
     void deleteComment(@Param("id") String id);
+
+    // ✅ [추가] 댓글 ID로 단일 댓글 조회 (댓글 삭제 전 본인 확인용)
+    // ✅ [수정] 댓글 작성자 아이디(username) 및 실명(user_name) 표시를 위해 users 테이블 JOIN 적용
+    @Select("""
+        SELECT c.*, u.username, u.name AS user_name
+        FROM BOARD_COMMENT c
+        LEFT JOIN users u ON c.user_id = u.id
+        WHERE c.ID = #{id}
+    """)
+    BoardCommentVO getCommentById(@Param("id") String id);
+
+
 
     // =========================
     // 게시글 댓글 수 동기화

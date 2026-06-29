@@ -1,10 +1,16 @@
 import React, { createContext, useState, ReactNode, useContext } from 'react';
 import { User } from '../types/User';
+import { supabase } from '../lib/supabase';
 
 interface Branch {
   id: string;
   brandName: string;
   branchName: string;
+  address?: string;
+  openTime?: string;
+  closeTime?: string;
+  capacity?: number;
+  storeCategory?: string;
 }
 
 interface AppContextType {
@@ -42,7 +48,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     setHasSelectedBranchState(hasBranch);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUserInfo(null);
     setUserStatus(null);
     setHasSelectedBranchState(false);

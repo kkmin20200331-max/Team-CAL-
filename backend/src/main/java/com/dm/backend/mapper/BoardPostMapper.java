@@ -13,13 +13,15 @@ public interface BoardPostMapper {
     // =========================
 
     // 게시글 목록 조회
+    // ✅ [수정] 작성자 아이디(username) 및 실명(writer_name) 표시를 위해 users 테이블 JOIN 적용
     @Select("""
-        SELECT *
-        FROM BOARD_POST
-        WHERE BOARD_ID = #{board_id}
-        AND STATUS = 'PUBLISHED'
-        ORDER BY IS_PINNED DESC,
-                 CREATED_AT DESC
+        SELECT p.*, u.username, u.name AS writer_name
+        FROM BOARD_POST p
+        LEFT JOIN users u ON p.writer_id = u.id
+        WHERE p.BOARD_ID = #{board_id}
+        AND p.STATUS = 'PUBLISHED'
+        ORDER BY p.IS_PINNED DESC,
+                 p.CREATED_AT DESC
     """)
     List<BoardPostVO> getPostList(
             String board_id
@@ -28,10 +30,12 @@ public interface BoardPostMapper {
 
 
     // 게시글 단건 조회
+    // ✅ [수정] 작성자 아이디(username) 및 실명(writer_name) 표시를 위해 users 테이블 JOIN 적용
     @Select("""
-        SELECT *
-        FROM BOARD_POST
-        WHERE ID = #{id}
+        SELECT p.*, u.username, u.name AS writer_name
+        FROM BOARD_POST p
+        LEFT JOIN users u ON p.writer_id = u.id
+        WHERE p.ID = #{id}
     """)
     BoardPostVO getPost(
             String id
@@ -52,17 +56,19 @@ public interface BoardPostMapper {
 
 
     // 게시글 검색
+    // ✅ [수정] 작성자 아이디(username) 및 실명(writer_name) 표시를 위해 users 테이블 JOIN 적용
     @Select("""
-        SELECT *
-        FROM BOARD_POST
-        WHERE STORE_ID = #{store_id}
-        AND STATUS = 'PUBLISHED'
+        SELECT p.*, u.username, u.name AS writer_name
+        FROM BOARD_POST p
+        LEFT JOIN users u ON p.writer_id = u.id
+        WHERE p.STORE_ID = #{store_id}
+        AND p.STATUS = 'PUBLISHED'
         AND (
-            TITLE LIKE '%' || #{keyword} || '%'
-            OR CONTENT LIKE '%' || #{keyword} || '%'
+            p.TITLE LIKE '%' || #{keyword} || '%'
+            OR p.CONTENT LIKE '%' || #{keyword} || '%'
         )
-        ORDER BY IS_PINNED DESC,
-                 CREATED_AT DESC
+        ORDER BY p.IS_PINNED DESC,
+                 p.CREATED_AT DESC
     """)
     List<BoardPostVO> searchPost(
             @Param("store_id") String store_id,

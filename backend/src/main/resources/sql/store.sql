@@ -29,3 +29,7 @@ ALTER TABLE STORE
 UPDATE STORE
 SET TYPE = 'CAFE'
 WHERE ID = 'V1StGXR8_Z5jdHi6B-myT';
+
+delete from STORE where name = '이치란라멘 텐진점';
+
+commit;

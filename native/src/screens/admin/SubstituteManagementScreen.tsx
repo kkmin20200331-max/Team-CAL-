@@ -1,4 +1,4 @@
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+﻿import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -55,7 +55,7 @@ const SubstituteManagementScreen = ({ navigation }: { navigation: any }) => {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const getUserName = (userId?: string) => {
-    if (!userId) return '알 수 없음';
+    if (!userId) return '정보없음';
     const user = staffMap.get(userId);
     return user?.name || user?.username || userId;
   };
@@ -161,7 +161,7 @@ const SubstituteManagementScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const handleCancelPost = (item: SubstituteRequest) => {
-    Alert.alert('모집 취소', '이 대타 모집글을 취소하시겠습니까?', [
+    Alert.alert('모집 취소', '해당 대타 모집글을 취소하시겠습니까?', [
       { text: '취소', style: 'cancel' },
       {
         text: '취소하기',
@@ -170,7 +170,7 @@ const SubstituteManagementScreen = ({ navigation }: { navigation: any }) => {
           setProcessingId(item.post.id);
           try {
             await cancelSubstitutePostAPI(item.post.id);
-            Toast.show({ type: 'success', text1: '취소 완료', text2: '대타 모집글이 취소되었습니다.' });
+            Toast.show({ type: 'success', text1: '취소 완료', text2: '대타 모집글을 취소하였습니다.' });
             await loadRequests();
           } catch (error) {
             console.error('대타 모집 취소 오류:', error);
@@ -237,7 +237,7 @@ const SubstituteManagementScreen = ({ navigation }: { navigation: any }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‹</Text>
+          <Text style={styles.backButton}>뒤로</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>대타 요청 관리</Text>
         <TouchableOpacity onPress={loadRequests}>

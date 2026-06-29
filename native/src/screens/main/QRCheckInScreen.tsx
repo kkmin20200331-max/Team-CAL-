@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -99,6 +99,8 @@ const QRCheckInScreen = ({ navigation }: Props) => {
         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       >
+        
+        {/* 카메라 위에 띄울 UI (가이드라인, 닫기 버튼 등) */}
         <View style={styles.overlay}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
@@ -115,7 +117,7 @@ const QRCheckInScreen = ({ navigation }: Props) => {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              {processing ? '출퇴근 처리 중입니다...' : '사각 영역 안에 QR 코드를 맞춰주세요.'}
+              {processing ? '출퇴근 처리 중입니다...' : '사각형 영역 안에 QR 코드를 맞춰주세요'}
             </Text>
           </View>
         </View>
@@ -165,7 +167,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(0,0,0,0.65)', // 인식률 높게 어둡게 하여 집중도 극대화
     justifyContent: 'space-between',
   },
   header: {

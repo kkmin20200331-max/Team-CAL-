@@ -31,4 +31,8 @@ public class BoardPostVO {
     private Integer comment_count;
 
     private Integer view_count;
+
+    // ✅ [추가] 게시글 조회 시 작성자의 아이디(username)와 이름(writer_name)을 함께 들고 오기 위한 필드
+    private String username;
+    private String writer_name;
 }

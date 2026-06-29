@@ -4,38 +4,36 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ko } from 'date-fns/locale';
 import { format } from 'date-fns';
+import { useSchedule } from '../../contexts/ScheduleContext';
 
 const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigation: any }) => {
-  const { date, shifts, employees } = route.params; // 월간 캘린더로부터 근무 데이터와 직원 목록을 직접 전달받음
+  const { date } = route.params;
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   
-  const [dailyShifts, setDailyShifts] = useState(shifts);
+  const { shifts, employees, deleteShift } = useSchedule();
+  
+  const [dailyShifts, setDailyShifts] = useState(() => 
+    shifts.filter(s => s.date === date).map(s => ({
+      ...s,
+      user: employees.find(e => e.id === s.userId)
+    }))
+  );
+
+  useEffect(() => {
+    setDailyShifts(shifts.filter(s => s.date === date).map(s => ({
+      ...s,
+      user: employees.find(e => e.id === s.userId)
+    })));
+  }, [shifts, date, employees]);
   
   const formattedDate = format(new Date(date), "M월 d일 (eee)", { locale: ko });
 
-  const handleSaveShift = (newShift: any) => {
-    const user = employees.find((u: any) => u.id === newShift.userId);
-    if (!user) return;
-
-    if (newShift.original) {
-      setDailyShifts((prev: any) => prev.map((s: any) => (s.userId === newShift.original.userId && s.time === newShift.original.time) ? { ...newShift, user } : s));
-    } else {
-      setDailyShifts((prev: any) => [...prev, { ...newShift, user }]);
-    }
-  };
-
-  const handleDeleteShift = (shiftToDelete: any) => {
-    setDailyShifts((prev: any) => prev.filter((s: any) => !(s.userId === shiftToDelete.userId && s.time === shiftToDelete.time)));
-  };
-
-  const handleNavigateToEditor = (shiftData = null) => {
+  const handleNavigateToEditor = (shiftToEdit = null) => {
     navigation.navigate('ShiftEditor', {
-      shiftData,
-      employees,
+      isEdit: !!shiftToEdit,
+      shift: shiftToEdit,
       date,
-      onSave: handleSaveShift,
-      onDelete: handleDeleteShift,
     });
   };
 
@@ -45,7 +43,7 @@ const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigatio
       `${item.user.name} (${item.time}) 근무를 삭제하시겠습니까?`,
       [
         { text: "취소", style: "cancel" },
-        { text: "삭제", style: "destructive", onPress: () => handleDeleteShift(item) }
+        { text: "삭제", style: "destructive", onPress: () => deleteShift(item.id) }
       ]
     );
   };
@@ -53,10 +51,10 @@ const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigatio
   const renderShiftItem = ({ item }: { item: any }) => (
     <View style={styles.shiftCard}>
       <TouchableOpacity style={styles.touchableArea} onPress={() => handleNavigateToEditor(item)}>
-        <View style={[styles.userColorIndicator, { backgroundColor: item.user.color }]} />
+        <View style={[styles.userColorIndicator, { backgroundColor: item.user?.color || '#A1A1AA' }]} />
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.user.name}</Text>
-          <Text style={styles.userRole}>{item.user.role}</Text>
+          <Text style={styles.userName}>{item.user?.name || '알 수 없음'}</Text>
+          <Text style={styles.userRole}>{item.user?.role || ''}</Text>
         </View>
         <View style={styles.timeInfo}>
           <Text style={styles.timeText}>{item.time}</Text>
@@ -81,7 +79,7 @@ const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigatio
       <FlatList
         data={dailyShifts}
         renderItem={renderShiftItem}
-        keyExtractor={(item, index) => `${item.userId}-${index}`}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={<Text style={styles.emptyText}>이날은 근무가 없습니다.</Text>}
       />
@@ -113,7 +111,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   backButton: {
     fontSize: 24,
-    color: colors.primary,
+    color: colors.text,
     textAlign: 'left',
   },
   headerTitle: {
@@ -165,7 +163,7 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   timeText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.primary,
+    color: colors.text,
   },
   deleteButton: {
     padding: 16,
