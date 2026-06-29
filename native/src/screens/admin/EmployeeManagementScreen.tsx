@@ -14,6 +14,7 @@ import Toast from 'react-native-toast-message';
 import { getStorePendingStaffAPI, getStoreStaffAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 type StaffRow = {
@@ -30,6 +31,7 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   const { userInfo } = useApp();
+  const { t } = useLanguage();
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
 
   const [activeStaff, setActiveStaff] = useState<StaffRow[]>([]);
@@ -75,13 +77,13 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
       console.error('직원 목록 조회 실패:', error);
       Toast.show({
         type: 'error',
-        text1: '직원 목록 조회 실패',
-        text2: '백엔드에서 직원 정보를 불러오지 못했습니다.',
+        text1: t('staffListLoadFailed'),
+        text2: t('staffListLoadFailedMsg'),
       });
     } finally {
       setLoading(false);
     }
-  }, [storeId]);
+  }, [storeId, t]);
 
   useEffect(() => {
     loadEmployees();
@@ -101,10 +103,10 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
 
   const sections = useMemo(() => {
     const next = [];
-    if (pendingStaff.length > 0) next.push({ title: '승인 대기', data: pendingStaff });
-    if (activeStaff.length > 0) next.push({ title: '근무 중인 직원', data: activeStaff });
+    if (pendingStaff.length > 0) next.push({ title: t('pendingApproval'), data: pendingStaff });
+    if (activeStaff.length > 0) next.push({ title: t('workingEmployees'), data: activeStaff });
     return next;
-  }, [activeStaff, pendingStaff]);
+  }, [activeStaff, pendingStaff, t]);
 
   const renderItem = ({ item }: { item: StaffRow }) => (
     <TouchableOpacity
@@ -126,7 +128,7 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
         </View>
       </View>
       <Text style={styles.itemRole}>
-        {item.sectionStatus === 'PENDING' ? '대기' : item.role || 'STAFF'}
+        {item.sectionStatus === 'PENDING' ? t('pendingLabel') : item.role || 'STAFF'}
       </Text>
     </TouchableOpacity>
   );
@@ -137,16 +139,16 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonWrapper}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>직원 관리</Text>
+        <Text style={styles.headerTitle}>{t('employeeManagement')}</Text>
         <TouchableOpacity onPress={loadEmployees}>
-          <Text style={styles.refreshText}>새로고침</Text>
+          <Text style={styles.refreshText}>{t('refresh')}</Text>
         </TouchableOpacity>
       </View>
 
       {loading && sections.length === 0 ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.emptyText}>직원 정보를 불러오는 중입니다.</Text>
+          <Text style={styles.emptyText}>{t('loadingStaff')}</Text>
         </View>
       ) : (
         <SectionList
@@ -161,8 +163,8 @@ const EmployeeManagementScreen = ({ navigation }: { navigation: any }) => {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>직원이 없습니다.</Text>
-              <Text style={styles.emptyText}>선택된 매장에 등록된 직원이 없습니다.</Text>
+              <Text style={styles.emptyTitle}>{t('noEmployeesTitle')}</Text>
+              <Text style={styles.emptyText}>{t('noEmployeesDesc')}</Text>
             </View>
           }
         />

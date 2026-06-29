@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -8,6 +8,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { checkAttendanceByQrAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 type QRCheckInScreenNavigationProp = StackNavigationProp<any, 'QRCheckIn'>;
 
@@ -18,6 +19,7 @@ type Props = {
 const QRCheckInScreen = ({ navigation }: Props) => {
   const { userInfo } = useApp();
   const { colors, isDarkMode } = useTheme();
+  const { t } = useLanguage();
   const styles = getThemedStyles(colors, isDarkMode);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -39,9 +41,9 @@ const QRCheckInScreen = ({ navigation }: Props) => {
     return (
       <View style={styles.container}>
         <Ionicons name="camera-outline" size={64} color={colors.subText} style={styles.permissionIcon} />
-        <Text style={styles.message}>출퇴근 QR 코드를 스캔하려면 카메라 권한이 필요합니다.</Text>
+        <Text style={styles.message}>{t('cameraPermissionRequired')}</Text>
         <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>카메라 권한 허용하기</Text>
+          <Text style={styles.permissionButtonText}>{t('allowCameraPermission')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -56,8 +58,8 @@ const QRCheckInScreen = ({ navigation }: Props) => {
     if (!userInfo?.id) {
       Toast.show({
         type: 'error',
-        text1: '로그인 정보가 없습니다.',
-        text2: '다시 로그인해 주세요.',
+        text1: t('noLoginInfo'),
+        text2: t('pleaseLoginAgain'),
       });
       setProcessing(false);
       setScanned(false);
@@ -67,23 +69,23 @@ const QRCheckInScreen = ({ navigation }: Props) => {
     try {
       const qrToken = extractQrToken(data);
       if (!qrToken) {
-        throw new Error('QR 토큰을 찾을 수 없습니다.');
+        throw new Error(t('noQrToken'));
       }
 
       const response = await checkAttendanceByQrAPI(userInfo.id, qrToken);
 
       Toast.show({
         type: 'success',
-        text1: '출퇴근 처리 완료',
-        text2: response.data?.message || '정상 처리되었습니다.',
+        text1: t('attendanceProcessed'),
+        text2: response.data?.message || t('attendanceProcessedSuccess'),
       });
 
       navigation.goBack();
     } catch (error: any) {
       Toast.show({
         type: 'error',
-        text1: '출퇴근 처리 실패',
-        text2: error.response?.data?.message || error.message || 'QR 코드를 다시 스캔해주세요.',
+        text1: t('attendanceProcessFailed'),
+        text2: error.response?.data?.message || error.message || t('scanQrAgain'),
       });
       setScanned(false);
     } finally {
@@ -107,17 +109,17 @@ const QRCheckInScreen = ({ navigation }: Props) => {
               <Ionicons name="close" size={24} color="#FFF" />
             </TouchableOpacity>
           </View>
-
+ 
           <View style={styles.targetFrame}>
             <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
             <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
             <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
             <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
           </View>
-
+ 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              {processing ? '출퇴근 처리 중입니다...' : '사각형 영역 안에 QR 코드를 맞춰주세요'}
+              {processing ? t('processingAttendance') : t('alignQrCodeInFrame')}
             </Text>
           </View>
         </View>

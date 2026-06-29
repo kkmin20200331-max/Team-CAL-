@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import TimePickerModal from '../../components/common/TimePickerModal';
 import { useApp } from '../../contexts/AppContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 type SignupScreenNavigationProp = StackNavigationProp<any, 'Signup'>;
 
@@ -24,6 +25,7 @@ export default function SignupScreen({ navigation, route }: Props) {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   const { login } = useApp();
+  const { t } = useLanguage();
 
   const [inputs, setInputs] = useState({
     id: "",
@@ -66,21 +68,33 @@ export default function SignupScreen({ navigation, route }: Props) {
     setTimePickerVisible(false);
   };
 
+  const getLocalizedCategory = (cat: string) => {
+    switch (cat) {
+      case '카페': return t('catCafe');
+      case '음식점': return t('catRestaurant');
+      case '패스트푸드': return t('catFastfood');
+      case '의류/잡화': return t('catClothing');
+      case '서비스': return t('catService');
+      case '기타': return t('catOther');
+      default: return cat;
+    }
+  };
+
   const handleSignup = async () => {
     if (isSubmitting) return;
 
     const { id, password, passwordCheck, name, phone, isFranchise, brandName, branchName, address, openTime, closeTime, maxCapacity } = inputs;
 
     if (!id || !password || !passwordCheck || !name || !phone) {
-      Alert.alert("입력 오류", "모든 필수 항목을 입력해주세요.");
+      Alert.alert(t('inputError'), t('requiredFieldsMsg'));
       return;
     }
     if (role === 'ADMIN' && (!brandName || !branchName || !address)) {
-      Alert.alert("입력 오류", "브랜드명, 지점명, 주소를 모두 입력해주세요.");
+      Alert.alert(t('inputError'), t('adminFieldsMsg'));
       return;
     }
     if (password !== passwordCheck) {
-      Alert.alert("비밀번호 오류", "비밀번호가 일치하지 않습니다.");
+      Alert.alert(t('passwordError'), t('passwordMismatchMsg'));
       return;
     }
 
@@ -112,8 +126,8 @@ export default function SignupScreen({ navigation, route }: Props) {
 
       Toast.show({
         type: 'success',
-        text1: '가입 성공',
-        text2: `${name}님 환영합니다!`,
+        text1: t('signupSuccess'),
+        text2: `${name}${t('welcomeMsg')}`,
       });
 
       login(response.data, false);
@@ -127,19 +141,19 @@ export default function SignupScreen({ navigation, route }: Props) {
             : error.response.data?.message;
 
         if (status === 409) {
-          Alert.alert('가입 실패', serverMessage || '이미 사용 중인 정보입니다.');
+          Alert.alert(t('signupFailed'), serverMessage || t('alreadyUsedInfoMsg'));
         } else if (status === 403) {
           Alert.alert(
-            '가입 실패',
-            '요청이 차단되었습니다. 백엔드 서버를 재시작하고 CORS 설정이 적용되었는지 확인해주세요.',
+            t('signupFailed'),
+            t('corsErrorMsg'),
           );
         } else {
-          Alert.alert('가입 실패', serverMessage || `서버 오류: ${status}`);
+          Alert.alert(t('signupFailed'), serverMessage || `${t('serverErrorMsg')}${status}`);
         }
       } else if (axios.isAxiosError(error) && error.request) {
-        Alert.alert('가입 실패', '백엔드 서버에 연결할 수 없습니다.');
+        Alert.alert(t('signupFailed'), t('backendConnectionErrorMsg'));
       } else {
-        Alert.alert('가입 실패', '알 수 없는 오류가 발생했습니다.');
+        Alert.alert(t('signupFailed'), t('unknownErrorMsg'));
       }
     } finally {
       setIsSubmitting(false);
@@ -153,7 +167,7 @@ export default function SignupScreen({ navigation, route }: Props) {
           <Ionicons name="chevron-back-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {role === 'ADMIN' ? '관리자 회원가입' : '직원 회원가입'}
+          {role === 'ADMIN' ? t('adminSignup') : t('staffSignup')}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -166,25 +180,25 @@ export default function SignupScreen({ navigation, route }: Props) {
           contentContainerStyle={styles.formContainer}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.sectionTitle}>기본 정보</Text>
-          <TextInput style={styles.input} placeholder="아이디" placeholderTextColor={colors.subText} value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} />
-          <TextInput style={styles.input} placeholder="비밀번호" placeholderTextColor={colors.subText} value={inputs.password} onChangeText={(text) => handleInputChange('password', text)} secureTextEntry={true} />
-          <TextInput style={styles.input} placeholder="비밀번호 확인" placeholderTextColor={colors.subText} value={inputs.passwordCheck} onChangeText={(text) => handleInputChange('passwordCheck', text)} secureTextEntry={true} />
-          <TextInput style={styles.input} placeholder="이름 (예: 김신입)" placeholderTextColor={colors.subText} value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
-          <TextInput style={styles.input} placeholder="전화번호 (예: 010-1234-5678)" placeholderTextColor={colors.subText} value={inputs.phone} onChangeText={(text) => handleInputChange('phone', text)} keyboardType="phone-pad" />
+          <Text style={styles.sectionTitle}>{t('basicInfo')}</Text>
+          <TextInput style={styles.input} placeholder={t('usernameLabel')} placeholderTextColor={colors.subText} value={inputs.id} onChangeText={(text) => handleInputChange('id', text)} />
+          <TextInput style={styles.input} placeholder={t('passwordLabel')} placeholderTextColor={colors.subText} value={inputs.password} onChangeText={(text) => handleInputChange('password', text)} secureTextEntry={true} />
+          <TextInput style={styles.input} placeholder={t('passwordCheckLabel')} placeholderTextColor={colors.subText} value={inputs.passwordCheck} onChangeText={(text) => handleInputChange('passwordCheck', text)} secureTextEntry={true} />
+          <TextInput style={styles.input} placeholder={t('namePlaceholder')} placeholderTextColor={colors.subText} value={inputs.name} onChangeText={(text) => handleInputChange('name', text)} />
+          <TextInput style={styles.input} placeholder={t('phonePlaceholder')} placeholderTextColor={colors.subText} value={inputs.phone} onChangeText={(text) => handleInputChange('phone', text)} keyboardType="phone-pad" />
 
           {role === 'ADMIN' && (
             <>
-              <Text style={styles.sectionTitle}>매장 정보</Text>
+              <Text style={styles.sectionTitle}>{t('storeInfo')}</Text>
               
-              <Text style={styles.inputLabel}>업종 카테고리</Text>
+              <Text style={styles.inputLabel}>{t('categoryLabel')}</Text>
               <TouchableOpacity style={styles.pickerButton} onPress={() => setCategoryModalVisible(true)}>
-                <Text style={styles.pickerButtonText}>{storeCategory}</Text>
+                <Text style={styles.pickerButtonText}>{getLocalizedCategory(storeCategory)}</Text>
                 <Ionicons name="chevron-down-outline" size={16} color={colors.subText} />
               </TouchableOpacity>
 
               <View style={styles.toggleContainer}>
-                <Text style={styles.inputLabel}>프랜차이즈 매장인가요?</Text>
+                <Text style={styles.inputLabel}>{t('isFranchiseLabel')}</Text>
                 <Switch
                   trackColor={{ false: "#767577", true: colors.primary }}
                   thumbColor={inputs.isFranchise ? "#f4f3f4" : "#f4f3f4"}
@@ -192,27 +206,27 @@ export default function SignupScreen({ navigation, route }: Props) {
                   value={inputs.isFranchise}
                 />
               </View>
-              <TextInput style={styles.input} placeholder="브랜드명 (예: 컴포즈커피)" placeholderTextColor={colors.subText} value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
-              <TextInput style={styles.input} placeholder="지점명 (예: 미금점)" placeholderTextColor={colors.subText} value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
-              <TextInput style={styles.input} placeholder="매장 주소" placeholderTextColor={colors.subText} value={inputs.address} onChangeText={(text) => handleInputChange('address', text)} />
+              <TextInput style={styles.input} placeholder={t('brandNamePlaceholder')} placeholderTextColor={colors.subText} value={inputs.brandName} onChangeText={(text) => handleInputChange('brandName', text)} />
+              <TextInput style={styles.input} placeholder={t('branchNamePlaceholder')} placeholderTextColor={colors.subText} value={inputs.branchName} onChangeText={(text) => handleInputChange('branchName', text)} />
+              <TextInput style={styles.input} placeholder={t('storeAddressPlaceholder')} placeholderTextColor={colors.subText} value={inputs.address} onChangeText={(text) => handleInputChange('address', text)} />
               
               <View style={styles.timeContainer}>
                 <View style={styles.timeInputWrapper}>
-                  <Text style={styles.inputLabel}>오픈 시간</Text>
+                  <Text style={styles.inputLabel}>{t('openTimeLabel')}</Text>
                   <TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('openTime')}>
                     <Text style={styles.timeText}>{formatTime(inputs.openTime)}</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.timeInputWrapper}>
-                  <Text style={styles.inputLabel}>마감 시간</Text>
+                  <Text style={styles.inputLabel}>{t('closeTimeLabel')}</Text>
                   <TouchableOpacity style={styles.timeButton} onPress={() => showTimepicker('closeTime')}>
                     <Text style={styles.timeText}>{formatTime(inputs.closeTime)}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
-              <Text style={styles.inputLabel}>최대 수용 인원 (선택)</Text>
-              <TextInput style={styles.input} placeholder="숫자만 입력" placeholderTextColor={colors.subText} value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('maxCapacity', text)} keyboardType="number-pad" />
+              <Text style={styles.inputLabel}>{t('maxCapacityLabel')}</Text>
+              <TextInput style={styles.input} placeholder={t('numbersOnlyPlaceholder')} placeholderTextColor={colors.subText} value={inputs.maxCapacity} onChangeText={(text) => handleInputChange('maxCapacity', text)} keyboardType="number-pad" />
             </>
           )}
 
@@ -227,7 +241,7 @@ export default function SignupScreen({ navigation, route }: Props) {
             disabled={isSubmitting}
           >
             <Text style={styles.buttonText}>
-              {isSubmitting ? '가입 처리 중...' : '가입 완료'}
+              {isSubmitting ? t('signingUp') : t('signupComplete')}
             </Text>
           </Pressable>
         </ScrollView>
@@ -241,7 +255,7 @@ export default function SignupScreen({ navigation, route }: Props) {
       >
         <Pressable style={styles.modalOverlay} onPress={() => setCategoryModalVisible(false)}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>업종 선택</Text>
+            <Text style={styles.modalTitle}>{t('selectStoreCategory')}</Text>
             {STORE_CATEGORIES.map((cat) => (
               <TouchableOpacity
                 key={cat}
@@ -251,7 +265,7 @@ export default function SignupScreen({ navigation, route }: Props) {
                   setCategoryModalVisible(false);
                 }}
               >
-                <Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>{cat}</Text>
+                <Text style={[styles.modalOptionText, storeCategory === cat && styles.modalOptionTextSelected]}>{getLocalizedCategory(cat)}</Text>
               </TouchableOpacity>
             ))}
           </View>

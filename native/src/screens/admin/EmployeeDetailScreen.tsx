@@ -13,11 +13,13 @@ import Toast from 'react-native-toast-message';
 import { approveStoreMemberAPI, rejectStoreMemberAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: any }) => {
   const { employee } = route.params;
   const { userInfo } = useApp();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getThemedStyles(colors);
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
 
@@ -25,7 +27,7 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: a
 
   const handleApprove = async () => {
     if (!storeId) {
-      Alert.alert('오류', '선택된 매장 정보가 없습니다.');
+      Alert.alert(t('error'), t('noStoreInfo'));
       return;
     }
 
@@ -34,13 +36,13 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: a
       await approveStoreMemberAPI(employee.id, storeId);
       Toast.show({
         type: 'success',
-        text1: '승인 완료',
-        text2: `${employee.name}님의 근무 요청을 승인했습니다.`,
+        text1: t('approvalComplete'),
+        text2: `${employee.name}${t('approvedStaffMsg')}`,
       });
       navigation.goBack();
     } catch (error) {
       console.error('직원 승인 오류:', error);
-      Alert.alert('승인 실패', '직원 승인 처리 중 오류가 발생했습니다.');
+      Alert.alert(t('approvalFailed'), t('approvalFailedMsg'));
     } finally {
       setProcessing(false);
     }
@@ -48,14 +50,14 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: a
 
   const handleDecline = () => {
     if (!storeId) {
-      Alert.alert('오류', '선택된 매장 정보가 없습니다.');
+      Alert.alert(t('error'), t('noStoreInfo'));
       return;
     }
 
-    Alert.alert('요청 거절', `${employee.name}님의 근무 요청을 거절하시겠습니까?`, [
-      { text: '취소', style: 'cancel' },
+    Alert.alert(t('rejectRequest'), `${employee.name}${t('rejectConfirmMsg')}`, [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: '거절',
+        text: t('deny'),
         style: 'destructive',
         onPress: async () => {
           setProcessing(true);
@@ -63,13 +65,13 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: a
             await rejectStoreMemberAPI(employee.id, storeId);
             Toast.show({
               type: 'info',
-              text1: '요청 거절',
-              text2: `${employee.name}님의 근무 요청을 거절했습니다.`,
+              text1: t('rejectRequest'),
+              text2: `${employee.name}${t('rejectedStaffMsg')}`,
             });
             navigation.goBack();
           } catch (error) {
             console.error('직원 거절 오류:', error);
-            Alert.alert('거절 실패', '직원 요청 거절 중 오류가 발생했습니다.');
+            Alert.alert(t('rejectionFailed'), t('rejectionFailedMsg'));
           } finally {
             setProcessing(false);
           }
@@ -86,31 +88,31 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: a
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>직원 상세 정보</Text>
+        <Text style={styles.headerTitle}>{t('employeeDetailTitle')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.infoSection}>
-          <Text style={styles.label}>이름</Text>
+          <Text style={styles.label}>{t('nameLabel')}</Text>
           <Text style={styles.value}>{employee.name}</Text>
         </View>
         <View style={styles.infoSection}>
-          <Text style={styles.label}>아이디</Text>
+          <Text style={styles.label}>{t('idLabel')}</Text>
           <Text style={styles.value}>{employee.username || employee.id}</Text>
         </View>
         <View style={styles.infoSection}>
-          <Text style={styles.label}>연락처</Text>
+          <Text style={styles.label}>{t('phoneLabel')}</Text>
           <Text style={styles.value}>{employee.phone || '-'}</Text>
         </View>
         <View style={styles.infoSection}>
-          <Text style={styles.label}>역할</Text>
+          <Text style={styles.label}>{t('roleLabel')}</Text>
           <Text style={styles.value}>{employee.role || 'STAFF'}</Text>
         </View>
         <View style={styles.infoSection}>
-          <Text style={styles.label}>상태</Text>
+          <Text style={styles.label}>{t('status')}</Text>
           <Text style={[styles.value, isPending && styles.pendingText]}>
-            {isPending ? '승인 대기' : '승인됨'}
+            {isPending ? t('pendingApproval') : t('approved')}
           </Text>
         </View>
       </ScrollView>
@@ -122,14 +124,14 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: a
             onPress={handleDecline}
             disabled={processing}
           >
-            <Text style={styles.declineButtonText}>거절</Text>
+            <Text style={styles.declineButtonText}>{t('deny')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.approveButton]}
             onPress={handleApprove}
             disabled={processing}
           >
-            {processing ? <ActivityIndicator color="#065F46" /> : <Text style={styles.approveButtonText}>승인</Text>}
+            {processing ? <ActivityIndicator color="#065F46" /> : <Text style={styles.approveButtonText}>{t('approve')}</Text>}
           </TouchableOpacity>
         </View>
       )}
