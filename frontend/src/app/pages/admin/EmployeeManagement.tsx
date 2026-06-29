@@ -13,6 +13,7 @@ import {
   UserCheck,
   X,
   Calendar,
+  ClipboardCheck,
   UserPlus,
   Wallet,
   FileText,
@@ -86,6 +87,7 @@ export default function EmployeeManagement() {
 
   const menuItems = [
     { icon: Calendar, label: '근무표 관리', path: storeId ? `/admin/schedule/monthly/${storeId}` : '/admin/branch-selection' },
+    { icon: ClipboardCheck, label: '근태 관리', path: storeId ? `/admin/attendance/${storeId}` : '/admin/branch-selection' },
     { icon: UserPlus, label: '대타 모집', path: storeId ? `/admin/substitute/${storeId}` : '/admin/branch-selection' },
     { icon: Users, label: '직원 관리', path: storeId ? `/admin/employees/${storeId}` : '/admin/branch-selection' },
     { icon: Wallet, label: '급여 관리', path: storeId ? `/admin/payroll/${storeId}` : '/admin/branch-selection' },

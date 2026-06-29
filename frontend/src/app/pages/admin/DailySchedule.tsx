@@ -6,7 +6,7 @@ import {
   Calendar, Clock, User,
   AlertCircle, CheckCircle, XCircle,
   Plus, Phone, Trash2, X,
-  UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3, Video, ChevronRight
+  ClipboardCheck, UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3, Video, ChevronRight
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -57,6 +57,7 @@ const DailySchedule: React.FC = () => {
 
   const menuItems = [
     { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: ClipboardCheck, label: '근태 관리', path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
@@ -91,6 +92,7 @@ const DailySchedule: React.FC = () => {
     start_time: "09:00",
     end_time: "18:00",
     status: "confirmed",
+    fixed_weekly: false,
   });
 
   useEffect(() => {
@@ -156,6 +158,7 @@ const DailySchedule: React.FC = () => {
       start_time: "09:00",
       end_time: "18:00",
       status: "confirmed",
+      fixed_weekly: false,
     });
     setModalOpen(true);
   };
@@ -168,23 +171,58 @@ const DailySchedule: React.FC = () => {
       start_time: formatTime(shift.start_at),
       end_time: formatTime(shift.end_at),
       status: shift.status,
+      fixed_weekly: false,
     });
     setModalOpen(true);
+  };
+
+  const getWeekdayCode = (dateValue: string) => {
+    const day = new Date(`${dateValue}T00:00:00`).getDay();
+    return ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][day];
+  };
+
+  const addMonthsDateStr = (dateValue: string, months: number) => {
+    const next = new Date(`${dateValue}T00:00:00`);
+    next.setMonth(next.getMonth() + months);
+    return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
   };
 
   const handleSubmit = async () => {
     if (!form.user_id) { alert(t.errSelectEmployee); return; }
     try {
       if (modalMode === "add") {
-        await axiosInstance.post("/shift", {
-          id: "SFT_" + Date.now(),
-          store_id: selectedBranchId,
-          user_id: form.user_id,
-          work_date: selectedDate,
-          start_at: `${selectedDate} ${form.start_time}:00`,
-          end_at: `${selectedDate} ${form.end_time}:00`,
-          status: form.status,
-        });
+        if (form.fixed_weekly) {
+          try {
+            await axiosInstance.post("/fixedschedule", {
+              id: "FS_" + Date.now(),
+              store_id: selectedBranchId,
+              user_id: form.user_id,
+              weekday: getWeekdayCode(selectedDate),
+              start_time: form.start_time,
+              end_time: form.end_time,
+              active: "Y",
+            });
+          } catch (error) {
+            console.warn("고정 근무 저장 실패 또는 이미 존재:", error);
+          }
+          await axiosInstance.post("/shift/fixed", null, {
+            params: {
+              store_id: selectedBranchId,
+              start_date: selectedDate,
+              end_date: addMonthsDateStr(selectedDate, 12),
+            },
+          });
+        } else {
+          await axiosInstance.post("/shift", {
+            id: "SFT_" + Date.now(),
+            store_id: selectedBranchId,
+            user_id: form.user_id,
+            work_date: selectedDate,
+            start_at: `${selectedDate} ${form.start_time}:00`,
+            end_at: `${selectedDate} ${form.end_time}:00`,
+            status: form.status,
+          });
+        }
         alert(t.shiftAdded);
       } else if (editingShift) {
         await axiosInstance.put("/shift", {
@@ -517,6 +555,17 @@ const DailySchedule: React.FC = () => {
                   <option value="cancelled">{t.statusCancelled}</option>
                 </select>
               </div>
+              {modalMode === 'add' && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, background: isDark ? '#50505a' : '#f8fff4', color: textColor, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.fixed_weekly}
+                    onChange={(e) => setForm({ ...form, fixed_weekly: e.target.checked })}
+                    style={{ width: 16, height: 16, accentColor: GREEN }}
+                  />
+                  매주 같은 요일 고정 근무로 저장
+                </label>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               {modalMode === 'edit' && (

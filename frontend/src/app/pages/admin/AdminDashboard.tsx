@@ -12,6 +12,7 @@ import {
   DollarSign,
   CalendarDays,
   Calendar,
+  ClipboardCheck,
   UserPlus,
   Wallet,
   Video,
@@ -139,34 +140,20 @@ interface DashboardOperationContext {
   estimatedPay: number;
 }
 
-// Dashboard chart base time axis
-const customerData = [
-  { time: "09:00", customers: 5, staff: 1 },
-  { time: "10:00", customers: 8, staff: 1 },
-  { time: "11:00", customers: 12, staff: 2 },
-  { time: "12:00", customers: 25, staff: 3 },
-  { time: "13:00", customers: 28, staff: 3 },
-  { time: "14:00", customers: 18, staff: 3 },
-  { time: "15:00", customers: 15, staff: 2 },
-  { time: "16:00", customers: 12, staff: 2 },
-  { time: "17:00", customers: 20, staff: 2 },
-  { time: "18:00", customers: 32, staff: 2 },
-  { time: "19:00", customers: 28, staff: 2 },
-  { time: "20:00", customers: 22, staff: 2 },
+const customerTrendTimeAxis = [
+  { time: "09:00", customers: 0, staff: 0 },
+  { time: "10:00", customers: 0, staff: 0 },
+  { time: "11:00", customers: 0, staff: 0 },
+  { time: "12:00", customers: 0, staff: 0 },
+  { time: "13:00", customers: 0, staff: 0 },
+  { time: "14:00", customers: 0, staff: 0 },
+  { time: "15:00", customers: 0, staff: 0 },
+  { time: "16:00", customers: 0, staff: 0 },
+  { time: "17:00", customers: 0, staff: 0 },
+  { time: "18:00", customers: 0, staff: 0 },
+  { time: "19:00", customers: 0, staff: 0 },
+  { time: "20:00", customers: 0, staff: 0 },
 ];
-
-const branchStoreIds: Record<string, number> = {
-  migeum: 1,
-  sunae: 2,
-  dongcheon: 3,
-};
-
-const resolveStoreId = (branchId?: string) => {
-  if (!branchId) return 1;
-  const numericId = Number(branchId);
-  if (Number.isFinite(numericId) && numericId > 0) return numericId;
-  return branchStoreIds[branchId] || 1;
-};
 
 const getPeopleCount = (log: PeopleLog) =>
   Number(log.people_count ?? log.peopleCount ?? 0);
@@ -193,7 +180,7 @@ const buildCustomerTrend = (
     latestCustomersByHour.set(date.getHours(), getPeopleCount(log));
   });
 
-  return customerData.map((row) => {
+  return customerTrendTimeAxis.map((row) => {
     const hour = Number(row.time.slice(0, 2));
     const hourStart = hour * 60;
     const hourEnd = hourStart + 60;
@@ -315,7 +302,7 @@ export default function AdminDashboard() {
   const [payMap, setPayMap] = useState<Record<string, PayInfo>>({});
   const [substituteCount, setSubstituteCount] = useState(0);
   const [customerTrendData, setCustomerTrendData] =
-    useState<CustomerTrendRow[]>(customerData);
+    useState<CustomerTrendRow[]>(customerTrendTimeAxis);
   const [customerTrendSyncedAt, setCustomerTrendSyncedAt] = useState("");
   const [aiInsight, setAiInsight] = useState<AiInsightResponse | null>(null);
   const [attendanceQr, setAttendanceQr] = useState<AttendanceQr | null>(null);
@@ -341,26 +328,31 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!branchId) return;
+    if (!selectedBranchId) return;
 
     const load = async () => {
       try {
         const today = toDateStr(new Date());
+        await axiosInstance
+          .post("/people_log/opencv", null, {
+            params: { store_id: selectedBranchId },
+          })
+          .catch(() => {});
 
         const [shiftRes, userRes, subRes, peopleLogRes] =
           await Promise.allSettled([
             axiosInstance.get("/shift", {
               params: {
-                store_id: branchId,
+                store_id: selectedBranchId,
                 start_date: today,
                 end_date: today,
               },
             }),
-            axiosInstance.get("/users", { params: { store_id: branchId } }),
-            axiosInstance.get("/substitute", { params: { store_id: branchId } }),
+            axiosInstance.get("/users", { params: { store_id: selectedBranchId } }),
+            axiosInstance.get("/substitute", { params: { store_id: selectedBranchId } }),
             axiosInstance.get("/people_log", {
               params: {
-                store_id: resolveStoreId(branchId),
+                store_id: selectedBranchId,
                 start_date: `${today} 00:00:00`,
                 end_date: `${today} 23:59:59`,
               },
@@ -416,7 +408,7 @@ export default function AdminDashboard() {
           const payResults = await Promise.allSettled(
             uniqueIds.map((uid) =>
               axiosInstance.get("/store_member/pay", {
-                params: { user_id: uid, store_id: branchId },
+                params: { user_id: uid, store_id: selectedBranchId },
               }).then((r) => ({ uid, data: r.data as PayInfo })),
             ),
           );
@@ -437,13 +429,19 @@ export default function AdminDashboard() {
     const refreshCustomerTrend = async () => {
       try {
         const today = toDateStr(new Date());
+        await axiosInstance
+          .post("/people_log/opencv", null, {
+            params: { store_id: selectedBranchId },
+          })
+          .catch(() => {});
+
         const [shiftRes, peopleLogRes] = await Promise.allSettled([
           axiosInstance.get("/shift", {
-            params: { store_id: branchId, start_date: today, end_date: today },
+            params: { store_id: selectedBranchId, start_date: today, end_date: today },
           }),
           axiosInstance.get("/people_log", {
             params: {
-              store_id: resolveStoreId(branchId),
+              store_id: selectedBranchId,
               start_date: `${today} 00:00:00`,
               end_date: `${today} 23:59:59`,
             },
@@ -478,7 +476,7 @@ export default function AdminDashboard() {
     const intervalId = window.setInterval(refreshCustomerTrend, 5000);
 
     return () => window.clearInterval(intervalId);
-  }, [branchId]);
+  }, [selectedBranchId]);
 
   useEffect(() => {
     if (!branchId) return;
@@ -535,7 +533,7 @@ export default function AdminDashboard() {
   };
 
   const attendanceQrPayload = attendanceQr
-    ? `teamcal://attendance?token=${attendanceQr.qr_token}`
+    ? `${window.location.origin}/employee/checkin?token=${encodeURIComponent(attendanceQr.qr_token)}`
     : "";
 
   const attendanceQrImageUrl = attendanceQrPayload
@@ -633,6 +631,13 @@ export default function AdminDashboard() {
       label: t.menuItems.scheduleManagement,
       path: selectedBranchId
         ? `/admin/schedule/monthly/${selectedBranchId}`
+        : "/admin/branch-selection",
+    },
+    {
+      icon: ClipboardCheck,
+      label: "근태 관리",
+      path: selectedBranchId
+        ? `/admin/attendance/${selectedBranchId}`
         : "/admin/branch-selection",
     },
     {
@@ -1124,7 +1129,9 @@ export default function AdminDashboard() {
                   borderRadius: 20,
                 }}
               >
-                {t.sampleData}
+                {customerTrendSyncedAt
+                  ? `실시간 연동 ${customerTrendSyncedAt}`
+                  : "실시간 연동"}
               </span>
             </div>
             <ResponsiveContainer width="100%" height={200}>
