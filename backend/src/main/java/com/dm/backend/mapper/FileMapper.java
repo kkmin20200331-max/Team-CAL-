@@ -119,8 +119,7 @@ public interface FileMapper {
         SELECT f.*, u.NAME AS USER_NAME
         FROM FILES f
         JOIN USERS u ON f.USER_ID = u.ID
-        JOIN STORE_MEMBER sm ON u.ID = sm.USER_ID
-        WHERE sm.STORE_ID = #{store_id}
+        WHERE f.STORE_ID = #{store_id}
         ORDER BY f.CREATED_AT DESC
     """)
     List<FileVO> selectFilesByStoreId(String store_id);

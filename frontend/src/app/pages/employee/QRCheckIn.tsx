@@ -1,7 +1,7 @@
 ﻿import axiosInstance from "../../../lib/axiosInstance";
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import EmployeeHeader from './EmployeeHeader';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { useTheme } from 'next-themes';
@@ -121,11 +121,13 @@ const outlineBtnStyle: React.CSSProperties = {
 
 export default function QRCheckIn() {
   const navigate = useNavigate();
+  const location = useLocation();
   const language = useLanguage();
   const t = translations.qrCheckIn[language];
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const user = useMemo(() => JSON.parse(sessionStorage.getItem('user') || '{}'), []);
+  const processedTokenRef = useRef("");
   const storeName = sessionStorage.getItem('store_name') || t.store;
 
   const pageBg = isDark
@@ -146,6 +148,7 @@ export default function QRCheckIn() {
   const [checkInStatus, setCheckInStatus] = useState<
     "idle" | "success" | "error" | "loading"
   >("idle");
+  const [resultMessage, setResultMessage] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const [todayShifts, setTodayShifts] = useState<ShiftVO[]>([]);
@@ -225,18 +228,74 @@ export default function QRCheckIn() {
 
   const timeStatus = getTimeStatus();
 
-  const handleScan = () => {
+  const parseQrToken = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    try {
+      const url = new URL(trimmed);
+      return url.searchParams.get("token") || "";
+    } catch {
+      const match = trimmed.match(/[?&]token=([^&]+)/);
+      return match ? decodeURIComponent(match[1]) : trimmed;
+    }
+  };
+
+  const submitQrToken = async (qrToken: string) => {
+    if (!qrToken || !user.id) {
+      setResultMessage("QR 토큰 또는 사용자 정보가 없습니다.");
+      setCheckInStatus("error");
+      return;
+    }
+
     setIsScanning(true);
     setCheckInStatus("loading");
-    setTimeout(() => {
+    try {
+      const response = await axiosInstance.post("/attendance/qr/check", {
+        qr_token: qrToken,
+        user_id: user.id,
+      });
+      setCurrentTime(new Date());
+      setResultMessage(response.data?.message || "출퇴근 처리 완료");
       setCheckInStatus("success");
+    } catch (error: any) {
+      setResultMessage(error?.response?.data?.message || "QR 출퇴근 처리에 실패했습니다.");
+      setCheckInStatus("error");
+    } finally {
       setIsScanning(false);
-    }, 2000);
+    }
+  };
+
+  useEffect(() => {
+    const token = new URLSearchParams(location.search).get("token");
+    if (token && user.id && processedTokenRef.current !== token) {
+      processedTokenRef.current = token;
+      submitQrToken(token);
+    }
+  }, [location.search, user.id]);
+
+  const handleScan = () => {
+    const raw = window.prompt("스캔한 QR URL 또는 토큰을 입력하세요.");
+    const token = raw ? parseQrToken(raw) : "";
+    if (!token) return;
+    submitQrToken(token);
   };
 
   const handleManualCheckIn = () => {
     setCheckInStatus("loading");
-    setTimeout(() => setCheckInStatus("success"), 1000);
+    axiosInstance.post("/attendance/check", {
+      store_id: sessionStorage.getItem("store_id") || "",
+      user_id: user.id,
+    })
+      .then((response) => {
+        setCurrentTime(new Date());
+        setResultMessage(typeof response.data === "string" ? response.data : "출퇴근 처리 완료");
+        setCheckInStatus("success");
+      })
+      .catch(() => {
+        setResultMessage("출퇴근 처리에 실패했습니다.");
+        setCheckInStatus("error");
+      })
+      .finally(() => setIsScanning(false));
   };
 
   return (
@@ -372,7 +431,7 @@ export default function QRCheckIn() {
                   <CheckCircle2 size={48} color="#fff" />
                 </div>
                 <h3 style={{ fontSize: 26, fontWeight: 800, color: '#07790F', marginBottom: 8 }}>
-                  {t.checkInSuccess}
+                  {resultMessage || t.checkInSuccess}
                 </h3>
                 <p style={{ color: '#18A022', marginBottom: 20, fontSize: 16 }}>
                   {t.checkedInAt(currentTime.toLocaleTimeString(language === 'ko' ? 'ko-KR' : language === 'ja' ? 'ja-JP' : 'en-US', { hour: '2-digit', minute: '2-digit' }))}
@@ -415,7 +474,7 @@ export default function QRCheckIn() {
               <XCircle size={22} color="#dc2626" style={{ flexShrink: 0, marginTop: 2 }} />
               <div>
                 <p style={{ fontWeight: 600, color: '#dc2626', margin: '0 0 4px' }}>{t.checkInFailed}</p>
-                <p style={{ fontSize: 13, color: '#dc2626', margin: '0 0 12px' }}>{t.qrNotRecognized}</p>
+                <p style={{ fontSize: 13, color: '#dc2626', margin: '0 0 12px' }}>{resultMessage || t.qrNotRecognized}</p>
                 <button
                   style={{ ...outlineBtnStyle, width: 'auto', padding: '8px 24px', fontSize: 14, borderColor: '#07790F', color: '#07790F' }}
                   onClick={() => setCheckInStatus('idle')}

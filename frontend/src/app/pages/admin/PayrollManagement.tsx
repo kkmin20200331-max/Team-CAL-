@@ -14,6 +14,7 @@ import {
   CreditCard,
   User,
   Calendar,
+  ClipboardCheck,
   UserPlus,
   Users,
   Wallet,
@@ -262,6 +263,7 @@ const PayrollManagement: React.FC = () => {
 
   const menuItems = [
     { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: ClipboardCheck, label: '근태 관리', path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },

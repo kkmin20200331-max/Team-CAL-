@@ -15,27 +15,21 @@ public class AttendanceService {
 
     private final AttendanceMapper attendanceMapper;
 
-    // =========================
-    // [출퇴근 체크]
-    // =========================
-
     public String checkAttendance(
             String store_id,
             String user_id
     ) {
+        Date now =
+                new Date();
 
         AttendanceVO attendance =
                 attendanceMapper.getTodayAttendance(
                         store_id,
-                        user_id
+                        user_id,
+                        now
                 );
 
-        // =========================
-        // 출근
-        // =========================
-
         if (attendance == null) {
-
             AttendanceVO checkInVO =
                     new AttendanceVO(
                             UUID.randomUUID()
@@ -45,8 +39,8 @@ public class AttendanceService {
                             store_id,
                             user_id,
                             null,
-                            new Date(),
-                            new Date(),
+                            now,
+                            now,
                             null,
                             0,
                             0,
@@ -60,60 +54,46 @@ public class AttendanceService {
             return "출근 처리 완료";
         }
 
-        // =========================
-        // 퇴근
-        // =========================
+        boolean alreadyCheckedOut =
+                attendance.getCheck_out_at() != null;
 
-        if (attendance.getCheck_out_at() == null) {
+        long workMinutes =
+                (now.getTime()
+                        - attendance.getCheck_in_at().getTime())
+                        / (1000 * 60);
 
-            Date checkOutAt =
-                    new Date();
+        attendance.setCheck_out_at(
+                now
+        );
 
-            long workMinutes =
-                    (checkOutAt.getTime()
-                            - attendance.getCheck_in_at().getTime())
-                            / (1000 * 60);
+        attendance.setWork_minutes(
+                (int) Math.max(0, workMinutes)
+        );
 
-            attendance.setCheck_out_at(
-                    checkOutAt
-            );
+        attendance.setOvertime_minutes(
+                0
+        );
 
-            attendance.setWork_minutes(
-                    (int) workMinutes
-            );
+        attendance.setStatus(
+                "COMPLETED"
+        );
 
-            attendance.setOvertime_minutes(
-                    0
-            );
+        attendanceMapper.checkOut(
+                attendance
+        );
 
-            attendance.setStatus(
-                    "COMPLETED"
-            );
-
-            attendanceMapper.checkOut(
-                    attendance
-            );
-
-            return "퇴근 처리 완료";
+        if (alreadyCheckedOut) {
+            return "퇴근 시간 갱신 완료";
         }
 
-        // =========================
-        // 이미 퇴근
-        // =========================
-
-        return "이미 퇴근 처리되었습니다.";
+        return "퇴근 처리 완료";
     }
-
-    // =========================
-    // 월별 출퇴근 조회
-    // =========================
 
     public List<AttendanceVO> getMonthlyAttendance(
             String store_id,
             String user_id,
             String yearMonth
     ) {
-
         return attendanceMapper.getMonthlyAttendance(
                 store_id,
                 user_id,

@@ -6,7 +6,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import {
   ChevronLeft, ChevronRight, Search, Calendar,
-  UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3, Video
+  ClipboardCheck, UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3, Video
 } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -115,6 +115,7 @@ export default function WeeklySchedule() {
 
   const menuItems = [
     { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: ClipboardCheck, label: '근태 관리', path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
     { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
