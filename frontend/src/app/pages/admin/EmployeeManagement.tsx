@@ -1,3 +1,5 @@
+import { useLanguage } from "../../i18n/useLanguage";
+import { translations } from "../../i18n/translations";
 ﻿import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from "react";
@@ -68,6 +70,7 @@ const LEVEL_TEXT: Record<string, string> = {
 };
 
 export default function EmployeeManagement() {
+  const language = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const { branchId } = useParams();
@@ -85,14 +88,14 @@ export default function EmployeeManagement() {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: storeId ? `/admin/schedule/monthly/${storeId}` : '/admin/branch-selection' },
-    { icon: UserPlus, label: '대타 모집', path: storeId ? `/admin/substitute/${storeId}` : '/admin/branch-selection' },
-    { icon: Users, label: '직원 관리', path: storeId ? `/admin/employees/${storeId}` : '/admin/branch-selection' },
-    { icon: Wallet, label: '급여 관리', path: storeId ? `/admin/payroll/${storeId}` : '/admin/branch-selection' },
-    { icon: FileText, label: '문서 관리', path: storeId ? `/admin/documents/${storeId}` : '/admin/branch-selection' },
-    { icon: MessageSquare, label: '게시판', path: storeId ? `/admin/board/${storeId}` : '/admin/branch-selection' },
-    { icon: BarChart3, label: 'AI 고객 분석', path: storeId ? `/admin/analytics/${storeId}` : '/admin/branch-selection' },
-    { icon: Video, label: 'CCTV 분석', path: storeId ? `/admin/cctv/${storeId}` : '/admin/branch-selection' },
+    { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: storeId ? `/admin/schedule/monthly/${storeId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: translations.adminDashboard[language].menuItems.substituteRecruitment, path: storeId ? `/admin/substitute/${storeId}` : '/admin/branch-selection' },
+    { icon: Users, label: translations.adminDashboard[language].menuItems.employeeManagement, path: storeId ? `/admin/employees/${storeId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: translations.adminDashboard[language].menuItems.payrollManagement, path: storeId ? `/admin/payroll/${storeId}` : '/admin/branch-selection' },
+    { icon: FileText, label: translations.adminDashboard[language].menuItems.documentManagement, path: storeId ? `/admin/documents/${storeId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: translations.adminDashboard[language].menuItems.board, path: storeId ? `/admin/board/${storeId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: translations.adminDashboard[language].menuItems.aiAnalytics, path: storeId ? `/admin/analytics/${storeId}` : '/admin/branch-selection' },
+    { icon: Video, label: translations.adminDashboard[language].menuItems.cctvAnalysis, path: storeId ? `/admin/cctv/${storeId}` : '/admin/branch-selection' },
   ];
 
   useEffect(() => {

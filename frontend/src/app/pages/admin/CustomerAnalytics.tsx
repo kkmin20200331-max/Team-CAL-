@@ -1,3 +1,5 @@
+import { useLanguage } from "../../i18n/useLanguage";
+import { translations } from "../../i18n/translations";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -160,12 +162,7 @@ const fallbackWeeklyPattern: WeeklyPatternRow[] = [
   { day: "일", morning: 0, lunch: 0, evening: 0 },
 ];
 
-const tabLabels: Array<[TabKey, string]> = [
-  ["live", "실시간 현황"],
-  ["pattern", "방문 패턴"],
-  ["insight", "AI 인사이트"],
-  ["schedule", "스케줄 추천"],
-];
+const TAB_KEYS: TabKey[] = ["live", "pattern", "insight", "schedule"];
 
 const resolveStoreId = (branchId?: string) => {
   if (!branchId) return 1;
@@ -272,6 +269,8 @@ const severityClass = (severity?: string) => {
 };
 
 export default function CustomerAnalytics() {
+  const language = useLanguage();
+  const t = translations.customerAnalytics[language];
   const navigate = useNavigate();
   const location = useLocation();
   const { branchId } = useParams();
@@ -319,14 +318,14 @@ export default function CustomerAnalytics() {
   }, []);
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: UserPlus, label: translations.adminDashboard[language].menuItems.substituteRecruitment, path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Users, label: translations.adminDashboard[language].menuItems.employeeManagement, path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Wallet, label: translations.adminDashboard[language].menuItems.payrollManagement, path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: FileText, label: translations.adminDashboard[language].menuItems.documentManagement, path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: MessageSquare, label: translations.adminDashboard[language].menuItems.board, path: selectedBranchId ? `/admin/board/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: BarChart3, label: translations.adminDashboard[language].menuItems.aiAnalytics, path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Video, label: translations.adminDashboard[language].menuItems.cctvAnalysis, path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : "/admin/branch-selection" },
   ];
 
   const storeId = resolveStoreId(selectedBranchId);
@@ -404,21 +403,21 @@ export default function CustomerAnalytics() {
 
   const kpis = [
     {
-      title: "현재 매장 인원",
+      title: t.kpiStoreCount,
       value: `${currentCount}명`,
       delta: `${metrics?.running ? "분석 실행 중" : "분석 대기"} | ${lastSyncedAt}`,
       icon: Users,
       tone: GREEN,
     },
     {
-      title: "오늘 누적 로그",
+      title: t.kpiLogCount,
       value: `${todayTotalVisitors}명`,
       delta: `people_log ${peopleLogs.length}건`,
       icon: Activity,
       tone: GREEN,
     },
     {
-      title: "AI 응답 출처",
+      title: t.kpiAiSource,
       value: aiResult?.source === "llm" ? "OpenAI" : aiResult?.source || "대기",
       delta: aiResult?.summary?.riskLevel
         ? `risk ${aiResult.summary.riskLevel}`
@@ -427,7 +426,7 @@ export default function CustomerAnalytics() {
       tone: '#F59E0B',
     },
     {
-      title: "AI 처리 프레임",
+      title: t.kpiFrames,
       value: `${metrics?.processedFrames ?? 0}`,
       delta: `confidence ${metrics?.lastConfidenceAvg ?? 0}`,
       icon: Wallet,
@@ -676,12 +675,12 @@ export default function CustomerAnalytics() {
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, gap: 16, flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {currentBranch} <ChevronRight size={12} /> AI 고객 분석
+                {currentBranch} <ChevronRight size={12} /> {t.backLabel}
               </div>
               <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Brain size={26} />실시간 고객 행동 분석 및 인사이트
+                <Brain size={26} />{t.title}
               </h1>
-              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>운영 데이터는 5초마다 동기화하고, 새로고침 버튼은 OpenAI/LLM 인사이트 분석까지 실행합니다.</p>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.subtitle}</p>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -690,10 +689,10 @@ export default function CustomerAnalytics() {
                 style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: aiLoading ? 'not-allowed' : 'pointer', opacity: aiLoading ? 0.7 : 1 }}
               >
                 <RefreshCw size={16} style={{ animation: aiLoading ? 'spin 1s linear infinite' : 'none' }} />
-                {aiLoading ? "AI 분석 중" : "새로고침"}
+                {aiLoading ? "AI 분석 중" : t.refresh}
               </button>
               <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                <Download size={16} />리포트
+                <Download size={16} />{t.report}
               </button>
             </div>
           </div>
@@ -736,10 +735,12 @@ export default function CustomerAnalytics() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <LineChartIcon size={18} color={DARK_GREEN} />
-                  <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>시간대별 방문 흐름</p>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.chartTitle}</p>
                 </div>
                 <div style={{ display: 'flex', gap: 4, background: LIGHT_GREEN, borderRadius: 10, padding: 4 }}>
-                  {tabLabels.map(([value, label]) => (
+                  {TAB_KEYS.map((value) => {
+                    const tabLabelMap: Record<TabKey, string> = { live: t.tabLive, pattern: t.tabPattern, insight: t.tabInsight, schedule: t.tabSchedule };
+                    return (
                     <button
                       key={value}
                       onClick={() => setActiveTab(value)}
@@ -750,9 +751,9 @@ export default function CustomerAnalytics() {
                         boxShadow: activeTab === value ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
                       }}
                     >
-                      {label}
+                      {tabLabelMap[value]}
                     </button>
-                  ))}
+                  )})}
                 </div>
               </div>
               <div style={{ height: 300 }}>
@@ -774,26 +775,26 @@ export default function CustomerAnalytics() {
             <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <Zap size={18} color="#F97316" />
-                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>현재 진단</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.diagnosisTitle}</p>
               </div>
               <div style={{ background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa', padding: '14px 16px', marginBottom: 12 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#c2410c', marginBottom: 4 }}>가장 혼잡한 시간</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#c2410c', marginBottom: 4 }}>{t.peakTimeTitle}</p>
                 <p style={{ fontSize: 28, fontWeight: 800, color: '#7c2d12', margin: '0 0 8px' }}>{peakHour.time}</p>
                 <p style={{ fontSize: 13, color: '#c2410c', margin: 0 }}>
-                  방문 {peakHour.visitors}명, 추천 배치 {peakHour.recommended}명, 예상 대기 {peakHour.wait}분
+                  {t.peakDesc(peakHour.visitors, peakHour.recommended, peakHour.wait)}
                 </p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${LIGHT_GREEN}` }}>
                   <Calendar size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
-                  <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>마지막 분석</p>
+                  <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>{t.lastAnalysis}</p>
                   <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>
                     {metrics?.lastMeasuredAt ? metrics.lastMeasuredAt.slice(11, 19) : "-"}
                   </p>
                 </div>
                 <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${LIGHT_GREEN}` }}>
                   <Wallet size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
-                  <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>AI 출처</p>
+                  <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>{t.aiSourceLabel}</p>
                   <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>{aiResult?.source || "대기"}</p>
                 </div>
               </div>
@@ -803,7 +804,7 @@ export default function CustomerAnalytics() {
           {/* Weekly pattern tab */}
           {activeTab === "pattern" && (
             <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 20 }}>
-              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 16 }}>요일별 방문 패턴</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 16 }}>{t.weeklyPatternTitle}</p>
               <div style={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={weeklyPattern}>
@@ -825,7 +826,7 @@ export default function CustomerAnalytics() {
             <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <Sparkles size={18} color={DARK_GREEN} />
-                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>AI 인사이트</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.aiInsightTitle}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {renderedInsights.map((insight) => (
@@ -852,7 +853,7 @@ export default function CustomerAnalytics() {
             <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <BarChart3 size={18} color={GREEN} />
-                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>운영 지표</p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.operatingMetricsTitle}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {operatingMetrics.map((metric) => (
@@ -874,13 +875,13 @@ export default function CustomerAnalytics() {
           <div style={{ background: 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${LIGHT_GREEN}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
               <TrendingUp size={18} color="#F97316" />
-              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>AI 스케줄 추천</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.scheduleRecommendTitle}</p>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                 <thead>
                   <tr style={{ background: LIGHT_GREEN }}>
-                    {['시간대', '현재 인원', '추천 배치', '상태', '추천 이유'].map(col => (
+                    {[t.colTime, t.colCurrent, t.colRecommended, t.colStatus, t.colReason].map(col => (
                       <th key={col} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>{col}</th>
                     ))}
                   </tr>
