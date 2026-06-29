@@ -174,7 +174,7 @@ export default function ProfilePanel() {
     );
   };
 
-  const panelBg = isDark ? "#2a2a2e" : "white";
+  const panelBg = isDark ? "#141416" : "white";
   const textMain = isDark ? "#f0f0f0" : "#111827";
   const textSub = isDark ? "#b0b0b8" : "#6b7280";
   const divider = isDark ? "#222222" : "#e5e7eb";
@@ -182,9 +182,9 @@ export default function ProfilePanel() {
   const closeIcon = isDark ? "#fff" : "#07790F";
   const cardBg = isDark ? "#111111" : "#f9fafb";
   const cardBorder = isDark ? "#2a2a2a" : "#e5e7eb";
-  const logoutBg = isDark ? "#111111" : "#f5f5f5";
-  const logoutHov = isDark ? "#1e1e1e" : "#ebebeb";
-  const logoutTxt = isDark ? "#e0e0e0" : "#555";
+  const logoutBg = isDark ? "rgba(239,68,68,0.12)" : "#f5f5f5";
+  const logoutHov = isDark ? "rgba(239,68,68,0.2)" : "#ebebeb";
+  const logoutTxt = isDark ? "#f87171" : "#555";
   const darkCard = "#111111";
   const darkCardBorder = "#4a8a50";
 
@@ -1153,7 +1153,7 @@ export default function ProfilePanel() {
                   width: "100%",
                   padding: "13px 0",
                   borderRadius: 14,
-                  border: "none",
+                  border: isDark ? "1px solid rgba(239,68,68,0.3)" : "none",
                   background: logoutBg,
                   color: logoutTxt,
                   fontWeight: 700,

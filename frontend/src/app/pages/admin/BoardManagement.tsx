@@ -542,9 +542,9 @@ const BoardManagement: React.FC = () => {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6, marginLeft: 12, flexShrink: 0 }}>
-                      <button onClick={e => { e.stopPropagation(); handleTogglePin(post); }} style={{ background: post.is_pinned === 'Y' ? LIGHT_GREEN : 'transparent', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: DARK_GREEN }}><Pin size={13} /></button>
-                      <button onClick={e => { e.stopPropagation(); openEditModal(post); }} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: DARK_GREEN }}><Edit size={13} /></button>
-                      <button onClick={e => { e.stopPropagation(); handleDelete(post.id); }} style={{ background: 'transparent', border: '1px solid #EF4444', borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: '#EF4444' }}><Trash2 size={13} /></button>
+                      <button onClick={e => { e.stopPropagation(); handleTogglePin(post); }} style={{ background: post.is_pinned === 'Y' ? (isDark ? 'rgba(24,160,34,0.2)' : LIGHT_GREEN) : 'transparent', border: `1px solid ${isDark ? 'rgba(0,162,0,0.4)' : BORDER_GREEN}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: isDark ? '#4cd964' : DARK_GREEN }}><Pin size={13} /></button>
+                      <button onClick={e => { e.stopPropagation(); openEditModal(post); }} style={{ background: 'transparent', border: `1px solid ${isDark ? '#3a3a3a' : BORDER_GREEN}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: isDark ? '#9dc49d' : DARK_GREEN }}><Edit size={13} /></button>
+                      <button onClick={e => { e.stopPropagation(); handleDelete(post.id); }} style={{ background: isDark ? 'rgba(239,68,68,0.12)' : 'transparent', border: `1px solid ${isDark ? 'rgba(239,68,68,0.3)' : '#EF4444'}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: '#EF4444' }}><Trash2 size={13} /></button>
                     </div>
                   </div>
                 </div>

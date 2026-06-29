@@ -872,10 +872,11 @@ export default function AdminDashboard() {
           style={{
             flex: 1,
             minWidth: 0,
-            background: "rgba(255,255,255,0.97)",
+            background: mainBg,
             borderRadius: 24,
             padding: "28px 28px 32px",
             boxShadow: "0px 8px 40px rgba(0,0,0,0.18)",
+            minHeight: "calc(100vh - 120px)",
           }}
         >
           {/* 타이틀 행 */}

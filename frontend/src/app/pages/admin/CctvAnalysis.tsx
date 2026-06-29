@@ -385,7 +385,7 @@ export default function CctvAnalysis() {
                 </button>
                 <span style={{ fontSize: 11, color: '#c8c8c8' }}>최근 저장: {lastSavedAt}</span>
               </div>
-              <button disabled={isSubmitting} onClick={isRunning ? handleStop : handleStart} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: isRunning ? '#ef4444' : GREEN, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>
+              <button disabled={isSubmitting} onClick={isRunning ? handleStop : handleStart} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: isRunning ? (isDark ? 'rgba(239,68,68,0.2)' : '#ef4444') : GREEN, border: isRunning ? `1px solid ${isDark ? 'rgba(239,68,68,0.5)' : 'transparent'}` : 'none', borderRadius: 54, color: isRunning ? (isDark ? '#f87171' : '#fff') : '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>
                 {isRunning ? <CircleStop size={16} /> : <Play size={16} />}
                 {isSubmitting ? "요청 중" : isRunning ? "분석 중지" : "분석 시작"}
               </button>
@@ -403,7 +403,7 @@ export default function CctvAnalysis() {
               label: '분석 상태',
               value: isRunning ? '실행 중' : '대기 중',
               sub: isRunning ? `서버 동기화 ${lastSyncedAt}` : '시작 버튼으로 API 호출',
-              badge: { text: isRunning ? 'LIVE' : 'STOP', bg: isRunning ? GREEN : '#888' },
+              badge: { text: isRunning ? 'LIVE' : 'STOP', bg: isRunning ? GREEN : (isDark ? 'rgba(107,114,128,0.2)' : '#888'), border: isRunning ? 'none' : (isDark ? '1px solid rgba(107,114,128,0.4)' : 'none'), textColor: isRunning ? '#fff' : (isDark ? '#9ca3af' : '#fff') },
               icon: null,
             },
             {
@@ -436,7 +436,7 @@ export default function CctvAnalysis() {
                   <p style={{ fontSize: 11, color: isDark ? '#c8c8c8' : '#6b7280', margin: 0 }}>{sub}</p>
                 </div>
                 {badge && (
-                  <span style={{ background: badge.bg, color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>{badge.text}</span>
+                  <span style={{ background: badge.bg, color: badge.textColor || '#fff', border: badge.border || 'none', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>{badge.text}</span>
                 )}
                 {icon}
               </div>
