@@ -2055,6 +2055,7 @@ const documentManagement = {
     downloadUrlError: '다운로드 URL을 만들 수 없습니다.',
     errDelete: '문서 삭제에 실패했습니다.',
     confirmDelete: '문서를 삭제할까요?',
+    selectBranch: '지점 선택',
   },
   en: {
     backToDashboard: 'Back to Dashboard',
@@ -2119,7 +2120,6 @@ const documentManagement = {
     errDelete: 'Failed to delete document.',
     confirmDelete: 'Delete this document?',
     selectBranch: 'Select Branch',
-    selectBranch: '지점 선택',
   },
   ja: {
     backToDashboard: 'ダッシュボードに戻る',
