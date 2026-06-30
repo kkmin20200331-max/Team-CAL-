@@ -15,6 +15,7 @@ public class BoardPostVO {
 
     private String board_id;
     private String store_id;
+    private String board_name;
 
     private String writer_id;
 

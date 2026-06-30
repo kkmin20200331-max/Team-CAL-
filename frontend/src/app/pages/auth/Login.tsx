@@ -133,12 +133,14 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg("");
-    if (!username || !password) {
+    const loginUsername = username.trim();
+    const loginPassword = password.trim();
+    if (!loginUsername || !loginPassword) {
       setErrorMsg(t.errorEmpty);
       return;
     }
     try {
-      const res = await loginAPI(username, password);
+      const res = await loginAPI(loginUsername, loginPassword);
       const loginUser = {
         id: res.data.id,
         username: res.data.username,
