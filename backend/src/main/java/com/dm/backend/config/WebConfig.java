@@ -19,7 +19,11 @@ public class WebConfig implements WebMvcConfigurer {
             "http://localhost:*",
             "http://127.0.0.1:*",
             "http://10.*:*",
-            "http://192.168.*:*"
+            "http://192.168.*:*",
+            "http://bitemate.kro.kr",
+            "http://www.bitemate.kro.kr",
+            "https://bitemate.kro.kr",
+            "https://www.bitemate.kro.kr"
     );
 
     // =========================

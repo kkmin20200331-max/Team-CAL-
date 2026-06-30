@@ -562,7 +562,10 @@ export default function AdminDashboard() {
         });
 
         if (!response.ok) {
-          throw new Error("AI insight request failed");
+          const detail = await response.text();
+          throw new Error(
+            `AI insight request failed (${response.status}): ${detail || response.statusText}`,
+          );
         }
 
         const data = await response.json();
