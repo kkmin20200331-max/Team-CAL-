@@ -604,7 +604,7 @@ export default function ProfilePanel() {
 
       {/* 슬라이드 패널 오버레이 + 패널 — body에 Portal로 마운트해서 stacking context 탈출 */}
       {createPortal(
-        <>
+        <div className="ui-scale-portal">
           {open && (
             <div
               style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.35)' }}
@@ -1190,8 +1190,7 @@ export default function ProfilePanel() {
             </div>
           </div>
         </div>
-        </>,
-        document.body
+        </div>, document.body
       )}
     </>
   );
