@@ -86,6 +86,19 @@ interface BackendFile {
 const DocumentManagement: React.FC = () => {
   const language = useLanguage();
   const t = translations.documentManagement[language];
+  const backendNoteTranslations: Record<string, Record<string, string>> = {
+    '보건증을 네이버 OCR로 처리했습니다. 추출값은 관리자가 최종 확인해야 합니다.': {
+      ko: '보건증을 네이버 OCR로 처리했습니다. 추출값은 관리자가 최종 확인해야 합니다.',
+      en: 'Health certificate processed by Naver OCR. Extracted values require admin confirmation.',
+      ja: '健康証明書はNaver OCRで処理されました。抽出された値は管理者が最終確認する必要があります。',
+    },
+  };
+
+  const translateBackendNote = (note?: string) => {
+    if (!note) return note;
+    const m = backendNoteTranslations[note];
+    return m ? (m[language] || m['en']) : note;
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const { branchId } = useParams();
@@ -737,7 +750,7 @@ const DocumentManagement: React.FC = () => {
                 {doc.notes && (
                   <div style={{ background: isDark ? 'rgba(234,179,8,0.1)' : '#fef9c3', borderRadius: 8, padding: '8px 10px', marginBottom: 10, fontSize: 12, color: isDark ? '#facc15' : '#713f12', display: 'flex', alignItems: 'flex-start', gap: 4, border: `1px solid ${isDark ? 'rgba(234,179,8,0.2)' : '#fde68a'}` }}>
                     <AlertCircle size={12} style={{ marginTop: 2, flexShrink: 0 }} />
-                    {doc.notes}
+                    {translateBackendNote(doc.notes)}
                   </div>
                 )}
 
