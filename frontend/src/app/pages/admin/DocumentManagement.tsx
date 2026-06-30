@@ -1,6 +1,6 @@
 import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Upload,
