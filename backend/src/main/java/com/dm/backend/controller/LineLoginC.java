@@ -22,6 +22,12 @@ public class LineLoginC {
     @Value("${line.login.redirect-uri}")
     private String redirectUri;
 
+    @Value("${app.frontend-base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
+
+    @Value("${line.official-account-url:https://line.me/R/ti/p/@354cpsdr}")
+    private String officialAccountUrl;
+
     @Autowired
     private LineLoginService lineLoginService;
 
@@ -101,7 +107,7 @@ public class LineLoginC {
         if (code == null) {
 
             return new RedirectView(
-                    "http://localhost:5173/line/error?message="
+                    frontendBaseUrl + "/line/error?message="
                             + URLEncoder.encode(
                             "LINE 로그인이 취소되었습니다.",
                             StandardCharsets.UTF_8
@@ -114,7 +120,7 @@ public class LineLoginC {
         if (userId == null) {
 
             return new RedirectView(
-                    "http://localhost:5173/line/error?message="
+                    frontendBaseUrl + "/line/error?message="
                             + URLEncoder.encode(
                             "사용자 정보를 찾을 수 없습니다.",
                             StandardCharsets.UTF_8
@@ -175,7 +181,11 @@ public class LineLoginC {
             // =========================
 
             return new RedirectView(
-                    "https://line.me/R/ti/p/@354cpsdr"
+                    frontendBaseUrl + "/line/success?friendUrl="
+                            + URLEncoder.encode(
+                            officialAccountUrl,
+                            StandardCharsets.UTF_8
+                    )
             );
 
         } catch (Exception e) {
@@ -183,7 +193,7 @@ public class LineLoginC {
             e.printStackTrace();
 
             return new RedirectView(
-                    "http://localhost:5173/line/error?message="
+                    frontendBaseUrl + "/line/error?message="
                             + URLEncoder.encode(
                             e.getMessage(),
                             StandardCharsets.UTF_8
