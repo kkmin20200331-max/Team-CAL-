@@ -35,6 +35,18 @@ export default function LoginScreen({ navigation }: Props) {
   const { t, language, setLanguage } = useLanguage();
   const styles = getThemedStyles(colors, isDarkMode);
 
+  const getLogoSource = () => {
+    switch (language) {
+      case 'English':
+        return require('../../../assets/img/logo_en.png');
+      case '日本語':
+        return require('../../../assets/img/logo_3.png');
+      case '한국어':
+      default:
+        return require('../../../assets/img/logo_ko.png');
+    }
+  };
+
   const handleInputChange = (name: string, text: string) => {
     setInputs({ ...inputs, [name]: text });
   };
@@ -110,7 +122,7 @@ export default function LoginScreen({ navigation }: Props) {
     >
       <ScrollView contentContainerStyle={styles.container}>
         <Image
-          source={require('../../../assets/img/logo_3.png')}
+          source={getLogoSource()}
           style={styles.logoImage}
           resizeMode="contain"
         />
