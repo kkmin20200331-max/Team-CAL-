@@ -44,6 +44,7 @@ import MyAttendance from "./pages/employee/MyAttendance";
 import EmployeeBoard from "./pages/employee/EmployeeBoard";
 import EditProfile from "./pages/employee/EditProfile";
 import LineError from "./pages/auth/LineError";
+import LineSuccess from "./pages/auth/LineSuccess";
 
 export default function App() {
   const [apiMessage, setApiMessage] = useState(
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/signup" element={<SignUp />} />
           <Route path="/line/error" element={<LineError />} />
+          <Route path="/line/success" element={<LineSuccess />} />
           <Route
             path="/master/applications"
             element={

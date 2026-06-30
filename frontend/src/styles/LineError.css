@@ -37,6 +37,10 @@
   color: #e53935;
 }
 
+.line-error-card .line-success-title {
+  color: #06c755;
+}
+
 .line-error-card p {
   margin-bottom: 24px;
 
@@ -65,4 +69,22 @@
 
 .line-error-btn:hover {
   opacity: 0.9;
+}
+
+.line-secondary-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #d8e4d3;
+  border-radius: 10px;
+  background: #fff;
+  color: #266329;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.line-secondary-btn:hover {
+  background: #f3faef;
 }

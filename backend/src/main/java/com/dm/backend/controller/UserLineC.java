@@ -1,4 +1,4 @@
-package com.dm.backend.controller;
+spackage com.dm.backend.controller;
 
 import com.dm.backend.mapper.UserLineMapper;
 import com.dm.backend.service.UserLineService;
@@ -24,7 +24,7 @@ public class UserLineC {
     private UserLineMapper userLineMapper;
 
     @PostMapping
-    public void register(UserLineVO vo) {
+    public void register(@RequestBody UserLineVO vo) {
 
         UserLineVO userInfo =
                 userLineMapper.findByUserId(
