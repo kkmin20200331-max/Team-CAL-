@@ -415,7 +415,7 @@ export default function AttendanceManagement() {
               { label: t.late, value: stats.late, icon: <Clock size={18} /> },
               { label: t.absent, value: stats.absent, icon: <AlertCircle size={18} /> },
             ].map((item) => (
-              <div key={item.label} style={{ background: cardBg, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, borderRadius: 16, padding: "16px 18px" }}>
+              <div key={item.label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, borderRadius: 16, padding: "16px 18px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: DARK_GREEN, marginBottom: 10 }}>
                   <span style={{ fontSize: 13, color: subText, fontWeight: 700 }}>{item.label}</span>
                   {item.icon}
@@ -428,9 +428,9 @@ export default function AttendanceManagement() {
           <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220, position: "relative" }}>
               <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#8BA68D" }} />
-              <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={t.searchPlaceholder} style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px 11px 36px", borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, outline: "none" }} />
+              <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={t.searchPlaceholder} style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px 11px 36px", borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, outline: "none" }} />
             </div>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RowStatus | "all")} style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, outline: "none" }}>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RowStatus | "all")} style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, outline: "none" }}>
               <option value="all">{t.allStatus}</option>
               {Object.entries(localizedStatusMeta).map(([value, meta]) => (
                 <option key={value} value={value}>{meta.label}</option>
@@ -438,7 +438,7 @@ export default function AttendanceManagement() {
             </select>
           </div>
 
-          <div style={{ overflowX: 'auto', background: cardBg, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto', background: cardBg, border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, borderRadius: 16, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <colgroup>
                   <col style={{ width: '12%' }} />
@@ -451,7 +451,7 @@ export default function AttendanceManagement() {
                   <col style={{ width: '11%' }} />
                 </colgroup>
                 <thead style={{ overflow: 'hidden' }}>
-                  <tr style={{ borderBottom: `1px solid ${LIGHT_GREEN}`, background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
+                  <tr style={{ borderBottom: `1px solid ${BORDER_GREEN}`, background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
                     {[t.colDate, t.colEmployee, t.colScheduled, t.colCheckIn, t.colCheckOut, t.colWork, t.colStatus, t.colNote].map((header, i) => (
                       <th key={header} style={{ padding: i === 0 ? '13px 20px 13px 52px' : '13px 20px', textAlign: 'center', fontSize: 13, color: subText, fontWeight: 800, borderTopLeftRadius: i === 0 ? 16 : 0, borderTopRightRadius: i === 7 ? 16 : 0 }}>{header}</th>
                     ))}
@@ -466,7 +466,7 @@ export default function AttendanceManagement() {
                     filteredRows.map((row) => {
                       const meta = localizedStatusMeta[row.status];
                       return (
-                        <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : 'rgba(230,245,200,0.8)'}` }}>
+                        <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : 'rgba(0,162,0,0.2)'}` }}>
                           <td style={{ padding: '14px 20px 14px 52px', color: textColor, fontWeight: 700, textAlign: 'center' }}>{row.date}</td>
                           <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>
                             <div style={{ fontWeight: 800 }}>{row.employeeName}</div>

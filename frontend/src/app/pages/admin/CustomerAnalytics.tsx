@@ -773,7 +773,7 @@ export default function CustomerAnalytics() {
           {/* KPI Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
             {kpis.map((item) => (
-              <div key={item.title} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+              <div key={item.title} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                   <div>
                     <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#9dc49d' : '#8BA68D', margin: '0 0 8px' }}>{item.title}</p>
@@ -789,7 +789,7 @@ export default function CustomerAnalytics() {
           {/* Main charts area */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 20 }}>
             {/* Traffic chart */}
-            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <LineChartIcon size={18} color={isDark ? GREEN : DARK_GREEN} />
@@ -830,7 +830,7 @@ export default function CustomerAnalytics() {
             </div>
 
             {/* Current diagnosis */}
-            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <Zap size={18} color="#F97316" />
                 <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.diagnosisTitle}</p>
@@ -843,14 +843,14 @@ export default function CustomerAnalytics() {
                 </p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+                <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                   <Calendar size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
                   <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>{t.lastAnalysis}</p>
                   <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>
                     {metrics?.lastMeasuredAt ? metrics.lastMeasuredAt.slice(11, 19) : "-"}
                   </p>
                 </div>
-                <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+                <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                   <Wallet size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
                   <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>{t.aiSourceLabel}</p>
                   <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>{aiResult?.source === "llm" ? translateAiText('OpenAI 분석') : (aiResult?.source ? translateAiText(aiResult.source) : translateAiText('대기'))}</p>
@@ -861,7 +861,7 @@ export default function CustomerAnalytics() {
 
           {/* Weekly pattern tab */}
           {activeTab === "pattern" && (
-            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, marginBottom: 20 }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, marginBottom: 20 }}>
               <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, marginBottom: 16 }}>{t.weeklyPatternTitle}</p>
               <div style={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -881,14 +881,14 @@ export default function CustomerAnalytics() {
 
           {/* AI Insights + Operating Metrics */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 20 }}>
-            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <Sparkles size={18} color={isDark ? GREEN : DARK_GREEN} />
                 <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.aiInsightTitle}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {renderedInsights.map((insight) => (
-                  <div key={insight.title} style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '14px 16px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+                  <div key={insight.title} style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 12, padding: '14px 16px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -908,7 +908,7 @@ export default function CustomerAnalytics() {
               </div>
             </div>
 
-            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <BarChart3 size={18} color={GREEN} />
                 <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.operatingMetricsTitle}</p>
@@ -930,30 +930,31 @@ export default function CustomerAnalytics() {
           </div>
 
           {/* Schedule Recommendations Table */}
-          <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <TrendingUp size={18} color="#F97316" />
-              <p style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.scheduleRecommendTitle}</p>
+          <div style={{ background: isDark ? cardBg : '#fff', borderRadius: 16, border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`, overflow: 'hidden' }}>
+            {/* 헤더 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 20px', background: isDark ? 'rgba(24,160,34,0.1)' : 'rgba(230,245,200,0.35)', borderBottom: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
+              <TrendingUp size={18} color={GREEN} />
+              <p style={{ fontSize: 15, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.scheduleRecommendTitle}</p>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                 <thead>
-                  <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
+                  <tr style={{ background: isDark ? 'rgba(24,160,34,0.08)' : LIGHT_GREEN }}>
                     {[t.colTime, t.colCurrent, t.colRecommended, t.colStatus, t.colReason].map(col => (
-                      <th key={col} style={{ padding: '12px 16px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}>{col}</th>
+                      <th key={col} style={{ padding: '11px 16px', textAlign: 'center', fontSize: 12, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, letterSpacing: '0.02em' }}>{col}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {scheduleRecommendations.map((row, idx) => (
-                    <tr key={row.time} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : LIGHT_GREEN}`, background: idx % 2 === 0 ? (isDark ? 'rgba(24,160,34,0.05)' : 'rgba(230,245,200,0.2)') : 'transparent' }}>
-                      <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 700, color: textColor, textAlign: 'center' }}>{row.time}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 14, color: '#8BA68D', textAlign: 'center' }}>{row.current}{translateAiText('명')}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 14, color: textColor, fontWeight: 600, textAlign: 'center' }}>{row.recommended}{translateAiText('명')}</td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                    <tr key={row.time} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : 'rgba(230,245,200,0.8)'}`, background: idx % 2 === 0 ? (isDark ? 'rgba(24,160,34,0.03)' : 'rgba(230,245,200,0.15)') : 'transparent', transition: 'background 0.15s' }}>
+                      <td style={{ padding: '13px 16px', fontSize: 14, fontWeight: 700, color: DARK_GREEN, textAlign: 'center' }}>{row.time}</td>
+                      <td style={{ padding: '13px 16px', fontSize: 14, color: '#8BA68D', textAlign: 'center' }}>{row.current}{translateAiText('명')}</td>
+                      <td style={{ padding: '13px 16px', fontSize: 14, color: textColor, fontWeight: 700, textAlign: 'center' }}>{row.recommended}{translateAiText('명')}</td>
+                      <td style={{ padding: '13px 16px', textAlign: 'center' }}>
                         <Badge className={severityClass(row.status)}>{translateAiText(row.status)}</Badge>
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#8BA68D', textAlign: 'center' }}>{row.reason}</td>
+                      <td style={{ padding: '13px 24px', fontSize: 13, color: isDark ? '#aaa' : '#555', textAlign: 'left' }}>{row.reason}</td>
                     </tr>
                   ))}
                 </tbody>

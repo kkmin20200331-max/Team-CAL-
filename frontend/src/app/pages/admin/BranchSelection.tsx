@@ -102,61 +102,61 @@ export default function BranchSelection() {
     <div style={{ minHeight: '100vh', background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader>
         <div>
-          <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB' }}>{t.title}</h1>
-          <p style={{ fontSize: 20, color: 'rgba(255,255,255,0.85)', marginTop: 6 }}>{t.subtitle}</p>
+          <h1 style={{ fontSize: 32, fontWeight: 800, color: '#F2F5EB' }}>{t.title}</h1>
+          <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)', marginTop: 5 }}>{t.subtitle}</p>
         </div>
       </AdminHeader>
 
       {/* Store Cards */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 40px' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '28px 32px' }}>
         <button
           onClick={() => navigate("/admin/multibranch")}
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            width: '100%', marginBottom: 24, padding: '14px 0',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+            width: '100%', marginBottom: 20, padding: '12px 0',
             background: isDark ? '#1a1a1a' : LIGHT_GREEN,
             border: `1px solid ${BORDER_GREEN}`, borderRadius: 54,
-            color: DARK_GREEN, fontSize: 16, fontWeight: 600, cursor: 'pointer',
+            color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer',
           }}
         >
-          <LayoutGrid size={18} />
+          <LayoutGrid size={16} />
           {t.viewAllBranches}
         </button>
 
         {storesLoading ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: subTextColor, fontSize: 16 }}>{t.loading}</div>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: subTextColor, fontSize: 14 }}>{t.loading}</div>
         ) : stores.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: subTextColor, fontSize: 16 }}>{t.noStores}</div>
+          <div style={{ textAlign: 'center', padding: '60px 0', color: subTextColor, fontSize: 14 }}>{t.noStores}</div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
             {stores.map((store) => (
               <div
                 key={store.id}
                 onClick={() => handleSelectStore(store)}
                 style={{
-                  background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26,
-                  boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: '24px',
+                  background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20,
+                  boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: '20px',
                   cursor: 'pointer', transition: 'box-shadow 0.2s',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
                   {STORE_SVG}
-                  <span style={{ fontSize: 20, fontWeight: 700, color: textColor }}>{store.name}</span>
+                  <span style={{ fontSize: 17, fontWeight: 700, color: textColor }}>{store.name}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: subTextColor, fontSize: 14, marginBottom: 6 }}>
-                  <MapPin size={13} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: subTextColor, fontSize: 13, marginBottom: 5 }}>
+                  <MapPin size={12} />
                   <span>{store.address}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: subTextColor, fontSize: 14, marginBottom: 20 }}>
-                  <Clock size={13} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: subTextColor, fontSize: 13, marginBottom: 16 }}>
+                  <Clock size={12} />
                   <span>{t.operatingHours(store.open_time, store.close_time)}</span>
                 </div>
                 <button
                   style={{
-                    width: '100%', padding: '12px 0',
+                    width: '100%', padding: '10px 0',
                     background: GREEN,
                     border: 'none', borderRadius: 54, color: '#fff',
-                    fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                    fontSize: 14, fontWeight: 600, cursor: 'pointer',
                   }}
                   onClick={(e) => {
                     e.stopPropagation();

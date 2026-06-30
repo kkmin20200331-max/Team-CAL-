@@ -461,7 +461,7 @@ export default function CctvAnalysis() {
               icon: <Eye size={22} color={DARK_GREEN} />,
             },
           ].map(({ label, value, sub, badge, icon }) => (
-            <div key={label} style={{ background: isDark ? '#141414' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '16px 18px' }}>
+            <div key={label} style={{ background: isDark ? '#141414' : 'rgba(230,245,200,0.35)', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '16px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 12, color: isDark ? '#c8c8c8' : '#6b7280', margin: 0 }}>{label}</p>
@@ -478,14 +478,12 @@ export default function CctvAnalysis() {
         </section>
 
         <section style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="h-5 w-5" style={{ color: DARK_GREEN }} />
-                {t.realtimeCamera}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div style={{ background: isDark ? cardBg : '#fff', borderRadius: 16, border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px', background: isDark ? 'rgba(24,160,34,0.08)' : 'rgba(230,245,200,0.35)', borderBottom: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+              <Camera size={18} style={{ color: DARK_GREEN }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#fff' : DARK_GREEN }}>{t.realtimeCamera}</span>
+            </div>
+            <div style={{ padding: '16px 18px' }}>
               <div className="relative aspect-video overflow-hidden rounded-lg border bg-slate-950">
                 {isRunning ? (
                   <img
@@ -548,36 +546,27 @@ export default function CctvAnalysis() {
                       : cameraStatusMessage || t.streamHint}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" style={{ color: DARK_GREEN }} />
-                {t.cameraSettings}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="camera-id">{t.cameraId}</Label>
-                <Input
-                  id="camera-id"
-                  value={config.cameraId}
-                  onChange={(event) =>
-                    updateConfig("cameraId", event.target.value)
-                  }
-                />
+          {/* 카메라 설정 카드 */}
+          <div style={{ background: isDark ? cardBg : '#fff', borderRadius: 16, border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px', background: isDark ? 'rgba(24,160,34,0.08)' : 'rgba(230,245,200,0.35)', borderBottom: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+              <Settings size={18} style={{ color: DARK_GREEN }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#fff' : DARK_GREEN }}>{t.cameraSettings}</span>
+            </div>
+            <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* 카메라 ID */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#aaa' : DARK_GREEN }}>{t.cameraId}</label>
+                <input value={config.cameraId} onChange={(e) => updateConfig("cameraId", e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${isDark ? '#3a3a3a' : BORDER_GREEN}`, background: isDark ? '#1a1a1a' : '#fff', color: isDark ? '#fff' : '#111', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
               </div>
-              <div className="space-y-2">
-                <Label>{t.sourceType}</Label>
-                <Select
-                  value={config.sourceType}
-                  onValueChange={(value) =>
-                    updateConfig("sourceType", value as SourceType)
-                  }
-                >
-                  <SelectTrigger>
+              {/* 소스 타입 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#aaa' : DARK_GREEN }}>{t.sourceType}</label>
+                <Select value={config.sourceType} onValueChange={(value) => updateConfig("sourceType", value as SourceType)}>
+                  <SelectTrigger style={{ border: `1px solid ${isDark ? '#3a3a3a' : BORDER_GREEN}`, background: isDark ? '#1a1a1a' : '#fff', color: isDark ? '#fff' : '#111', borderRadius: 8, height: 36, fontSize: 13 }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -587,56 +576,31 @@ export default function CctvAnalysis() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="source">{t.source}</Label>
-                <Input
-                  id="source"
-                  value={config.source}
-                  onChange={(event) =>
-                    updateConfig("source", event.target.value)
-                  }
-                  placeholder={t.sourcePlaceholder}
-                />
+              {/* 소스 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#aaa' : DARK_GREEN }}>{t.source}</label>
+                <input value={config.source} onChange={(e) => updateConfig("source", e.target.value)} placeholder={t.sourcePlaceholder}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${isDark ? '#3a3a3a' : BORDER_GREEN}`, background: isDark ? '#1a1a1a' : '#fff', color: isDark ? '#fff' : '#111', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="interval-sec">{t.samplingSec}</Label>
-                  <Input
-                    id="interval-sec"
-                    type="number"
-                    min={1}
-                    max={3600}
-                    value={config.intervalSec}
-                    onChange={(event) =>
-                      updateConfig("intervalSec", Number(event.target.value))
-                    }
-                  />
+              {/* 샘플링/집계 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#aaa' : DARK_GREEN }}>{t.samplingSec}</label>
+                  <input type="number" min={1} max={3600} value={config.intervalSec} onChange={(e) => updateConfig("intervalSec", Number(e.target.value))}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${isDark ? '#3a3a3a' : BORDER_GREEN}`, background: isDark ? '#1a1a1a' : '#fff', color: isDark ? '#fff' : '#111', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="aggregation-sec">{t.aggregationSecLabel}</Label>
-                  <Input
-                    id="aggregation-sec"
-                    type="number"
-                    min={1}
-                    max={3600}
-                    value={config.aggregationIntervalSec}
-                    onChange={(event) =>
-                      updateConfig(
-                        "aggregationIntervalSec",
-                        Number(event.target.value),
-                      )
-                    }
-                  />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#aaa' : DARK_GREEN }}>{t.aggregationSecLabel}</label>
+                  <input type="number" min={1} max={3600} value={config.aggregationIntervalSec} onChange={(e) => updateConfig("aggregationIntervalSec", Number(e.target.value))}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${isDark ? '#3a3a3a' : BORDER_GREEN}`, background: isDark ? '#1a1a1a' : '#fff', color: isDark ? '#fff' : '#111', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>{t.model}</Label>
-                  <Select
-                    value={config.modelName}
-                    onValueChange={(value) => updateConfig("modelName", value)}
-                  >
-                    <SelectTrigger>
+              {/* 모델/이미지 크기 */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#aaa' : DARK_GREEN }}>{t.model}</label>
+                  <Select value={config.modelName} onValueChange={(value) => updateConfig("modelName", value)}>
+                    <SelectTrigger style={{ border: `1px solid ${isDark ? '#3a3a3a' : BORDER_GREEN}`, background: isDark ? '#1a1a1a' : '#fff', color: isDark ? '#fff' : '#111', borderRadius: 8, height: 36, fontSize: 13 }}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -646,15 +610,10 @@ export default function CctvAnalysis() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t.imageSize}</Label>
-                  <Select
-                    value={String(config.imageSize)}
-                    onValueChange={(value) =>
-                      updateConfig("imageSize", Number(value))
-                    }
-                  >
-                    <SelectTrigger>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#aaa' : DARK_GREEN }}>{t.imageSize}</label>
+                  <Select value={String(config.imageSize)} onValueChange={(value) => updateConfig("imageSize", Number(value))}>
+                    <SelectTrigger style={{ border: `1px solid ${isDark ? '#3a3a3a' : BORDER_GREEN}`, background: isDark ? '#1a1a1a' : '#fff', color: isDark ? '#fff' : '#111', borderRadius: 8, height: 36, fontSize: 13 }}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -665,38 +624,27 @@ export default function CctvAnalysis() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="confidence">confidence</Label>
-                  <span className="text-sm font-medium text-slate-700">
-                    {config.confidence}
-                  </span>
+              {/* Confidence */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: isDark ? '#aaa' : DARK_GREEN }}>confidence</label>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}>{config.confidence}</span>
                 </div>
-                <Input
-                  id="confidence"
-                  type="range"
-                  min="0.01"
-                  max="1"
-                  step="0.01"
-                  value={config.confidence}
-                  onChange={(event) =>
-                    updateConfig("confidence", Number(event.target.value))
-                  }
-                />
+                <input type="range" min="0.01" max="1" step="0.01" value={config.confidence}
+                  onChange={(e) => updateConfig("confidence", Number(e.target.value))}
+                  style={{ width: '100%', accentColor: GREEN }} />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </section>
 
         <section style={{ marginTop: 16 }}>
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <RotateCw className="h-5 w-5" style={{ color: GREEN }} />
-                {t.requestResponse}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <div style={{ background: isDark ? cardBg : '#fff', borderRadius: 16, border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px', background: isDark ? 'rgba(24,160,34,0.08)' : 'rgba(230,245,200,0.35)', borderBottom: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+              <RotateCw size={18} style={{ color: GREEN }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#fff' : DARK_GREEN }}>{t.requestResponse}</span>
+            </div>
+            <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? 'rgba(20,20,20,0.7)' : LIGHT_GREEN, padding: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: isDark ? GREEN : DARK_GREEN }}>
                   <MapPin size={14} />
@@ -748,8 +696,8 @@ export default function CctvAnalysis() {
                   </div>
                 ));
               })()}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </section>
         </div>
       </div>

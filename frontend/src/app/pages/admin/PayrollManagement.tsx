@@ -454,7 +454,7 @@ const PayrollManagement: React.FC = () => {
               { label: t.overtimeLabel, value: `${stats.overtimeHours.toFixed(1)}h` },
               { label: t.weeklyRequest, value: String(stats.weeklyPending) },
             ].map(({ label, value }) => (
-              <div key={label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+              <div key={label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#9dc49d' : '#8BA68D', marginBottom: 8 }}>{label}</p>
                 <p style={{ fontSize: 24, fontWeight: 800, color: isDark ? '#4cd964' : DARK_GREEN, margin: 0 }}>{value}</p>
               </div>
@@ -525,7 +525,7 @@ const PayrollManagement: React.FC = () => {
 
               {/* Payroll Table */}
               <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, border: `1px solid ${isDark ? '#1e2e1e' : BORDER_GREEN}`, boxShadow: '0px 4px 16px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
-                <div style={{ padding: '18px 24px', borderBottom: `1px solid ${isDark ? '#1e2e1e' : '#e8f5e9'}`, fontSize: 15, fontWeight: 700, color: textColor, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ padding: '18px 24px', borderBottom: `1px solid ${isDark ? '#1e2e1e' : BORDER_GREEN}`, background: isDark ? 'rgba(24,160,34,0.1)' : 'rgba(230,245,200,0.35)', fontSize: 15, fontWeight: 700, color: textColor, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <DollarSign size={16} color={GREEN} />
                   {t.payrollList(filteredPayroll.length)}
                 </div>
@@ -599,19 +599,19 @@ const PayrollManagement: React.FC = () => {
 
           {/* Weekly Pay Requests Tab */}
           {activeTab === "weekly" && (
-            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+            <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <CreditCard size={18} color={DARK_GREEN} />
                 <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{t.weeklyRequestList}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {weeklyPayRequests.length === 0 && (
-                  <div style={{ background: inputBg, borderRadius: 12, padding: '24px 16px', border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
+                  <div style={{ background: inputBg, borderRadius: 12, padding: '24px 16px', border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
                     {t.noWeeklyData}
                   </div>
                 )}
                 {weeklyPayRequests.map((request) => (
-                  <div key={request.id} style={{ background: inputBg, borderRadius: 12, padding: '16px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+                  <div key={request.id} style={{ background: inputBg, borderRadius: 12, padding: '16px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ width: 44, height: 44, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -666,11 +666,11 @@ const PayrollManagement: React.FC = () => {
           {activeTab === "analytics" && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {/* Monthly Trend */}
-              <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+              <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                 <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 16 }}>{t.monthlyTrend}</p>
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={monthlyPayrollData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={LIGHT_GREEN} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={BORDER_GREEN} />
                     <XAxis dataKey="month" tick={{ fill: '#8BA68D', fontSize: 13 }} />
                     <YAxis tick={{ fill: '#8BA68D', fontSize: 13 }} />
                     <Tooltip />
@@ -682,7 +682,7 @@ const PayrollManagement: React.FC = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                 {/* By Position Pie */}
-                <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+                <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                   <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 16 }}>{t.byPosition}</p>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
@@ -706,7 +706,7 @@ const PayrollManagement: React.FC = () => {
                 </div>
 
                 {/* Summary */}
-                <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+                <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                   <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 16 }}>{t.payrollSummary}</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {payrollByPosition.map((item, index) => (

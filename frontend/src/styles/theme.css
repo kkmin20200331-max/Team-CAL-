@@ -151,6 +151,11 @@
     background: linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%);
   }
 
+  /* 로그인 페이지에서는 전역 그라디언트 숨김 */
+  body.no-global-gradient::before {
+    display: none;
+  }
+
   /**
   * Default typography styles for HTML elements (h1-h4, p, label, button, input).
   * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.

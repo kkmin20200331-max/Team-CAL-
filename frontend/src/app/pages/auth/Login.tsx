@@ -108,6 +108,16 @@ export default function Login() {
   }, [isDark]);
 
   const bgColor = isDark ? "#1c1c1e" : "#EEF5DD";
+
+  // 로그인 페이지에서 전역 그라디언트 숨기고 단색 배경 적용
+  useEffect(() => {
+    document.body.classList.add('no-global-gradient');
+    document.body.style.background = bgColor;
+    return () => {
+      document.body.classList.remove('no-global-gradient');
+      document.body.style.background = '';
+    };
+  }, [bgColor]);
   const cardBg = isDark ? "#2c2c2e" : "#FFFFFF";
   const labelColor = isDark ? "#aaa" : "#606060";
   const inputBg = isDark ? "#3a3a3c" : "#F2F5EB";
@@ -157,16 +167,14 @@ export default function Login() {
   };
 
   return (
-    <div style={{ height: "100vh", background: bgColor, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 16px", overflow: "auto" }}>
+    <div style={{ minHeight: "100%", background: bgColor, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 16px", boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: 560 }}>
         <div style={{
           background: cardBg,
           borderRadius: 58,
           boxShadow: isDark ? "3px 4px 20px rgba(0,0,0,0.4)" : "3px 4px 12.6px rgba(255,255,255,0.25)",
           padding: "48px 80px",
-          minHeight: "auto",
-          maxHeight: "calc(100vh - 80px)",
-          overflow: "auto",
+          minHeight: 780,
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",

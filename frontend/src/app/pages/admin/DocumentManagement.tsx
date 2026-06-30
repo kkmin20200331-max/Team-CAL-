@@ -577,7 +577,7 @@ const DocumentManagement: React.FC = () => {
             { label: t.expired, value: stats.expired, icon: <AlertCircle size={20} color="#EF4444" /> },
             { label: t.ocrProcessing, value: stats.ocrProcessing, icon: <Scan size={20} color="#3B82F6" /> },
             ].map(({ label, value, icon }) => (
-              <div key={label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+              <div key={label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#9dc49d' : '#8BA68D', margin: 0 }}>{label}</p>
                   {icon}
@@ -624,7 +624,7 @@ const DocumentManagement: React.FC = () => {
           {/* Documents Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {filteredDocuments.map((doc) => (
-              <div key={doc.id} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
+              <div key={doc.id} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 44, height: 44, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -710,7 +710,7 @@ const DocumentManagement: React.FC = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div>
                     <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? GREEN : DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.selectEmployee}</label>
-                    <select value={uploadUserId} onChange={(e) => setUploadUserId(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor, background: isDark ? '#1a1a1a' : '#fff' }}>
+                    <select value={uploadUserId} onChange={(e) => setUploadUserId(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, fontSize: 14, outline: 'none', color: textColor, background: isDark ? '#1a1a1a' : '#fff' }}>
                       {employees.map((employee) => (
                         <option key={employee.id} value={employee.id}>{employee.name} ({employee.id})</option>
                       ))}
@@ -718,7 +718,7 @@ const DocumentManagement: React.FC = () => {
                   </div>
                   <div>
                     <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? GREEN : DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.docType}</label>
-                    <select value={uploadFileType} onChange={(e) => setUploadFileType(e.target.value as Document["type"])} style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor, background: isDark ? '#1a1a1a' : '#fff' }}>
+                    <select value={uploadFileType} onChange={(e) => setUploadFileType(e.target.value as Document["type"])} style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, fontSize: 14, outline: 'none', color: textColor, background: isDark ? '#1a1a1a' : '#fff' }}>
                       <option value="health_certificate">{t.typeHealth}</option>
                       <option value="contract">{t.typeContract}</option>
                       <option value="id_card">{t.typeId}</option>
@@ -733,7 +733,7 @@ const DocumentManagement: React.FC = () => {
                     <input id="document-upload-file" type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
                     <button type="button" onClick={() => document.getElementById('document-upload-file')?.click()} style={{ marginTop: 12, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>{t.selectFile}</button>
                   </div>
-                  <div style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN, borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, border: `1px solid ${isDark ? 'rgba(24,160,34,0.2)' : '#c5e89a'}` }}>
+                  <div style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN, borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, border: `1px solid ${isDark ? 'rgba(24,160,34,0.2)' : BORDER_GREEN}` }}>
                     <Scan size={20} color={isDark ? '#4cd964' : DARK_GREEN} style={{ flexShrink: 0, marginTop: 2 }} />
                     <div>
                       <p style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#4cd964' : DARK_GREEN, margin: 0 }}>{t.ocrAutoExtract}</p>
@@ -787,7 +787,7 @@ const DocumentManagement: React.FC = () => {
                 {selectedDocument.extractedData && (
                   <div style={{ marginBottom: 20 }}>
                     <p style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#4cd964' : DARK_GREEN, marginBottom: 12 }}>{t.ocrInfo}</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, background: isDark ? '#1e1e1e' : LIGHT_GREEN, borderRadius: 12, padding: '14px 16px', border: `1px solid ${isDark ? '#2a2a2a' : '#c5e89a'}` }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, background: isDark ? '#1e1e1e' : LIGHT_GREEN, borderRadius: 12, padding: '14px 16px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                       {Object.entries(selectedDocument.extractedData).map(([key, value]) =>
                         value && (
                           <div key={key}>
@@ -799,7 +799,7 @@ const DocumentManagement: React.FC = () => {
                     </div>
                   </div>
                 )}
-                <div style={{ background: isDark ? '#0f0f0f' : LIGHT_GREEN, borderRadius: 12, padding: 12, textAlign: 'center', marginBottom: 16, minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: `1px solid ${isDark ? '#2a2a2a' : '#c5e89a'}` }}>
+                <div style={{ background: isDark ? '#0f0f0f' : LIGHT_GREEN, borderRadius: 12, padding: 12, textAlign: 'center', marginBottom: 16, minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                   {isPreviewLoading ? (
                     <p style={{ fontSize: 14, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>{`${t.previewLabel}...`}</p>
                   ) : previewUrl && isImageDocument(selectedDocument) ? (
