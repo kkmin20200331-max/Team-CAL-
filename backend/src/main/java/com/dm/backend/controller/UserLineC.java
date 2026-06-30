@@ -17,7 +17,7 @@ public class UserLineC {
 
     // 연동 등록
     @PostMapping
-    public void register(UserLineVO vo) {
+    public void register(@RequestBody UserLineVO vo) {
 
         UserLineVO userInfo =
                 userLineMapper.findByUserId(
