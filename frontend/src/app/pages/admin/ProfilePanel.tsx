@@ -1,8 +1,10 @@
 import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
 import { useTheme } from 'next-themes';
 import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -166,6 +168,7 @@ export default function ProfilePanel() {
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
   const language = useLanguage();
+  const t = translations.adminProfilePanel[language];
 
   const changeLanguage = (lang: "ko" | "en" | "ja") => {
     sessionStorage.setItem("app-language", lang);
@@ -174,18 +177,18 @@ export default function ProfilePanel() {
     );
   };
 
-  const panelBg = isDark ? "#2a2a2e" : "white";
+  const panelBg = isDark ? "#141416" : "white";
   const textMain = isDark ? "#f0f0f0" : "#111827";
   const textSub = isDark ? "#b0b0b8" : "#6b7280";
-  const divider = isDark ? "#44444a" : "#e5e7eb";
-  const closeBg = isDark ? "#3a3a40" : "#E6F5C8";
-  const closeIcon = isDark ? "#ccc" : "#07790F";
-  const cardBg = isDark ? "#35353c" : "#f9fafb";
-  const cardBorder = isDark ? "#4a4a52" : "#e5e7eb";
-  const logoutBg = isDark ? "#35353c" : "#f5f5f5";
-  const logoutHov = isDark ? "#44444a" : "#ebebeb";
-  const logoutTxt = isDark ? "#d0d0d8" : "#555";
-  const darkCard = "#35353c";
+  const divider = isDark ? "#222222" : "#e5e7eb";
+  const closeBg = isDark ? "#1a1a1a" : "#E6F5C8";
+  const closeIcon = isDark ? "#fff" : "#07790F";
+  const cardBg = isDark ? "#111111" : "#f9fafb";
+  const cardBorder = isDark ? "#2a2a2a" : "#e5e7eb";
+  const logoutBg = isDark ? "rgba(239,68,68,0.12)" : "#f5f5f5";
+  const logoutHov = isDark ? "rgba(239,68,68,0.2)" : "#ebebeb";
+  const logoutTxt = isDark ? "#f87171" : "#555";
+  const darkCard = "#111111";
   const darkCardBorder = "#4a8a50";
 
   const [open, setOpen] = useState(false);
@@ -416,20 +419,20 @@ export default function ProfilePanel() {
       });
       setLeaveRequests((prev) => prev.filter((l) => l.id !== leave.id));
     } catch {
-      alert("처리 중 오류가 발생했습니다.");
+      alert(t.errProcess);
     }
   };
 
   const handleRejectLeave = async (leave: LeaveRequestVO) => {
     const name = userNameMap[leave.user_id] || "직원";
-    if (!confirm(`${name}님의 휴무 신청을 거절하시겠습니까?`)) return;
+    if (!confirm(t.confirmRejectLeave(name))) return;
     try {
       await axiosInstance.put(`/leave_request/${leave.id}`, null, {
         params: { status: "REJECTED" },
       });
       setLeaveRequests((prev) => prev.filter((l) => l.id !== leave.id));
     } catch {
-      alert("처리 중 오류가 발생했습니다.");
+      alert(t.errProcess);
     }
   };
 
@@ -440,18 +443,18 @@ export default function ProfilePanel() {
       });
       setSubstituteApps((prev) => prev.filter((a) => a.app_id !== app.app_id));
     } catch {
-      alert("처리 중 오류가 발생했습니다.");
+      alert(t.errProcess);
     }
   };
 
   const handleRejectSubstitute = async (app: SubstitutePendingApp) => {
     const name = userNameMap[app.applicant_user_id] || "직원";
-    if (!confirm(`${name}님의 대타 지원을 거절하시겠습니까?`)) return;
+    if (!confirm(t.confirmRejectSubstitute(name))) return;
     try {
       await axiosInstance.delete("/substitute/staff", { params: { id: app.app_id } });
       setSubstituteApps((prev) => prev.filter((a) => a.app_id !== app.app_id));
     } catch {
-      alert("처리 중 오류가 발생했습니다.");
+      alert(t.errProcess);
     }
   };
 
@@ -466,18 +469,18 @@ export default function ProfilePanel() {
         sessionStorage.setItem("pendingList", JSON.stringify(updated));
         return updated;
       });
-      alert(`${emp.name}님이 승인되었습니다.`);
+      alert(t.approvedMsg(emp.name));
     } catch (error: any) {
       const message =
         typeof error?.response?.data === "string"
           ? error.response.data
           : error?.response?.data?.message;
-      alert(message || "승인 처리 중 오류가 발생했습니다.");
+      alert(message || t.errApprove);
     }
   };
 
   const handleReject = async (emp: PendingEmployee) => {
-    if (!confirm(`${emp.name}님의 가입 요청을 거절하시겠습니까?`)) return;
+    if (!confirm(t.confirmRejectEmployee(emp.name))) return;
     try {
       await axiosInstance.delete("/users", { params: { id: emp.id } });
       setPendingList((prev) => {
@@ -490,7 +493,7 @@ export default function ProfilePanel() {
         typeof error?.response?.data === "string"
           ? error.response.data
           : error?.response?.data?.message;
-      alert(message || "거절 처리 중 오류가 발생했습니다.");
+      alert(message || t.errProcess);
     }
   };
 
@@ -518,7 +521,7 @@ export default function ProfilePanel() {
         typeof error?.response?.data === "string"
           ? error.response.data
           : error?.response?.data?.message;
-      alert(message || "승인 처리 중 오류가 발생했습니다.");
+      alert(message || t.errApprove);
     }
   };
 
@@ -537,7 +540,7 @@ export default function ProfilePanel() {
         typeof error?.response?.data === "string"
           ? error.response.data
           : error?.response?.data?.message;
-      alert(message || "거절 처리 중 오류가 발생했습니다.");
+      alert(message || t.errProcess);
     }
   };
 
@@ -550,13 +553,13 @@ export default function ProfilePanel() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm("정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다."))
+    if (!confirm(t.confirmDeleteAccount))
       return;
     try {
       await axiosInstance.delete("/users", { params: { id: currentUser.id } });
       handleLogout();
     } catch {
-      alert("탈퇴 처리 중 오류가 발생했습니다.");
+      alert(t.errDeleteAccount);
     }
   };
 
@@ -599,25 +602,25 @@ export default function ProfilePanel() {
         )}
       </div>
 
-      {/* 슬라이드 패널 오버레이 */}
-      {open && (
-        <div
-          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.35)' }}
-          onClick={() => setOpen(false)}
-        />
-      )}
-
-      {/* 슬라이드 패널 */}
-      <div
-        style={{
-          position: 'fixed', top: 0, right: 0, height: '100%', width: 420,
-          background: panelBg, zIndex: 50,
-          boxShadow: '-4px 0 32px rgba(0,0,0,0.24)',
-          display: 'flex', flexDirection: 'column',
-          transform: open ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.3s ease',
-        }}
-      >
+      {/* 슬라이드 패널 오버레이 + 패널 — body에 Portal로 마운트해서 stacking context 탈출 */}
+      {open && createPortal(
+        <div className="ui-scale-portal">
+          {open && (
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.35)' }}
+              onClick={() => setOpen(false)}
+            />
+          )}
+          <div
+            style={{
+              position: 'fixed', top: 0, right: 0, height: '100%', width: 420,
+              background: panelBg, zIndex: 9999,
+              boxShadow: '-4px 0 32px rgba(0,0,0,0.24)',
+              display: 'flex', flexDirection: 'column',
+              transform: open ? 'translateX(0)' : 'translateX(100%)',
+              transition: 'transform 0.3s ease',
+            }}
+          >
         <div className="flex flex-col h-full">
 
             {/* 헤더 */}
@@ -629,7 +632,7 @@ export default function ProfilePanel() {
               }}
             >
               <span style={{ fontWeight: 800, fontSize: 18, color: "#18A022" }}>
-                내 프로필
+                {language === 'ko' ? '내 프로필' : language === 'en' ? 'My Profile' : 'マイプロフィール'}
               </span>
               <button
                 onClick={() => setOpen(false)}
@@ -675,8 +678,8 @@ export default function ProfilePanel() {
                 className="hidden"
                 onChange={handleImageChange}
               />
-              <p className="text-xs mb-2" style={{ color: "#aaa" }}>
-                사진을 클릭하여 변경
+              <p className="text-xs mb-2" style={{ color: "#c8c8c8" }}>
+                {t.changePhoto}
               </p>
               <h2 className="text-xl font-bold" style={{ color: textMain }}>
                 {currentUser?.name ?? ""}
@@ -691,7 +694,7 @@ export default function ProfilePanel() {
                   color: isDark ? "#7dd87d" : "#07790F",
                 }}
               >
-                관리자
+                {t.admin}
               </span>
             </div>
 
@@ -705,7 +708,7 @@ export default function ProfilePanel() {
                   className="font-semibold text-sm"
                   style={{ color: textMain }}
                 >
-                  알림
+                  {t.notifications}
                 </h3>
                 {totalBadge > 0 && (
                   <Badge className="text-white text-xs" style={{ background: "#C0392B" }}>
@@ -720,8 +723,8 @@ export default function ProfilePanel() {
                     className="flex flex-col items-center justify-center"
                     style={{ paddingTop: 100, paddingBottom: 100, color: textSub }}
                   >
-                    <CheckCircle className="w-8 h-8 mb-2" style={{ color: "#18A022" }} />
-                    <p className="text-xs">대기 중인 요청이 없습니다.</p>
+                    <CheckCircle className="w-10 h-10 mb-2" style={{ color: "#18A022" }} />
+                    <p className="text-xs">{t.noPendingRequests}</p>
                   </div>
                 )}
 
@@ -765,7 +768,7 @@ export default function ProfilePanel() {
                       </div>
                     </div>
                     <p className="text-xs" style={{ color: textSub }}>
-                      직원 승인 요청이 있습니다.
+                      {t.employeeApprovalRequest}
                     </p>
                     <div className="flex gap-2">
                       <Button
@@ -774,7 +777,7 @@ export default function ProfilePanel() {
                         onClick={() => handleApprove(emp)}
                       >
                         <CheckCircle className="w-3 h-3" />
-                        승인
+                        {t.approve}
                       </Button>
                       <Button
                         size="sm"
@@ -783,7 +786,7 @@ export default function ProfilePanel() {
                         onClick={() => handleReject(emp)}
                       >
                         <XCircle className="w-3 h-3" />
-                        거절
+                        {t.reject}
                       </Button>
                     </div>
                   </div>
@@ -806,7 +809,7 @@ export default function ProfilePanel() {
                         <Store className="w-3 h-3" />
                         {app.store_name}
                         <span className="ml-1 font-normal" style={{ color: "#18A022" }}>
-                          · 대타 지원
+                          · {t.substituteApply}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -821,7 +824,7 @@ export default function ProfilePanel() {
                             {applicantName}
                           </p>
                           <p className="text-xs" style={{ color: textSub }}>
-                            대타 지원 신청이 있습니다.
+                            {t.substituteApplyMsg}
                           </p>
                         </div>
                       </div>
@@ -830,7 +833,7 @@ export default function ProfilePanel() {
                           className="text-xs rounded p-2"
                           style={{
                             color: textSub,
-                            background: isDark ? "#3c3c46" : "#fff",
+                            background: isDark ? "#141414" : "#fff",
                             border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
                           }}
                         >
@@ -877,7 +880,7 @@ export default function ProfilePanel() {
                           style={{ color: "#18A022" }}
                         >
                           <UserCheck className="w-3 h-3" />
-                          직원 가입 요청
+                          {language === 'ja' ? 'スタッフ加入リクエスト' : language === 'en' ? 'Employee Join Request' : '직원 가입 요청'}
                         </div>
                         <p
                           className="font-semibold text-xs"
@@ -928,7 +931,7 @@ export default function ProfilePanel() {
                         style={{ color: "#07790F" }}
                       >
                         <Bell className="w-3 h-3" />
-                        게시판 알림
+                        {language === 'ja' ? '掲示板通知' : language === 'en' ? 'Board Notification' : '게시판 알림'}
                       </div>
                       <button
                         onClick={() => markNotificationRead(notif.id)}
@@ -976,7 +979,7 @@ export default function ProfilePanel() {
                         <Store className="w-3 h-3" />
                         {leave.store_name}
                         <span className="ml-1 font-normal" style={{ color: "#18A022" }}>
-                          · 휴무 신청
+                          · {t.leaveRequest}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1002,7 +1005,7 @@ export default function ProfilePanel() {
                             </div>
                           ) : (
                             <p className="text-xs text-gray-400">
-                              근무 정보 불러오는 중...
+                              {t.loadingShift}
                             </p>
                           )}
                         </div>
@@ -1142,7 +1145,7 @@ export default function ProfilePanel() {
                 onMouseOut={(e) => (e.currentTarget.style.opacity = "1")}
               >
                 <Pencil style={{ width: 16, height: 16 }} />
-                회원정보 수정하기
+                {language === 'ja' ? '会員情報を編集' : language === 'en' ? 'Edit Profile' : '회원정보 수정하기'}
               </button>
 
               <LineLoginButton />
@@ -1153,7 +1156,7 @@ export default function ProfilePanel() {
                   width: "100%",
                   padding: "13px 0",
                   borderRadius: 14,
-                  border: "none",
+                  border: isDark ? "1px solid rgba(239,68,68,0.3)" : "none",
                   background: logoutBg,
                   color: logoutTxt,
                   fontWeight: 700,
@@ -1173,7 +1176,7 @@ export default function ProfilePanel() {
                 }
               >
                 <LogOut style={{ width: 16, height: 16, color: "#e03434" }} />
-                로그아웃
+                {t.logout}
               </button>
               <div className="text-center pt-1">
                 <button
@@ -1181,12 +1184,14 @@ export default function ProfilePanel() {
                   className="text-xs underline transition-colors hover:text-red-500"
                   style={{ color: textSub }}
                 >
-                  회원 탈퇴하기
+                  {t.deleteAccount}
                 </button>
               </div>
             </div>
           </div>
         </div>
+        </div>, document.body
+      )}
     </>
   );
 }

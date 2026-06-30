@@ -562,7 +562,10 @@ export default function AdminDashboard() {
         });
 
         if (!response.ok) {
-          throw new Error("AI insight request failed");
+          const detail = await response.text();
+          throw new Error(
+            `AI insight request failed (${response.status}): ${detail || response.statusText}`,
+          );
         }
 
         const data = await response.json();
@@ -607,19 +610,19 @@ export default function AdminDashboard() {
   };
 
   const pageBg = isDark
-    ? "linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)"
+    ? "linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)"
     : "linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)";
-  const subTextColor = isDark ? "#aaa" : "#666";
-  const sidebarBg = isDark ? "rgba(52,52,60,0.97)" : "rgba(255,255,255,0.85)";
-  const sidebarBorder = isDark ? "#50505a" : BORDER_GREEN;
-  const contentBg = isDark ? '#3c3c46' : '#fff';
-  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
-  const cardBg = isDark ? "rgba(52,52,60,0.7)" : "rgba(230,245,200,0.35)";
+  const subTextColor = isDark ? "#c8c8c8" : "#666";
+  const sidebarBg = isDark ? "rgba(8,8,8,0.97)" : "rgba(255,255,255,0.85)";
+  const sidebarBorder = isDark ? "#1a1a1a" : BORDER_GREEN;
+  const contentBg = isDark ? '#141414' : '#fff';
+  const mainBg = isDark ? '#0f0f0f' : 'rgba(255,255,255,0.97)';
+  const cardBg = isDark ? "rgba(20,20,20,0.7)" : "rgba(230,245,200,0.35)";
 
   const getStatusBadgeStyle = (status: string) => {
     const s = (status || "").toUpperCase();
     if (s === "CHECKED_IN")
-      return { background: LIGHT_GREEN, color: DARK_GREEN };
+      return { background: isDark ? "rgba(24,160,34,0.15)" : LIGHT_GREEN, color: isDark ? "#4cd964" : DARK_GREEN };
     if (s === "ABSENT") return { background: "#fee2e2", color: "#ef4444" };
     if (s === "CHECKED_OUT") return { background: "#dbeafe", color: "#1d4ed8" };
     return { background: "#f3f4f6", color: "#6b7280" };
@@ -635,7 +638,7 @@ export default function AdminDashboard() {
     },
     {
       icon: ClipboardCheck,
-      label: "근태 관리",
+      label: t.menuItems.attendanceManagement,
       path: selectedBranchId
         ? `/admin/attendance/${selectedBranchId}`
         : "/admin/branch-selection",
@@ -696,7 +699,7 @@ export default function AdminDashboard() {
       style={{
         minHeight: "100vh",
         background: pageBg,
-        fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif",
+        fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif",
       }}
     >
       <AdminHeader />
@@ -730,7 +733,7 @@ export default function AdminDashboard() {
           <div style={{ position: "relative", marginBottom: 16 }}>
             <button
               onClick={() => setBranchDropdownOpen((o) => !o)}
-              style={{ width: "100%", padding: "10px 14px", background: isDark ? "#50505a" : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 13, fontWeight: 700, color: DARK_GREEN }}
+              style={{ width: "100%", padding: "10px 14px", background: isDark ? "#1a1a1a" : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 13, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}
             >
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {currentBranch}
@@ -745,8 +748,8 @@ export default function AdminDashboard() {
                   left: 0,
                   right: 0,
                   zIndex: 50,
-                  background: isDark ? "#30303a" : "#fff",
-                  border: `1px solid ${isDark ? "#50505a" : BORDER_GREEN}`,
+                  background: isDark ? "#0a0a0a" : "#fff",
+                  border: `1px solid ${isDark ? "#1a1a1a" : BORDER_GREEN}`,
                   borderRadius: 12,
                   overflow: "hidden",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
@@ -767,7 +770,7 @@ export default function AdminDashboard() {
                       padding: "10px 14px",
                       textAlign: "left",
                       background:
-                        s.id === branchId ? LIGHT_GREEN : "transparent",
+                        s.id === branchId ? (isDark ? "rgba(24,160,34,0.15)" : LIGHT_GREEN) : "transparent",
                       border: "none",
                       cursor: "pointer",
                       color: isDark ? "#fff" : DARK_GREEN,
@@ -775,11 +778,11 @@ export default function AdminDashboard() {
                       fontWeight: 600,
                     }}
                     onMouseOver={(e) => {
-                      e.currentTarget.style.background = LIGHT_GREEN;
+                      e.currentTarget.style.background = isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN;
                     }}
                     onMouseOut={(e) => {
                       e.currentTarget.style.background =
-                        s.id === branchId ? LIGHT_GREEN : "transparent";
+                        s.id === branchId ? (isDark ? "rgba(24,160,34,0.15)" : LIGHT_GREEN) : "transparent";
                     }}
                   >
                     {s.name}
@@ -787,7 +790,7 @@ export default function AdminDashboard() {
                 ))}
                 <div
                   style={{
-                    borderTop: `1px solid ${isDark ? "#50505a" : "#e5e7eb"}`,
+                    borderTop: `1px solid ${isDark ? "#1a1a1a" : "#e5e7eb"}`,
                   }}
                 />
                 <button
@@ -803,12 +806,12 @@ export default function AdminDashboard() {
                     background: "transparent",
                     border: "none",
                     cursor: "pointer",
-                    color: isDark ? "#888" : "#aaa",
+                    color: isDark ? "#888" : "#c8c8c8",
                     fontSize: 12,
                   }}
                   onMouseOver={(e) => {
                     e.currentTarget.style.background = isDark
-                      ? "#3c3c46"
+                      ? "#141414"
                       : "#f5f5f5";
                   }}
                   onMouseOut={(e) => {
@@ -872,10 +875,11 @@ export default function AdminDashboard() {
           style={{
             flex: 1,
             minWidth: 0,
-            background: "rgba(255,255,255,0.97)",
+            background: mainBg,
             borderRadius: 24,
             padding: "28px 28px 32px",
             boxShadow: "0px 8px 40px rgba(0,0,0,0.18)",
+            minHeight: "calc(100vh - 120px)",
           }}
         >
           {/* 타이틀 행 */}
@@ -891,14 +895,14 @@ export default function AdminDashboard() {
               style={{
                 fontSize: 28,
                 fontWeight: 900,
-                color: DARK_GREEN,
+                color: isDark ? GREEN : DARK_GREEN,
                 margin: 0,
               }}
             >
               {t.mainDashboard}
             </h1>
             <span style={{ fontSize: 15, color: "#8BA68D", fontWeight: 500 }}>
-              {new Date().toLocaleDateString("ko-KR", {
+              {new Date().toLocaleDateString(t.dateLocale, {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
@@ -964,10 +968,10 @@ export default function AdminDashboard() {
               <div
                 key={label}
                 style={{
-                  background: "rgba(230,245,200,0.35)",
+                  background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
                   borderRadius: 16,
                   padding: "18px 20px",
-                  border: `1px solid ${LIGHT_GREEN}`,
+                  border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
                 }}
               >
                 <div
@@ -1024,10 +1028,10 @@ export default function AdminDashboard() {
           {/* 출퇴근 QR */}
           <div
             style={{
-              background: "rgba(230,245,200,0.35)",
+              background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
               borderRadius: 18,
               padding: "22px",
-              border: `1px solid ${LIGHT_GREEN}`,
+              border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
               marginBottom: 14,
               display: "grid",
               gridTemplateColumns: "260px 1fr",
@@ -1041,7 +1045,7 @@ export default function AdminDashboard() {
                 height: 240,
                 borderRadius: 16,
                 background: "#fff",
-                border: `1px solid ${LIGHT_GREEN}`,
+                border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1051,7 +1055,7 @@ export default function AdminDashboard() {
               {attendanceQrImageUrl ? (
                 <img
                   src={attendanceQrImageUrl}
-                  alt="출퇴근 QR 코드"
+                  alt={t.qrAlt}
                   style={{ width: 220, height: 220, display: "block" }}
                 />
               ) : (
@@ -1061,15 +1065,15 @@ export default function AdminDashboard() {
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                 <QrCode size={24} color={DARK_GREEN} />
-                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: DARK_GREEN }}>
-                  출퇴근 QR
+                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN }}>
+                  {t.qrTitle}
                 </h2>
               </div>
               <p style={{ margin: "0 0 10px", fontSize: 15, color: "#5f7f61", fontWeight: 600 }}>
-                직원이 개인 폰으로 스캔하면 출근/퇴근이 자동 처리됩니다.
+                {t.qrDesc}
               </p>
               <p style={{ margin: "0 0 16px", fontSize: 14, color: "#8BA68D" }}>
-                QR 코드는 30초마다 새로 발급되고 이전 QR은 즉시 무효화됩니다.
+                {t.qrExpiry}
               </p>
               {qrError ? (
                 <div style={{ color: "#dc2626", fontSize: 14, fontWeight: 700 }}>
@@ -1084,14 +1088,14 @@ export default function AdminDashboard() {
                     padding: "8px 14px",
                     borderRadius: 999,
                     background: "#fff",
-                    border: `1px solid ${LIGHT_GREEN}`,
-                    color: DARK_GREEN,
+                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                    color: isDark ? GREEN : DARK_GREEN,
                     fontSize: 14,
                     fontWeight: 800,
                   }}
                 >
                   <Clock size={16} />
-                  {qrRemainSeconds}초 후 갱신
+                  {t.qrRefresh(qrRemainSeconds)}
                 </div>
               )}
             </div>
@@ -1100,10 +1104,10 @@ export default function AdminDashboard() {
           {/* 차트 — 단독 행 */}
           <div
             style={{
-              background: "rgba(230,245,200,0.35)",
+              background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
               borderRadius: 18,
               padding: "22px",
-              border: `1px solid ${LIGHT_GREEN}`,
+              border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
               marginBottom: 14,
             }}
           >
@@ -1116,7 +1120,7 @@ export default function AdminDashboard() {
               }}
             >
               <span
-                style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN }}
+                style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}
               >
                 {t.realtimeTrend}
               </span>
@@ -1124,7 +1128,7 @@ export default function AdminDashboard() {
                 style={{
                   fontSize: 12,
                   color: "#8BA68D",
-                  background: LIGHT_GREEN,
+                  background: isDark ? "rgba(24,160,34,0.15)" : LIGHT_GREEN,
                   padding: "3px 12px",
                   borderRadius: 20,
                 }}
@@ -1167,10 +1171,10 @@ export default function AdminDashboard() {
           {/* 오늘의 운영 알림 — 단독 행, 가로 나열 */}
           <div
             style={{
-              background: "rgba(230,245,200,0.35)",
+              background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
               borderRadius: 18,
               padding: "20px 22px",
-              border: `1px solid ${LIGHT_GREEN}`,
+              border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
               marginBottom: 14,
             }}
           >
@@ -1178,7 +1182,7 @@ export default function AdminDashboard() {
               style={{
                 fontSize: 16,
                 fontWeight: 700,
-                color: DARK_GREEN,
+                color: isDark ? GREEN : DARK_GREEN,
                 marginBottom: 14,
               }}
             >
@@ -1230,7 +1234,7 @@ export default function AdminDashboard() {
                       style={{
                         fontSize: 14,
                         fontWeight: 700,
-                        color: DARK_GREEN,
+                        color: isDark ? GREEN : DARK_GREEN,
                         marginBottom: 4,
                       }}
                     >
@@ -1247,14 +1251,14 @@ export default function AdminDashboard() {
                     padding: "13px 16px",
                     borderRadius: 12,
                     background: "rgba(255,255,255,0.7)",
-                    border: `1px solid ${LIGHT_GREEN}`,
+                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
                   }}
                 >
                   <p
                     style={{
                       fontSize: 14,
                       fontWeight: 700,
-                      color: DARK_GREEN,
+                      color: isDark ? GREEN : DARK_GREEN,
                       marginBottom: 4,
                     }}
                   >
@@ -1270,14 +1274,14 @@ export default function AdminDashboard() {
                   padding: "13px 16px",
                   borderRadius: 12,
                   background: "rgba(255,255,255,0.7)",
-                  border: `1px solid ${LIGHT_GREEN}`,
+                  border: `1.5px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                 }}
               >
                 <p
                   style={{
                     fontSize: 14,
                     fontWeight: 700,
-                    color: DARK_GREEN,
+                    color: isDark ? GREEN : DARK_GREEN,
                     marginBottom: 4,
                   }}
                 >
@@ -1299,7 +1303,7 @@ export default function AdminDashboard() {
                   style={{
                     fontSize: 14,
                     fontWeight: 700,
-                    color: DARK_GREEN,
+                    color: isDark ? GREEN : DARK_GREEN,
                     marginBottom: 4,
                   }}
                 >
@@ -1318,17 +1322,17 @@ export default function AdminDashboard() {
           >
             <div
               style={{
-                background: "rgba(230,245,200,0.35)",
+                background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
                 borderRadius: 18,
                 padding: "22px",
-                border: `1px solid ${LIGHT_GREEN}`,
+                border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
               }}
             >
               <p
                 style={{
                   fontSize: 16,
                   fontWeight: 700,
-                  color: DARK_GREEN,
+                  color: isDark ? GREEN : DARK_GREEN,
                   marginBottom: 14,
                 }}
               >
@@ -1371,9 +1375,9 @@ export default function AdminDashboard() {
                           alignItems: "center",
                           justifyContent: "space-between",
                           padding: "11px 14px",
-                          background: "rgba(230,245,200,0.5)",
+                          background: isDark ? "#1e1e1e" : "rgba(230,245,200,0.5)",
                           borderRadius: 14,
-                          border: `1px solid ${LIGHT_GREEN}`,
+                          border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
                         }}
                       >
                         <div
@@ -1405,7 +1409,7 @@ export default function AdminDashboard() {
                               style={{
                                 fontWeight: 700,
                                 fontSize: 15,
-                                color: DARK_GREEN,
+                                color: isDark ? GREEN : DARK_GREEN,
                               }}
                             >
                               {name}
@@ -1444,10 +1448,10 @@ export default function AdminDashboard() {
 
             <div
               style={{
-                background: "rgba(230,245,200,0.35)",
+                background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
                 borderRadius: 18,
                 padding: "22px",
-                border: `1px solid ${LIGHT_GREEN}`,
+                border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
               }}
             >
               <div
@@ -1473,7 +1477,7 @@ export default function AdminDashboard() {
                   <BarChart3 size={17} color={GREEN} />
                 </div>
                 <span
-                  style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN }}
+                  style={{ fontSize: 16, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}
                 >
                   {t.aiRecommendation}
                 </span>
@@ -1493,7 +1497,7 @@ export default function AdminDashboard() {
                     style={{
                       fontWeight: 700,
                       fontSize: 15,
-                      color: DARK_GREEN,
+                      color: isDark ? GREEN : DARK_GREEN,
                       marginBottom: 6,
                     }}
                   >
@@ -1526,14 +1530,14 @@ export default function AdminDashboard() {
                     borderRadius: 14,
                     padding: "15px",
                     background: "rgba(230,245,200,0.3)",
-                    border: `1px solid ${LIGHT_GREEN}`,
+                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
                   }}
                 >
                   <h4
                     style={{
                       fontWeight: 700,
                       fontSize: 15,
-                      color: DARK_GREEN,
+                      color: isDark ? GREEN : DARK_GREEN,
                       marginBottom: 5,
                     }}
                   >
@@ -1546,14 +1550,14 @@ export default function AdminDashboard() {
                     borderRadius: 14,
                     padding: "15px",
                     background: "rgba(230,245,200,0.3)",
-                    border: `1px solid ${LIGHT_GREEN}`,
+                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
                   }}
                 >
                   <h4
                     style={{
                       fontWeight: 700,
                       fontSize: 15,
-                      color: DARK_GREEN,
+                      color: isDark ? GREEN : DARK_GREEN,
                       marginBottom: 5,
                     }}
                   >
