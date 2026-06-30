@@ -18,6 +18,8 @@ interface ScheduleContextType {
   setShifts: React.Dispatch<React.SetStateAction<Shift[]>>;
   updateEmployeeStatus: (employeeId: string, newStatus: 'ACTIVE' | 'INACTIVE' | 'PENDING') => void;
   removeEmployee: (employeeId: string) => void;
+  updateShift: (updatedShift: Shift) => void;
+  deleteShift: (shiftId: string) => void;
 }
 
 const ScheduleContext = createContext<ScheduleContextType | undefined>(undefined);
@@ -48,6 +50,16 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
     setEmployees((prev) => prev.filter((employee) => employee.id !== employeeId));
   }, []);
 
+  const updateShift = useCallback((updatedShift: Shift) => {
+    setShifts((prev) => prev.map((shift) => (
+      shift.id === updatedShift.id ? updatedShift : shift
+    )));
+  }, []);
+
+  const deleteShift = useCallback((shiftId: string) => {
+    setShifts((prev) => prev.filter((shift) => shift.id !== shiftId));
+  }, []);
+
   const value = {
     employees,
     shifts,
@@ -55,6 +67,8 @@ export const ScheduleProvider = ({ children }: ScheduleProviderProps) => {
     setShifts,
     updateEmployeeStatus,
     removeEmployee,
+    updateShift,
+    deleteShift,
   };
 
   return <ScheduleContext.Provider value={value}>{children}</ScheduleContext.Provider>;

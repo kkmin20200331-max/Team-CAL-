@@ -33,7 +33,11 @@ const NoticeSection = ({ posts, handleOpenPost, navigation, colors, isDarkMode, 
             <View style={styles.noticeTextContainer}>
               {post.isPinned && <Ionicons name="pin" size={14} color="#EF4444" style={styles.pinIcon} />}
               <View style={styles.categoryBadge}>
-                <Text style={styles.categoryBadgeText}>{t(CATEGORIES.find(c => c.id === post.category)?.label || 'boardTabNotice')}</Text>
+                <Text style={styles.categoryBadgeText}>
+                  {CATEGORIES.find(c => c.id === post.category)
+                    ? t(CATEGORIES.find(c => c.id === post.category)!.label)
+                    : post.category}
+                </Text>
               </View>
               <Text style={styles.noticeItemTitle} numberOfLines={1}>
                 {t(post.title).length > 14 ? t(post.title).substring(0, 14) + '..' : t(post.title)}

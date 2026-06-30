@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -32,9 +32,9 @@ const TodayScheduleCard = ({ schedule, onPress, colors }: Props) => {
         {shifts.length > 0 ? (
           shifts.map((shift, index) => (
             <View key={index} style={styles.employeeChip}>
-              {/* ✅ [오류 수정] 옵셔널 체이닝(?.)을 사용하여 안정성 확보 */}
+              {/* [오류 수정] 옵셔널 체이닝(?.)을 사용하여 안전하게 정보 접근 */}
               <View style={[styles.colorDot, { backgroundColor: shift?.user?.color || '#A1A1AA' }]} />
-              <Text style={styles.employeeName}>{shift?.user?.name || '알 수 없음'}</Text>
+              <Text style={styles.employeeName}>{shift?.user?.name || '직원없음'}</Text>
             </View>
           ))
         ) : (

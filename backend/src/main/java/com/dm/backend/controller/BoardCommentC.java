@@ -39,11 +39,14 @@ public class BoardCommentC {
         boardCommentService.updateComment(vo);
     }
 
+    // ✅ [수정] 댓글 삭제 요청자의 권한 확인을 위해 user_id 파라미터를 추가로 입력받도록 변경
     @DeleteMapping
     public void deleteComment(
             @RequestParam String id,
-            @RequestParam String post_id
+            @RequestParam String post_id,
+            @RequestParam String user_id
     ) {
-        boardCommentService.deleteComment(id, post_id);
+        boardCommentService.deleteComment(id, post_id, user_id);
     }
 }
+

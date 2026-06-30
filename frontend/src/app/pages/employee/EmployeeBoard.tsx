@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { useTheme } from 'next-themes';
 import { useState, useEffect, useMemo } from 'react';
 import EmployeeHeader from './EmployeeHeader';
@@ -31,6 +31,8 @@ interface BoardPostVO {
   content: string;
   created_at: string;
   updated_at: string;
+  username?: string;
+  writer_name?: string;
 }
 
 interface PostItem extends BoardPostVO {
@@ -51,7 +53,9 @@ const CHIP_COLORS = [
 const formatDate = (s: string) => {
   if (!s) return "";
   const d = new Date(s);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const datePart = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+  const timePart = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${datePart} ${timePart}`;
 };
 
 const checkIsNew = (s: string) => {
@@ -290,7 +294,7 @@ export default function EmployeeBoard() {
                 paddingBottom: 16, borderBottom: '1px solid rgba(0,162,0,0.15)',
                 marginBottom: 16,
               }}>
-                <span>{selectedPost.writer_id}</span>
+                <span>{selectedPost.writer_name || selectedPost.writer_id}</span>
                 <span>·</span>
                 <span>{formatDate(selectedPost.created_at)}</span>
               </div>
