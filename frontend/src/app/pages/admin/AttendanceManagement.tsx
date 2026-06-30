@@ -25,7 +25,7 @@ import {
 const GREEN = "#18A022";
 const DARK_GREEN = "#07790F";
 const BORDER_GREEN = "#00A200";
-const LIGHT_GREEN = GREEN;
+const LIGHT_GREEN = "#E6F5C8";
 
 interface Employee {
   id: string;
