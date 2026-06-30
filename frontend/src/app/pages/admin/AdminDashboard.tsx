@@ -541,7 +541,7 @@ export default function AdminDashboard() {
     : "";
 
   useEffect(() => {
-    if (!branchId || customerTrendData.length === 0) return;
+    if (!selectedBranchId || customerTrendData.length === 0) return;
 
     let cancelled = false;
 
@@ -552,8 +552,8 @@ export default function AdminDashboard() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            store_id: String(resolveStoreId(branchId)),
-            shift_store_id: branchId,
+            store_id: selectedBranchId,
+            shift_store_id: selectedBranchId,
             date: today,
             start_date: `${today} 00:00:00`,
             end_date: `${today} 23:59:59`,
@@ -581,7 +581,7 @@ export default function AdminDashboard() {
       cancelled = true;
     };
   }, [
-    branchId,
+    selectedBranchId,
     currentBranch,
     customerTrendData,
     todayShifts,
