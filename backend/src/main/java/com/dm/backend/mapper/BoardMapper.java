@@ -15,6 +15,13 @@ public interface BoardMapper {
     // 게시판 생성 (오라클 DB 호환을 위해 now() 대신 SYSDATE 사용)
     @Insert("""
             insert into board
+            (
+                id,
+                store_id,
+                name,
+                created_by,
+                created_at
+            )
             values(
                 #{id},
                 #{store_id},
@@ -40,6 +47,13 @@ public interface BoardMapper {
             """)
     void deleteBoard(String id);
 
+    @Select("""
+            select count(*)
+            from board_post
+            where board_id = #{id}
+            """)
+    int countPostByBoardId(String id);
+
 
     // =========================
     // [공통]
@@ -61,4 +75,15 @@ public interface BoardMapper {
             where id = #{id}
             """)
     BoardVO getBoard(String id);
+
+    @Select("""
+            select *
+            from board
+            where store_id = #{store_id}
+            and upper(trim(name)) = upper(trim(#{name}))
+            """)
+    BoardVO getBoardByStoreAndName(
+            @Param("store_id") String store_id,
+            @Param("name") String name
+    );
 }

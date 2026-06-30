@@ -69,7 +69,7 @@ public class UserC {
                     .body("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
 
-        if (!"ACTIVE".equalsIgnoreCase(result.getStatus())) {
+        if (!"ACTIVE".equalsIgnoreCase(result.getStatus() == null ? "" : result.getStatus().trim())) {
             return ResponseEntity
                     .status(403)
                     .body("승인 대기 또는 거절된 계정입니다.");

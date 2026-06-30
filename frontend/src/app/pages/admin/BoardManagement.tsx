@@ -136,6 +136,29 @@ const BoardManagement: React.FC = () => {
   const [posts, setPosts] = useState<BoardPostVO[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [showBoardModal, setShowBoardModal] = useState(false);
+  const [boardNameInput, setBoardNameInput] = useState('');
+  const [savingBoard, setSavingBoard] = useState(false);
+
+  const fetchBoards = async () => {
+    if (!selectedBranchId) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/board?store_id=${selectedBranchId}`);
+      const data: BoardVO[] = await res.json();
+      if (Array.isArray(data)) {
+        setBoards(data);
+        setSelectedBoardId((prev) => {
+          if (prev === '__all__') return prev;
+          if (data.some((board) => board.id === prev)) return prev;
+          return data[0]?.id || '';
+        });
+      }
+    } catch {
+      setBoards([]);
+      setSelectedBoardId('');
+    }
+  };
 
   const boardNameTranslations: Record<string, Record<string, string>> = {
     '공지사항': { ko: '공지사항', en: 'Notice', ja: 'お知らせ' },
@@ -159,15 +182,7 @@ const BoardManagement: React.FC = () => {
 
   useEffect(() => {
     if (!selectedBranchId) return;
-    fetch(`${API_BASE}/board?store_id=${selectedBranchId}`)
-      .then(r => r.json())
-      .then((data: BoardVO[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setBoards(data);
-          setSelectedBoardId(data[0].id);
-        }
-      })
-      .catch(() => {});
+    fetchBoards();
   }, [selectedBranchId]);
 
   useEffect(() => {
@@ -220,6 +235,70 @@ const BoardManagement: React.FC = () => {
       body: JSON.stringify({ ...post, is_pinned: post.is_pinned === 'Y' ? 'N' : 'Y' }),
     });
     fetchPosts();
+  };
+
+  const handleCreateBoard = async () => {
+    const name = boardNameInput.trim();
+    if (!name) {
+      alert('탭 이름을 입력해주세요.');
+      return;
+    }
+
+    if (!selectedBranchId || !currentUser?.id) {
+      alert('매장 또는 사용자 정보가 없습니다.');
+      return;
+    }
+
+    setSavingBoard(true);
+    try {
+      const res = await fetch(`${API_BASE}/board/tab`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: selectedBranchId,
+          name,
+          created_by: currentUser.id,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        alert(data?.message || '탭 추가에 실패했습니다.');
+        return;
+      }
+
+      setBoards((prev) => {
+        if (prev.some((board) => board.id === data.id)) return prev;
+        return [...prev, data];
+      });
+      setSelectedBoardId(data.id);
+      setBoardNameInput('');
+      setShowBoardModal(false);
+    } finally {
+      setSavingBoard(false);
+    }
+  };
+
+  const handleDeleteBoard = async (board: BoardVO) => {
+    if (!confirm(`'${board.name}' 탭을 삭제하시겠습니까?`)) return;
+
+    const res = await fetch(`${API_BASE}/board?id=${encodeURIComponent(board.id)}`, {
+      method: 'DELETE',
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      alert(data?.message || '탭 삭제에 실패했습니다.');
+      return;
+    }
+
+    setBoards((prev) => {
+      const next = prev.filter((item) => item.id !== board.id);
+      if (selectedBoardId === board.id) {
+        setSelectedBoardId(next[0]?.id || '');
+        setSelectedPost(null);
+      }
+      return next;
+    });
   };
 
   const stats = {
@@ -425,6 +504,9 @@ const BoardManagement: React.FC = () => {
               <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.pageSubtitle}</p>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowBoardModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                <Plus size={16} />탭 추가
+              </button>
               <button onClick={() => setShowPushModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                 <Bell size={16} />{t.pushNotification}
               </button>
@@ -436,9 +518,18 @@ const BoardManagement: React.FC = () => {
 
           {/* 게시판 탭 */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-            {[{ id: '__all__', name: t.allBoards }, ...boards].map(b => (
-              <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ padding: '9px 20px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
-                {translateBoardName(b.name)}
+            {[{ id: '__all__', name: '전체' }, ...boards].map(b => (
+              <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
+                {b.name}
+                {b.id !== '__all__' && (
+                  <span
+                    onClick={(e) => { e.stopPropagation(); handleDeleteBoard(b as BoardVO); }}
+                    title="Delete tab"
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: '50%', color: selectedBoardId === b.id ? '#fff' : '#EF4444' }}
+                  >
+                    <Trash2 size={12} />
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -577,6 +668,38 @@ const BoardManagement: React.FC = () => {
       </div>
 
       {/* 푸시 알림 모달 */}
+      {showBoardModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
+          <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 420 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Plus size={18} />탭 추가
+              </h2>
+              <button onClick={() => setShowBoardModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>탭 이름</label>
+                <input
+                  type="text"
+                  placeholder="예: 업무 지시"
+                  value={boardNameInput}
+                  onChange={e => setBoardNameInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleCreateBoard(); }}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={handleCreateBoard} disabled={savingBoard} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: savingBoard ? '#ccc' : GREEN, color: '#fff', borderRadius: 50, padding: '11px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: savingBoard ? 'default' : 'pointer' }}>
+                  <Plus size={15} />{savingBoard ? '추가 중...' : '추가'}
+                </button>
+                <button onClick={() => setShowBoardModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>취소</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showPushModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
           <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 480 }}>

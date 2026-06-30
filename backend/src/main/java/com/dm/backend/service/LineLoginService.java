@@ -19,7 +19,7 @@ public class LineLoginService {
     @Value("${line.login.channel-secret}")
     private String channelSecret;
 
-    @Value("${line.login.redirect-uri}")
+    @Value("${line.login.redirect-uri:https://bitemate.kro.kr/api/line/callback}")
     private String redirectUri;
 
     private final RestTemplate restTemplate =
