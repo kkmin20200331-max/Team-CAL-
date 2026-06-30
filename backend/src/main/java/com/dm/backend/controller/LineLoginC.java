@@ -19,7 +19,7 @@ public class LineLoginC {
     @Value("${line.login.channel-id}")
     private String clientId;
 
-    @Value("${line.login.redirect-uri}")
+    @Value("${line.login.redirect-uri:https://bitemate.kro.kr/api/line/callback}")
     private String redirectUri;
 
     @Value("${app.frontend-base-url:http://localhost:5173}")

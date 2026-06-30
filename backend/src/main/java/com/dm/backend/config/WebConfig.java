@@ -15,6 +15,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private static final List<String> ALLOWED_ORIGIN_PATTERNS = List.of(
+            "https://bitemate.kro.kr",
             "http://localhost:*",
             "http://127.0.0.1:*",
             "http://10.*:*",

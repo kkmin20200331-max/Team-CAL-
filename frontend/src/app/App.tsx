@@ -69,10 +69,11 @@ export default function App() {
       enableColorScheme={false}
     >
       <Router>
-        <div className="border-b bg-white px-4 py-2 text-sm font-medium text-slate-700">
-          {"API \uC0C1\uD0DC"}: {apiMessage}
-        </div>
-        <Routes>
+        <div className="ui-scale">
+          <div className="border-b bg-white px-4 py-2 text-sm font-medium text-slate-700">
+            {"API \uC0C1\uD0DC"}: {apiMessage}
+          </div>
+          <Routes>
           {/*{Auth routes}*/}
           {/* 첫 화면(/)으로 접속 시 새로 만든 통합 로그인 화면으로 자동 리다이렉트 */}
           <Route path="/" element={<Navigate to="/auth/login" replace />} />
@@ -336,6 +337,7 @@ export default function App() {
             }
           />
         </Routes>
+        </div>
         <Toaster position="top-right" />
       </Router>
     </ThemeProvider>

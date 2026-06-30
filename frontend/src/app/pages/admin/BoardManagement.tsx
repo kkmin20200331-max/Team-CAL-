@@ -1,3 +1,5 @@
+import { useLanguage } from "../../i18n/useLanguage";
+import { translations } from "../../i18n/translations";
 import { API_BASE } from "../../../lib/axiosInstance";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -51,6 +53,8 @@ interface BoardCommentVO {
 }
 
 const BoardManagement: React.FC = () => {
+  const language = useLanguage();
+  const t = translations.boardManagement[language];
   const navigate = useNavigate();
   const location = useLocation();
   const { branchId } = useParams();
@@ -58,19 +62,19 @@ const BoardManagement: React.FC = () => {
   const isDark = theme === 'dark';
 
   const pageBg = isDark
-    ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)'
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
     : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
+  const sidebarBg = isDark ? 'rgba(8,8,8,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#1a1a1a' : BORDER_GREEN;
   const textColor = isDark ? '#fff' : '#111';
-  const subText = isDark ? '#aaa' : '#8BA68D';
-  const cardBg = isDark ? 'rgba(52,52,60,0.7)' : 'rgba(230,245,200,0.35)';
-  const contentBg = isDark ? '#3c3c46' : '#fff';
-  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
+  const subText = isDark ? '#c8c8c8' : '#8BA68D';
+  const cardBg = isDark ? 'rgba(20,20,20,0.7)' : 'rgba(230,245,200,0.35)';
+  const contentBg = isDark ? '#141414' : '#fff';
+  const mainBg = isDark ? '#0f0f0f' : 'rgba(255,255,255,0.97)';
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 14px', borderRadius: 12,
-    border: `1px solid ${LIGHT_GREEN}`, fontSize: 14,
-    background: isDark ? '#50505a' : 'rgba(255,255,255,0.8)',
+    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14,
+    background: isDark ? '#1a1a1a' : 'rgba(255,255,255,0.8)',
     outline: 'none', color: textColor, boxSizing: 'border-box',
   };
 
@@ -90,15 +94,15 @@ const BoardManagement: React.FC = () => {
       : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: ClipboardCheck, label: '근태 관리', path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: ClipboardCheck, label: translations.adminDashboard[language].menuItems.attendanceManagement, path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: translations.adminDashboard[language].menuItems.substituteRecruitment, path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: translations.adminDashboard[language].menuItems.employeeManagement, path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: translations.adminDashboard[language].menuItems.payrollManagement, path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: translations.adminDashboard[language].menuItems.documentManagement, path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: translations.adminDashboard[language].menuItems.board, path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: translations.adminDashboard[language].menuItems.aiAnalytics, path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: translations.adminDashboard[language].menuItems.cctvAnalysis, path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
   useEffect(() => {
@@ -132,18 +136,53 @@ const BoardManagement: React.FC = () => {
   const [posts, setPosts] = useState<BoardPostVO[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [showBoardModal, setShowBoardModal] = useState(false);
+  const [boardNameInput, setBoardNameInput] = useState('');
+  const [savingBoard, setSavingBoard] = useState(false);
+
+  const fetchBoards = async () => {
+    if (!selectedBranchId) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/board?store_id=${selectedBranchId}`);
+      const data: BoardVO[] = await res.json();
+      if (Array.isArray(data)) {
+        setBoards(data);
+        setSelectedBoardId((prev) => {
+          if (prev === '__all__') return prev;
+          if (data.some((board) => board.id === prev)) return prev;
+          return data[0]?.id || '';
+        });
+      }
+    } catch {
+      setBoards([]);
+      setSelectedBoardId('');
+    }
+  };
+
+  const boardNameTranslations: Record<string, Record<string, string>> = {
+    '공지사항': { ko: '공지사항', en: 'Notice', ja: 'お知らせ' },
+    '메뉴얼': { ko: '메뉴얼', en: 'Manual', ja: 'マニュアル' },
+    '분실물 관리': { ko: '분실물 관리', en: 'Lost Items', ja: '遺失物管理' },
+    '분실물 공유': { ko: '분실물 공유', en: 'Lost & Found', ja: '遺失物共有' },
+    '프로모션/이벤트': { ko: '프로모션/이벤트', en: 'Promotions/Events', ja: 'プロモーション/イベント' },
+    '프로모션': { ko: '프로모션', en: 'Promotion', ja: 'プロモーション' },
+    '이벤트': { ko: '이벤트', en: 'Event', ja: 'イベント' },
+    '프로모셔/이벤트': { ko: '프로모셔/이벤트', en: 'Promotions/Events', ja: 'プロモーション/イベント' },
+    '체크리스트': { ko: '체크리스트', en: 'Checklist', ja: 'チェックリスト' },
+    '업무지시': { ko: '업무지시', en: 'Work Orders', ja: '業務指示' },
+    '업무 지시': { ko: '업무 지시', en: 'Work Orders', ja: '業務指示' },
+  };
+
+  const translateBoardName = (name?: string) => {
+    if (!name) return name || '';
+    const m = boardNameTranslations[name];
+    return m ? (m[language] || m['en']) : name;
+  };
 
   useEffect(() => {
     if (!selectedBranchId) return;
-    fetch(`${API_BASE}/board?store_id=${selectedBranchId}`)
-      .then(r => r.json())
-      .then((data: BoardVO[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setBoards(data);
-          setSelectedBoardId(data[0].id);
-        }
-      })
-      .catch(() => {});
+    fetchBoards();
   }, [selectedBranchId]);
 
   useEffect(() => {
@@ -184,7 +223,7 @@ const BoardManagement: React.FC = () => {
   }, [searchTerm]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('게시글을 삭제하시겠습니까?')) return;
+    if (!confirm(t.deletePostConfirm)) return;
     await fetch(`${API_BASE}/board/post?id=${id}`, { method: 'DELETE' });
     fetchPosts();
   };
@@ -196,6 +235,70 @@ const BoardManagement: React.FC = () => {
       body: JSON.stringify({ ...post, is_pinned: post.is_pinned === 'Y' ? 'N' : 'Y' }),
     });
     fetchPosts();
+  };
+
+  const handleCreateBoard = async () => {
+    const name = boardNameInput.trim();
+    if (!name) {
+      alert('탭 이름을 입력해주세요.');
+      return;
+    }
+
+    if (!selectedBranchId || !currentUser?.id) {
+      alert('매장 또는 사용자 정보가 없습니다.');
+      return;
+    }
+
+    setSavingBoard(true);
+    try {
+      const res = await fetch(`${API_BASE}/board/tab`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: selectedBranchId,
+          name,
+          created_by: currentUser.id,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        alert(data?.message || '탭 추가에 실패했습니다.');
+        return;
+      }
+
+      setBoards((prev) => {
+        if (prev.some((board) => board.id === data.id)) return prev;
+        return [...prev, data];
+      });
+      setSelectedBoardId(data.id);
+      setBoardNameInput('');
+      setShowBoardModal(false);
+    } finally {
+      setSavingBoard(false);
+    }
+  };
+
+  const handleDeleteBoard = async (board: BoardVO) => {
+    if (!confirm(`'${board.name}' 탭을 삭제하시겠습니까?`)) return;
+
+    const res = await fetch(`${API_BASE}/board?id=${encodeURIComponent(board.id)}`, {
+      method: 'DELETE',
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      alert(data?.message || '탭 삭제에 실패했습니다.');
+      return;
+    }
+
+    setBoards((prev) => {
+      const next = prev.filter((item) => item.id !== board.id);
+      if (selectedBoardId === board.id) {
+        setSelectedBoardId(next[0]?.id || '');
+        setSelectedPost(null);
+      }
+      return next;
+    });
   };
 
   const stats = {
@@ -211,7 +314,7 @@ const BoardManagement: React.FC = () => {
   const [pushSending, setPushSending] = useState(false);
 
   const handleSendPush = async () => {
-    if (!pushForm.title.trim()) { alert('알림 제목을 입력해주세요.'); return; }
+    if (!pushForm.title.trim()) { alert(t.noticeTitleRequired); return; }
     setPushSending(true);
     try {
       // 해당 매장 직원 목록 조회
@@ -238,11 +341,11 @@ const BoardManagement: React.FC = () => {
           }),
         })
       ));
-      alert(`${targets.length}명에게 푸시 알림을 발송했습니다.`);
+      alert(t.pushSentSuccess(targets.length));
       setShowPushModal(false);
       setPushForm({ title: '', content: '' });
     } catch {
-      alert('알림 발송에 실패했습니다.');
+      alert(t.pushSendFailed);
     } finally {
       setPushSending(false);
     }
@@ -266,7 +369,7 @@ const BoardManagement: React.FC = () => {
   };
 
   const handleSubmitPost = async (asDraft = false) => {
-    if (!form.title.trim()) { alert('제목을 입력해주세요.'); return; }
+    if (!form.title.trim()) { alert(t.titleRequired); return; }
     const status = asDraft ? 'DRAFT' : 'PUBLISHED';
     if (editingPost) {
       await fetch(`${API_BASE}/board/post`, {
@@ -335,7 +438,7 @@ const BoardManagement: React.FC = () => {
   };
 
   const handleDeleteComment = async (comment: BoardCommentVO) => {
-    if (!confirm('댓글을 삭제하시겠습니까?')) return;
+    if (!confirm(t.deleteCommentConfirm)) return;
     await fetch(`${API_BASE}/board/comment?id=${comment.id}&post_id=${comment.post_id}&user_id=${currentUser.id || ''}`, { method: 'DELETE' });
     await fetchComments(comment.post_id);
     setPosts(prev => prev.map(p => p.id === comment.post_id ? { ...p, comment_count: Math.max(0, (p.comment_count || 1) - 1) } : p));
@@ -344,24 +447,25 @@ const BoardManagement: React.FC = () => {
 
   const formatDate = (d: string) => {
     if (!d) return '';
-    return new Date(d).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const locale = language === 'ja' ? 'ja-JP' : language === 'en' ? 'en-US' : 'ko-KR';
+    return new Date(d).toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   };
 
   // ---------- 렌더 ----------
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
 
         {/* 사이드바 */}
         <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${sidebarBorder}`, borderRadius: 20, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)', position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
           <div style={{ position: 'relative', marginBottom: 16 }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#1a1a1a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && stores.length > 0 && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50, background: isDark ? '#30303a' : '#fff', border: `1px solid ${sidebarBorder}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 50, background: isDark ? '#0a0a0a' : '#fff', border: `1px solid ${sidebarBorder}`, borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}>
                 {stores.map(s => (
                   <button key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); setBranchDropdownOpen(false); navigate(`/admin/dashboard/${s.id}`); }} style={{ display: 'block', width: '100%', padding: '10px 14px', textAlign: 'left', background: s.id === selectedBranchId ? LIGHT_GREEN : 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#fff' : DARK_GREEN, fontSize: 13, fontWeight: 600 }}>
                     {s.name}
@@ -386,25 +490,28 @@ const BoardManagement: React.FC = () => {
         </aside>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)', minHeight: 'calc(100vh - 120px)' }}>
 
           {/* 헤더 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <div>
-              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {currentBranch} <ChevronRight size={12} /> 게시판
+              <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {currentBranch} <ChevronRight size={12} /> {t.breadcrumb}
               </div>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <MessageSquare size={26} />공지사항 및 게시글 관리
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <MessageSquare size={26} />{t.pageTitle}
               </h1>
-              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>매장 공지, 직원 소통 게시글을 관리합니다.</p>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.pageSubtitle}</p>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowBoardModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                <Plus size={16} />탭 추가
+              </button>
               <button onClick={() => setShowPushModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                <Bell size={16} />푸시 알림
+                <Bell size={16} />{t.pushNotification}
               </button>
               <button onClick={openCreateModal} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                <Plus size={16} />게시글 작성
+                <Plus size={16} />{t.writePost}
               </button>
             </div>
           </div>
@@ -412,17 +519,26 @@ const BoardManagement: React.FC = () => {
           {/* 게시판 탭 */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
             {[{ id: '__all__', name: '전체' }, ...boards].map(b => (
-              <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ padding: '9px 20px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
+              <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
                 {b.name}
+                {b.id !== '__all__' && (
+                  <span
+                    onClick={(e) => { e.stopPropagation(); handleDeleteBoard(b as BoardVO); }}
+                    title="Delete tab"
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: '50%', color: selectedBoardId === b.id ? '#fff' : '#EF4444' }}
+                  >
+                    <Trash2 size={12} />
+                  </span>
+                )}
               </button>
             ))}
           </div>
 
           {/* 검색 */}
-          <div style={{ background: cardBg, borderRadius: 16, padding: '14px 18px', border: `1px solid ${LIGHT_GREEN}`, marginBottom: 20 }}>
+          <div style={{ background: cardBg, borderRadius: 16, padding: '14px 18px', border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, marginBottom: 20 }}>
             <div style={{ position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: subText }} />
-              <input type="text" placeholder="제목 또는 내용으로 검색..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ ...inputStyle, paddingLeft: 36 }} />
+              <input type="text" placeholder={t.searchPlaceholder} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ ...inputStyle, paddingLeft: 36 }} />
             </div>
           </div>
 
@@ -430,7 +546,7 @@ const BoardManagement: React.FC = () => {
           {selectedPost ? (
             <div>
               <button onClick={() => setSelectedPost(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 16, padding: 0 }}>
-                <ChevronLeft size={16} />목록으로
+                <ChevronLeft size={16} />{t.backToList}
               </button>
               {/* 본문 + 댓글 통합 카드 */}
               <div style={{ border: `1.5px solid ${BORDER_GREEN}`, borderRadius: 20, overflow: 'hidden' }}>
@@ -438,7 +554,7 @@ const BoardManagement: React.FC = () => {
                 <div style={{ background: contentBg, padding: '24px 24px 20px' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div style={{ flex: 1 }}>
-                      {selectedPost.is_pinned === 'Y' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: LIGHT_GREEN, color: DARK_GREEN, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, marginBottom: 8 }}><Pin size={11} />고정됨</span>}
+                      {selectedPost.is_pinned === 'Y' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, color: isDark ? '#4cd964' : DARK_GREEN, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, marginBottom: 8 }}><Pin size={11} />{t.pinnedBadge}</span>}
                       <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>{selectedPost.title}</h2>
                       <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#888' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={13} />{displayName(selectedPost.writer_id, selectedPost.writer_name)}</span>
@@ -459,10 +575,10 @@ const BoardManagement: React.FC = () => {
                 <div style={{ background: contentBg, padding: '0 24px 24px' }}>
                 <div style={{ border: `1.5px solid ${BORDER_GREEN}`, borderRadius: 16, background: cardBg, padding: '18px 24px' }}>
                   <h3 style={{ fontSize: 15, fontWeight: 700, color: DARK_GREEN, margin: '0 0 2px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MessageSquare size={15} />댓글 {comments.length}개
+                    <MessageSquare size={15} />{t.commentCount(comments.length)}
                   </h3>
                   {loadingComments ? (
-                    <p style={{ textAlign: 'center', color: subText, padding: '16px 0' }}>불러오는 중...</p>
+                    <p style={{ textAlign: 'center', color: subText, padding: '16px 0' }}>{t.loadingComments}</p>
                   ) : comments.length === 0 ? (
                     <p style={{ textAlign: 'center', color: subText, padding: '12px 0' }}></p>
                   ) : (
@@ -491,13 +607,13 @@ const BoardManagement: React.FC = () => {
                     <textarea
                       value={commentText}
                       onChange={e => setCommentText(e.target.value)}
-                      placeholder="댓글을 입력하세요"
+                      placeholder={t.commentPlaceholder}
                       rows={3}
                       style={{ ...inputStyle, resize: 'none', fontSize: 15 }}
                     />
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
                       <button onClick={handleAddComment} disabled={!commentText.trim()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 40px', background: commentText.trim() ? GREEN : '#ccc', border: 'none', borderRadius: 12, color: '#fff', fontSize: 14, fontWeight: 700, cursor: commentText.trim() ? 'pointer' : 'default' }}>
-                        <Send size={15} />등록
+                        <Send size={15} />{t.sendBtn}
                       </button>
                     </div>
                   </div>
@@ -509,17 +625,17 @@ const BoardManagement: React.FC = () => {
             /* 게시글 목록 */
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {loadingPosts ? (
-                <p style={{ textAlign: 'center', color: subText, padding: '40px 0' }}>불러오는 중...</p>
+                <p style={{ textAlign: 'center', color: subText, padding: '40px 0' }}>{t.loadingPosts}</p>
               ) : posts.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '48px 0', color: subText }}>
                   <MessageSquare size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-                  <p>게시글이 없습니다.</p>
+                  <p>{t.noPosts}</p>
                   <button onClick={openCreateModal} style={{ marginTop: 12, padding: '10px 24px', background: GREEN, border: 'none', borderRadius: 50, color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                    <Plus size={14} style={{ display: 'inline', marginRight: 4 }} />첫 게시글 작성
+                    <Plus size={14} style={{ display: 'inline', marginRight: 4 }} />{t.writeFirstPost}
                   </button>
                 </div>
               ) : posts.map(post => (
-                <div key={post.id} onClick={() => openPostDetail(post)} style={{ background: post.is_pinned === 'Y' ? (isDark ? 'rgba(230,245,200,0.08)' : '#F4FBE8') : (isDark ? 'rgba(52,52,60,0.7)' : '#fff'), borderRadius: 16, padding: '16px 18px', border: post.is_pinned === 'Y' ? `2px solid ${BORDER_GREEN}` : `1px solid ${BORDER_GREEN}`, cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+                <div key={post.id} onClick={() => openPostDetail(post)} style={{ background: post.is_pinned === 'Y' ? (isDark ? 'rgba(230,245,200,0.08)' : '#F4FBE8') : (isDark ? 'rgba(20,20,20,0.7)' : '#fff'), borderRadius: 16, padding: '16px 18px', border: post.is_pinned === 'Y' ? `2px solid ${BORDER_GREEN}` : `1px solid ${BORDER_GREEN}`, cursor: 'pointer', transition: 'box-shadow 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'; }}
                   onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
                 >
@@ -527,7 +643,7 @@ const BoardManagement: React.FC = () => {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                         {post.is_pinned === 'Y' && <Pin size={14} color={DARK_GREEN} />}
-                        {post.status === 'DRAFT' && <span style={{ fontSize: 11, background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>임시저장</span>}
+                        {post.status === 'DRAFT' && <span style={{ fontSize: 11, background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{t.draftBadge}</span>}
                       </div>
                       <h3 style={{ fontSize: 15, fontWeight: 700, color: textColor, margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
                       <p style={{ fontSize: 13, color: subText, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{post.content}</p>
@@ -539,9 +655,9 @@ const BoardManagement: React.FC = () => {
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6, marginLeft: 12, flexShrink: 0 }}>
-                      <button onClick={e => { e.stopPropagation(); handleTogglePin(post); }} style={{ background: post.is_pinned === 'Y' ? LIGHT_GREEN : 'transparent', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: DARK_GREEN }}><Pin size={13} /></button>
-                      <button onClick={e => { e.stopPropagation(); openEditModal(post); }} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: DARK_GREEN }}><Edit size={13} /></button>
-                      <button onClick={e => { e.stopPropagation(); handleDelete(post.id); }} style={{ background: 'transparent', border: '1px solid #EF4444', borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: '#EF4444' }}><Trash2 size={13} /></button>
+                      <button onClick={e => { e.stopPropagation(); handleTogglePin(post); }} style={{ background: post.is_pinned === 'Y' ? (isDark ? 'rgba(24,160,34,0.2)' : LIGHT_GREEN) : 'transparent', border: `1px solid ${isDark ? 'rgba(0,162,0,0.4)' : BORDER_GREEN}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: isDark ? '#4cd964' : DARK_GREEN }}><Pin size={13} /></button>
+                      <button onClick={e => { e.stopPropagation(); openEditModal(post); }} style={{ background: 'transparent', border: `1px solid ${isDark ? '#3a3a3a' : BORDER_GREEN}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: isDark ? '#9dc49d' : DARK_GREEN }}><Edit size={13} /></button>
+                      <button onClick={e => { e.stopPropagation(); handleDelete(post.id); }} style={{ background: isDark ? 'rgba(239,68,68,0.12)' : 'transparent', border: `1px solid ${isDark ? 'rgba(239,68,68,0.3)' : '#EF4444'}`, borderRadius: 8, padding: '6px 9px', cursor: 'pointer', color: '#EF4444' }}><Trash2 size={13} /></button>
                     </div>
                   </div>
                 </div>
@@ -552,28 +668,60 @@ const BoardManagement: React.FC = () => {
       </div>
 
       {/* 푸시 알림 모달 */}
-      {showPushModal && (
+      {showBoardModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-          <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 480 }}>
+          <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 420 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Bell size={18} />푸시 알림 보내기</h2>
-              <button onClick={() => setShowPushModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Plus size={18} />탭 추가
+              </h2>
+              <button onClick={() => setShowBoardModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
             </div>
-            <p style={{ fontSize: 13, color: subText, marginBottom: 20 }}>{currentBranch} 소속 모든 직원에게 알림을 발송합니다.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>알림 제목</label>
-                <input type="text" placeholder="알림 제목을 입력하세요" value={pushForm.title} onChange={e => setPushForm(f => ({ ...f, title: e.target.value }))} style={inputStyle} />
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>탭 이름</label>
+                <input
+                  type="text"
+                  placeholder="예: 업무 지시"
+                  value={boardNameInput}
+                  onChange={e => setBoardNameInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleCreateBoard(); }}
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={handleCreateBoard} disabled={savingBoard} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: savingBoard ? '#ccc' : GREEN, color: '#fff', borderRadius: 50, padding: '11px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: savingBoard ? 'default' : 'pointer' }}>
+                  <Plus size={15} />{savingBoard ? '추가 중...' : '추가'}
+                </button>
+                <button onClick={() => setShowBoardModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>취소</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPushModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
+          <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 480 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Bell size={18} />{t.pushModalTitle}</h2>
+              <button onClick={() => setShowPushModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
+            </div>
+            <p style={{ fontSize: 13, color: subText, marginBottom: 20 }}>{t.pushModalDesc(currentBranch)}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.pushTitleLabel}</label>
+                <input type="text" placeholder={t.noticeTitlePlaceholder} value={pushForm.title} onChange={e => setPushForm(f => ({ ...f, title: e.target.value }))} style={inputStyle} />
               </div>
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>내용 (선택)</label>
-                <textarea rows={4} placeholder="알림 내용을 입력하세요" value={pushForm.content} onChange={e => setPushForm(f => ({ ...f, content: e.target.value }))} style={{ ...inputStyle, resize: 'none' }} />
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.pushContentLabel}</label>
+                <textarea rows={4} placeholder={t.noticeContentPlaceholder} value={pushForm.content} onChange={e => setPushForm(f => ({ ...f, content: e.target.value }))} style={{ ...inputStyle, resize: 'none' }} />
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={handleSendPush} disabled={pushSending} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: pushSending ? '#ccc' : GREEN, color: '#fff', borderRadius: 50, padding: '11px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: pushSending ? 'default' : 'pointer' }}>
-                  <Bell size={15} />{pushSending ? '발송 중...' : '전송'}
+                  <Bell size={15} />{pushSending ? t.sending : t.sendBtn}
                 </button>
-                <button onClick={() => setShowPushModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                <button onClick={() => setShowPushModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{t.cancelBtn}</button>
               </div>
             </div>
           </div>
@@ -583,46 +731,46 @@ const BoardManagement: React.FC = () => {
       {/* 게시글 작성/수정 모달 */}
       {showPostModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-          <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{editingPost ? '게시글 수정' : '새 게시글 작성'}</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0 }}>{editingPost ? t.editPostTitle : t.createPostTitle}</h2>
               <button onClick={() => setShowPostModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>게시판</label>
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.boardLabel}</label>
                 <select value={selectedBoardId} onChange={e => setSelectedBoardId(e.target.value)} style={inputStyle}>
-                  {boards.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  {boards.map(b => <option key={b.id} value={b.id}>{translateBoardName(b.name)}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>제목</label>
-                <input type="text" placeholder="게시글 제목을 입력하세요" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} style={inputStyle} />
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.titleLabel}</label>
+                <input type="text" placeholder={t.titlePlaceholder} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} style={inputStyle} />
               </div>
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>내용</label>
-                <textarea rows={10} placeholder="게시글 내용을 입력하세요" value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} />
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.contentLabel}</label>
+                <textarea rows={10} placeholder={t.contentPlaceholder} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} />
               </div>
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>첨부파일</label>
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.attachmentLabel}</label>
                 <div style={{ border: `2px dashed ${BORDER_GREEN}`, borderRadius: 12, padding: 18, textAlign: 'center' }}>
                   <Paperclip size={24} color={DARK_GREEN} style={{ margin: '0 auto 6px' }} />
-                  <p style={{ fontSize: 13, color: subText }}>파일을 드래그하거나 클릭하여 업로드</p>
-                  <button style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', marginTop: 8 }}>파일 선택</button>
+                  <p style={{ fontSize: 13, color: subText }}>{t.attachDragHint}</p>
+                  <button style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', marginTop: 8 }}>{t.selectFile}</button>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input type="checkbox" id="pinPost" checked={form.is_pinned === 'Y'} onChange={e => setForm(f => ({ ...f, is_pinned: e.target.checked ? 'Y' : 'N' }))} style={{ width: 16, height: 16, accentColor: GREEN }} />
-                <label htmlFor="pinPost" style={{ fontSize: 14, fontWeight: 600, color: textColor }}>상단 고정</label>
+                <label htmlFor="pinPost" style={{ fontSize: 14, fontWeight: 600, color: textColor }}>{t.pinPost}</label>
               </div>
               <div style={{ display: 'flex', gap: 10, paddingTop: 8, borderTop: `1px solid ${LIGHT_GREEN}` }}>
                 <button onClick={() => handleSubmitPost(false)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                  <CheckCircle size={16} />게시하기
+                  <CheckCircle size={16} />{t.publishBtn}
                 </button>
                 <button onClick={() => handleSubmitPost(true)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                  <Edit size={16} />임시 저장
+                  <Edit size={16} />{t.saveDraft}
                 </button>
-                <button onClick={() => setShowPostModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>취소</button>
+                <button onClick={() => setShowPostModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{t.cancelBtn}</button>
               </div>
             </div>
           </div>

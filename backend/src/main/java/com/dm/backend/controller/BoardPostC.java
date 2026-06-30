@@ -3,9 +3,19 @@ package com.dm.backend.controller;
 import com.dm.backend.service.BoardPostService;
 import com.dm.backend.vo.BoardPostVO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/board/post")
@@ -14,11 +24,6 @@ public class BoardPostC {
     @Autowired
     private BoardPostService boardPostService;
 
-    // =========================
-    // [공통]
-    // =========================
-
-    // 게시글 단건 조회
     @GetMapping("/{id}")
     public BoardPostVO getPost(
             @PathVariable String id
@@ -26,64 +31,50 @@ public class BoardPostC {
         return boardPostService.getPost(id);
     }
 
-    // 게시글 목록 조회
     @GetMapping
     public List<BoardPostVO> getPostList(
             @RequestParam String board_id
     ) {
-        return boardPostService.getPostList(
-                board_id
-        );
+        return boardPostService.getPostList(board_id);
     }
 
-    // 게시글 검색
     @GetMapping("/search")
     public List<BoardPostVO> searchPost(
             @RequestParam String store_id,
             @RequestParam String keyword
     ) {
-        return boardPostService.searchPost(
-                store_id,
-                keyword
-        );
+        return boardPostService.searchPost(store_id, keyword);
     }
 
-    // =========================
-    // [관리자]
-    // =========================
-
-    // 게시글 등록
     @PostMapping
-    public void createPost(
+    public ResponseEntity<?> createPost(
             @RequestBody BoardPostVO boardPostVO
     ) {
-        boardPostService.createPost(
-                boardPostVO
-        );
+        try {
+            boardPostService.createPost(boardPostVO);
+            return ResponseEntity.ok(boardPostVO);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    e.getMessage()
+                            )
+                    );
+        }
     }
 
-    // 게시글 수정
     @PutMapping
     public void updatePost(
             @RequestBody BoardPostVO boardPostVO
     ) {
-        boardPostService.updatePost(
-                boardPostVO
-        );
+        boardPostService.updatePost(boardPostVO);
     }
 
-    // 게시글 삭제
     @DeleteMapping
     public void deletePost(
             @RequestParam String id
     ) {
-        boardPostService.deletePost(
-                id
-        );
+        boardPostService.deletePost(id);
     }
-
-    // =========================
-    // [직원]
-    // =========================
-
 }
