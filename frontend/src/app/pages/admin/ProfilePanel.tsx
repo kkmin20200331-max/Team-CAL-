@@ -723,7 +723,7 @@ export default function ProfilePanel() {
                     className="flex flex-col items-center justify-center"
                     style={{ paddingTop: 100, paddingBottom: 100, color: textSub }}
                   >
-                    <CheckCircle className="w-8 h-8 mb-2" style={{ color: "#18A022" }} />
+                    <CheckCircle className="w-10 h-10 mb-2" style={{ color: "#18A022" }} />
                     <p className="text-xs">{t.noPendingRequests}</p>
                   </div>
                 )}
