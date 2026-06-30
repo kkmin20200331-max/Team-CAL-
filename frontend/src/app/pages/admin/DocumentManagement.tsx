@@ -1,6 +1,7 @@
 import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Upload,
@@ -699,8 +700,8 @@ const DocumentManagement: React.FC = () => {
           </div>
 
           {/* Upload Modal */}
-          {uploadModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          {uploadModalOpen && ReactDOM.createPortal(
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
               <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 560 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <p style={{ fontSize: 18, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.uploadTitle}</p>
@@ -749,12 +750,12 @@ const DocumentManagement: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </div>, document.body
           )}
 
           {/* Detail Modal */}
-          {showDetailModal && selectedDocument && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          {showDetailModal && selectedDocument && ReactDOM.createPortal(
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16 }}>
               <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <p style={{ fontSize: 18, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.detailTitle}</p>
@@ -844,7 +845,7 @@ const DocumentManagement: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </div>, document.body
           )}
         </div>
       </div>
