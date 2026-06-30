@@ -140,11 +140,14 @@
   }
 
   /* Global UI scale applied via CSS transform to approximate 75% browser zoom.
-     Using transform + width compensation to keep layout width consistent. */
+     Using transform + width/height compensation to keep layout size consistent for 100vh/100% based backgrounds. */
   body {
     transform: scale(var(--ui-scale, 1));
     transform-origin: 0 0;
     width: calc(100% / var(--ui-scale, 1));
+    height: calc(100% / var(--ui-scale, 1));
+    min-height: calc(100vh / var(--ui-scale, 1));
+    /* Ensure fixed positioned children reference the compensated viewport size */
   }
 
   h1 {
