@@ -338,7 +338,7 @@ export default function AttendanceManagement() {
     : 0;
 
   return (
-    <div style={{ minHeight: "100vh", background: pageBg, fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: "flex", gap: 20, padding: "24px 40px 40px", alignItems: "flex-start" }}>
         <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${isDark ? "#1a1a1a" : BORDER_GREEN}`, borderRadius: 20, padding: "16px 12px", position: "sticky", top: 140, maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}>

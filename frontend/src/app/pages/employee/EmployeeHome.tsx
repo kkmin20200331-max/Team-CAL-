@@ -227,7 +227,7 @@ export default function EmployeeHome() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: font }}>
+    <div style={{ minHeight: '100vh', background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: font }}>
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <header style={{
