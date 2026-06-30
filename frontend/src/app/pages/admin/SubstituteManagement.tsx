@@ -247,7 +247,7 @@ const SubstituteManagement: React.FC = () => {
   const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, background: isDark ? '#1a1a1a' : '#fff', color: textColor, fontSize: 14, boxSizing: 'border-box' as const };
 
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
         {/* 사이드바 */}
@@ -287,12 +287,12 @@ const SubstituteManagement: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {currentBranch} <ChevronRight size={12} /> 대타 모집
+                {currentBranch} <ChevronRight size={12} /> {t.breadcrumb}
               </div>
               <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <UserPlus size={26} />대타 모집 및 지원 현황
+                <UserPlus size={26} />{t.pageTitle}
               </h1>
-              <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>빈 근무를 채울 대타를 모집하고 지원자를 관리합니다.</p>
+              <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>{t.pageSubtitle}</p>
             </div>
             <button onClick={openModal} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: GREEN, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
               <Plus size={16} />{t.createRequest}

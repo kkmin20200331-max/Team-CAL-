@@ -85,6 +85,7 @@ interface BackendFile {
 
 const DocumentManagement: React.FC = () => {
   const language = useLanguage();
+  const t = translations.documentManagement[language];
   const navigate = useNavigate();
   const location = useLocation();
   const { branchId } = useParams();
@@ -277,7 +278,7 @@ const DocumentManagement: React.FC = () => {
       method: "PUT",
     });
     if (!response.ok) {
-      alert("문서 상태 변경에 실패했습니다.");
+      alert(t.errStatusChange);
       return;
     }
     await fetchDocuments();
@@ -287,12 +288,12 @@ const DocumentManagement: React.FC = () => {
   };
 
   const handleDelete = async (doc: Document) => {
-    if (!confirm("문서를 삭제할까요?")) return;
+    if (!confirm(t.confirmDelete)) return;
     const response = await fetch(`${API_BASE}/file/${doc.id}`, {
       method: "DELETE",
     });
     if (!response.ok) {
-      alert("문서 삭제에 실패했습니다.");
+      alert(t.errDelete);
       return;
     }
     setShowDetailModal(false);
@@ -425,20 +426,20 @@ const DocumentManagement: React.FC = () => {
   ]);
 
   const documentTypes = [
-    { value: "all", label: "전체" },
-    { value: "health_certificate", label: "보건증" },
-    { value: "contract", label: "근로계약서" },
-    { value: "id_card", label: "신분증" },
-    { value: "bank_account", label: "통장사본" },
-    { value: "other", label: "기타" },
+    { value: "all", label: t.typeAll },
+    { value: "health_certificate", label: t.typeHealth },
+    { value: "contract", label: t.typeContract },
+    { value: "id_card", label: t.typeId },
+    { value: "bank_account", label: t.typeBank },
+    { value: "other", label: t.typeOther },
   ];
 
   const statuses = [
-    { value: "all", label: "전체" },
-    { value: "pending", label: "대기중" },
-    { value: "verified", label: "확인완료" },
-    { value: "rejected", label: "반려" },
-    { value: "expired", label: "만료" },
+    { value: "all", label: t.statusAll },
+    { value: "pending", label: t.statusPending },
+    { value: "verified", label: t.statusVerified },
+    { value: "rejected", label: t.statusRejected },
+    { value: "expired", label: t.statusExpired },
   ];
 
   const filteredDocuments = documents.filter((doc) => {
@@ -484,11 +485,11 @@ const DocumentManagement: React.FC = () => {
 
   const getDocumentTypeLabel = (type: string) => {
     const typeMap: { [key: string]: string } = {
-      health_certificate: "보건증",
-      contract: "근로계약서",
-      id_card: "신분증",
-      bank_account: "통장사본",
-      other: "기타",
+      health_certificate: t.typeHealth,
+      contract: t.typeContract,
+      id_card: t.typeId,
+      bank_account: t.typeBank,
+      other: t.typeOther,
     };
     return typeMap[type] || type;
   };
@@ -511,7 +512,7 @@ const DocumentManagement: React.FC = () => {
   const stats = calculateStats();
 
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
 
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>

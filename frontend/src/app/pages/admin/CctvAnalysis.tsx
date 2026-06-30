@@ -110,6 +110,7 @@ const initialConfig: CameraConfig = {
 
 export default function CctvAnalysis() {
   const language = useLanguage();
+  const t = translations.cctvAnalysis[language];
   const navigate = useNavigate();
   const location = useLocation();
   const { branchId } = useParams();
@@ -331,7 +332,7 @@ export default function CctvAnalysis() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
         {/* 사이드바 */}
@@ -352,7 +353,7 @@ export default function CctvAnalysis() {
             )}
           </div>
           {menuItems.map(({ icon: Icon, label, path }) => {
-            const isActive = location.pathname.startsWith(`/admin/cctv/`) ? label === 'CCTV 분석' : (location.pathname === path || location.pathname.startsWith(path));
+            const isActive = location.pathname.startsWith(`/admin/cctv/`) ? path.startsWith('/admin/cctv/') : (location.pathname === path || location.pathname.startsWith(path));
             return (
               <button key={label} onClick={() => navigate(path)}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderRadius: 12, border: 'none', marginBottom: 4, cursor: 'pointer', fontSize: 14, fontWeight: 600, background: isActive ? GREEN : 'transparent', color: isActive ? '#fff' : (isDark ? '#ccc' : DARK_GREEN), textAlign: 'left', transition: 'all 0.15s', boxShadow: isActive ? '0 2px 8px rgba(24,160,34,0.3)' : 'none' }}
@@ -371,23 +372,23 @@ export default function CctvAnalysis() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {currentBranch} <ChevronRight size={12} /> CCTV 분석
+                {currentBranch} <ChevronRight size={12} /> {t.breadcrumb}
               </div>
               <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Video size={26} />매장 CCTV 실시간 모니터링
+                <Video size={26} />{t.title}
               </h1>
-              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>카메라를 통해 매장 혼잡도를 실시간으로 분석합니다.</p>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.subtitle}</p>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
                 <button onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                  <Save size={16} />설정 저장
+                  <Save size={16} />{t.saveConfig}
                 </button>
-                <span style={{ fontSize: 11, color: '#c8c8c8' }}>최근 저장: {lastSavedAt}</span>
+                <span style={{ fontSize: 11, color: '#c8c8c8' }}>{t.lastSaved} {lastSavedAt}</span>
               </div>
               <button disabled={isSubmitting} onClick={isRunning ? handleStop : handleStart} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: isRunning ? (isDark ? 'rgba(239,68,68,0.2)' : '#ef4444') : GREEN, border: isRunning ? `1px solid ${isDark ? 'rgba(239,68,68,0.5)' : 'transparent'}` : 'none', borderRadius: 54, color: isRunning ? (isDark ? '#f87171' : '#fff') : '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>
                 {isRunning ? <CircleStop size={16} /> : <Play size={16} />}
-                {isSubmitting ? "요청 중" : isRunning ? "분석 중지" : "분석 시작"}
+                {isSubmitting ? t.requesting : isRunning ? t.stopAnalysis : t.startAnalysis}
               </button>
             </div>
           </div>
@@ -400,30 +401,30 @@ export default function CctvAnalysis() {
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
           {[
             {
-              label: '분석 상태',
-              value: isRunning ? '실행 중' : '대기 중',
-              sub: isRunning ? `서버 동기화 ${lastSyncedAt}` : '시작 버튼으로 API 호출',
+              label: t.analysisStatus,
+              value: isRunning ? t.running : t.standby,
+              sub: isRunning ? t.serverSync(lastSyncedAt) : t.startHint,
               badge: { text: isRunning ? 'LIVE' : 'STOP', bg: isRunning ? GREEN : (isDark ? 'rgba(107,114,128,0.2)' : '#888'), border: isRunning ? 'none' : (isDark ? '1px solid rgba(107,114,128,0.4)' : 'none'), textColor: isRunning ? '#fff' : (isDark ? '#9ca3af' : '#fff') },
               icon: null,
             },
             {
-              label: '분석 매장',
+              label: t.analysisBranch,
               value: currentBranch,
-              sub: `ID: ${storeId || '미설정'}`,
+              sub: `ID: ${storeId || t.notSet}`,
               badge: null,
               icon: <Users size={22} color={DARK_GREEN} />,
             },
             {
-              label: '샘플링 주기',
-              value: `${config.intervalSec}초`,
-              sub: `집계 ${config.aggregationIntervalSec}초`,
+              label: t.samplingInterval,
+              value: `${config.intervalSec}s`,
+              sub: t.aggregationSec(config.aggregationIntervalSec),
               badge: null,
               icon: <Clock size={22} color={DARK_GREEN} />,
             },
             {
-              label: '최근 측정',
-              value: `${metrics?.lastCustomerCount ?? '-'}명`,
-              sub: metrics?.lastMeasuredAt ? new Date(metrics.lastMeasuredAt).toLocaleTimeString() : '수신 대기',
+              label: t.lastMeasured,
+              value: `${metrics?.lastCustomerCount ?? '-'}`,
+              sub: metrics?.lastMeasuredAt ? new Date(metrics.lastMeasuredAt).toLocaleTimeString() : t.waitingReceive,
               badge: null,
               icon: <Eye size={22} color={DARK_GREEN} />,
             },
@@ -432,7 +433,7 @@ export default function CctvAnalysis() {
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 12, color: isDark ? '#c8c8c8' : '#6b7280', margin: 0 }}>{label}</p>
-                  <p style={{ fontSize: label === '분석 매장' ? 15 : 22, fontWeight: 800, color: isDark ? '#fff' : DARK_GREEN, margin: '6px 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</p>
+                  <p style={{ fontSize: label === t.analysisBranch ? 15 : 22, fontWeight: 800, color: isDark ? '#fff' : DARK_GREEN, margin: '6px 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</p>
                   <p style={{ fontSize: 11, color: isDark ? '#c8c8c8' : '#6b7280', margin: 0 }}>{sub}</p>
                 </div>
                 {badge && (
@@ -449,7 +450,7 @@ export default function CctvAnalysis() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-5 w-5" style={{ color: DARK_GREEN }} />
-                실시간 카메라
+                {t.realtimeCamera}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -507,11 +508,10 @@ export default function CctvAnalysis() {
                 </div>
                 <div className="absolute right-4 top-4 max-w-[60%] rounded-lg border border-white/15 bg-black/35 px-3 py-2 text-xs text-white backdrop-blur">
                   {isRunning
-                    ? `실시간 스트림 ${lastSyncedAt}`
+                    ? t.realtimeStream(lastSyncedAt)
                     : cameraFrame
-                      ? `최근 프레임 ${lastSyncedAt}`
-                      : cameraStatusMessage ||
-                        "분석 시작 후 최신 프레임이 표시됩니다"}
+                      ? t.recentFrame(lastSyncedAt)
+                      : cameraStatusMessage || t.streamHint}
                 </div>
               </div>
             </CardContent>
@@ -521,12 +521,12 @@ export default function CctvAnalysis() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" style={{ color: DARK_GREEN }} />
-                카메라 시작 설정
+                {t.cameraSettings}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="camera-id">카메라 ID</Label>
+                <Label htmlFor="camera-id">{t.cameraId}</Label>
                 <Input
                   id="camera-id"
                   value={config.cameraId}
@@ -536,7 +536,7 @@ export default function CctvAnalysis() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>소스 타입</Label>
+                <Label>{t.sourceType}</Label>
                 <Select
                   value={config.sourceType}
                   onValueChange={(value) =>
@@ -554,19 +554,19 @@ export default function CctvAnalysis() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="source">소스</Label>
+                <Label htmlFor="source">{t.source}</Label>
                 <Input
                   id="source"
                   value={config.source}
                   onChange={(event) =>
                     updateConfig("source", event.target.value)
                   }
-                  placeholder="웹캠은 0, RTSP는 rtsp://..., 파일은 test_assets/..."
+                  placeholder={t.sourcePlaceholder}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="interval-sec">샘플링 초</Label>
+                  <Label htmlFor="interval-sec">{t.samplingSec}</Label>
                   <Input
                     id="interval-sec"
                     type="number"
@@ -579,7 +579,7 @@ export default function CctvAnalysis() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="aggregation-sec">집계 초</Label>
+                  <Label htmlFor="aggregation-sec">{t.aggregationSecLabel}</Label>
                   <Input
                     id="aggregation-sec"
                     type="number"
@@ -597,7 +597,7 @@ export default function CctvAnalysis() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label>모델</Label>
+                  <Label>{t.model}</Label>
                   <Select
                     value={config.modelName}
                     onValueChange={(value) => updateConfig("modelName", value)}
@@ -613,7 +613,7 @@ export default function CctvAnalysis() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>이미지 크기</Label>
+                  <Label>{t.imageSize}</Label>
                   <Select
                     value={String(config.imageSize)}
                     onValueChange={(value) =>
@@ -659,7 +659,7 @@ export default function CctvAnalysis() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <RotateCw className="h-5 w-5" style={{ color: GREEN }} />
-                요청/응답 확인
+                {t.requestResponse}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">

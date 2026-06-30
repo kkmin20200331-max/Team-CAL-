@@ -227,7 +227,7 @@ export default function MyAttendance() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: isDark ? "#1c1c1e" : "#fff", fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: isDark ? "#1c1c1e" : "#fff", fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <header style={{ height: 100, background: isDark ? "#2c2c2e" : "#fff", position: "sticky", top: 0, zIndex: 20, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px", boxShadow: "0 1px 0 rgba(0,162,0,0.12)" }}>
         <button onClick={() => navigate("/employee/home")} style={{ border: "none", background: "transparent", cursor: "pointer", color: DARK_GREEN, fontSize: 22, fontWeight: 900 }}>Team-CAL</button>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>

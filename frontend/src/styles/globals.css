@@ -1,3 +1,34 @@
+/* 전역 폰트 스택: Noto Sans JP를 KR 앞에 배치해 일본어 자소 굵기 통일 */
+body, button, input, select, textarea {
+  font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif;
+}
+
+/* 일본어 모드: Bookk Gothic이 CJK 한자를 가로채지 않도록 Noto Sans JP만 사용.
+   !important는 JSX inline style을 포함한 모든 author 스타일보다 우선합니다. */
+[data-lang="ja"], [data-lang="ja"] * {
+  font-family: 'Noto Sans JP', sans-serif !important;
+}
+
+/* 다크모드 스크롤바 */
+.dark ::-webkit-scrollbar,
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.dark ::-webkit-scrollbar-track,
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+.dark ::-webkit-scrollbar-thumb,
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #3a4a3a;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #4a6a4a;
+}
+
 /* 자동완성 배경/텍스트 색 유지 */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,

@@ -635,7 +635,7 @@ export default function AdminDashboard() {
     },
     {
       icon: ClipboardCheck,
-      label: "근태 관리",
+      label: t.menuItems.attendanceManagement,
       path: selectedBranchId
         ? `/admin/attendance/${selectedBranchId}`
         : "/admin/branch-selection",
@@ -696,7 +696,7 @@ export default function AdminDashboard() {
       style={{
         minHeight: "100vh",
         background: pageBg,
-        fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif",
+        fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif",
       }}
     >
       <AdminHeader />
@@ -899,7 +899,7 @@ export default function AdminDashboard() {
               {t.mainDashboard}
             </h1>
             <span style={{ fontSize: 15, color: "#8BA68D", fontWeight: 500 }}>
-              {new Date().toLocaleDateString("ko-KR", {
+              {new Date().toLocaleDateString(t.dateLocale, {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
@@ -1052,7 +1052,7 @@ export default function AdminDashboard() {
               {attendanceQrImageUrl ? (
                 <img
                   src={attendanceQrImageUrl}
-                  alt="출퇴근 QR 코드"
+                  alt={t.qrAlt}
                   style={{ width: 220, height: 220, display: "block" }}
                 />
               ) : (
@@ -1063,14 +1063,14 @@ export default function AdminDashboard() {
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                 <QrCode size={24} color={DARK_GREEN} />
                 <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN }}>
-                  출퇴근 QR
+                  {t.qrTitle}
                 </h2>
               </div>
               <p style={{ margin: "0 0 10px", fontSize: 15, color: "#5f7f61", fontWeight: 600 }}>
-                직원이 개인 폰으로 스캔하면 출근/퇴근이 자동 처리됩니다.
+                {t.qrDesc}
               </p>
               <p style={{ margin: "0 0 16px", fontSize: 14, color: "#8BA68D" }}>
-                QR 코드는 30초마다 새로 발급되고 이전 QR은 즉시 무효화됩니다.
+                {t.qrExpiry}
               </p>
               {qrError ? (
                 <div style={{ color: "#dc2626", fontSize: 14, fontWeight: 700 }}>
@@ -1092,7 +1092,7 @@ export default function AdminDashboard() {
                   }}
                 >
                   <Clock size={16} />
-                  {qrRemainSeconds}초 후 갱신
+                  {t.qrRefresh(qrRemainSeconds)}
                 </div>
               )}
             </div>
@@ -1271,7 +1271,7 @@ export default function AdminDashboard() {
                   padding: "13px 16px",
                   borderRadius: 12,
                   background: "rgba(255,255,255,0.7)",
-                  border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                  border: `1.5px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                 }}
               >
                 <p

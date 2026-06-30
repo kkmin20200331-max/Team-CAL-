@@ -1,5 +1,5 @@
 ﻿import { API_BASE } from "../../../lib/axiosInstance";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   DollarSign,
@@ -130,8 +130,8 @@ const getRecentPeriods = (count: number) => {
   return periods;
 };
 
-const formatWon = (amount: number) =>
-  `${Math.round(Number(amount || 0)).toLocaleString()}원`;
+const formatCurrency = (amount: number, unit: string) =>
+  `${Math.round(Number(amount || 0)).toLocaleString()}${unit}`;
 
 const PayrollManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -145,6 +145,7 @@ const PayrollManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'payroll' | 'weekly' | 'analytics'>('payroll');
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
+  const monthInputRef = useRef<HTMLInputElement>(null);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const [payrollLoading, setPayrollLoading] = useState(false);
   const [payrollError, setPayrollError] = useState('');
@@ -161,6 +162,8 @@ const PayrollManagement: React.FC = () => {
   const cardBg = isDark ? '#141414' : 'rgba(230,245,200,0.35)';
   const inputBg = isDark ? '#1a1a1a' : 'rgba(255,255,255,0.8)';
 
+  const currency = t.currencyUnit;
+  const fmt = (n: number) => formatCurrency(n, currency);
   const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
   const selectedBranchId =
@@ -333,7 +336,7 @@ const PayrollManagement: React.FC = () => {
   const stats = calculateStats();
 
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
 
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
@@ -439,16 +442,16 @@ const PayrollManagement: React.FC = () => {
             <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
               <DollarSign size={26} />{t.title}
             </h1>
-            <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>직원별 급여 현황을 조회하고 정산을 관리합니다.</p>
+            <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>{t.pageSubtitle}</p>
           </div>
 
           {/* Statistics Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
             {[
-              { label: t.totalPay, value: formatWon(stats.totalPayroll) },
-              { label: '직원 수', value: String(stats.employeeCount) },
-              { label: '총 근무시간', value: `${stats.regularHours.toFixed(1)}h` },
-              { label: '연장시간', value: `${stats.overtimeHours.toFixed(1)}h` },
+              { label: t.totalPay, value: fmt(stats.totalPayroll) },
+              { label: t.employeeCount, value: String(stats.employeeCount) },
+              { label: t.totalHours, value: `${stats.regularHours.toFixed(1)}h` },
+              { label: t.overtimeLabel, value: `${stats.overtimeHours.toFixed(1)}h` },
               { label: t.weeklyRequest, value: String(stats.weeklyPending) },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
@@ -490,12 +493,22 @@ const PayrollManagement: React.FC = () => {
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Calendar size={18} color={DARK_GREEN} />
-                    <input
-                      type="month"
-                      value={selectedPeriod}
-                      onChange={(e) => setSelectedPeriod(e.target.value)}
-                      style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, background: inputBg, outline: 'none', color: textColor }}
-                    />
+                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                      <div
+                        onClick={() => { const el = monthInputRef.current; if (!el) return; if (typeof el.showPicker === 'function') el.showPicker(); else el.click(); }}
+                        style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, background: inputBg, color: textColor, cursor: 'pointer', userSelect: 'none', minWidth: 120 }}
+                      >
+                        {(() => {
+                          const [y, m] = selectedPeriod.split('-');
+                          if (!y || !m) return selectedPeriod;
+                          if (language === 'ja') return `${y}年${parseInt(m)}月`;
+                          if (language === 'en') return `${new Date(parseInt(y), parseInt(m)-1).toLocaleString('en-US', { month: 'long' })} ${y}`;
+                          return `${y}년 ${parseInt(m)}월`;
+                        })()}
+                      </div>
+                      <input ref={monthInputRef} type="month" value={selectedPeriod} onChange={(e) => setSelectedPeriod(e.target.value)}
+                        style={{ position: 'absolute', bottom: 0, right: 0, width: '1px', height: '1px', opacity: 0.01, border: 'none', padding: 0, pointerEvents: 'none' }} />
+                    </div>
                   </div>
                   <div style={{ flex: 1, position: 'relative', minWidth: 180 }}>
                     <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8BA68D' }} />
@@ -511,56 +524,70 @@ const PayrollManagement: React.FC = () => {
               </div>
 
               {/* Payroll Table */}
-              <div style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
-                <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN, marginBottom: 16 }}>{t.payrollList(filteredPayroll.length)}</p>
+              <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, border: `1px solid ${isDark ? '#1e2e1e' : BORDER_GREEN}`, boxShadow: '0px 4px 16px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+                <div style={{ padding: '18px 24px', borderBottom: `1px solid ${isDark ? '#1e2e1e' : '#e8f5e9'}`, fontSize: 15, fontWeight: 700, color: textColor, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <DollarSign size={16} color={GREEN} />
+                  {t.payrollList(filteredPayroll.length)}
+                </div>
                 {payrollError && (
-                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#c2410c', borderRadius: 12, padding: '12px 14px', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#c2410c', borderRadius: 12, padding: '12px 14px', fontSize: 14, fontWeight: 600, margin: '12px 20px' }}>
                     {payrollError}
                   </div>
                 )}
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                    <colgroup>
+                      <col style={{ width: '16%' }} />
+                      <col style={{ width: '14%' }} />
+                      <col style={{ width: '18%' }} />
+                      <col style={{ width: '14%' }} />
+                      <col style={{ width: '14%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '12%' }} />
+                    </colgroup>
                     <thead>
                       <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
-                        {[t.colEmployee, t.colPositionStore, t.colHours, t.colBase, t.colOvertime, t.colDeduction, t.colNet].map(col => (
-                          <th key={col} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>{col}</th>
+                        {[t.colEmployee, t.colPositionStore, t.colHours, t.colBase, t.colOvertime, t.colDeduction, t.colNet].map((col) => (
+                          <th key={col} style={{ padding: '13px 16px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>{col}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {payrollLoading && (
                         <tr>
-                          <td colSpan={7} style={{ padding: '32px 16px', textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
-                            급여 정보를 불러오는 중입니다.
+                          <td colSpan={7} style={{ padding: '40px 16px', textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
+                            {t.loadingMsg}
                           </td>
                         </tr>
                       )}
                       {!payrollLoading && filteredPayroll.length === 0 && (
                         <tr>
-                          <td colSpan={7} style={{ padding: '32px 16px', textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
-                            해당 월의 급여 데이터가 없습니다.
+                          <td colSpan={7} style={{ padding: '40px 16px', textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
+                            {t.noData}
                           </td>
                         </tr>
                       )}
-                      {!payrollLoading && filteredPayroll.map((entry, idx) => (
-                        <tr key={entry.id} style={{ background: idx % 2 === 0 ? 'rgba(230,245,200,0.2)' : 'transparent', borderBottom: `1px solid ${LIGHT_GREEN}` }}>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>
-                            <div style={{ fontWeight: 600 }}>{entry.employeeName}</div>
-                            <div style={{ fontSize: 13, color: '#8BA68D' }}>{entry.employeeId}</div>
+                      {!payrollLoading && filteredPayroll.map((entry) => (
+                        <tr key={entry.id} style={{ borderBottom: `1px solid ${isDark ? '#1e2e1e' : 'rgba(0,162,0,0.1)'}`, background: isDark ? 'transparent' : 'rgba(230,245,200,0.35)' }}>
+                          <td style={{ padding: '14px 16px 14px 32px', fontSize: 14, color: textColor }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{ width: 34, height: 34, borderRadius: '50%', background: `linear-gradient(135deg, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0, boxShadow: '0 2px 6px rgba(7,121,15,0.25)' }}>{entry.employeeName[0]}</div>
+                              <div style={{ fontWeight: 700 }}>{entry.employeeName}</div>
+                            </div>
                           </td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>
-                            <div>{entry.position}</div>
-                            <div style={{ fontSize: 13, color: '#8BA68D' }}>{entry.location}</div>
+                          <td style={{ padding: '14px 16px', fontSize: 14, color: textColor, textAlign: 'center' }}>
+                            <div style={{ fontWeight: 600 }}>{entry.position}</div>
+                            <div style={{ fontSize: 12, color: '#8BA68D', marginTop: 2 }}>{entry.location}</div>
                           </td>
-                          <td style={{ padding: '12px 16px', fontSize: 13, color: textColor }}>
+                          <td style={{ padding: '14px 16px', fontSize: 13, color: textColor, textAlign: 'center' }}>
                             <div>{t.regularHours(entry.regularHours)}</div>
                             <div style={{ color: '#2563eb' }}>{t.overtimeHours(entry.overtimeHours)}</div>
                             <div style={{ color: GREEN }}>{t.holidayHours(entry.holidayHours)}</div>
                           </td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{formatWon(entry.basePay)}</td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: textColor }}>{formatWon(entry.overtimePay + entry.holidayPay)}</td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: '#ef4444' }}>{formatWon(entry.deductions.tax + entry.deductions.insurance + entry.deductions.pension)}</td>
-                          <td style={{ padding: '12px 16px', fontSize: 14, color: DARK_GREEN, fontWeight: 700 }}>{formatWon(entry.totalPay)}</td>
+                          <td style={{ padding: '14px 16px', fontSize: 14, color: textColor, textAlign: 'center', fontWeight: 600 }}>{fmt(entry.basePay)}</td>
+                          <td style={{ padding: '14px 16px', fontSize: 14, color: textColor, textAlign: 'center', fontWeight: 600 }}>{fmt(entry.overtimePay + entry.holidayPay)}</td>
+                          <td style={{ padding: '14px 16px', fontSize: 14, color: '#ef4444', textAlign: 'center', fontWeight: 600 }}>{fmt(entry.deductions.tax + entry.deductions.insurance + entry.deductions.pension)}</td>
+                          <td style={{ padding: '14px 16px', fontSize: 14, color: DARK_GREEN, fontWeight: 700, textAlign: 'center' }}>{fmt(entry.totalPay)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -580,7 +607,7 @@ const PayrollManagement: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {weeklyPayRequests.length === 0 && (
                   <div style={{ background: inputBg, borderRadius: 12, padding: '24px 16px', border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, textAlign: 'center', color: '#8BA68D', fontSize: 14, fontWeight: 600 }}>
-                    주급 요청 데이터가 없습니다.
+                    {t.noWeeklyData}
                   </div>
                 )}
                 {weeklyPayRequests.map((request) => (
@@ -600,8 +627,8 @@ const PayrollManagement: React.FC = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 12 }}>
                       {[
                         { label: t.workPeriod, value: `${request.weekStart} ~ ${request.weekEnd}` },
-                        { label: t.requestAmount, value: formatWon(request.requestedAmount) },
-                        { label: t.approvedAmount, value: request.approvedAmount ? formatWon(request.approvedAmount) : '-' },
+                        { label: t.requestAmount, value: fmt(request.requestedAmount) },
+                        { label: t.approvedAmount, value: request.approvedAmount ? fmt(request.approvedAmount) : '-' },
                         { label: t.requestDate, value: request.requestDate },
                       ].map(({ label, value }) => (
                         <div key={label}>
@@ -689,7 +716,7 @@ const PayrollManagement: React.FC = () => {
                           <span style={{ fontSize: 14, fontWeight: 600, color: textColor }}>{item.name}</span>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN }}>{formatWon(item.value)}</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN }}>{fmt(item.value)}</div>
                           <div style={{ fontSize: 13, color: '#8BA68D' }}>{item.percentage}%</div>
                         </div>
                       </div>

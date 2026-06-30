@@ -205,7 +205,7 @@ export default function MonthlySchedule() {
       setAiPreview(res.data);
     } catch (err) {
       console.error("AI 스케줄 생성 실패:", err);
-      alert("AI 스케줄 생성 중 오류가 발생했습니다.");
+      alert(t.aiError);
     } finally {
       setAiLoading(false);
     }
@@ -225,10 +225,10 @@ export default function MonthlySchedule() {
       });
       setAiPreview(null);
       await fetchShifts();
-      alert("AI 스케줄이 근무표에 반영되었습니다.");
+      alert(t.aiApplySuccess);
     } catch (err) {
       console.error("AI 스케줄 반영 실패:", err);
-      alert("AI 스케줄 반영 중 오류가 발생했습니다. 기존 근무와 중복된 항목이 있는지 확인해주세요.");
+      alert(t.aiApplyError);
     } finally {
       setAiLoading(false);
     }
@@ -250,7 +250,7 @@ export default function MonthlySchedule() {
   const sidebarBorder = isDark ? '#1a1a1a' : BORDER_GREEN;
 
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
         {/* 사이드바 */}
@@ -290,12 +290,12 @@ export default function MonthlySchedule() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
               <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {currentBranch} <ChevronRight size={12} /> 근무표 관리
+                {currentBranch} <ChevronRight size={12} /> {t.breadcrumb}
               </div>
               <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Calendar size={26} />월별 근무 일정 관리
+                <Calendar size={26} />{t.pageTitle}
               </h1>
-              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>한 달 단위 근무 스케줄을 관리합니다.</p>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.pageSubtitle}</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
@@ -303,7 +303,7 @@ export default function MonthlySchedule() {
                 disabled={aiLoading}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, padding: '8px 18px', fontSize: 14, fontWeight: 700, color: '#fff', cursor: aiLoading ? 'default' : 'pointer', opacity: aiLoading ? 0.65 : 1 }}
               >
-                <Sparkles size={16} />{aiLoading ? '생성 중...' : 'AI 스케줄 생성'}
+                <Sparkles size={16} />{aiLoading ? t.aiLoading : t.aiButton}
               </button>
               <button onClick={() => setCurrentMonth(prev => addMonths(prev, -1))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronLeft size={16} /></button>
               <button onClick={() => setCurrentMonth(new Date())} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, padding: '6px 16px', fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.today}</button>
@@ -424,7 +424,7 @@ export default function MonthlySchedule() {
                   <Sparkles size={18} color={isDark ? '#4cd964' : DARK_GREEN} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: 20, fontWeight: 800, color: textColor }}>AI 스케줄 생성 결과</h2>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: textColor }}>{t.aiModalTitle}</h2>
                   <p style={{ fontSize: 13, color: subTextColor, marginTop: 2 }}>{format(currentMonth, "yyyy년 M월", { locale: ko })}</p>
                 </div>
               </div>
@@ -435,10 +435,10 @@ export default function MonthlySchedule() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
               {[
-                { label: '생성 근무', value: aiPreview.total_count },
-                { label: '마감 배치', value: aiPreview.closer_count },
-                { label: '신입 보조', value: aiPreview.newbie_solo_avoided_count },
-                { label: '중복 제외', value: aiPreview.conflict_excluded_count },
+                { label: t.statCreated, value: aiPreview.total_count },
+                { label: t.statCloser, value: aiPreview.closer_count },
+                { label: t.statNewbie, value: aiPreview.newbie_solo_avoided_count },
+                { label: t.statConflict, value: aiPreview.conflict_excluded_count },
               ].map((item) => (
                 <div key={item.label} style={{ background: isDark ? '#1a1a1a' : '#f8fff4', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '12px 10px', textAlign: 'center' }}>
                   <p style={{ fontSize: 12, color: subTextColor, marginBottom: 4 }}>{item.label}</p>
@@ -449,7 +449,7 @@ export default function MonthlySchedule() {
 
             <div style={{ maxHeight: 260, overflowY: 'auto', border: `1px solid ${isDark ? '#1a1a1a' : '#e8f5e9'}`, borderRadius: 16 }}>
               {aiPreview.shifts.length === 0 ? (
-                <p style={{ textAlign: 'center', padding: '34px 0', color: subTextColor }}>생성된 근무가 없습니다.</p>
+                <p style={{ textAlign: 'center', padding: '34px 0', color: subTextColor }}>{t.noShiftsGenerated}</p>
               ) : (
                 aiPreview.shifts.slice(0, 20).map((shift) => (
                   <div key={shift.id} style={{ padding: '12px 14px', borderBottom: `1px solid ${isDark ? '#1a1a1a' : '#e8f5e9'}` }}>
@@ -467,16 +467,16 @@ export default function MonthlySchedule() {
                 ))
               )}
               {aiPreview.shifts.length > 20 && (
-                <p style={{ padding: '10px 14px', fontSize: 12, color: subTextColor, textAlign: 'center' }}>외 {aiPreview.shifts.length - 20}건 더 생성됨</p>
+                <p style={{ padding: '10px 14px', fontSize: 12, color: subTextColor, textAlign: 'center' }}>{t.moreShifts(aiPreview.shifts.length - 20)}</p>
               )}
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
               <button onClick={handleAiPreview} disabled={aiLoading} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 700, cursor: aiLoading ? 'default' : 'pointer', opacity: aiLoading ? 0.65 : 1 }}>
-                다시 생성
+                {t.regenerate}
               </button>
               <button onClick={handleAiApply} disabled={aiLoading || aiPreview.shifts.length === 0} style={{ flex: 1, padding: '12px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 700, cursor: aiLoading || aiPreview.shifts.length === 0 ? 'default' : 'pointer', opacity: aiLoading || aiPreview.shifts.length === 0 ? 0.65 : 1 }}>
-                {aiLoading ? '처리 중...' : '근무표에 반영'}
+                {aiLoading ? t.aiProcessing : t.applyToSchedule}
               </button>
             </div>
           </div>

@@ -9,7 +9,7 @@ import {
   ClipboardCheck, UserPlus, Users, Wallet, FileText, MessageSquare, BarChart3, Video
 } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko, ja, enUS } from 'date-fns/locale';
 import AdminHeader from './AdminHeader';
 import { useTheme } from 'next-themes';
 
@@ -103,6 +103,7 @@ export default function WeeklySchedule() {
   const t = translations.weeklySchedule[language];
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const dateLocale = language === 'ja' ? ja : language === 'en' ? enUS : ko;
 
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
@@ -202,7 +203,7 @@ export default function WeeklySchedule() {
   const sidebarBorder = isDark ? '#1a1a1a' : BORDER_GREEN;
 
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
         {/* 사이드바 */}
@@ -242,12 +243,12 @@ export default function WeeklySchedule() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {currentBranch} <ChevronRight size={12} /> 근무표 관리
+                {currentBranch} <ChevronRight size={12} /> {t.breadcrumb}
               </div>
               <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Calendar size={26} />주간 근무 일정 관리
+                <Calendar size={26} />{t.pageTitle}
               </h1>
-              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>이번 주 직원별 근무 일정을 관리합니다.</p>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.pageSubtitle}</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button onClick={() => setCurrentWeek(prev => addDays(prev, -7))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 999, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronLeft size={18} /></button>
@@ -293,7 +294,7 @@ export default function WeeklySchedule() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
-                  <th style={{ position: 'sticky', left: 0, zIndex: 10, background: isDark ? '#1a1a1a' : LIGHT_GREEN, padding: '14px 16px', textAlign: 'left', borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}`, minWidth: 150, fontSize: 13, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}>
+                  <th style={{ position: 'sticky', left: 0, zIndex: 10, background: isDark ? '#1a1a1a' : LIGHT_GREEN, padding: '14px 16px', textAlign: 'center', borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}`, minWidth: 150, fontSize: 13, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}>
                     {t.employeeName}
                   </th>
                   {weekDates.map((date, index) => {
@@ -303,14 +304,16 @@ export default function WeeklySchedule() {
                     const isSaturday = date.getDay() === 6;
                     const isRed = !!(holiday || isSunday);
                     return (
-                      <th key={index} onClick={() => selectedBranchId && navigate(`/admin/schedule/daily/${selectedBranchId}/${dateStr}`)}
+                      <th key={index}
+                        onClick={() => selectedBranchId && navigate(`/admin/schedule/daily/${selectedBranchId}/${dateStr}`)}
+                        onMouseDown={(e) => e.preventDefault()}
                         style={{
                           padding: '14px 12px', textAlign: 'center', cursor: 'pointer',
                           borderRight: `1px solid ${cellBorder}`, borderBottom: `1px solid ${cellBorder}`,
                           minWidth: 120, background: isRed ? 'rgba(254,202,202,0.3)' : isSaturday ? 'rgba(219,234,254,0.3)' : (isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN),
                         }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: isRed ? '#ef4444' : isSaturday ? '#2563eb' : DARK_GREEN }}>{format(date, "EEE", { locale: ko })}</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: isRed ? '#ef4444' : isSaturday ? '#2563eb' : DARK_GREEN }}>{format(date, "EEE", { locale: dateLocale })}</span>
                           <span style={{ fontSize: 18, fontWeight: 800, color: isRed ? '#ef4444' : isSaturday ? '#2563eb' : DARK_GREEN }}>{format(date, "d")}</span>
                           {holiday && <span style={{ fontSize: 10, color: '#ef4444' }}>{holiday}</span>}
                         </div>
