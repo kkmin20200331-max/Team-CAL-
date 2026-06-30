@@ -7,7 +7,11 @@ CREATE TABLE board (
 
                        created_by VARCHAR2(30) NOT NULL,
 
-                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                       CONSTRAINT fk_board_store
+                           FOREIGN KEY (store_id)
+                               REFERENCES store(id)
 );
 CREATE TABLE board_post (
                             id VARCHAR2(30) PRIMARY KEY,
@@ -19,26 +23,24 @@ CREATE TABLE board_post (
 
                             title VARCHAR2(200) NOT NULL,
                             content CLOB,
+                            status VARCHAR2(20),
+                            is_pinned CHAR(1) DEFAULT 'N',
+                            view_count NUMBER DEFAULT 0,
+                            comment_count NUMBER DEFAULT 0,
 
                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                            CONSTRAINT fk_board_post_board
+                                FOREIGN KEY (board_id)
+                                    REFERENCES board(id),
+                            CONSTRAINT fk_board_post_store
+                                FOREIGN KEY (store_id)
+                                    REFERENCES store(id),
+                            CONSTRAINT fk_board_post_user
+                                FOREIGN KEY (writer_id)
+                                    REFERENCES users(id)
 );
-ALTER TABLE board
-    ADD CONSTRAINT fk_board_store
-        FOREIGN KEY (store_id)
-            REFERENCES store(id);
-ALTER TABLE board_post
-    ADD CONSTRAINT fk_board_post_board
-        FOREIGN KEY (board_id)
-            REFERENCES board(id);
-ALTER TABLE board_post
-    ADD CONSTRAINT fk_board_post_store
-        FOREIGN KEY (store_id)
-            REFERENCES store(id);
-ALTER TABLE board_post
-    ADD CONSTRAINT fk_board_post_user
-        FOREIGN KEY (writer_id)
-            REFERENCES users(id);
 INSERT INTO board
 (id, store_id, name, created_by)
 VALUES
@@ -135,19 +137,6 @@ VALUES
 select * from board;
 select * from board_post;
 
-ALTER TABLE BOARD_POST
-    ADD STATUS VARCHAR2(20);
-
-ALTER TABLE BOARD_POST
-    ADD IS_PINNED CHAR(1) DEFAULT 'N';
-
-ALTER TABLE BOARD_POST
-    ADD VIEW_COUNT NUMBER DEFAULT 0;
-
-ALTER TABLE BOARD_POST
-    ADD COMMENT_COUNT NUMBER DEFAULT 0;
-
-
 CREATE TABLE BOARD_COMMENT (
 
                                ID VARCHAR2(30) PRIMARY KEY,
@@ -158,7 +147,11 @@ CREATE TABLE BOARD_COMMENT (
 
                                CONTENT VARCHAR2(1000),
 
-                               CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                               CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                               CONSTRAINT FK_BOARD_COMMENT_POST
+                                   FOREIGN KEY (POST_ID)
+                                       REFERENCES BOARD_POST(ID)
 );
 CREATE TABLE BOARD_FILE (
 
@@ -172,7 +165,3 @@ CREATE TABLE BOARD_FILE (
 
                             CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-ALTER TABLE BOARD_COMMENT
-    ADD CONSTRAINT FK_BOARD_COMMENT_POST
-        FOREIGN KEY (POST_ID)
-            REFERENCES BOARD_POST(ID);

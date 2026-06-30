@@ -2,11 +2,14 @@ import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -29,8 +32,9 @@ type Props = {
 
 const BoardScreen = ({ route, navigation }: Props) => {
   const { userInfo } = useApp();
-  const { posts, boards, loading, loadPosts } = useBoard();
+  const { posts, boards, loading, loadPosts, createBoard, deleteBoard } = useBoard();
   const { postToOpenId } = route.params || {};
+  const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
 
   const CATEGORIES = React.useMemo(() => {
     const list = [
@@ -55,9 +59,10 @@ const BoardScreen = ({ route, navigation }: Props) => {
 
     return list;
   }, [boards]);
-  const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
-
   const [activeCategory, setActiveCategory] = useState('ALL');
+  const [showBoardModal, setShowBoardModal] = useState(false);
+  const [boardNameInput, setBoardNameInput] = useState('');
+  const [savingBoard, setSavingBoard] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
@@ -86,6 +91,60 @@ const BoardScreen = ({ route, navigation }: Props) => {
     await refreshPosts();
     setRefreshing(false);
   }, [refreshPosts]);
+
+  const activeBoard = boards.find(
+    (board) => board.name.toUpperCase() === activeCategory.toUpperCase(),
+  );
+
+  const handleCreateBoard = useCallback(async () => {
+    const name = boardNameInput.trim();
+    if (!name) {
+      Alert.alert('입력 오류', '탭 이름을 입력해주세요.');
+      return;
+    }
+
+    if (!storeId || !userInfo?.id) {
+      Alert.alert('추가 실패', '매장 또는 사용자 정보가 없습니다.');
+      return;
+    }
+
+    setSavingBoard(true);
+    try {
+      const board = await createBoard(name, storeId, userInfo.id);
+      setActiveCategory(board.name);
+      setBoardNameInput('');
+      setShowBoardModal(false);
+    } catch {
+      Alert.alert('추가 실패', '탭 추가 중 오류가 발생했습니다.');
+    } finally {
+      setSavingBoard(false);
+    }
+  }, [boardNameInput, createBoard, storeId, userInfo?.id]);
+
+  const handleDeleteBoard = useCallback((boardId: string, boardName: string) => {
+    Alert.alert(
+      '탭 삭제',
+      `'${boardName}' 탭을 삭제하시겠습니까?`,
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteBoard(boardId, storeId);
+              setActiveCategory('ALL');
+            } catch (error: any) {
+              Alert.alert(
+                '삭제 실패',
+                error?.response?.data?.message || '탭 삭제 중 오류가 발생했습니다.',
+              );
+            }
+          },
+        },
+      ],
+    );
+  }, [deleteBoard, storeId]);
 
   const filteredPosts = posts
     .filter((post) => activeCategory === 'ALL' || post.category === activeCategory)
@@ -132,7 +191,9 @@ const BoardScreen = ({ route, navigation }: Props) => {
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>게시판</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={() => setShowBoardModal(true)} style={styles.headerAction}>
+          <Ionicons name="add" size={24} color={colors.primary} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.tabContainer}>
@@ -146,6 +207,15 @@ const BoardScreen = ({ route, navigation }: Props) => {
               <Text style={[styles.tabText, activeCategory === category.id && styles.tabTextActive]}>
                 {category.label}
               </Text>
+              {activeCategory === category.id && category.id !== 'ALL' && activeBoard && (
+                <TouchableOpacity
+                  onPress={() => handleDeleteBoard(activeBoard.id, activeBoard.name)}
+                  style={styles.tabDeleteButton}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="trash-outline" size={13} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -174,6 +244,45 @@ const BoardScreen = ({ route, navigation }: Props) => {
         }
       />
 
+      <Modal
+        visible={showBoardModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowBoardModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>탭 추가</Text>
+              <TouchableOpacity onPress={() => setShowBoardModal(false)}>
+                <Ionicons name="close" size={22} color={colors.subText} />
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="예: 업무 지시"
+              value={boardNameInput}
+              onChangeText={setBoardNameInput}
+              placeholderTextColor={colors.subText}
+              returnKeyType="done"
+              onSubmitEditing={handleCreateBoard}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setShowBoardModal(false)}>
+                <Text style={styles.modalCancelButtonText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, savingBoard && { opacity: 0.6 }]}
+                onPress={handleCreateBoard}
+                disabled={savingBoard}
+              >
+                <Text style={styles.modalButtonText}>{savingBoard ? '추가 중...' : '추가'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('BoardWrite', { isEdit: false })}
@@ -198,6 +307,7 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     backgroundColor: colors.card,
   },
   backButton: { padding: 4, width: 40, justifyContent: 'center' },
+  headerAction: { padding: 4, width: 40, alignItems: 'flex-end', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   tabContainer: {
     borderBottomWidth: 1,
@@ -210,12 +320,22 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     gap: 8,
   },
   tabButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6',
   },
   tabButtonActive: { backgroundColor: colors.primary },
+  tabDeleteButton: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   tabText: { fontSize: 14, color: colors.subText, fontWeight: '500' },
   tabTextActive: { color: '#FFFFFF', fontWeight: '700' },
   listContainer: {
@@ -282,6 +402,71 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
     color: colors.subText,
     fontSize: 15,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: '100%',
+    borderRadius: 18,
+    padding: 20,
+    backgroundColor: colors.card,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  modalInput: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: colors.text,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  modalCancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+  },
+  modalCancelButtonText: {
+    color: colors.subText,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
   },
   fab: {
     position: 'absolute',

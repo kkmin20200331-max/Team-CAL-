@@ -133,6 +133,9 @@ export const getBoardPostListAPI = (boardId: string) =>
 
 export const createBoardAPI = (data: any) => API.post(`/board`, data);
 
+export const deleteBoardAPI = (boardId: string) =>
+  API.delete(`/board`, { params: { id: boardId } });
+
 export const getBoardPostAPI = (postId: string) => API.get(`/board/post/${postId}`);
 
 export const updateBoardPostAPI = (data: any) => API.put(`/board/post`, data);

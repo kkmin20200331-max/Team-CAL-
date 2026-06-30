@@ -104,8 +104,8 @@ public interface BoardPostMapper {
             #{writer_id},
             #{title},
             #{content},
-            'PUBLISHED',
-            'N',
+            #{status},
+            #{is_pinned},
             0,
             0
         )
