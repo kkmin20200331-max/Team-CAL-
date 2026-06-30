@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useLanguage } from "../../i18n/useLanguage";
@@ -11,9 +11,13 @@ const LIGHT_GREEN = "#E6F5C8";
 type StoredUser = {
   id?: string;
   user_id?: string;
+  userId?: string;
 };
 
 type LineStatusResponse = {
+  linked?: boolean;
+  user_id?: string;
+  userId?: string;
   line_user_id?: string;
   lineUserId?: string;
 };
@@ -26,19 +30,29 @@ const getStoredUser = (): StoredUser => {
   }
 };
 
+const isLinkedResponse = (data: LineStatusResponse | null) => {
+  if (!data) {
+    return false;
+  }
+
+  return Boolean(data.linked || data.line_user_id || data.lineUserId);
+};
+
 const LineLoginButton = () => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const language = useLanguage();
+  const popupRef = useRef<Window | null>(null);
   const [isLinked, setIsLinked] = useState(false);
   const user = getStoredUser();
-  const userId = user.id ?? user.user_id ?? "";
+  const userId = user.id ?? user.user_id ?? user.userId ?? "";
+
   const label = isLinked
     ? language === "ja"
-      ? "LINE連携済み"
+      ? "LINE連携解除"
       : language === "en"
-        ? "LINE Connected"
-        : "LINE 연동완료"
+        ? "Disconnect LINE"
+        : "LINE 연동 해제"
     : language === "ja"
       ? "LINE連携"
       : language === "en"
@@ -54,6 +68,7 @@ const LineLoginButton = () => {
     try {
       const response = await fetch(
         `${API_BASE}/user-line?user_id=${encodeURIComponent(userId)}`,
+        { cache: "no-store" },
       );
 
       if (!response.ok) {
@@ -62,7 +77,7 @@ const LineLoginButton = () => {
       }
 
       const data = (await response.json()) as LineStatusResponse | null;
-      setIsLinked(Boolean(data?.line_user_id || data?.lineUserId));
+      setIsLinked(isLinkedResponse(data));
     } catch {
       setIsLinked(false);
     }
@@ -71,9 +86,22 @@ const LineLoginButton = () => {
   useEffect(() => {
     fetchLineStatus();
 
-    window.addEventListener("focus", fetchLineStatus);
+    const handleFocus = () => {
+      fetchLineStatus();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchLineStatus();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
-      window.removeEventListener("focus", fetchLineStatus);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [fetchLineStatus]);
 
@@ -82,11 +110,60 @@ const LineLoginButton = () => {
       return;
     }
 
-    window.open(
+    popupRef.current = window.open(
       `${API_BASE}/line/login?userId=${encodeURIComponent(userId)}`,
       "_blank",
       "width=500,height=700",
     );
+
+    const poll = window.setInterval(() => {
+      if (!popupRef.current || popupRef.current.closed) {
+        window.clearInterval(poll);
+        fetchLineStatus();
+      }
+    }, 1000);
+  };
+
+  const handleDisconnect = async () => {
+    if (!userId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      language === "ja"
+        ? "LINE連携を解除しますか？"
+        : language === "en"
+          ? "Are you sure you want to disconnect LINE?"
+          : "정말 LINE 연동을 해제하시겠습니까?",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/user-line?user_id=${encodeURIComponent(userId)}`,
+        {
+          method: "DELETE",
+          cache: "no-store",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to disconnect LINE");
+      }
+
+      setIsLinked(false);
+    } catch {
+      window.alert(
+        language === "ja"
+          ? "LINE連携解除に失敗しました。"
+          : language === "en"
+            ? "Failed to disconnect LINE."
+            : "LINE 연동 해제에 실패했습니다.",
+      );
+    }
   };
 
   const background = isLinked
@@ -95,12 +172,15 @@ const LineLoginButton = () => {
       ? "rgba(255,255,255,0.06)"
       : LIGHT_GREEN;
   const color = isLinked ? "#fff" : DARK_GREEN;
-  const cursor = isLinked ? "default" : "pointer";
+  const hoverBackground = isLinked
+    ? DARK_GREEN
+    : isDark
+      ? "rgba(255,255,255,0.12)"
+      : "#d2f0a0";
 
   return (
     <button
-      onClick={handleLineLogin}
-      aria-disabled={isLinked}
+      onClick={isLinked ? handleDisconnect : handleLineLogin}
       style={{
         width: "100%",
         padding: "13px 0",
@@ -110,7 +190,7 @@ const LineLoginButton = () => {
         color,
         fontWeight: 700,
         fontSize: 15,
-        cursor,
+        cursor: userId ? "pointer" : "not-allowed",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -118,10 +198,7 @@ const LineLoginButton = () => {
         transition: "background 0.15s",
       }}
       onMouseOver={(e) => {
-        if (isLinked) {
-          return;
-        }
-        e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.12)" : "#d2f0a0";
+        e.currentTarget.style.background = hoverBackground;
       }}
       onMouseOut={(e) => {
         e.currentTarget.style.background = background;

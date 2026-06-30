@@ -37,7 +37,9 @@ public interface UserLineMapper {
     // =========================
 
     @Select("""
-        SELECT *
+        SELECT
+            USER_ID AS user_id,
+            LINE_USER_ID AS line_user_id
         FROM USER_LINE
         WHERE USER_ID = #{user_id}
     """)
@@ -52,7 +54,9 @@ public interface UserLineMapper {
     // =========================
 
     @Select("""
-        SELECT *
+        SELECT
+            USER_ID AS user_id,
+            LINE_USER_ID AS line_user_id
         FROM USER_LINE
         WHERE LINE_USER_ID = #{line_user_id}
     """)
@@ -67,7 +71,9 @@ public interface UserLineMapper {
     // =========================
 
     @Select("""
-        SELECT *
+        SELECT
+            USER_ID AS user_id,
+            LINE_USER_ID AS line_user_id
         FROM USER_LINE
         WHERE USER_ID = #{user_id}
     """)
