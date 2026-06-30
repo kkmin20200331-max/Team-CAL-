@@ -207,6 +207,33 @@ export default function CctvAnalysis() {
     }
   };
 
+  // Translate common backend Korean snippets for display when frontend language is not Korean
+  const translateBackendText = (text: string) => {
+    if (!text) return text;
+    if (language === 'ko') return text;
+
+    const map: Record<string, { ko: string; en: string; ja: string }> = {
+      '응답 대기': { ko: '응답 대기', en: 'Waiting', ja: '応答待ち' },
+      '저장 전': { ko: '저장 전', en: 'Not saved', ja: '未保存' },
+      '처리 프레임': { ko: '처리 프레임', en: 'Processed frames', ja: '処理フレーム' },
+      '드롭 프레임': { ko: '드롭 프레임', en: 'Dropped frames', ja: 'ドロップフレーム' },
+      '대기 큐': { ko: '대기 큐', en: 'Queue size', ja: '待機キュー' },
+      '평균 confidence': { ko: '평균 confidence', en: 'Average confidence', ja: '平均confidence' },
+      '최근 측정 시각': { ko: '최근 측정 시각', en: 'Last measured', ja: '最新測定時刻' },
+      '최근 감지 인원': { ko: '최근 감지 인원', en: 'Recent detections', ja: '最近の検知人数' },
+      '수신 대기': { ko: '수신 대기', en: 'Waiting', ja: '受信待機' },
+      'CCTV API 요청 실패': { ko: 'CCTV API 요청 실패', en: 'CCTV API request failed', ja: 'CCTV APIリクエスト失敗' },
+    };
+
+    let out = String(text);
+    Object.keys(map).forEach((k) => {
+      const replacement = map[k][language] ?? map[k].en;
+      out = out.split(k).join(replacement);
+    });
+
+    return out;
+  };
+
   const requestCctv = async (path: string, options?: RequestInit) => {
     const response = await fetch(`${API_BASE}/cctv${path}`, options);
     const data = await parseJsonOrText(response);
@@ -255,7 +282,7 @@ export default function CctvAnalysis() {
           }),
         );
         setLastResponse(
-          JSON.stringify({ status: statusData, metrics: metricsData }, null, 2),
+          translateBackendText(JSON.stringify({ status: statusData, metrics: metricsData }, null, 2)),
         );
       } catch (error) {
         if (cancelled) return;
@@ -298,12 +325,12 @@ export default function CctvAnalysis() {
 
       setIsRunning(Boolean(data?.running ?? true));
       setStreamNonce(Date.now());
-      setLastResponse(JSON.stringify(data, null, 2));
+      setLastResponse(translateBackendText(JSON.stringify(data, null, 2)));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Start analysis request failed";
       setErrorMessage(message);
-      setLastResponse(message);
+      setLastResponse(translateBackendText(message));
     } finally {
       setIsSubmitting(false);
     }
@@ -320,12 +347,12 @@ export default function CctvAnalysis() {
 
       setIsRunning(Boolean(data?.running));
       setStreamNonce(Date.now());
-      setLastResponse(JSON.stringify(data, null, 2));
+      setLastResponse(translateBackendText(JSON.stringify(data, null, 2)));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Stop analysis request failed";
       setErrorMessage(message);
-      setLastResponse(message);
+      setLastResponse(translateBackendText(message));
     } finally {
       setIsSubmitting(false);
     }
