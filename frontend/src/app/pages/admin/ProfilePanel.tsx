@@ -441,11 +441,12 @@ export default function ProfilePanel() {
 
   const handleApproveSubstitute = async (app: SubstitutePendingApp) => {
     try {
-      await axiosInstance.put("/substitute/manager", null, {
-        params: { application_id: app.app_id, status: "APPROVED" },
+      await axiosInstance.put("/substitute/manager/approve", null, {
+        params: { application_id: app.app_id, approved_by: currentUser.id ?? "" },
       });
       setSubstituteApps((prev) => prev.filter((a) => a.app_id !== app.app_id));
-    } catch {
+    } catch (err: any) {
+      console.error("[승인 오류]", err?.response?.status, err?.response?.data, err?.message);
       alert(t.errProcess);
     }
   };

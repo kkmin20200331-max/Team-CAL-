@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -52,6 +53,54 @@ public class SubstituteService {
             String post_id
     ) {
         return substituteMapper.getApplicationList(post_id);
+    }
+
+    // application_id 하나로 대타 승인 처리 (shift 없는 경우 포함)
+    @Transactional
+    public void approveByApplicationId(String applicationId, String approvedBy) {
+        SubstituteApplicationVO app = substituteMapper.getApplication(applicationId);
+        if (app == null) throw new RuntimeException("Application not found: " + applicationId);
+
+        SubstitutePostVO post = substituteMapper.getPost(app.getSubstitute_post_id());
+        if (post == null) throw new RuntimeException("Post not found");
+
+        // 지원 상태 승인으로 변경
+        substituteMapper.approveApplication(applicationId);
+
+        // 모집글 마감
+        substituteMapper.closePost(post.getId());
+
+        String shiftId = post.getShift_id();
+        if (shiftId != null && !shiftId.trim().isEmpty()) {
+            // shift가 있으면 shift 담당자 교체 + 상태 변경 + 이력 기록
+            substituteMapper.updateShiftUser(shiftId, app.getApplicant_user_id());
+            substituteMapper.updateShiftStatus(shiftId, "SUBSTITUTED");
+
+            SubstituteHistoryVO history = new SubstituteHistoryVO();
+            String uniquePart = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+            history.setId("SH_" + (System.currentTimeMillis() / 1000) + uniquePart);
+            history.setShift_id(shiftId);
+            history.setStore_id(post.getStore_id());
+            history.setOriginal_user_id(post.getRequester_user_id());
+            history.setSubstitute_user_id(app.getApplicant_user_id());
+            history.setApproved_by(approvedBy);
+            history.setApproved_at(LocalDateTime.now());
+            substituteMapper.insertHistory(history);
+        }
+
+        // LINE 알림
+        String lineUserId = userLineMapper.getLineUserId(app.getApplicant_user_id());
+        if (lineUserId != null) {
+            lineService.sendMessage(lineUserId,
+                """
+                [대타 승인]
+
+                신청하신 대타 근무가 승인되었습니다.
+
+                앱에서 근무 일정을 확인해주세요.
+                """
+            );
+        }
     }
 
     // 대타 승인
@@ -109,10 +158,12 @@ public class SubstituteService {
 
         substituteMapper.cancelPost(post_id);
 
-        substituteMapper.updateShiftStatus(
-                shift_id,
-                "SCHEDULED"
-        );
+        if (shift_id != null && !shift_id.isEmpty()) {
+            substituteMapper.updateShiftStatus(
+                    shift_id,
+                    "SCHEDULED"
+            );
+        }
     }
 
 
@@ -254,6 +305,13 @@ public class SubstituteService {
     public void apply(
             SubstituteApplicationVO applicationVO
     ) {
+        if (applicationVO.getId() == null || applicationVO.getId().trim().isEmpty()) {
+            String uniquePart = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+            applicationVO.setId("SA_" + (System.currentTimeMillis() / 1000) + uniquePart);
+        }
+        if (applicationVO.getApplied_at() == null) {
+            applicationVO.setApplied_at(LocalDateTime.now());
+        }
 
         substituteMapper.apply(
                 applicationVO
