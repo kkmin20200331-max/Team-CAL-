@@ -453,7 +453,7 @@ export default function AttendanceManagement() {
                 <thead>
                   <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
                     {[t.colDate, t.colEmployee, t.colScheduled, t.colCheckIn, t.colCheckOut, t.colWork, t.colStatus, t.colNote].map((header, i) => (
-                      <th key={header} style={{ padding: i === 0 ? '13px 20px 13px 52px' : '13px 20px', textAlign: i === 0 ? 'left' : 'center', fontSize: 13, color: subText, fontWeight: 800 }}>{header}</th>
+                      <th key={header} style={{ padding: i === 0 ? '13px 20px 13px 52px' : '13px 20px', textAlign: (i === 0 || i === 1) ? 'center' : 'center', fontSize: 13, color: subText, fontWeight: 800 }}>{header}</th>
                     ))}
                   </tr>
                 </thead>
@@ -467,8 +467,8 @@ export default function AttendanceManagement() {
                       const meta = localizedStatusMeta[row.status];
                       return (
                         <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : 'rgba(230,245,200,0.8)'}` }}>
-                          <td style={{ padding: '14px 20px 14px 52px', color: textColor, fontWeight: 700 }}>{row.date}</td>
-                          <td style={{ padding: '14px 20px', color: textColor }}>
+                          <td style={{ padding: '14px 20px 14px 52px', color: textColor, fontWeight: 700, textAlign: 'center' }}>{row.date}</td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>
                             <div style={{ fontWeight: 800 }}>{row.employeeName}</div>
                           </td>
                           <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>{row.start} - {row.end}</td>
