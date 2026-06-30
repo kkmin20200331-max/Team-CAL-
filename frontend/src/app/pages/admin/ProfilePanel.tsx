@@ -703,9 +703,9 @@ export default function ProfilePanel() {
             {/* 알림 */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <div className="flex items-center gap-2 mb-3">
-                <Bell className="w-4 h-4" style={{ color: textSub }} />
+                <Bell className="w-6 h-6" style={{ color: textSub }} />
                 <h3
-                  className="font-semibold text-sm"
+                  className="font-semibold text-lg"
                   style={{ color: textMain }}
                 >
                   {t.notifications}
@@ -723,8 +723,8 @@ export default function ProfilePanel() {
                     className="flex flex-col items-center justify-center"
                     style={{ paddingTop: 100, paddingBottom: 100, color: textSub }}
                   >
-                    <CheckCircle className="w-10 h-10 mb-2" style={{ color: "#18A022" }} />
-                    <p className="text-xs">{t.noPendingRequests}</p>
+                    <CheckCircle className="w-12 h-12 mb-3" style={{ color: "#18A022" }} />
+                    <p className="text-sm font-medium">{t.noPendingRequests}</p>
                   </div>
                 )}
 
