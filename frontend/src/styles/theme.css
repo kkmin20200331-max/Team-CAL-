@@ -126,8 +126,29 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Make body transparent so a global fixed gradient can live behind all pages */
   body {
-    @apply bg-background text-foreground;
+    background: transparent;
+    @apply text-foreground;
+  }
+
+  /* Global underlying gradient that always covers the viewport and sits behind app content.
+     This prevents per-page gradients from appearing cut during lazy loading or when scaled. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -9999;
+    pointer-events: none;
+    background: linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: top center;
+    transform: none;
+  }
+
+  .dark body::before {
+    background: linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%);
   }
 
   /**
