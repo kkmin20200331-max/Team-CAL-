@@ -438,46 +438,56 @@ export default function AttendanceManagement() {
             </select>
           </div>
 
-          <div style={{ overflowX: "auto", background: cardBg, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, borderRadius: 16 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 920 }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${LIGHT_GREEN}` }}>
-                  {[t.colDate, t.colEmployee, t.colScheduled, t.colCheckIn, t.colCheckOut, t.colWork, t.colStatus, t.colNote].map((header) => (
-                    <th key={header} style={{ padding: "14px 16px", textAlign: "left", fontSize: 13, color: subText, fontWeight: 800 }}>{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} style={{ padding: 36, textAlign: "center", color: subText }}>{t.loading}</td></tr>
-                ) : filteredRows.length === 0 ? (
-                  <tr><td colSpan={8} style={{ padding: 36, textAlign: "center", color: subText }}>{t.noData}</td></tr>
-                ) : (
-                  filteredRows.map((row) => {
-                    const meta = localizedStatusMeta[row.status];
-                    return (
-                      <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? "#1a1a1a" : "rgba(230,245,200,0.8)"}` }}>
-                        <td style={{ padding: "14px 16px", color: textColor, fontWeight: 700 }}>{row.date}</td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>
-                          <div style={{ fontWeight: 800 }}>{row.employeeName}</div>
-                        </td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>{row.start} - {row.end}</td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>{row.checkIn}</td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>{row.checkOut}</td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>{row.workMinutes ? `${Math.floor(row.workMinutes / 60)}h ${row.workMinutes % 60}m` : "-"}</td>
-                        <td style={{ padding: "14px 16px" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 10px", borderRadius: 999, background: isDark ? meta.darkBg : meta.bg, color: isDark ? meta.darkColor : meta.color, fontSize: 12, fontWeight: 800, border: `1px solid ${isDark ? meta.darkBorder : meta.lightBorder}` }}>{meta.label}</span>
-                        </td>
-                        <td style={{ padding: "14px 16px", color: subText, fontSize: 13 }}>
-                          {row.lateMinutes > 5 ? t.noteMinLate(row.lateMinutes) : row.earlyMinutes > 5 ? t.noteMinEarly(row.earlyMinutes) : row.status === "absent" ? t.noteAbsent : "-"}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+          <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <colgroup>
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '22%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '11%' }} />
+                </colgroup>
+                <thead>
+                  <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
+                    {[t.colDate, t.colEmployee, t.colScheduled, t.colCheckIn, t.colCheckOut, t.colWork, t.colStatus, t.colNote].map((header, i) => (
+                      <th key={header} style={{ padding: i === 0 ? '13px 20px 13px 52px' : '13px 20px', textAlign: i === 0 ? 'left' : 'center', fontSize: 13, color: subText, fontWeight: 800 }}>{header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={8} style={{ padding: 36, textAlign: 'center', color: subText }}>{t.loading}</td></tr>
+                  ) : filteredRows.length === 0 ? (
+                    <tr><td colSpan={8} style={{ padding: 36, textAlign: 'center', color: subText }}>{t.noData}</td></tr>
+                  ) : (
+                    filteredRows.map((row) => {
+                      const meta = localizedStatusMeta[row.status];
+                      return (
+                        <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : 'rgba(230,245,200,0.8)'}` }}>
+                          <td style={{ padding: '14px 20px 14px 52px', color: textColor, fontWeight: 700 }}>{row.date}</td>
+                          <td style={{ padding: '14px 20px', color: textColor }}>
+                            <div style={{ fontWeight: 800 }}>{row.employeeName}</div>
+                          </td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>{row.start} - {row.end}</td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>{row.checkIn}</td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>{row.checkOut}</td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>{row.workMinutes ? `${Math.floor(row.workMinutes / 60)}h ${row.workMinutes % 60}m` : '-'}</td>
+                          <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 10px', borderRadius: 999, background: isDark ? meta.darkBg : meta.bg, color: isDark ? meta.darkColor : meta.color, fontSize: 12, fontWeight: 800, border: `1px solid ${isDark ? meta.darkBorder : meta.lightBorder}` }}>{meta.label}</span>
+                          </td>
+                          <td style={{ padding: '14px 20px', color: subText, fontSize: 13, textAlign: 'center' }}>
+                            {row.lateMinutes > 5 ? t.noteMinLate(row.lateMinutes) : row.earlyMinutes > 5 ? t.noteMinEarly(row.earlyMinutes) : row.status === 'absent' ? t.noteAbsent : '-'}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
         </main>
       </div>
     </div>

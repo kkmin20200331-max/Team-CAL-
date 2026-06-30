@@ -212,6 +212,10 @@ export default function CctvAnalysis() {
     if (!text) return text;
     if (language === 'ko') return text;
 
+    // normalize: remove zero-width characters and collapse whitespace
+    const normalize = (s: string) =>
+      String(s).replace(/[\u200B-\u200F\uFEFF]/g, '').replace(/\s+/g, ' ').trim();
+
     const map: Record<string, { ko: string; en: string; ja: string }> = {
       '응답 대기': { ko: '응답 대기', en: 'Waiting', ja: '応答待ち' },
       '저장 전': { ko: '저장 전', en: 'Not saved', ja: '未保存' },
@@ -225,10 +229,11 @@ export default function CctvAnalysis() {
       'CCTV API 요청 실패': { ko: 'CCTV API 요청 실패', en: 'CCTV API request failed', ja: 'CCTV APIリクエスト失敗' },
     };
 
-    let out = String(text);
+    let out = normalize(text);
     Object.keys(map).forEach((k) => {
+      const normKey = normalize(k);
       const replacement = map[k][language] ?? map[k].en;
-      out = out.split(k).join(replacement);
+      out = out.split(normKey).join(replacement);
     });
 
     return out;
