@@ -450,8 +450,8 @@ export default function AttendanceManagement() {
                   <col style={{ width: '11%' }} />
                   <col style={{ width: '11%' }} />
                 </colgroup>
-                <thead>
-                  <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
+                <thead style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN, borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden' }}>
+                  <tr style={{ borderBottom: `1px solid ${LIGHT_GREEN}` }}>
                     {[t.colDate, t.colEmployee, t.colScheduled, t.colCheckIn, t.colCheckOut, t.colWork, t.colStatus, t.colNote].map((header, i) => (
                       <th key={header} style={{ padding: i === 0 ? '13px 20px 13px 52px' : '13px 20px', textAlign: (i === 0 || i === 1) ? 'center' : 'center', fontSize: 13, color: subText, fontWeight: 800 }}>{header}</th>
                     ))}
