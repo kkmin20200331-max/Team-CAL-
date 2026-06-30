@@ -118,7 +118,7 @@ const DocumentManagement: React.FC = () => {
   const cardBg = isDark ? '#141414' : 'rgba(230,245,200,0.35)';
   const inputBg = isDark ? '#1a1a1a' : 'rgba(255,255,255,0.8)';
 
-  const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
+  const currentBranch = sessionStorage.getItem('store_name') || t.selectBranch;
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
   const selectedBranchId =
     branchId && branchId !== "undefined"
@@ -205,11 +205,11 @@ const DocumentManagement: React.FC = () => {
 
   const handleUpload = async () => {
     if (!selectedBranchId || !uploadUserId || !uploadFile) {
-      alert("직원과 파일을 선택해주세요.");
+      alert(t.selectFileRequired);
       return;
     }
     if (uploadFile.size > 10 * 1024 * 1024) {
-      alert("10MB 이하 파일만 업로드할 수 있습니다.");
+      alert(t.fileTooLarge);
       return;
     }
 
@@ -230,7 +230,7 @@ const DocumentManagement: React.FC = () => {
       setUploadModalOpen(false);
       setUploadFile(null);
     } catch (error) {
-      alert(`문서 업로드에 실패했습니다.\n${error instanceof Error ? error.message : ""}`);
+      alert(`${t.errUpload}\n${error instanceof Error ? error.message : ""}`);
       console.error(error);
     } finally {
       setIsUploading(false);
@@ -240,7 +240,7 @@ const DocumentManagement: React.FC = () => {
   const handleDownload = async (doc: Document) => {
     const response = await fetch(`${API_BASE}/file/${doc.id}/signed-url`);
     if (!response.ok) {
-      alert("다운로드 URL을 만들 수 없습니다.");
+      alert(t.downloadUrlError);
       return;
     }
     const data = await response.json();
@@ -455,13 +455,13 @@ const DocumentManagement: React.FC = () => {
     const base: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '3px 10px', border: '1px solid' };
     switch (status) {
       case "verified":
-        return <span style={{ ...base, background: isDark ? 'rgba(24,160,34,0.15)' : '#dcfce7', color: isDark ? '#4cd964' : '#15803d', borderColor: isDark ? 'rgba(24,160,34,0.3)' : '#86efac' }}><CheckCircle style={{ width: 11, height: 11 }} />확인완료</span>;
+      return <span style={{ ...base, background: isDark ? 'rgba(24,160,34,0.15)' : '#dcfce7', color: isDark ? '#4cd964' : '#15803d', borderColor: isDark ? 'rgba(24,160,34,0.3)' : '#86efac' }}><CheckCircle style={{ width: 11, height: 11 }} />{t.statusVerified}</span>;
       case "pending":
-        return <span style={{ ...base, background: isDark ? 'rgba(234,179,8,0.15)' : '#fef9c3', color: isDark ? '#facc15' : '#854d0e', borderColor: isDark ? 'rgba(234,179,8,0.3)' : '#fde047' }}><Clock style={{ width: 11, height: 11 }} />대기중</span>;
+      return <span style={{ ...base, background: isDark ? 'rgba(234,179,8,0.15)' : '#fef9c3', color: isDark ? '#facc15' : '#854d0e', borderColor: isDark ? 'rgba(234,179,8,0.3)' : '#fde047' }}><Clock style={{ width: 11, height: 11 }} />{t.statusPending}</span>;
       case "rejected":
-        return <span style={{ ...base, background: isDark ? 'rgba(239,68,68,0.15)' : '#fee2e2', color: isDark ? '#f87171' : '#b91c1c', borderColor: isDark ? 'rgba(239,68,68,0.3)' : '#fca5a5' }}><XCircle style={{ width: 11, height: 11 }} />반려</span>;
+      return <span style={{ ...base, background: isDark ? 'rgba(239,68,68,0.15)' : '#fee2e2', color: isDark ? '#f87171' : '#b91c1c', borderColor: isDark ? 'rgba(239,68,68,0.3)' : '#fca5a5' }}><XCircle style={{ width: 11, height: 11 }} />{t.statusRejected}</span>;
       case "expired":
-        return <span style={{ ...base, background: isDark ? 'rgba(107,114,128,0.15)' : '#f3f4f6', color: isDark ? '#9ca3af' : '#4b5563', borderColor: isDark ? 'rgba(107,114,128,0.3)' : '#d1d5db' }}><AlertCircle style={{ width: 11, height: 11 }} />만료</span>;
+      return <span style={{ ...base, background: isDark ? 'rgba(107,114,128,0.15)' : '#f3f4f6', color: isDark ? '#9ca3af' : '#4b5563', borderColor: isDark ? 'rgba(107,114,128,0.3)' : '#d1d5db' }}><AlertCircle style={{ width: 11, height: 11 }} />{t.statusExpired}</span>;
       default:
         return null;
     }
@@ -471,13 +471,13 @@ const DocumentManagement: React.FC = () => {
     const base: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, borderRadius: 6, padding: '3px 8px', border: '1px solid' };
     switch (status) {
       case "completed":
-        return <span style={{ ...base, background: isDark ? 'rgba(59,130,246,0.15)' : '#eff6ff', color: isDark ? '#60a5fa' : '#1d4ed8', borderColor: isDark ? 'rgba(59,130,246,0.3)' : '#bfdbfe' }}><FileCheck style={{ width: 12, height: 12 }} />OCR 완료</span>;
+      return <span style={{ ...base, background: isDark ? 'rgba(59,130,246,0.15)' : '#eff6ff', color: isDark ? '#60a5fa' : '#1d4ed8', borderColor: isDark ? 'rgba(59,130,246,0.3)' : '#bfdbfe' }}><FileCheck style={{ width: 12, height: 12 }} />{t.ocrCompleted}</span>;
       case "processing":
-        return <span style={{ ...base, background: isDark ? 'rgba(234,179,8,0.15)' : '#fefce8', color: isDark ? '#facc15' : '#a16207', borderColor: isDark ? 'rgba(234,179,8,0.3)' : '#fde68a' }}><Scan style={{ width: 12, height: 12 }} />처리중</span>;
+      return <span style={{ ...base, background: isDark ? 'rgba(234,179,8,0.15)' : '#fefce8', color: isDark ? '#facc15' : '#a16207', borderColor: isDark ? 'rgba(234,179,8,0.3)' : '#fde68a' }}><Scan style={{ width: 12, height: 12 }} />{t.ocrProcessingLabel}</span>;
       case "pending":
-        return <span style={{ ...base, background: isDark ? 'rgba(107,114,128,0.15)' : '#f9fafb', color: isDark ? '#9ca3af' : '#374151', borderColor: isDark ? 'rgba(107,114,128,0.3)' : '#d1d5db' }}><Clock style={{ width: 12, height: 12 }} />대기</span>;
+      return <span style={{ ...base, background: isDark ? 'rgba(107,114,128,0.15)' : '#f9fafb', color: isDark ? '#9ca3af' : '#374151', borderColor: isDark ? 'rgba(107,114,128,0.3)' : '#d1d5db' }}><Clock style={{ width: 12, height: 12 }} />{t.ocrPending}</span>;
       case "failed":
-        return <span style={{ ...base, background: isDark ? 'rgba(239,68,68,0.15)' : '#fef2f2', color: isDark ? '#f87171' : '#b91c1c', borderColor: isDark ? 'rgba(239,68,68,0.3)' : '#fecaca' }}><XCircle style={{ width: 12, height: 12 }} />실패</span>;
+      return <span style={{ ...base, background: isDark ? 'rgba(239,68,68,0.15)' : '#fef2f2', color: isDark ? '#f87171' : '#b91c1c', borderColor: isDark ? 'rgba(239,68,68,0.3)' : '#fecaca' }}><XCircle style={{ width: 12, height: 12 }} />{t.ocrFailed}</span>;
       default:
         return null;
     }
@@ -567,7 +567,7 @@ const DocumentManagement: React.FC = () => {
                   onMouseOver={e => { e.currentTarget.style.background = isDark ? '#2c2c2e' : '#f5f5f5'; }}
                   onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  + 지점 선택 페이지로
+                  {"+ " + t.selectBranch}
                 </button>
               </div>
             )}
@@ -613,19 +613,19 @@ const DocumentManagement: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {currentBranch} <ChevronRight size={12} /> 문서 관리
+                {currentBranch} <ChevronRight size={12} /> {t.title}
               </div>
               <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <FileCheck size={26} />문서 관리
+                <FileCheck size={26} />{t.title}
               </h1>
-              <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>직원 서류를 업로드하고 OCR로 자동 검증합니다.</p>
+              <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>{t.subtitle}</p>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
               <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                <Scan size={16} />일괄 OCR
+                <Scan size={16} />{t.bulkOcr}
               </button>
               <button onClick={() => setUploadModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                <Upload size={16} />문서 업로드
+                <Upload size={16} />{t.uploadDoc}
               </button>
             </div>
           </div>
@@ -633,11 +633,11 @@ const DocumentManagement: React.FC = () => {
           {/* Statistics Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
             {[
-              { label: '전체 문서', value: stats.total, icon: <FileText size={20} color={DARK_GREEN} /> },
-              { label: '확인완료', value: stats.verified, icon: <CheckCircle size={20} color={GREEN} /> },
-              { label: '대기중', value: stats.pending, icon: <Clock size={20} color="#F59E0B" /> },
-              { label: '만료', value: stats.expired, icon: <AlertCircle size={20} color="#EF4444" /> },
-              { label: 'OCR 처리중', value: stats.ocrProcessing, icon: <Scan size={20} color="#3B82F6" /> },
+            { label: t.totalDocs, value: stats.total, icon: <FileText size={20} color={DARK_GREEN} /> },
+            { label: t.verified, value: stats.verified, icon: <CheckCircle size={20} color={GREEN} /> },
+            { label: t.pending, value: stats.pending, icon: <Clock size={20} color="#F59E0B" /> },
+            { label: t.expired, value: stats.expired, icon: <AlertCircle size={20} color="#EF4444" /> },
+            { label: t.ocrProcessing, value: stats.ocrProcessing, icon: <Scan size={20} color="#3B82F6" /> },
             ].map(({ label, value, icon }) => (
               <div key={label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -656,7 +656,7 @@ const DocumentManagement: React.FC = () => {
                 <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8BA68D' }} />
                 <input
                   type="text"
-                  placeholder="직원명 또는 파일명으로 검색..."
+                  placeholder={t.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   style={{ width: '100%', paddingLeft: 36, paddingRight: 14, paddingTop: 10, paddingBottom: 10, borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, background: inputBg, outline: 'none', color: textColor, boxSizing: 'border-box' }}
@@ -713,7 +713,7 @@ const DocumentManagement: React.FC = () => {
                   {doc.expiryDate && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginTop: 4 }}>
                       <Calendar size={12} />
-                      <span>만료일: {doc.expiryDate}</span>
+                      <span>{t.expiryDate(doc.expiryDate)}</span>
                     </div>
                   )}
                 </div>
@@ -722,7 +722,7 @@ const DocumentManagement: React.FC = () => {
 
                 {doc.extractedData && Object.keys(doc.extractedData).length > 0 && (
                   <div style={{ background: isDark ? '#1e1e1e' : 'rgba(240,248,235,0.8)', borderRadius: 8, padding: '10px 12px', marginBottom: 10, border: `1px solid ${isDark ? '#2a2a2a' : '#d4edbc'}` }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: isDark ? '#4cd964' : DARK_GREEN, marginBottom: 6 }}>OCR 추출 정보</p>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: isDark ? '#4cd964' : DARK_GREEN, marginBottom: 6 }}>{t.ocrInfo}</p>
                     {Object.entries(doc.extractedData).map(([key, value]) =>
                       value && (
                         <div key={key} style={{ fontSize: 12, color: textColor, marginBottom: 2 }}>
@@ -746,14 +746,14 @@ const DocumentManagement: React.FC = () => {
                     style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                     onClick={() => { setSelectedDocument(doc); setShowDetailModal(true); }}
                   >
-                    <Eye size={14} />보기
+                  <Eye size={14} />{t.viewBtn}
                   </button>
                   <button onClick={() => handleDownload(doc)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    <Download size={14} />다운로드
+                  <Download size={14} />{t.downloadBtn}
                   </button>
                   {doc.status === "pending" && (
                     <button onClick={() => handleUpdateStatus(doc, "verified")} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: GREEN, border: 'none', color: '#fff', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                      승인
+                      {t.approveBtn}
                     </button>
                   )}
                 </div>
@@ -766,12 +766,12 @@ const DocumentManagement: React.FC = () => {
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
               <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 560 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                  <p style={{ fontSize: 18, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>문서 업로드</p>
+                <p style={{ fontSize: 18, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.uploadTitle}</p>
                   <button onClick={() => setUploadModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDark ? '#6b9e6b' : '#8BA68D' }}><XCircle size={22} /></button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? GREEN : DARK_GREEN, display: 'block', marginBottom: 6 }}>직원 선택</label>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? GREEN : DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.selectEmployee}</label>
                     <select value={uploadUserId} onChange={(e) => setUploadUserId(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor, background: isDark ? '#1a1a1a' : '#fff' }}>
                       {employees.map((employee) => (
                         <option key={employee.id} value={employee.id}>{employee.name} ({employee.id})</option>
@@ -779,35 +779,35 @@ const DocumentManagement: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? GREEN : DARK_GREEN, display: 'block', marginBottom: 6 }}>문서 유형</label>
+                    <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? GREEN : DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.docType}</label>
                     <select value={uploadFileType} onChange={(e) => setUploadFileType(e.target.value as Document["type"])} style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, outline: 'none', color: textColor, background: isDark ? '#1a1a1a' : '#fff' }}>
-                      <option value="health_certificate">보건증</option>
-                      <option value="contract">근로계약서</option>
-                      <option value="id_card">신분증</option>
-                      <option value="bank_account">통장사본</option>
-                      <option value="other">기타</option>
+                      <option value="health_certificate">{t.typeHealth}</option>
+                      <option value="contract">{t.typeContract}</option>
+                      <option value="id_card">{t.typeId}</option>
+                      <option value="bank_account">{t.typeBank}</option>
+                      <option value="other">{t.typeOther}</option>
                     </select>
                   </div>
                   <div style={{ border: `2px dashed ${BORDER_GREEN}`, borderRadius: 12, padding: 28, textAlign: 'center', background: isDark ? '#0f0f0f' : 'transparent' }}>
                     <Upload size={40} color={isDark ? GREEN : DARK_GREEN} style={{ margin: '0 auto 12px' }} />
-                    <p style={{ fontSize: 14, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6 }}>파일을 드래그하거나 클릭하여 업로드</p>
-                    <p style={{ fontSize: 12, color: isDark ? '#6b9e6b' : '#8BA68D' }}>{uploadFile ? uploadFile.name : 'JPG, PNG, PDF (최대 10MB)'}</p>
+                    <p style={{ fontSize: 14, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6 }}>{t.dragOrClick}</p>
+                    <p style={{ fontSize: 12, color: isDark ? '#6b9e6b' : '#8BA68D' }}>{uploadFile ? uploadFile.name : t.fileSizeHint}</p>
                     <input id="document-upload-file" type="file" accept=".jpg,.jpeg,.png,.pdf" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} style={{ display: 'none' }} />
-                    <button type="button" onClick={() => document.getElementById('document-upload-file')?.click()} style={{ marginTop: 12, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>파일 선택</button>
+                    <button type="button" onClick={() => document.getElementById('document-upload-file')?.click()} style={{ marginTop: 12, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>{t.selectFile}</button>
                   </div>
                   <div style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN, borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, border: `1px solid ${isDark ? 'rgba(24,160,34,0.2)' : '#c5e89a'}` }}>
                     <Scan size={20} color={isDark ? '#4cd964' : DARK_GREEN} style={{ flexShrink: 0, marginTop: 2 }} />
                     <div>
-                      <p style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#4cd964' : DARK_GREEN, margin: 0 }}>OCR 자동 추출</p>
-                      <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : DARK_GREEN, marginTop: 4 }}>업로드된 문서에서 자동으로 정보를 추출합니다. 보건증, 신분증, 계약서의 주요 정보를 인식합니다.</p>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#4cd964' : DARK_GREEN, margin: 0 }}>{t.ocrAutoExtract}</p>
+                      <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : DARK_GREEN, marginTop: 4 }}>{t.ocrAutoDesc}</p>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={handleUpload} disabled={isUploading} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.6 : 1 }}>
-                      <Upload size={16} />{isUploading ? '업로드 중...' : '업로드 및 OCR 실행'}
+                      <Upload size={16} />{isUploading ? `${t.uploadAndOcr}...` : t.uploadAndOcr}
                     </button>
                     <button onClick={() => setUploadModalOpen(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                      취소
+                    {t.cancelBtn}
                     </button>
                   </div>
                 </div>
@@ -820,17 +820,17 @@ const DocumentManagement: React.FC = () => {
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
               <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                  <p style={{ fontSize: 18, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>문서 상세 정보</p>
+                <p style={{ fontSize: 18, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN, margin: 0 }}>{t.detailTitle}</p>
                   <button onClick={() => setShowDetailModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isDark ? '#6b9e6b' : '#8BA68D' }}><XCircle size={22} /></button>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
                   {[
-                    { label: '문서 유형', value: getDocumentTypeLabel(selectedDocument.type) },
-                    { label: '직원명', value: selectedDocument.employeeName },
-                    { label: '파일명', value: selectedDocument.fileName },
-                    { label: '파일 크기', value: formatFileSize(selectedDocument.fileSize) },
-                    { label: '업로드일', value: selectedDocument.uploadDate },
-                    ...(selectedDocument.expiryDate ? [{ label: '만료일', value: selectedDocument.expiryDate }] : []),
+                   { label: t.docTypeLabel, value: getDocumentTypeLabel(selectedDocument.type) },
+                   { label: t.employeeNameLabel, value: selectedDocument.employeeName },
+                   { label: t.fileNameLabel, value: selectedDocument.fileName },
+                   { label: t.fileSizeLabel, value: formatFileSize(selectedDocument.fileSize) },
+                   { label: t.uploadDateLabel, value: selectedDocument.uploadDate },
+                   ...(selectedDocument.expiryDate ? [{ label: t.expiryDateLabel, value: selectedDocument.expiryDate }] : []),
                   ].map(({ label, value }) => (
                     <div key={label}>
                       <p style={{ fontSize: 13, color: isDark ? '#9dc49d' : '#8BA68D', marginBottom: 4 }}>{label}</p>
@@ -838,17 +838,17 @@ const DocumentManagement: React.FC = () => {
                     </div>
                   ))}
                   <div>
-                    <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6 }}>상태</p>
+                    <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6 }}>{t.statusLabel}</p>
                     {getStatusBadge(selectedDocument.status)}
                   </div>
                   <div>
-                    <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6 }}>OCR 상태</p>
+                    <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6 }}>{t.ocrStatusLabel}</p>
                     {getOCRStatusBadge(selectedDocument.ocrStatus)}
                   </div>
                 </div>
                 {selectedDocument.extractedData && (
                   <div style={{ marginBottom: 20 }}>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#4cd964' : DARK_GREEN, marginBottom: 12 }}>OCR 추출 정보</p>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#4cd964' : DARK_GREEN, marginBottom: 12 }}>{t.ocrInfo}</p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, background: isDark ? '#1e1e1e' : LIGHT_GREEN, borderRadius: 12, padding: '14px 16px', border: `1px solid ${isDark ? '#2a2a2a' : '#c5e89a'}` }}>
                       {Object.entries(selectedDocument.extractedData).map(([key, value]) =>
                         value && (
@@ -863,7 +863,7 @@ const DocumentManagement: React.FC = () => {
                 )}
                 <div style={{ background: isDark ? '#0f0f0f' : LIGHT_GREEN, borderRadius: 12, padding: 12, textAlign: 'center', marginBottom: 16, minHeight: 260, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: `1px solid ${isDark ? '#2a2a2a' : '#c5e89a'}` }}>
                   {isPreviewLoading ? (
-                    <p style={{ fontSize: 14, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>미리보기 불러오는 중...</p>
+                    <p style={{ fontSize: 14, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>{`${t.previewLabel}...`}</p>
                   ) : previewUrl && isImageDocument(selectedDocument) ? (
                     <img
                       src={previewUrl}
@@ -879,31 +879,31 @@ const DocumentManagement: React.FC = () => {
                   ) : previewUrl ? (
                     <button onClick={() => window.open(previewUrl, "_blank")} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? GREEN : DARK_GREEN }}>
                       <Image size={48} color={isDark ? GREEN : DARK_GREEN} style={{ margin: '0 auto 8px' }} />
-                      <p style={{ fontSize: 14, color: isDark ? GREEN : DARK_GREEN, margin: 0, fontWeight: 700 }}>새 탭에서 미리보기</p>
+                      <p style={{ fontSize: 14, color: isDark ? GREEN : DARK_GREEN, margin: 0, fontWeight: 700 }}>{t.previewLabel}</p>
                     </button>
                   ) : (
                     <div>
                       <Image size={48} color={isDark ? '#4cd964' : DARK_GREEN} style={{ margin: '0 auto 8px' }} />
-                      <p style={{ fontSize: 14, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>미리보기를 불러올 수 없습니다</p>
+                      <p style={{ fontSize: 14, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>{t.previewLabel}</p>
                     </div>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button onClick={() => handleDownload(selectedDocument)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                    <Download size={16} />다운로드
+                    <Download size={16} />{t.downloadBtn}
                   </button>
                   {selectedDocument.status === "pending" && (
                     <>
                       <button onClick={() => handleUpdateStatus(selectedDocument, "verified")} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                        <CheckCircle size={16} />승인
+                        <CheckCircle size={16} />{t.approveBtn}
                       </button>
                       <button onClick={() => handleUpdateStatus(selectedDocument, "rejected")} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                        <XCircle size={16} />반려
+                        <XCircle size={16} />{t.rejectBtn}
                       </button>
                     </>
                   )}
                   <button onClick={() => handleDelete(selectedDocument)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid #EF4444`, color: '#EF4444', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                    <Trash2 size={16} />삭제
+                    <Trash2 size={16} />{t.deleteBtn}
                   </button>
                 </div>
               </div>
