@@ -19,8 +19,11 @@ public class LineLoginC {
     @Value("${line.login.channel-id}")
     private String clientId;
 
-    @Value("${line.login.redirect-uri}")
+    @Value("${line.login.redirect-uri:https://bitemate.kro.kr/api/line/callback}")
     private String redirectUri;
+
+    @Value("${app.frontend-base-url:https://bitemate.kro.kr}")
+    private String frontendBaseUrl;
 
     @Autowired
     private LineLoginService lineLoginService;
@@ -101,7 +104,7 @@ public class LineLoginC {
         if (code == null) {
 
             return new RedirectView(
-                    "http://localhost:5173/line/error?message="
+                    frontendBaseUrl + "/line/error?message="
                             + URLEncoder.encode(
                             "LINE 로그인이 취소되었습니다.",
                             StandardCharsets.UTF_8
@@ -114,7 +117,7 @@ public class LineLoginC {
         if (userId == null) {
 
             return new RedirectView(
-                    "http://localhost:5173/line/error?message="
+                    frontendBaseUrl + "/line/error?message="
                             + URLEncoder.encode(
                             "사용자 정보를 찾을 수 없습니다.",
                             StandardCharsets.UTF_8
@@ -183,7 +186,7 @@ public class LineLoginC {
             e.printStackTrace();
 
             return new RedirectView(
-                    "http://localhost:5173/line/error?message="
+                    frontendBaseUrl + "/line/error?message="
                             + URLEncoder.encode(
                             e.getMessage(),
                             StandardCharsets.UTF_8
