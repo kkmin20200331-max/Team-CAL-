@@ -603,7 +603,7 @@ export default function ProfilePanel() {
       </div>
 
       {/* 슬라이드 패널 오버레이 + 패널 — body에 Portal로 마운트해서 stacking context 탈출 */}
-      {createPortal(
+      {open && createPortal(
         <div className="ui-scale-portal">
           {open && (
             <div
