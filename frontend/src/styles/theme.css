@@ -1,7 +1,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --font-size: 16px;
+  --font-size: 12px; /* 75% of 16px to match 75% zoom */
   --background: #ffffff;
   --foreground: oklch(0.145 0 0);
   --card: #ffffff;
