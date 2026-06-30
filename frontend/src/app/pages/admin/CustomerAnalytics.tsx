@@ -272,6 +272,59 @@ const severityClass = (severity?: string) => {
 export default function CustomerAnalytics() {
   const language = useLanguage();
   const t = translations.customerAnalytics[language];
+  const aiTextTranslations: Record<string, Record<string, string>> = {
+    '보건증을 네이버 OCR로 처리했습니다. 추출값은 관리자가 최종 확인해야 합니다.': {
+      ko: '보건증을 네이버 OCR로 처리했습니다. 추출값은 관리자가 최종 확인해야 합니다.',
+      en: 'Health certificate processed via Naver OCR. Extracted values must be reviewed by an administrator.',
+      ja: '健康診断証明書はNaver OCRで処理されました。抽出値は管理者が最終確認する必要があります。',
+    },
+    '분석 실행 중': { ko: '분석 실행 중', en: 'Analysis running', ja: '分析実行中' },
+    '분석 대기': { ko: '분석 대기', en: 'Analysis pending', ja: '分析待機' },
+    '높음': { ko: '높음', en: 'High', ja: '高' },
+    '주의': { ko: '주의', en: 'Watch', ja: '注意' },
+    '정상': { ko: '정상', en: 'Normal', ja: '正常' },
+    '실시간 분석 데이터를 불러오지 못했습니다.': { ko: '실시간 분석 데이터를 불러오지 못했습니다.', en: 'Failed to load live analysis data.', ja: 'リアルタイム分析データを読み込めませんでした。' },
+    '처리 프레임': { ko: '처리 프레임', en: 'processed frames', ja: '処理フレーム' },
+    '드롭 프레임': { ko: '드롭 프레임', en: 'dropped frames', ja: 'ドロップフレーム' },
+    '큐': { ko: '큐', en: 'queue', ja: 'キュー' },
+    '혼잡도': { ko: '혼잡도', en: 'Congestion', ja: '混雑度' },
+    '분석 신뢰도': { ko: '분석 신뢰도', en: 'Analysis confidence', ja: '分析信頼度' },
+    '전송 샘플': { ko: '전송 샘플', en: 'transmitted samples', ja: '送信サンプル' },
+    'AI 분석 결과입니다.': { ko: 'AI 분석 결과입니다.', en: 'AI analysis result.', ja: 'AI分析の結果です。' },
+    '현재 매장 위험도는': { ko: '현재 매장 위험도는', en: 'Current store risk level is', ja: '現在の店舗のリスクレベルは' },
+    '최근 집계 평균은': { ko: '최근 집계 평균은', en: 'Recent average is', ja: '最近の集計平均は' },
+    '최대 인원은': { ko: '최대 인원은', en: 'Maximum is', ja: '最大人数は' },
+    '입니다': { ko: '입니다', en: '.', ja: '。' },
+    'CCTV 분석 루프의 최신 값을 기준으로 판단했습니다.': { ko: 'CCTV 분석 루프의 최신 값을 기준으로 판단했습니다.', en: 'Judged based on the latest values from the CCTV analysis loop.', ja: 'CCTV分析ループの最新値に基づいて判断しました。' },
+    '인력 배치 확인': { ko: '인력 배치 확인', en: 'Check staffing', ja: '人員配置を確認' },
+    '현재 배치 유지': { ko: '현재 배치 유지', en: 'Keep current staffing', ja: '現在の配置を維持' },
+    'OpenCV 분석이 실행 중입니다': { ko: 'OpenCV 분석이 실행 중입니다', en: 'OpenCV analysis is running', ja: 'OpenCV分析が実行中です' },
+    'OpenCV 분석이 대기 중입니다': { ko: 'OpenCV 분석이 대기 중입니다', en: 'OpenCV analysis is pending', ja: 'OpenCV分析が待機中です' },
+    '모니터링 계속': { ko: '모니터링 계속', en: 'Continue monitoring', ja: 'モニタリングを継続' },
+    'CCTV 분석 시작': { ko: 'CCTV 분석 시작', en: 'Start CCTV analysis', ja: 'CCTV分析を開始' },
+    '분석 상태': { ko: '분석 상태', en: 'Analysis status', ja: '分析状況' },
+    '새로고침으로 분석': { ko: '새로고침으로 분석', en: 'Analyze by refresh', ja: 'リフレッシュで分析' },
+    '실시간 분석 데이터 동기화 실패': { ko: '실시간 분석 데이터 동기화 실패', en: 'Live analysis data sync failed', ja: 'リアルタイム分析データの同期に失敗しました' },
+    'OpenAI 분석': { ko: 'OpenAI 분석', en: 'OpenAI analysis', ja: 'OpenAI 分析' },
+    'AI fallback 분석': { ko: 'AI fallback 분석', en: 'AI fallback analysis', ja: 'AIフォールバック分析' },
+    'OpenAI 인사이트 분석 요청에 실패했습니다.': { ko: 'OpenAI 인사이트 분석 요청에 실패했습니다.', en: 'OpenAI insight analysis request failed.', ja: 'OpenAIインサイト分析リクエストに失敗しました。' },
+    'OpenAI 인사이트 분석 실패': { ko: 'OpenAI 인사이트 분석 실패', en: 'OpenAI insight analysis failed', ja: 'OpenAIインサイト分析に失敗しました' },
+    'AI 분석 중': { ko: 'AI 분석 중', en: 'AI analyzing...', ja: 'AI分析中' },
+    '대기': { ko: '대기', en: 'Idle', ja: '待機中' },
+    '최신 CCTV 집계 최대 인원은': { ko: '최신 CCTV 집계 최대 인원은', en: 'Latest CCTV max count is', ja: '最新CCTV集計の最大人数は' },
+    '을 기준으로 계산했습니다.': { ko: '을 기준으로 계산했습니다.', en: ' calculated based on.', ja: 'を基準に算出しました。' },
+    '예상 대기': { ko: '예상 대기', en: 'Estimated wait', ja: '推定待ち時間' },
+    '명': { ko: '명', en: ' people', ja: '人' },
+    'URGENT': { ko: '긴급', en: 'URGENT', ja: '緊急' },
+    'WATCH': { ko: '주의', en: 'WATCH', ja: '注意' },
+    'NORMAL': { ko: '정상', en: 'NORMAL', ja: '正常' },
+  };
+
+  const translateAiText = (text?: string) => {
+    if (!text) return text || '';
+    const m = aiTextTranslations[text];
+    return m ? (m[language] || m['en']) : text;
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const { branchId } = useParams();
@@ -360,30 +413,30 @@ export default function CustomerAnalytics() {
 
   const fallbackInsights = [
     {
-      label: "혼잡도",
-      title: `현재 매장 위험도는 ${riskLevel(currentCount)}입니다`,
-      body: `최근 집계 평균은 ${avgCount}명, 최대 인원은 ${maxCount}명입니다. CCTV 분석 루프의 최신 값을 기준으로 판단했습니다.`,
-      action: currentCount >= 15 ? "인력 배치 확인" : "현재 배치 유지",
-      impact: riskLevel(currentCount),
+      label: translateAiText("혼잡도"),
+      title: `${translateAiText('현재 매장 위험도는')} ${translateAiText(riskLevel(currentCount))}${translateAiText('입니다')}`,
+      body: `${translateAiText('최근 집계 평균은')} ${avgCount}${translateAiText('명')}, ${translateAiText('최대 인원은')} ${maxCount}${translateAiText('명')}${translateAiText('입니다')} ${translateAiText('CCTV 분석 루프의 최신 값을 기준으로 판단했습니다.')}`,
+      action: translateAiText(currentCount >= 15 ? "인력 배치 확인" : "현재 배치 유지"),
+      impact: translateAiText(riskLevel(currentCount)),
     },
     {
-      label: "분석 상태",
+      label: translateAiText("분석 상태"),
       title: metrics?.running
-        ? "OpenCV 분석이 실행 중입니다"
-        : "OpenCV 분석이 대기 중입니다",
-      body: `처리 프레임 ${metrics?.processedFrames ?? 0}개, 드롭 프레임 ${metrics?.droppedFrames ?? 0}개, 큐 ${metrics?.queueSize ?? 0}개입니다.`,
-      action: metrics?.running ? "모니터링 계속" : "CCTV 분석 시작",
-      impact: metrics?.running ? "정상" : "주의",
+        ? translateAiText("OpenCV 분석이 실행 중입니다")
+        : translateAiText("OpenCV 분석이 대기 중입니다"),
+      body: `${translateAiText('처리 프레임')} ${metrics?.processedFrames ?? 0}, ${translateAiText('드롭 프레임')} ${metrics?.droppedFrames ?? 0}, ${translateAiText('큐')} ${metrics?.queueSize ?? 0}`,
+      action: metrics?.running ? translateAiText("모니터링 계속") : translateAiText("CCTV 분석 시작"),
+      impact: metrics?.running ? translateAiText("정상") : translateAiText("주의"),
     },
   ];
 
   const renderedInsights =
     aiResult?.insights?.map((insight) => ({
-      label: insight.badge || insight.type || "AI",
-      title: insight.title || "-",
-      body: insight.message || insight.reason || "-",
-      action: insight.actionLabel || "확인",
-      impact: insight.severity || "LOW",
+      label: translateAiText(insight.badge || insight.type || "AI"),
+      title: translateAiText(insight.title || "-"),
+      body: translateAiText(insight.message || insight.reason || "-"),
+      action: translateAiText(insight.actionLabel || (language === 'ko' ? '확인' : language === 'ja' ? '確認' : 'Check')),
+      impact: translateAiText(insight.severity || "LOW"),
     })) || fallbackInsights;
 
   const scheduleRecommendations = aiResult?.scheduleRecommendations?.map(
@@ -393,7 +446,7 @@ export default function CustomerAnalytics() {
       recommended:
         row.recommendedStaff ?? Math.max(1, Math.ceil(maxCount / 25)),
       status: row.status || "NORMAL",
-      reason: row.reason || "AI 분석 결과입니다.",
+      reason: translateAiText(row.reason || "AI 분석 결과입니다."),
     }),
   ) || [
     {
@@ -401,31 +454,31 @@ export default function CustomerAnalytics() {
       current: currentCount,
       recommended: Math.max(1, Math.ceil(maxCount / 25)),
       status: maxCount >= 30 ? "URGENT" : maxCount >= 15 ? "WATCH" : "NORMAL",
-      reason: `최신 CCTV 집계 최대 인원 ${maxCount}명을 기준으로 계산했습니다.`,
+      reason: `${translateAiText('최신 CCTV 집계 최대 인원은')} ${maxCount}${translateAiText('명')}${translateAiText('을 기준으로 계산했습니다.')}`, 
     },
   ];
 
   const kpis = [
     {
       title: t.kpiStoreCount,
-      value: `${currentCount}명`,
-      delta: `${metrics?.running ? "분석 실행 중" : "분석 대기"} | ${lastSyncedAt}`,
+      value: `${currentCount}${translateAiText('명')}`,
+      delta: `${translateAiText(metrics?.running ? "분석 실행 중" : "분석 대기")} | ${lastSyncedAt}`,
       icon: Users,
       tone: GREEN,
     },
     {
       title: t.kpiLogCount,
-      value: `${todayTotalVisitors}명`,
+      value: `${todayTotalVisitors}${translateAiText('명')}`,
       delta: `people_log ${peopleLogs.length}건`,
       icon: Activity,
       tone: GREEN,
     },
     {
       title: t.kpiAiSource,
-      value: aiResult?.source === "llm" ? "OpenAI" : aiResult?.source || "대기",
+      value: aiResult?.source === "llm" ? translateAiText('OpenAI 분석') : (aiResult?.source ? translateAiText(aiResult.source) : translateAiText('대기')),
       delta: aiResult?.summary?.riskLevel
         ? `risk ${aiResult.summary.riskLevel}`
-        : "새로고침으로 분석",
+        : translateAiText("새로고침으로 분석"),
       icon: Brain,
       tone: '#F59E0B',
     },
@@ -440,25 +493,25 @@ export default function CustomerAnalytics() {
 
   const operatingMetrics = [
     {
-      label: "혼잡도",
-      value: riskLevel(currentCount),
+      label: translateAiText("혼잡도"),
+      value: translateAiText(riskLevel(currentCount)),
       width: `${Math.min(100, currentCount * 3)}%`,
       color: "#F97316",
     },
     {
-      label: "분석 신뢰도",
+      label: translateAiText("분석 신뢰도"),
       value: String(metrics?.lastConfidenceAvg ?? 0),
       width: `${Math.round((metrics?.lastConfidenceAvg ?? 0) * 100)}%`,
       color: "#3B82F6",
     },
     {
-      label: "처리 프레임",
+      label: translateAiText("처리 프레임"),
       value: String(metrics?.processedFrames ?? 0),
       width: `${Math.min(100, (metrics?.processedFrames ?? 0) / 10)}%`,
       color: GREEN,
     },
     {
-      label: "전송 샘플",
+      label: translateAiText("전송 샘플"),
       value: String(aggregate?.aggregate?.sampleCount ?? 0),
       width: `${Math.min(100, (aggregate?.aggregate?.sampleCount ?? 0) * 8)}%`,
       color: "#8B5CF6",
@@ -490,7 +543,7 @@ export default function CustomerAnalytics() {
       ]);
 
     if (!logsRes.ok || !metricsRes.ok || !aggregateRes.ok || !weeklyLogsRes.ok) {
-      throw new Error("실시간 분석 데이터를 불러오지 못했습니다.");
+      throw new Error(translateAiText('실시간 분석 데이터를 불러오지 못했습니다.'));
     }
 
     const [logsData, metricsData, aggregateData, weeklyLogsData] =
@@ -537,7 +590,7 @@ export default function CustomerAnalytics() {
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(
-          `OpenAI 인사이트 분석 요청에 실패했습니다. (${response.status}) ${errorText}`,
+          `${translateAiText('OpenAI 인사이트 분석 요청에 실패했습니다.')} (${response.status}) ${errorText}`,
         );
       }
 
@@ -545,7 +598,7 @@ export default function CustomerAnalytics() {
       setSyncError("");
     } catch (error) {
       setSyncError(
-        error instanceof Error ? error.message : "OpenAI 인사이트 분석 실패",
+        error instanceof Error ? error.message : translateAiText("OpenAI 인사이트 분석 실패"),
       );
     } finally {
       setAiLoading(false);
@@ -563,7 +616,7 @@ export default function CustomerAnalytics() {
           setSyncError(
             error instanceof Error
               ? error.message
-              : "실시간 분석 데이터 동기화 실패",
+          : translateAiText("실시간 분석 데이터 동기화 실패"),
           );
         }
       }
@@ -694,7 +747,7 @@ export default function CustomerAnalytics() {
                 style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: aiLoading ? 'not-allowed' : 'pointer', opacity: aiLoading ? 0.7 : 1 }}
               >
                 <RefreshCw size={16} style={{ animation: aiLoading ? 'spin 1s linear infinite' : 'none' }} />
-                {aiLoading ? "AI 분석 중" : t.refresh}
+                {aiLoading ? translateAiText('AI 분석 중') : t.refresh}
               </button>
               <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 <Download size={16} />{t.report}
@@ -712,8 +765,8 @@ export default function CustomerAnalytics() {
           {/* AI summary banner */}
           {aiResult?.summary && (
             <div style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #bfdbfe', background: '#eff6ff', padding: '12px 16px', fontSize: 14, color: '#1e40af' }}>
-              <span style={{ fontWeight: 700 }}>{aiResult.source === "llm" ? "OpenAI 분석" : "AI fallback 분석"}: </span>
-              {aiResult.summary.mainMessage}
+              <span style={{ fontWeight: 700 }}>{aiResult.source === "llm" ? translateAiText("OpenAI 분석") : translateAiText("AI fallback 분석")} : </span>
+              {translateAiText(aiResult.summary.mainMessage)}
             </div>
           )}
 
@@ -768,9 +821,9 @@ export default function CustomerAnalytics() {
                     <XAxis dataKey="time" tick={{ fill: '#8BA68D', fontSize: 12 }} />
                     <YAxis tick={{ fill: '#8BA68D', fontSize: 12 }} />
                     <Tooltip />
-                    <Bar dataKey="visitors" name="방문 인원" fill={GREEN} radius={[4, 4, 0, 0]} />
-                    <Line dataKey="recommended" name="추천 인원" stroke="#F97316" strokeWidth={3} strokeDasharray="5 5" />
-                    <Line dataKey="wait" name="예상 대기" stroke="#8B5CF6" strokeWidth={2} dot={false} />
+                    <Bar dataKey="visitors" name={t.visitors} fill={GREEN} radius={[4, 4, 0, 0]} />
+                    <Line dataKey="recommended" name={t.recommendedStaff} stroke="#F97316" strokeWidth={3} strokeDasharray="5 5" />
+                    <Line dataKey="wait" name={translateAiText('예상 대기')} stroke="#8B5CF6" strokeWidth={2} dot={false} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -800,7 +853,7 @@ export default function CustomerAnalytics() {
                 <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${isDark ? '#2a2a2a' : LIGHT_GREEN}` }}>
                   <Wallet size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
                   <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>{t.aiSourceLabel}</p>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>{aiResult?.source || "대기"}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>{aiResult?.source === "llm" ? translateAiText('OpenAI 분석') : (aiResult?.source ? translateAiText(aiResult.source) : translateAiText('대기'))}</p>
                 </div>
               </div>
             </div>
@@ -817,9 +870,9 @@ export default function CustomerAnalytics() {
                     <XAxis dataKey="day" tick={{ fill: '#8BA68D' }} />
                     <YAxis tick={{ fill: '#8BA68D' }} />
                     <Tooltip />
-                    <Area dataKey="morning" stackId="1" name="오전" stroke="#60a5fa" fill="#93c5fd" />
-                    <Area dataKey="lunch" stackId="1" name="점심" stroke="#22c55e" fill="#86efac" />
-                    <Area dataKey="evening" stackId="1" name="저녁" stroke="#f97316" fill="#fdba74" />
+                    <Area dataKey="morning" stackId="1" name={t.morning} stroke="#60a5fa" fill="#93c5fd" />
+                    <Area dataKey="lunch" stackId="1" name={t.lunch} stroke="#22c55e" fill="#86efac" />
+                    <Area dataKey="evening" stackId="1" name={t.evening} stroke="#f97316" fill="#fdba74" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -887,20 +940,20 @@ export default function CustomerAnalytics() {
                 <thead>
                   <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
                     {[t.colTime, t.colCurrent, t.colRecommended, t.colStatus, t.colReason].map(col => (
-                      <th key={col} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}>{col}</th>
+                      <th key={col} style={{ padding: '12px 16px', textAlign: 'center', fontSize: 13, fontWeight: 700, color: isDark ? GREEN : DARK_GREEN }}>{col}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {scheduleRecommendations.map((row, idx) => (
                     <tr key={row.time} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : LIGHT_GREEN}`, background: idx % 2 === 0 ? (isDark ? 'rgba(24,160,34,0.05)' : 'rgba(230,245,200,0.2)') : 'transparent' }}>
-                      <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 700, color: textColor }}>{row.time}</td>
-                      <td style={{ padding: '12px 16px', fontSize: 14, color: '#8BA68D' }}>{row.current}명</td>
-                      <td style={{ padding: '12px 16px', fontSize: 14, color: textColor, fontWeight: 600 }}>{row.recommended}명</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <Badge className={severityClass(row.status)}>{row.status}</Badge>
+                      <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 700, color: textColor, textAlign: 'center' }}>{row.time}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 14, color: '#8BA68D', textAlign: 'center' }}>{row.current}{translateAiText('명')}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 14, color: textColor, fontWeight: 600, textAlign: 'center' }}>{row.recommended}{translateAiText('명')}</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <Badge className={severityClass(row.status)}>{translateAiText(row.status)}</Badge>
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#8BA68D' }}>{row.reason}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#8BA68D', textAlign: 'center' }}>{row.reason}</td>
                     </tr>
                   ))}
                 </tbody>

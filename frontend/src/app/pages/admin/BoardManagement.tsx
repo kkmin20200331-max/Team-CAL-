@@ -137,6 +137,26 @@ const BoardManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loadingPosts, setLoadingPosts] = useState(false);
 
+  const boardNameTranslations: Record<string, Record<string, string>> = {
+    '공지사항': { ko: '공지사항', en: 'Notice', ja: 'お知らせ' },
+    '메뉴얼': { ko: '메뉴얼', en: 'Manual', ja: 'マニュアル' },
+    '분실물 관리': { ko: '분실물 관리', en: 'Lost Items', ja: '遺失物管理' },
+    '분실물 공유': { ko: '분실물 공유', en: 'Lost & Found', ja: '遺失物共有' },
+    '프로모션/이벤트': { ko: '프로모션/이벤트', en: 'Promotions/Events', ja: 'プロモーション/イベント' },
+    '프로모션': { ko: '프로모션', en: 'Promotion', ja: 'プロモーション' },
+    '이벤트': { ko: '이벤트', en: 'Event', ja: 'イベント' },
+    '프로모셔/이벤트': { ko: '프로모셔/이벤트', en: 'Promotions/Events', ja: 'プロモーション/イベント' },
+    '체크리스트': { ko: '체크리스트', en: 'Checklist', ja: 'チェックリスト' },
+    '업무지시': { ko: '업무지시', en: 'Work Orders', ja: '業務指示' },
+    '업무 지시': { ko: '업무 지시', en: 'Work Orders', ja: '業務指示' },
+  };
+
+  const translateBoardName = (name?: string) => {
+    if (!name) return name || '';
+    const m = boardNameTranslations[name];
+    return m ? (m[language] || m['en']) : name;
+  };
+
   useEffect(() => {
     if (!selectedBranchId) return;
     fetch(`${API_BASE}/board?store_id=${selectedBranchId}`)
@@ -418,7 +438,7 @@ const BoardManagement: React.FC = () => {
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
             {[{ id: '__all__', name: t.allBoards }, ...boards].map(b => (
               <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ padding: '9px 20px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
-                {b.name}
+                {translateBoardName(b.name)}
               </button>
             ))}
           </div>
@@ -597,7 +617,7 @@ const BoardManagement: React.FC = () => {
               <div>
                 <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.boardLabel}</label>
                 <select value={selectedBoardId} onChange={e => setSelectedBoardId(e.target.value)} style={inputStyle}>
-                  {boards.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  {boards.map(b => <option key={b.id} value={b.id}>{translateBoardName(b.name)}</option>)}
                 </select>
               </div>
               <div>

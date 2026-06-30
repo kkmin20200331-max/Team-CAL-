@@ -2521,7 +2521,7 @@ const customerAnalytics = {
     kpiFrames: 'AI処理フレーム',
     diagnosisTitle: '現在の診断',
     lastAnalysis: '最後の分析',
-    aiSourceLabel: 'AI出典',
+    aiSourceLabel: 'AI出処',
   },
 };
 
