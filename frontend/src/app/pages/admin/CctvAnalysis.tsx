@@ -97,8 +97,8 @@ const OPENCV_CAMERA_STREAM = "http://localhost:8000/api/v1/camera/stream";
 
 const initialConfig: CameraConfig = {
   cameraId: "CAM-001",
-  name: "출입구 메인 CCTV",
-  location: "1층 출입구",
+  name: "Main Entrance CCTV",
+  location: "1F Main Entrance",
   source: "0",
   sourceType: "WEBCAM",
   intervalSec: 5,
@@ -157,8 +157,8 @@ export default function CctvAnalysis() {
   const [cameraFrame, setCameraFrame] = useState("");
   const [cameraStatusMessage, setCameraStatusMessage] = useState("");
   const [streamNonce, setStreamNonce] = useState(Date.now());
-  const [lastSavedAt, setLastSavedAt] = useState("저장 전");
-  const [lastResponse, setLastResponse] = useState("응답 대기");
+  const [lastSavedAt, setLastSavedAt] = useState(t.notSet);
+  const [lastResponse, setLastResponse] = useState(t.waitingReceive);
   const [errorMessage, setErrorMessage] = useState("");
   const storeId = selectedBranchId;
   const CONFIG_KEY = `cctv_config_${storeId}`;
@@ -173,7 +173,7 @@ export default function CctvAnalysis() {
   const currentBranch =
     stores.find((s) => s.id === storeId)?.name ||
     sessionStorage.getItem("store_name") ||
-    "선택 매장";
+    t.notSet;
 
   const startPayload = useMemo<CameraStartPayload>(
     () => ({
@@ -222,7 +222,7 @@ export default function CctvAnalysis() {
                     `${item.loc?.join(".")}: ${item.msg}`,
                 )
                 .join(", ")
-            : data?.message || "CCTV API 요청 실패";
+            : data?.message || "CCTV API request failed";
       throw new Error(message);
     }
 
@@ -260,7 +260,7 @@ export default function CctvAnalysis() {
       } catch (error) {
         if (cancelled) return;
         const message =
-          error instanceof Error ? error.message : "CCTV 상태 동기화 실패";
+          error instanceof Error ? error.message : "CCTV status sync failed";
         setErrorMessage(message);
       }
     };
@@ -301,7 +301,7 @@ export default function CctvAnalysis() {
       setLastResponse(JSON.stringify(data, null, 2));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "분석 시작 요청 실패";
+        error instanceof Error ? error.message : "Start analysis request failed";
       setErrorMessage(message);
       setLastResponse(message);
     } finally {
@@ -323,7 +323,7 @@ export default function CctvAnalysis() {
       setLastResponse(JSON.stringify(data, null, 2));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "분석 중지 요청 실패";
+        error instanceof Error ? error.message : "Stop analysis request failed";
       setErrorMessage(message);
       setLastResponse(message);
     } finally {
@@ -458,13 +458,13 @@ export default function CctvAnalysis() {
                 {isRunning ? (
                   <img
                     src={`${OPENCV_CAMERA_STREAM}?t=${streamNonce}`}
-                    alt="실시간 CCTV 스트림"
+                    alt={t.realtimeCamera}
                     className="absolute inset-0 h-full w-full object-contain"
                   />
                 ) : cameraFrame ? (
                   <img
                     src={cameraFrame}
-                    alt="OpenCV가 분석한 최신 CCTV 프레임"
+                    alt={t.recentFrame(lastSyncedAt)}
                     className="absolute inset-0 h-full w-full object-contain"
                   />
                 ) : (
@@ -478,22 +478,24 @@ export default function CctvAnalysis() {
                   <span style={{ background: 'rgba(255,255,255,0.18)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, backdropFilter: 'blur(4px)' }}>{config.modelName}</span>
                 </div>
                 <div className="absolute bottom-4 left-4 right-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                  {[
-                    ["count", metrics?.lastCustomerCount ?? "-"],
-                    ["frames", metrics?.processedFrames ?? "-"],
-                    [
-                      "confidence",
-                      metrics?.lastConfidenceAvg ?? config.confidence,
-                    ],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      className="rounded-lg border border-white/15 bg-white/10 p-3 text-white backdrop-blur"
-                    >
-                      <p className="text-xs text-white/70">{label}</p>
-                      <p className="mt-1 truncate text-lg font-bold">{value}</p>
-                    </div>
-                  ))}
+                  {(() => {
+                    const metricLabels: Record<string, { ko: string; en: string; ja: string }> = {
+                      count: { ko: '최근 감지 인원', en: 'Recent detections', ja: '最近の検知人数' },
+                      frames: { ko: '처리 프레임', en: 'Processed frames', ja: '処理フレーム' },
+                      confidence: { ko: '평균 confidence', en: 'Average confidence', ja: '平均confidence' },
+                    };
+
+                    return [
+                      { key: 'count', value: metrics?.lastCustomerCount ?? "-" },
+                      { key: 'frames', value: metrics?.processedFrames ?? "-" },
+                      { key: 'confidence', value: metrics?.lastConfidenceAvg ?? config.confidence },
+                    ].map(({ key, value }) => (
+                      <div key={key} className="rounded-lg border border-white/15 bg-white/10 p-3 text-white backdrop-blur">
+                        <p className="text-xs text-white/70">{metricLabels[key][language]}</p>
+                        <p className="mt-1 truncate text-lg font-bold">{value}</p>
+                      </div>
+                    ));
+                  })()}
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   {!isRunning && !cameraFrame && (
@@ -687,27 +689,33 @@ export default function CctvAnalysis() {
                   {lastResponse}
                 </pre>
               </div>
-              {[
-                ["최근 감지 인원", metrics?.lastCustomerCount ?? "-"],
-                ["처리 프레임", metrics?.processedFrames ?? "-"],
-                ["드롭 프레임", metrics?.droppedFrames ?? "-"],
-                ["대기 큐", metrics?.queueSize ?? "-"],
-                ["평균 confidence", metrics?.lastConfidenceAvg ?? "-"],
-                [
-                  "최근 측정 시각",
-                  metrics?.lastMeasuredAt
-                    ? new Date(metrics.lastMeasuredAt).toLocaleTimeString()
-                    : "-",
-                ],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, padding: 12 }}
-                >
-                  <span style={{ fontSize: 13, color: isDark ? '#c8c8c8' : '#6b7280' }}>{label}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: isDark ? '#fff' : DARK_GREEN }}>{value}</span>
-                </div>
-              ))}
+              {(() => {
+                const metricLabelMap: Record<string, { ko: string; en: string; ja: string }> = {
+                  count: { ko: '최근 감지 인원', en: 'Recent detections', ja: '最近の検知人数' },
+                  frames: { ko: '처리 프레임', en: 'Processed frames', ja: '処理フレーム' },
+                  dropped: { ko: '드롭 프레임', en: 'Dropped frames', ja: 'ドロップフレーム' },
+                  queue: { ko: '대기 큐', en: 'Queue size', ja: '待機キュー' },
+                  confidence: { ko: '평균 confidence', en: 'Average confidence', ja: '平均confidence' },
+                  lastMeasuredAt: { ko: '최근 측정 시각', en: 'Last measured', ja: '最新測定時刻' },
+                };
+
+                return [
+                  { key: 'count', value: metrics?.lastCustomerCount ?? "-" },
+                  { key: 'frames', value: metrics?.processedFrames ?? "-" },
+                  { key: 'dropped', value: metrics?.droppedFrames ?? "-" },
+                  { key: 'queue', value: metrics?.queueSize ?? "-" },
+                  { key: 'confidence', value: metrics?.lastConfidenceAvg ?? "-" },
+                  { key: 'lastMeasuredAt', value: metrics?.lastMeasuredAt ? new Date(metrics.lastMeasuredAt).toLocaleTimeString() : "-" },
+                ].map(({ key, value }) => (
+                  <div
+                    key={key}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 10, border: `1px solid ${BORDER_GREEN}`, padding: 12 }}
+                  >
+                    <span style={{ fontSize: 13, color: isDark ? '#c8c8c8' : '#6b7280' }}>{metricLabelMap[key][language]}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: isDark ? '#fff' : DARK_GREEN }}>{value}</span>
+                  </div>
+                ));
+              })()}
             </CardContent>
           </Card>
         </section>
