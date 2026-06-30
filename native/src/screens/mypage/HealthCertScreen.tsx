@@ -20,7 +20,9 @@ const HealthCertScreen = ({ navigation }: any) => {
   const calculateStatus = (expiryDate: string | null, backendStatus: string) => {
     if (backendStatus === 'pending') return 'pendingApproval';
     if (backendStatus === 'rejected') return 'rejected'; // 반려 상태 추가
-    if (!expiryDate) return 'pendingApproval';
+    if (!expiryDate) {
+      return backendStatus === 'verified' ? 'valid' : 'pendingApproval';
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0); // 시간 제외 (자정 기준)

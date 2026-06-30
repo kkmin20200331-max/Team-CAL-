@@ -92,7 +92,10 @@ const BoardScreen = ({ route, navigation }: Props) => {
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date.replace(/\./g, '-')).getTime();
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date.replace(/\./g, '-')).getTime();
+      return bTime - aTime;
     });
 
   const renderItem = ({ item }: { item: Post }) => (

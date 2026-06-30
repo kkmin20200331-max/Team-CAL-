@@ -123,9 +123,9 @@ const DashboardScreen = ({ navigation }: Props) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       
-      const aDate = new Date(a.date.replace(/\./g, '-')).getTime();
-      const bDate = new Date(b.date.replace(/\./g, '-')).getTime();
-      return bDate - aDate;
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date.replace(/\./g, '-')).getTime();
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date.replace(/\./g, '-')).getTime();
+      return bTime - aTime;
   });
 
   // 4. 네비게이션 파라미터에서 함수 전달 제거

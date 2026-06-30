@@ -60,6 +60,7 @@ const mapPost = (post: any, board?: BoardSummary): Post => ({
   author: post.writer_name || post.writer_id,
   isPinned: post.is_pinned === 'Y' || post.is_pinned === true,
   badge: null,
+  createdAt: post.created_at || new Date().toISOString(),
 });
 
 export const BoardProvider = ({ children }: BoardProviderProps) => {
