@@ -19,8 +19,8 @@ const ContractScreen = ({ route, navigation }: any) => {
   // 상태 관리: 실제 백엔드에서 받아온 근로조건 데이터
   const [contractData, setContractData] = useState({
     id: '',
-    branch: userInfo?.branchName || userInfo?.brandName || '컴포즈 미금점',
-    startDate: '미등록',
+    branch: userInfo?.branchName || userInfo?.brandName || t('unassignedBranch'),
+    startDate: t('unregistered'),
     wage: '0',
     status: 'none', // 'none' | 'verified' | 'pending' | 'rejected'
   });
@@ -51,7 +51,7 @@ const ContractScreen = ({ route, navigation }: any) => {
         
         setContractData({
           id: latest.id,
-          branch: userInfo.branchName || userInfo.brandName || '컴포즈 미금점',
+          branch: userInfo.branchName || userInfo.brandName || t('unassignedBranch'),
           startDate: startDate,
           wage: wage,
           status: (latest.status || 'PENDING').toLowerCase(),
@@ -59,8 +59,8 @@ const ContractScreen = ({ route, navigation }: any) => {
       } else {
         setContractData({
           id: '',
-          branch: userInfo.branchName || userInfo.brandName || '미지정 매장',
-          startDate: '미등록',
+          branch: userInfo.branchName || userInfo.brandName || t('unassignedBranch'),
+          startDate: t('unregistered'),
           wage: '0',
           status: 'none',
         });
@@ -81,7 +81,7 @@ const ContractScreen = ({ route, navigation }: any) => {
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      Alert.alert('권한 필요', '갤러리 접근 권한이 필요합니다.');
+      Alert.alert(t('permissionRequired'), t('galleryPermissionRequired'));
       return;
     }
 
@@ -119,11 +119,11 @@ const ContractScreen = ({ route, navigation }: any) => {
       await uploadFileAPI(formData);
 
       setSelectedImage(null);
-      Alert.alert('전송 완료', '계약서가 업로드되었습니다. 점주 승인 후 최종 반영됩니다.');
+      Alert.alert(t('sendComplete'), t('contractUploadedMsg'));
       loadContract();
     } catch (error) {
       console.error('근로계약서 업로드 에러:', error);
-      Alert.alert('오류', '업로드 중 문제가 발생했습니다.');
+      Alert.alert(t('error'), t('uploadErrorMsg'));
     } finally {
       setIsUploading(false);
     }
@@ -158,14 +158,14 @@ const ContractScreen = ({ route, navigation }: any) => {
               ]}>
                 {contractData.status === 'verified' ? t('valid') : 
                  contractData.status === 'pending' ? t('pendingApproval') : 
-                 contractData.status === 'rejected' ? '반려됨' : '미등록'}
+                 contractData.status === 'rejected' ? t('rejected') : t('unregistered')}
               </Text>
             </View>
           </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('nameLabel')}</Text>
-            <Text style={styles.infoValue}>{userInfo?.name || '사용자'}</Text>
+            <Text style={styles.infoValue}>{userInfo?.name || t('defaultUserName')}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>{t('workPlace')}</Text>
@@ -190,33 +190,33 @@ const ContractScreen = ({ route, navigation }: any) => {
                 <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.submitButton} onPress={handleUploadToBackend} disabled={isUploading}>
-                {isUploading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitButtonText}>서버로 전송</Text>}
+                {isUploading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitButtonText}>{t('sendToServer')}</Text>}
               </TouchableOpacity>
             </View>
           </View>
         ) : contractData.status === 'verified' ? (
           <TouchableOpacity style={styles.uploadBox} onPress={handlePickImage}>
             <Text style={styles.uploadIcon}>📄</Text>
-            <Text style={styles.uploadTitle}>계약서 갱신 / 새로 업로드</Text>
-            <Text style={styles.uploadDesc}>새로 서명한 근로계약서가 있다면 업로드해주세요</Text>
+            <Text style={styles.uploadTitle}>{t('renewContractTitle')}</Text>
+            <Text style={styles.uploadDesc}>{t('renewContractDesc')}</Text>
           </TouchableOpacity>
         ) : contractData.status === 'pending' ? (
           <View style={styles.pendingBox}>
              <Text style={styles.pendingIcon}>⏳</Text>
-             <Text style={styles.pendingTitle}>점주 승인 대기 중</Text>
-             <Text style={styles.pendingDesc}>제출하신 계약서의 확인이 진행 중입니다.</Text>
+             <Text style={styles.pendingTitle}>{t('pendingApprovalTitle')}</Text>
+             <Text style={styles.pendingDesc}>{t('pendingApprovalDesc')}</Text>
           </View>
         ) : contractData.status === 'rejected' ? (
           <TouchableOpacity style={[styles.uploadBox, { borderColor: '#FECACA' }]} onPress={handlePickImage}>
             <Text style={styles.uploadIcon}>⚠️</Text>
-            <Text style={[styles.uploadTitle, { color: '#EF4444' }]}>계약서 반려됨 / 재업로드</Text>
-            <Text style={styles.uploadDesc}>서명에 오류가 있습니다. 다시 선명하게 촬영하여 업로드해주세요</Text>
+            <Text style={[styles.uploadTitle, { color: '#EF4444' }]}>{t('rejectedContractTitle')}</Text>
+            <Text style={styles.uploadDesc}>{t('rejectedContractDesc')}</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={styles.uploadBox} onPress={handlePickImage}>
             <Text style={styles.uploadIcon}>📄</Text>
-            <Text style={styles.uploadTitle}>근로계약서 업로드</Text>
-            <Text style={styles.uploadDesc}>작성한 근로계약서 사진을 업로드해주세요</Text>
+            <Text style={styles.uploadTitle}>{t('uploadContractTitle')}</Text>
+            <Text style={styles.uploadDesc}>{t('uploadContractDesc')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

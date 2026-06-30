@@ -62,7 +62,7 @@ const HealthCertScreen = ({ navigation }: any) => {
           }
           return {
             id: item.id,
-            title: item.original_name || '보건증',
+            title: item.original_name || t('healthCert'),
             expiryDate: formattedExpiry,
             approvalStatus: (item.status || 'PENDING').toLowerCase() as any,
           };
@@ -86,7 +86,7 @@ const HealthCertScreen = ({ navigation }: any) => {
     // 1. 갤러리 접근 권한 요청
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      Alert.alert('권한 필요', '갤러리 접근 권한이 필요합니다.');
+      Alert.alert(t('permissionRequired'), t('galleryPermissionRequired'));
       return;
     }
 
@@ -126,11 +126,11 @@ const HealthCertScreen = ({ navigation }: any) => {
       await uploadFileAPI(formData);
 
       setSelectedImage(null); // 초기화
-      Alert.alert('업로드 완료', '보건증이 업로드되었으며, 관리자 승인 대기 중입니다.');
+      Alert.alert(t('uploadComplete'), t('healthCertUploadedMsg'));
       loadHealthCerts();
     } catch (error) {
       console.error('보건증 업로드 중 에러:', error);
-      Alert.alert('오류', '업로드 중 문제가 발생했습니다.');
+      Alert.alert(t('error'), t('uploadErrorMsg'));
     } finally {
       setIsUploading(false);
     }
@@ -169,18 +169,18 @@ const HealthCertScreen = ({ navigation }: any) => {
                     status === 'pendingApproval' && styles.badgeTextPending, 
                     status === 'rejected' && styles.badgeTextExpired, 
                   ]}>
-                    {status === 'rejected' ? '반려' : t(status)}
+                    {status === 'rejected' ? t('rejected') : t(status)}
                   </Text>
                 </View>
               </View>
 
               {status === 'pendingApproval' ? (
                 <Text style={[styles.warningText, { color: isDarkMode ? '#FDE68A' : '#D97706' }]}>
-                  ⏳ 관리자가 확인하고 있으며, 승인 후 만료일이 표시됩니다.
+                  {t('pendingApprovalMsg')}
                 </Text>
               ) : status === 'rejected' ? (
                 <Text style={[styles.warningText, { color: isDarkMode ? '#FECACA' : '#DC2626' }]}>
-                  ❌ 서류가 반려되었습니다. 다시 올바른 이미지를 업로드해주세요.
+                  {t('rejectedApprovalMsg')}
                 </Text>
               ) : (
                 <>
@@ -196,10 +196,10 @@ const HealthCertScreen = ({ navigation }: any) => {
                   </View>
 
                   {status === 'expired' && (
-                    <Text style={[styles.warningText, { color: isDarkMode ? '#FECACA' : '#DC2626' }]}>⚠️ 보건증 유효기간이 만료되었습니다. 갱신 후 재업로드 해주세요.</Text>
+                    <Text style={[styles.warningText, { color: isDarkMode ? '#FECACA' : '#DC2626' }]}>{t('healthCertExpiredMsg')}</Text>
                   )}
                   {status === 'needsRenewal' && (
-                    <Text style={[styles.warningText, { color: isDarkMode ? '#FDE68A' : '#D97706' }]}>⚠️ 보건증 갱신 기한이 30일 이내로 다가왔습니다.</Text>
+                    <Text style={[styles.warningText, { color: isDarkMode ? '#FDE68A' : '#D97706' }]}>{t('healthCertRenewalNotice')}</Text>
                   )}
                 </>
               )}
@@ -209,7 +209,7 @@ const HealthCertScreen = ({ navigation }: any) => {
 
         {certList.length === 0 && (
           <View style={{ padding: 20, alignItems: 'center' }}>
-            <Text style={{ color: colors.subText, fontSize: 14 }}>등록된 보건증이 없습니다.</Text>
+            <Text style={{ color: colors.subText, fontSize: 14 }}>{t('noHealthCertsRegistered')}</Text>
           </View>
         )}
 
@@ -225,7 +225,7 @@ const HealthCertScreen = ({ navigation }: any) => {
                 {isUploading ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.submitButtonText}>서버로 전송</Text>
+                  <Text style={styles.submitButtonText}>{t('sendToServer')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -234,11 +234,11 @@ const HealthCertScreen = ({ navigation }: any) => {
           <TouchableOpacity style={styles.uploadBox} onPress={handlePickImage}>
             <Text style={styles.uploadIcon}>📸</Text>
             <Text style={styles.uploadTitle}>{t('uploadNew')}</Text>
-            <Text style={styles.uploadDesc}>터치하여 갤러리에서 선택하거나 새로 촬영하세요</Text>
+            <Text style={styles.uploadDesc}>{t('uploadDescription')}</Text>
           </TouchableOpacity>
         )}
 
-        <Text style={styles.helpText}>※ 업로드된 이미지는 AI(OCR)를 통해 갱신일이 자동 인식됩니다.</Text>
+        <Text style={styles.helpText}>{t('ocrDisclaimer')}</Text>
 
       </ScrollView>
     </SafeAreaView>
