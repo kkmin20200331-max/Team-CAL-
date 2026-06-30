@@ -309,5 +309,12 @@ export const createCommentAPI = (data: {
 export const deleteCommentAPI = (id: string, postId: string, userId: string) =>
   API.delete("/board/comment", { params: { id, post_id: postId, user_id: userId } });
 
+// LINE 연동 관련 API
+export const getLineInfoAPI = (userId: string) =>
+  API.get('/user-line', { params: { user_id: userId } });
+
+export const deleteLineInfoAPI = (userId: string) =>
+  API.delete('/user-line', { params: { user_id: userId } });
+
 
 
