@@ -61,6 +61,36 @@ public interface SubstituteMapper {
             @Param("status") String status
     );
 
+    @Update("""
+            UPDATE substitute_application
+            SET status = #{status}
+            WHERE id = #{id}
+            """)
+    void updateApplicationStatus(
+            @Param("id") String id,
+            @Param("status") String status
+    );
+
+    @Update("""
+            UPDATE substitute_application
+            SET status = 'REJECTED'
+            WHERE substitute_post_id = #{post_id}
+            AND id != #{approved_application_id}
+            AND status IN ('PENDING', 'pending')
+            """)
+    void rejectOtherApplications(
+            @Param("post_id") String post_id,
+            @Param("approved_application_id") String approved_application_id
+    );
+
+    @Update("""
+            UPDATE substitute_post
+            SET status = 'CLOSED',
+                closed_at = SYSTIMESTAMP
+            WHERE id = #{post_id}
+            """)
+    void closePost(String post_id);
+
     // 대타 승인 이력 저장
     @Insert("""
             INSERT INTO substitute_history
@@ -141,6 +171,19 @@ public interface SubstituteMapper {
             """)
     SubstituteApplicationVO getApplication(String id);
 
+    @Select("""
+            SELECT *
+            FROM substitute_application
+            WHERE substitute_post_id = #{post_id}
+            AND applicant_user_id = #{applicant_user_id}
+            AND status IN ('PENDING', 'pending')
+            FETCH FIRST 1 ROWS ONLY
+            """)
+    SubstituteApplicationVO getPendingApplicationByPostAndApplicant(
+            @Param("post_id") String post_id,
+            @Param("applicant_user_id") String applicant_user_id
+    );
+
     // 지원 취소
     @Update("""
             UPDATE substitute_application
@@ -206,5 +249,17 @@ public interface SubstituteMapper {
             """)
     SubstitutePostVO getPost(
             String id
+    );
+
+    @Select("""
+                SELECT *
+                FROM SUBSTITUTE_POST
+                WHERE SHIFT_ID = #{shift_id}
+                AND status IN ('OPEN', 'open', 'PENDING', 'pending')
+                ORDER BY created_at DESC
+                FETCH FIRST 1 ROWS ONLY
+            """)
+    SubstitutePostVO getOpenPostByShiftId(
+            String shift_id
     );
 }

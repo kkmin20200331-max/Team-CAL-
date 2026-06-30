@@ -10,6 +10,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { getSubstitutePostsAPI, getMySubstitutePostsAPI, getMySubstituteApplicationsAPI, applyForSubstituteAPI } from '../../../api/auth';
 
+const isOpenSubstitutePost = (status?: string) => {
+  const normalized = (status || '').toLowerCase();
+  return normalized === 'open' || normalized === 'pending';
+};
+
 const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, route: any }) => {
   const { initialTab = 'requests' } = route.params || {};
   const { colors } = useTheme();
@@ -30,7 +35,10 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
     try {
       if (activeTab === 'requests') {
         const res = await getSubstitutePostsAPI(userInfo.store_id);
-        setRequests(res.data.filter((req: any) => req.requester_id !== userInfo.id));
+        setRequests((Array.isArray(res.data) ? res.data : []).filter((req: any) =>
+          isOpenSubstitutePost(req.status)
+          && req.requester_user_id !== userInfo.id
+        ));
       } else {
         const [postsRes, appsRes] = await Promise.all([
           getMySubstitutePostsAPI(userInfo.id),

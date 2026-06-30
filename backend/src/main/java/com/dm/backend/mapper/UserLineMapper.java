@@ -3,6 +3,8 @@ package com.dm.backend.mapper;
 import com.dm.backend.vo.UserLineVO;
 import org.apache.ibatis.annotations.*;
 
+import java.util.List;
+
 @Mapper
 public interface UserLineMapper {
 
@@ -153,14 +155,40 @@ public interface UserLineMapper {
     // (shift → user → line_user_id)
     // =========================
     @Select("""
-        SELECT ul.LINE_USER_ID
-        FROM USER_LINE ul
-        JOIN SHIFT s
-            ON s.USER_ID = ul.USER_ID
+        SELECT DISTINCT ul.LINE_USER_ID
+        FROM SHIFT s
+        JOIN STORE_MEMBER sm
+            ON sm.STORE_ID = s.STORE_ID
+        JOIN USERS u
+            ON u.ID = sm.USER_ID
+        JOIN USER_LINE ul
+            ON ul.USER_ID = sm.USER_ID
         WHERE s.ID = #{shift_id}
+        AND sm.APPROVAL_STATUS = 'APPROVED'
+        AND (
+            sm.MEMBER_ROLE IN ('ADMIN', 'OWNER', 'MANAGER')
+            OR u.ROLE = 'ADMIN'
+        )
         AND ul.FOLLOW_YN = 'Y'
     """)
-    String getOwnerLineUserIdByShiftId(String shift_id);
+    List<String> getOwnerLineUserIdsByShiftId(String shift_id);
+
+    @Select("""
+        SELECT DISTINCT ul.LINE_USER_ID
+        FROM STORE_MEMBER sm
+        JOIN USERS u
+            ON u.ID = sm.USER_ID
+        JOIN USER_LINE ul
+            ON ul.USER_ID = sm.USER_ID
+        WHERE sm.STORE_ID = #{store_id}
+        AND sm.APPROVAL_STATUS = 'APPROVED'
+        AND (
+            sm.MEMBER_ROLE IN ('ADMIN', 'OWNER', 'MANAGER')
+            OR u.ROLE = 'ADMIN'
+        )
+        AND ul.FOLLOW_YN = 'Y'
+    """)
+    List<String> getAdminLineUserIdsByStoreId(String store_id);
 
 
 }

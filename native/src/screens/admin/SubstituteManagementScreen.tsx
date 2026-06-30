@@ -42,6 +42,15 @@ const normalizeShift = (shift: any) => ({
   ),
 });
 
+const isActiveSubstitutePost = (status?: string) => {
+  const normalized = (status || '').toLowerCase();
+  return !['canceled', 'cancelled', 'closed', 'rejected'].includes(normalized);
+};
+
+const isPendingSubstituteApplication = (status?: string) => {
+  return (status || '').toLowerCase() === 'pending';
+};
+
 const SubstituteManagementScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
@@ -85,15 +94,16 @@ const SubstituteManagementScreen = ({ navigation }: { navigation: any }) => {
       const shifts = (Array.isArray(shiftResponse.data) ? shiftResponse.data : []).map(normalizeShift);
       const shiftMap = new Map(shifts.map((shift: any) => [shift.id, shift]));
 
-      const posts = Array.isArray(postResponse.data) ? postResponse.data : [];
-      const items = await Promise.all(
-        posts
-          .filter((post: any) => post.status !== 'CANCELED' && post.status !== 'CLOSED')
+        const posts = Array.isArray(postResponse.data) ? postResponse.data : [];
+        const items = await Promise.all(
+          posts
+          .filter((post: any) => isActiveSubstitutePost(post.status))
           .map(async (post: any) => {
             const appResponse = await getSubstituteApplicationsAPI(post.id);
             return {
               post,
-              applications: Array.isArray(appResponse.data) ? appResponse.data : [],
+              applications: (Array.isArray(appResponse.data) ? appResponse.data : [])
+                .filter((app: any) => isPendingSubstituteApplication(app.status)),
               shift: shiftMap.get(post.shift_id),
             };
           }),

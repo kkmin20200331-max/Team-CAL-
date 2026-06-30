@@ -7,6 +7,9 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+import java.util.Map;
+
 @Service
 public class LineService {
 
@@ -31,24 +34,18 @@ public class LineService {
                 MediaType.APPLICATION_JSON
         );
 
-        String body =
-                """
-                {
-                  "to":"%s",
-                  "messages":[
-                    {
-                      "type":"text",
-                      "text":"%s"
-                    }
-                  ]
-                }
-                """
-                        .formatted(
-                                lineUserId,
-                                message
-                        );
+        Map<String, Object> body =
+                Map.of(
+                        "to", lineUserId,
+                        "messages", List.of(
+                                Map.of(
+                                        "type", "text",
+                                        "text", message
+                                )
+                        )
+                );
 
-        HttpEntity<String> entity =
+        HttpEntity<Map<String, Object>> entity =
                 new HttpEntity<>(
                         body,
                         headers

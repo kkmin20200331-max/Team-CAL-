@@ -5,6 +5,8 @@ import com.dm.backend.vo.UserLineVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserLineService {
 
@@ -140,12 +142,21 @@ public class UserLineService {
     // =========================
     // LINE - shift_id → 관리자 LINE USER_ID
     // =========================
-    public String getOwnerLineUserIdByShiftId(String shift_id) {
+    public List<String> getOwnerLineUserIdsByShiftId(String shift_id) {
 
         try {
-            return userLineMapper.getOwnerLineUserIdByShiftId(shift_id);
+            return userLineMapper.getOwnerLineUserIdsByShiftId(shift_id);
         } catch (Exception e) {
-            return null;
+            return List.of();
+        }
+    }
+
+    public List<String> getAdminLineUserIdsByStoreId(String store_id) {
+
+        try {
+            return userLineMapper.getAdminLineUserIdsByStoreId(store_id);
+        } catch (Exception e) {
+            return List.of();
         }
     }
 }
