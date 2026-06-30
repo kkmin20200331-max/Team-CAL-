@@ -1,3 +1,5 @@
+import { useLanguage } from "../../i18n/useLanguage";
+import { translations } from "../../i18n/translations";
 ﻿import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from "react";
@@ -61,14 +63,40 @@ const LEVEL_BG: Record<string, string> = {
   CLOSER: '#e0e7ff',
   MANAGER: '#fef3c7',
 };
+const LEVEL_BG_DARK: Record<string, string> = {
+  NEWBIE: 'rgba(107,114,128,0.15)',
+  REGULAR: 'rgba(24,160,34,0.15)',
+  CLOSER: 'rgba(99,102,241,0.15)',
+  MANAGER: 'rgba(234,179,8,0.15)',
+};
 const LEVEL_TEXT: Record<string, string> = {
   NEWBIE: '#6b7280',
   REGULAR: DARK_GREEN,
   CLOSER: '#4f46e5',
   MANAGER: '#92400e',
 };
+const LEVEL_TEXT_DARK: Record<string, string> = {
+  NEWBIE: '#9ca3af',
+  REGULAR: '#4cd964',
+  CLOSER: '#818cf8',
+  MANAGER: '#facc15',
+};
+const LEVEL_BORDER_DARK: Record<string, string> = {
+  NEWBIE: 'rgba(107,114,128,0.3)',
+  REGULAR: 'rgba(24,160,34,0.3)',
+  CLOSER: 'rgba(99,102,241,0.3)',
+  MANAGER: 'rgba(234,179,8,0.3)',
+};
 
 export default function EmployeeManagement() {
+  const language = useLanguage();
+  const t = translations.employeeManagement[language];
+  const LEVEL_LABEL_I18N: Record<string, string> = {
+    NEWBIE: t.levelNewbie,
+    REGULAR: t.levelRegular,
+    CLOSER: t.levelCloser,
+    MANAGER: t.levelManager,
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const { branchId } = useParams();
@@ -86,15 +114,15 @@ export default function EmployeeManagement() {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: storeId ? `/admin/schedule/monthly/${storeId}` : '/admin/branch-selection' },
-    { icon: ClipboardCheck, label: '근태 관리', path: storeId ? `/admin/attendance/${storeId}` : '/admin/branch-selection' },
-    { icon: UserPlus, label: '대타 모집', path: storeId ? `/admin/substitute/${storeId}` : '/admin/branch-selection' },
-    { icon: Users, label: '직원 관리', path: storeId ? `/admin/employees/${storeId}` : '/admin/branch-selection' },
-    { icon: Wallet, label: '급여 관리', path: storeId ? `/admin/payroll/${storeId}` : '/admin/branch-selection' },
-    { icon: FileText, label: '문서 관리', path: storeId ? `/admin/documents/${storeId}` : '/admin/branch-selection' },
-    { icon: MessageSquare, label: '게시판', path: storeId ? `/admin/board/${storeId}` : '/admin/branch-selection' },
-    { icon: BarChart3, label: 'AI 고객 분석', path: storeId ? `/admin/analytics/${storeId}` : '/admin/branch-selection' },
-    { icon: Video, label: 'CCTV 분석', path: storeId ? `/admin/cctv/${storeId}` : '/admin/branch-selection' },
+    { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: storeId ? `/admin/schedule/monthly/${storeId}` : '/admin/branch-selection' },
+    { icon: ClipboardCheck, label: translations.adminDashboard[language].menuItems.attendanceManagement, path: storeId ? `/admin/attendance/${storeId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: translations.adminDashboard[language].menuItems.substituteRecruitment, path: storeId ? `/admin/substitute/${storeId}` : '/admin/branch-selection' },
+    { icon: Users, label: translations.adminDashboard[language].menuItems.employeeManagement, path: storeId ? `/admin/employees/${storeId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: translations.adminDashboard[language].menuItems.payrollManagement, path: storeId ? `/admin/payroll/${storeId}` : '/admin/branch-selection' },
+    { icon: FileText, label: translations.adminDashboard[language].menuItems.documentManagement, path: storeId ? `/admin/documents/${storeId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: translations.adminDashboard[language].menuItems.board, path: storeId ? `/admin/board/${storeId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: translations.adminDashboard[language].menuItems.aiAnalytics, path: storeId ? `/admin/analytics/${storeId}` : '/admin/branch-selection' },
+    { icon: Video, label: translations.adminDashboard[language].menuItems.cctvAnalysis, path: storeId ? `/admin/cctv/${storeId}` : '/admin/branch-selection' },
   ];
 
   useEffect(() => {
@@ -175,21 +203,21 @@ export default function EmployeeManagement() {
       }));
       setEditTarget(null);
     } catch {
-      alert("저장 중 오류가 발생했습니다.");
+      alert(t.errSave);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (emp: UserVo) => {
-    if (!confirm(`${emp.name}님을 매장에서 제거하시겠습니까?`)) return;
+    if (!confirm(t.deleteConfirm(emp.name))) return;
     try {
       await axiosInstance.delete("/store_member", {
         params: { store_id: storeId, user_id: emp.id },
       });
       setEmployees((prev) => prev.filter((e) => e.id !== emp.id));
     } catch {
-      alert("삭제 중 오류가 발생했습니다.");
+      alert(t.errDelete);
     }
   };
 
@@ -207,51 +235,51 @@ export default function EmployeeManagement() {
     (e) => !memberMap[e.id]?.pay_amount,
   ).length;
 
-  const pageBg = isDark ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const contentBg = isDark ? '#3c3c46' : '#fff';
-  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
-  const cardBg = isDark ? '#3c3c46' : 'rgba(230,245,200,0.35)';
+  const pageBg = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
+  const contentBg = isDark ? '#141414' : '#fff';
+  const mainBg = isDark ? '#0f0f0f' : 'rgba(255,255,255,0.97)';
+  const cardBg = isDark ? '#141414' : 'rgba(230,245,200,0.35)';
   const textColor = isDark ? '#fff' : '#111';
-  const subTextColor = isDark ? '#aaa' : '#555';
-  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
+  const subTextColor = isDark ? '#c8c8c8' : '#555';
+  const sidebarBg = isDark ? 'rgba(8,8,8,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#1a1a1a' : BORDER_GREEN;
 
   const getPayDisplay = (info?: StoreMemberVo) => {
-    if (!info?.pay_amount) return <span style={{ color: '#f59e0b', fontSize: 12 }}>미설정</span>;
+    if (!info?.pay_amount) return <span style={{ color: '#f59e0b', fontSize: 13, fontWeight: 600 }}>{t.payNotSetLabel}</span>;
     return info.pay_type === "HOURLY"
-      ? <span style={{ color: DARK_GREEN, fontSize: 12 }}>{info.pay_amount.toLocaleString()}원/시</span>
-      : <span style={{ color: '#7c3aed', fontSize: 12 }}>{(info.pay_amount / 10000).toFixed(1)}만원/월</span>;
+      ? <span style={{ color: DARK_GREEN, fontSize: 13, fontWeight: 600 }}>{t.hourlyPerHour(info.pay_amount)}</span>
+      : <span style={{ color: '#7c3aed', fontSize: 13, fontWeight: 600 }}>{t.monthlyPerMonth(info.pay_amount)}</span>;
   };
 
   const getStatusBadge = (status?: string) => {
     if (status === "APPROVED") return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: GREEN, background: LIGHT_GREEN, padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>
-        <CheckCircle size={11} />승인됨
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: isDark ? '#4cd964' : GREEN, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
+        <CheckCircle size={12} />{t.statusApproved}
       </span>
     );
     if (status === "PENDING") return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#92400e', background: '#fef3c7', padding: '2px 10px', borderRadius: 20, fontWeight: 600 }}>
-        <Clock size={11} />대기중
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#92400e', background: '#fef3c7', padding: '4px 12px', borderRadius: 20, fontWeight: 600 }}>
+        <Clock size={12} />{t.statusPending}
       </span>
     );
-    return <span style={{ fontSize: 12, color: subTextColor }}>-</span>;
+    return <span style={{ fontSize: 13, color: subTextColor }}>-</span>;
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
         {/* 사이드바 */}
         <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: sidebarBg, borderRadius: 20, border: `1px solid ${sidebarBorder}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
           <div style={{ marginBottom: 16, position: 'relative' }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#1a1a1a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#141414' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
                 {stores.map(s => (
-                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#50505a' : LIGHT_GREEN}` }}>
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#1a1a1a' : LIGHT_GREEN}` }}>
                     {s.name}
                   </div>
                 ))}
@@ -274,23 +302,23 @@ export default function EmployeeManagement() {
         </div>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)', minHeight: 'calc(100vh - 120px)' }}>
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-              {currentBranch} <ChevronRight size={12} /> 직원 관리
+            <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+              {currentBranch} <ChevronRight size={12} /> {t.breadcrumb}
             </div>
-            <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Users size={26} />직원 현황 및 승인 관리
+            <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Users size={26} />{t.pageTitle}
             </h1>
-            <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>소속 직원 목록과 가입 승인을 관리합니다.</p>
+            <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.pageSubtitle}</p>
           </div>
         {/* 통계 */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
           {[
-            { label: '전체 직원', value: `${employees.length}명`, color: textColor, icon: <Users size={22} color={GREEN} /> },
-            { label: '재직중', value: `${approvedCount}명`, color: GREEN, icon: <UserCheck size={22} color={GREEN} /> },
-            { label: '승인 대기', value: `${pendingCount}명`, color: pendingCount > 0 ? '#f59e0b' : subTextColor, icon: <Clock size={22} color={pendingCount > 0 ? '#f59e0b' : subTextColor} /> },
-            { label: '급여 미설정', value: `${unsetCount}명`, color: unsetCount > 0 ? '#f59e0b' : GREEN, icon: <DollarSign size={22} color={unsetCount > 0 ? '#f59e0b' : GREEN} /> },
+            { label: t.totalEmployees, value: t.count(employees.length), color: textColor, icon: <Users size={22} color={GREEN} /> },
+            { label: t.active, value: t.count(approvedCount), color: GREEN, icon: <UserCheck size={22} color={GREEN} /> },
+            { label: t.pendingApproval, value: t.count(pendingCount), color: pendingCount > 0 ? '#f59e0b' : subTextColor, icon: <Clock size={22} color={pendingCount > 0 ? '#f59e0b' : subTextColor} /> },
+            { label: t.payNotSet, value: t.count(unsetCount), color: unsetCount > 0 ? '#f59e0b' : GREEN, icon: <DollarSign size={22} color={unsetCount > 0 ? '#f59e0b' : GREEN} /> },
           ].map(({ label, value, color, icon }) => (
             <div key={label} style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 20, padding: '16px 20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
@@ -307,27 +335,38 @@ export default function EmployeeManagement() {
           <Search size={15} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: subTextColor }} />
           <input
             type="text"
-            placeholder="이름 또는 전화번호로 검색..."
+            placeholder={t.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#50505a' : 'rgba(255,255,255,0.7)', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', paddingLeft: 44, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, background: isDark ? '#1a1a1a' : 'rgba(255,255,255,0.7)', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
 
         {/* 테이블 */}
-        <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER_GREEN}`, fontSize: 15, fontWeight: 700, color: textColor }}>직원 목록 ({filtered.length}명)</div>
+        <div style={{ background: isDark ? '#141414' : 'rgba(230,245,200,0.35)', border: `1px solid ${isDark ? '#1e2e1e' : BORDER_GREEN}`, borderRadius: 20, boxShadow: '0px 4px 16px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+          <div style={{ padding: '18px 24px', borderBottom: `1px solid ${isDark ? '#1e2e1e' : BORDER_GREEN}`, fontSize: 15, fontWeight: 700, color: textColor, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Users size={16} color={GREEN} />
+            {t.staffList(filtered.length)}
+          </div>
           {loading ? (
-            <p style={{ textAlign: 'center', padding: '40px 0', color: subTextColor }}>불러오는 중...</p>
+            <p style={{ textAlign: 'center', padding: '48px 0', color: subTextColor, fontSize: 14 }}>{t.loading}</p>
           ) : filtered.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '40px 0', color: subTextColor }}>{employees.length === 0 ? "등록된 직원이 없습니다" : "검색 결과가 없습니다"}</p>
+            <p style={{ textAlign: 'center', padding: '48px 0', color: subTextColor, fontSize: 14 }}>{employees.length === 0 ? t.noEmployees : t.noSearchResult}</p>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <colgroup>
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '16%' }} />
+                  <col style={{ width: '12%' }} />
+                </colgroup>
                 <thead>
-                  <tr style={{ background: LIGHT_GREEN }}>
-                    {['직원', '연락처', '레벨', '급여', '상태', '작업'].map((h, i) => (
-                      <th key={h} style={{ padding: '12px 16px', textAlign: i === 5 ? 'right' : 'left', fontSize: 12, fontWeight: 700, color: DARK_GREEN }}>{h}</th>
+                  <tr style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
+                    {[t.tableEmployee, t.tableContact, t.tableLevel, t.tablePay, t.tableStatus, t.tableActions].map((h, i) => (
+                      <th key={h} style={{ padding: i === 0 ? '13px 20px 13px 52px' : '13px 20px', textAlign: i === 0 ? 'left' : 'center', fontSize: 13, fontWeight: 700, color: DARK_GREEN, letterSpacing: '0.02em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -335,33 +374,33 @@ export default function EmployeeManagement() {
                   {filtered.map((emp) => {
                     const info = memberMap[emp.id];
                     return (
-                      <tr key={emp.id} style={{ borderBottom: `1px solid ${isDark ? '#50505a' : '#e8f5e9'}` }}>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{emp.name[0]}</div>
+                      <tr key={emp.id} style={{ borderBottom: `1px solid ${isDark ? '#1e2e1e' : 'rgba(0,162,0,0.1)'}` }}>
+                        <td style={{ padding: '14px 20px 14px 52px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 38, height: 38, borderRadius: '50%', background: `linear-gradient(135deg, ${GREEN}, ${DARK_GREEN})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15, flexShrink: 0, boxShadow: '0 2px 6px rgba(7,121,15,0.25)' }}>{emp.name[0]}</div>
                             <div>
-                              <p style={{ fontWeight: 600, color: textColor }}>{emp.name}</p>
-                              <p style={{ fontSize: 11, color: subTextColor }}>{emp.username}</p>
+                              <p style={{ fontWeight: 700, color: textColor, fontSize: 14, margin: 0 }}>{emp.name}</p>
+                              <p style={{ fontSize: 12, color: subTextColor, margin: '2px 0 0' }}>{emp.username}</p>
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '12px 16px', color: subTextColor }}>{emp.phone}</td>
-                        <td style={{ padding: '12px 16px' }}>
+                        <td style={{ padding: '14px 20px', color: subTextColor, fontSize: 14, textAlign: 'center' }}>{emp.phone}</td>
+                        <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                           {info?.user_level ? (
-                            <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 600, background: LEVEL_BG[info.user_level] || '#f3f4f6', color: LEVEL_TEXT[info.user_level] || '#6b7280' }}>
-                              {LEVEL_LABEL[info.user_level] || info.user_level}
+                            <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, fontWeight: 700, background: isDark ? (LEVEL_BG_DARK[info.user_level] || 'rgba(107,114,128,0.15)') : (LEVEL_BG[info.user_level] || '#f3f4f6'), color: isDark ? (LEVEL_TEXT_DARK[info.user_level] || '#9ca3af') : (LEVEL_TEXT[info.user_level] || '#6b7280'), border: `1px solid ${isDark ? (LEVEL_BORDER_DARK[info.user_level] || 'rgba(107,114,128,0.3)') : 'transparent'}` }}>
+                              {LEVEL_LABEL_I18N[info.user_level] || info.user_level}
                             </span>
-                          ) : <span style={{ color: subTextColor, fontSize: 12 }}>-</span>}
+                          ) : <span style={{ color: subTextColor, fontSize: 13 }}>-</span>}
                         </td>
-                        <td style={{ padding: '12px 16px' }}>{getPayDisplay(info)}</td>
-                        <td style={{ padding: '12px 16px' }}>{getStatusBadge(info?.approval_status)}</td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                            <button onClick={() => openEdit(emp)} title="급여 설정" style={{ background: LIGHT_GREEN, border: 'none', borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}>
-                              <Edit2 size={13} />
+                        <td style={{ padding: '14px 20px', textAlign: 'center' }}>{getPayDisplay(info)}</td>
+                        <td style={{ padding: '14px 20px', textAlign: 'center' }}>{getStatusBadge(info?.approval_status)}</td>
+                        <td style={{ padding: '14px 20px' }}>
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                            <button onClick={() => openEdit(emp)} title={t.payDialogTitle(emp.name || '')} style={{ background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDark ? '#4cd964' : DARK_GREEN }}>
+                              <Edit2 size={14} />
                             </button>
-                            <button onClick={() => handleDelete(emp)} title="직원 제거" style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#ef4444' }}>
-                              <Trash2 size={13} />
+                            <button onClick={() => handleDelete(emp)} title={t.tableActions} style={{ background: isDark ? 'rgba(239,68,68,0.15)' : '#fee2e2', border: `1px solid ${isDark ? 'rgba(239,68,68,0.3)' : 'transparent'}`, borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isDark ? '#f87171' : '#ef4444' }}>
+                              <Trash2 size={14} />
                             </button>
                           </div>
                         </td>
@@ -380,31 +419,31 @@ export default function EmployeeManagement() {
       {!!editTarget && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setEditTarget(null)} />
-          <div style={{ position: 'relative', background: isDark ? '#3c3c46' : '#fff', borderRadius: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', width: '100%', maxWidth: 420, margin: '0 16px', padding: 28 }}>
+          <div style={{ position: 'relative', background: isDark ? '#141414' : '#fff', borderRadius: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.18)', width: '100%', maxWidth: 420, margin: '0 16px', padding: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, color: textColor }}>{editTarget?.name}님 급여 설정</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: textColor }}>{t.payDialogTitle(editTarget?.name || '')}</h2>
               <button onClick={() => setEditTarget(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subTextColor }}><X size={20} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 8 }}>급여 유형</label>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 8 }}>{t.payType}</label>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={() => setPayType("HOURLY")} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `2px solid ${payType === 'HOURLY' ? DARK_GREEN : '#d1d5db'}`, background: payType === 'HOURLY' ? LIGHT_GREEN : 'transparent', color: payType === 'HOURLY' ? DARK_GREEN : subTextColor, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>시급</button>
-                  <button onClick={() => setPayType("MONTHLY")} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `2px solid ${payType === 'MONTHLY' ? '#7c3aed' : '#d1d5db'}`, background: payType === 'MONTHLY' ? '#ede9fe' : 'transparent', color: payType === 'MONTHLY' ? '#7c3aed' : subTextColor, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>월급</button>
+                  <button onClick={() => setPayType("HOURLY")} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `2px solid ${payType === 'HOURLY' ? DARK_GREEN : '#d1d5db'}`, background: payType === 'HOURLY' ? LIGHT_GREEN : 'transparent', color: payType === 'HOURLY' ? DARK_GREEN : subTextColor, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t.hourly}</button>
+                  <button onClick={() => setPayType("MONTHLY")} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `2px solid ${payType === 'MONTHLY' ? '#7c3aed' : '#d1d5db'}`, background: payType === 'MONTHLY' ? '#ede9fe' : 'transparent', color: payType === 'MONTHLY' ? '#7c3aed' : subTextColor, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t.monthly}</button>
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 8 }}>{payType === "HOURLY" ? "시급 (원)" : "월급 (원)"}</label>
-                <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder={payType === "HOURLY" ? "예: 10030" : "예: 2500000"} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, background: isDark ? '#50505a' : '#fff', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 8 }}>{payType === "HOURLY" ? t.hourlyAmount : t.monthlyAmount}</label>
+                <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} placeholder={payType === "HOURLY" ? t.hourlyPlaceholder : t.monthlyPlaceholder} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${BORDER_GREEN}`, borderRadius: 10, background: isDark ? '#1a1a1a' : '#fff', color: textColor, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                 {payAmount && Number(payAmount) > 0 && (
-                  <p style={{ fontSize: 12, color: subTextColor, marginTop: 6 }}>{payType === "HOURLY" ? `시간당 ${Number(payAmount).toLocaleString()}원` : `월 ${(Number(payAmount) / 10000).toFixed(1)}만원`}</p>
+                  <p style={{ fontSize: 12, color: subTextColor, marginTop: 6 }}>{payType === "HOURLY" ? t.hourlyPerHour(Number(payAmount)) : t.monthlyPerMonth(Number(payAmount))}</p>
                 )}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-              <button onClick={() => setEditTarget(null)} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>취소</button>
+              <button onClick={() => setEditTarget(null)} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t.cancelBtn}</button>
               <button onClick={handleSavePay} disabled={!payAmount || Number(payAmount) <= 0 || saving} style={{ flex: 1, padding: '12px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: (!payAmount || Number(payAmount) <= 0 || saving) ? 0.5 : 1 }}>
-                {saving ? "저장 중..." : "저장"}
+                {saving ? t.saving : t.saveBtn}
               </button>
             </div>
           </div>

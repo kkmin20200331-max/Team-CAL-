@@ -100,15 +100,15 @@ export default function MonthlySchedule() {
       : sessionStorage.getItem("store_id") || stores[0]?.id || "";
 
   const menuItems = [
-    { icon: Calendar, label: '근무표 관리', path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: ClipboardCheck, label: '근태 관리', path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: UserPlus, label: '대타 모집', path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: Users, label: '직원 관리', path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: Wallet, label: '급여 관리', path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: FileText, label: '문서 관리', path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: MessageSquare, label: '게시판', path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: BarChart3, label: 'AI 고객 분석', path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
-    { icon: Video, label: 'CCTV 분석', path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: ClipboardCheck, label: translations.adminDashboard[language].menuItems.attendanceManagement, path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: UserPlus, label: translations.adminDashboard[language].menuItems.substituteRecruitment, path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Users, label: translations.adminDashboard[language].menuItems.employeeManagement, path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Wallet, label: translations.adminDashboard[language].menuItems.payrollManagement, path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: FileText, label: translations.adminDashboard[language].menuItems.documentManagement, path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: MessageSquare, label: translations.adminDashboard[language].menuItems.board, path: selectedBranchId ? `/admin/board/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: BarChart3, label: translations.adminDashboard[language].menuItems.aiAnalytics, path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : '/admin/branch-selection' },
+    { icon: Video, label: translations.adminDashboard[language].menuItems.cctvAnalysis, path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : '/admin/branch-selection' },
   ];
 
   useEffect(() => {
@@ -205,7 +205,7 @@ export default function MonthlySchedule() {
       setAiPreview(res.data);
     } catch (err) {
       console.error("AI 스케줄 생성 실패:", err);
-      alert("AI 스케줄 생성 중 오류가 발생했습니다.");
+      alert(t.aiError);
     } finally {
       setAiLoading(false);
     }
@@ -225,10 +225,10 @@ export default function MonthlySchedule() {
       });
       setAiPreview(null);
       await fetchShifts();
-      alert("AI 스케줄이 근무표에 반영되었습니다.");
+      alert(t.aiApplySuccess);
     } catch (err) {
       console.error("AI 스케줄 반영 실패:", err);
-      alert("AI 스케줄 반영 중 오류가 발생했습니다. 기존 근무와 중복된 항목이 있는지 확인해주세요.");
+      alert(t.aiApplyError);
     } finally {
       setAiLoading(false);
     }
@@ -238,32 +238,32 @@ export default function MonthlySchedule() {
   const today = new Date();
 
   const pageBg = isDark
-    ? 'linear-gradient(180deg, #1a3020 -12.05%, #2a3a28 17.27%, #30303a 87.95%)'
+    ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
     : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
-  const contentBg = isDark ? '#3c3c46' : '#fff';
-  const mainBg = isDark ? '#35353f' : 'rgba(255,255,255,0.97)';
-  const cardBg = isDark ? '#3c3c46' : 'rgba(255,255,255,0.5)';
+  const contentBg = isDark ? '#141414' : '#fff';
+  const mainBg = isDark ? '#0f0f0f' : 'rgba(255,255,255,0.97)';
+  const cardBg = isDark ? '#141414' : 'rgba(255,255,255,0.5)';
   const textColor = isDark ? '#fff' : '#111';
-  const subTextColor = isDark ? '#aaa' : '#555';
-  const cellBorder = isDark ? '#50505a' : '#d4edda';
-  const sidebarBg = isDark ? 'rgba(52,52,60,0.97)' : 'rgba(255,255,255,0.85)';
-  const sidebarBorder = isDark ? '#50505a' : BORDER_GREEN;
+  const subTextColor = isDark ? '#c8c8c8' : '#555';
+  const cellBorder = isDark ? '#1a1a1a' : '#d4edda';
+  const sidebarBg = isDark ? 'rgba(8,8,8,0.97)' : 'rgba(255,255,255,0.85)';
+  const sidebarBorder = isDark ? '#1a1a1a' : BORDER_GREEN;
 
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
         {/* 사이드바 */}
         <div style={{ width: 220, flexShrink: 0, position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto', background: sidebarBg, borderRadius: 20, border: `1px solid ${sidebarBorder}`, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)' }}>
           <div style={{ marginBottom: 16, position: 'relative' }}>
-            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#50505a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#1a1a1a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? '▲' : '▼'}</span>
             </button>
             {branchDropdownOpen && (
-              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#3c3c46' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+              <div style={{ position: 'absolute', top: '110%', left: 0, right: 0, background: isDark ? '#141414' : '#fff', border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, zIndex: 99, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
                 {stores.map(s => (
-                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#50505a' : LIGHT_GREEN}` }}>
+                  <div key={s.id} onClick={() => { sessionStorage.setItem('store_id', s.id); sessionStorage.setItem('store_name', s.name); navigate(`/admin/dashboard/${s.id}`); setBranchDropdownOpen(false); }} style={{ padding: '10px 14px', fontSize: 13, cursor: 'pointer', color: textColor, borderBottom: `1px solid ${isDark ? '#1a1a1a' : LIGHT_GREEN}` }}>
                     {s.name}
                   </div>
                 ))}
@@ -286,16 +286,16 @@ export default function MonthlySchedule() {
         </div>
 
         {/* 메인 카드 */}
-        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)' }}>
+        <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)', minHeight: 'calc(100vh - 120px)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
-              <div style={{ fontSize: 13, color: '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                {currentBranch} <ChevronRight size={12} /> 근무표 관리
+              <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                {currentBranch} <ChevronRight size={12} /> {t.breadcrumb}
               </div>
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Calendar size={26} />월별 근무 일정 관리
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Calendar size={26} />{t.pageTitle}
               </h1>
-              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>한 달 단위 근무 스케줄을 관리합니다.</p>
+              <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.pageSubtitle}</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
@@ -303,7 +303,7 @@ export default function MonthlySchedule() {
                 disabled={aiLoading}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, padding: '8px 18px', fontSize: 14, fontWeight: 700, color: '#fff', cursor: aiLoading ? 'default' : 'pointer', opacity: aiLoading ? 0.65 : 1 }}
               >
-                <Sparkles size={16} />{aiLoading ? '생성 중...' : 'AI 스케줄 생성'}
+                <Sparkles size={16} />{aiLoading ? t.aiLoading : t.aiButton}
               </button>
               <button onClick={() => setCurrentMonth(prev => addMonths(prev, -1))} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: DARK_GREEN }}><ChevronLeft size={16} /></button>
               <button onClick={() => setCurrentMonth(new Date())} style={{ background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, padding: '6px 16px', fontSize: 14, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.today}</button>
@@ -337,9 +337,9 @@ export default function MonthlySchedule() {
 
         <div style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', overflow: 'hidden' }}>
           {/* 요일 헤더 */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: LIGHT_GREEN }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: isDark ? '#1a1a1a' : LIGHT_GREEN }}>
             {DAY_LABELS.map((day, i) => (
-              <div key={day} style={{ textAlign: 'center', padding: '10px 0', fontSize: 13, fontWeight: 700, color: i === 5 ? '#2563eb' : i === 6 ? '#ef4444' : DARK_GREEN }}>
+              <div key={day} style={{ textAlign: 'center', padding: '10px 0', fontSize: 13, fontWeight: 700, color: i === 5 ? '#2563eb' : i === 6 ? '#ef4444' : (isDark ? '#4cd964' : DARK_GREEN) }}>
                 {day}
               </div>
             ))}
@@ -417,14 +417,14 @@ export default function MonthlySchedule() {
       {aiPreview && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => !aiLoading && setAiPreview(null)} />
-          <div style={{ position: 'relative', width: '100%', maxWidth: 620, margin: '0 16px', background: isDark ? '#3c3c46' : '#fff', borderRadius: 24, border: `1px solid ${BORDER_GREEN}`, boxShadow: '0 12px 40px rgba(0,0,0,0.2)', padding: 28 }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: 620, margin: '0 16px', background: isDark ? '#141414' : '#fff', borderRadius: 24, border: `1px solid ${BORDER_GREEN}`, boxShadow: '0 12px 40px rgba(0,0,0,0.2)', padding: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 18, background: LIGHT_GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Sparkles size={18} color={DARK_GREEN} />
+                <div style={{ width: 36, height: 36, borderRadius: 18, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Sparkles size={18} color={isDark ? '#4cd964' : DARK_GREEN} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: 20, fontWeight: 800, color: textColor }}>AI 스케줄 생성 결과</h2>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: textColor }}>{t.aiModalTitle}</h2>
                   <p style={{ fontSize: 13, color: subTextColor, marginTop: 2 }}>{format(currentMonth, "yyyy년 M월", { locale: ko })}</p>
                 </div>
               </div>
@@ -435,31 +435,31 @@ export default function MonthlySchedule() {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 18 }}>
               {[
-                { label: '생성 근무', value: aiPreview.total_count },
-                { label: '마감 배치', value: aiPreview.closer_count },
-                { label: '신입 보조', value: aiPreview.newbie_solo_avoided_count },
-                { label: '중복 제외', value: aiPreview.conflict_excluded_count },
+                { label: t.statCreated, value: aiPreview.total_count },
+                { label: t.statCloser, value: aiPreview.closer_count },
+                { label: t.statNewbie, value: aiPreview.newbie_solo_avoided_count },
+                { label: t.statConflict, value: aiPreview.conflict_excluded_count },
               ].map((item) => (
-                <div key={item.label} style={{ background: isDark ? '#50505a' : '#f8fff4', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '12px 10px', textAlign: 'center' }}>
+                <div key={item.label} style={{ background: isDark ? '#1a1a1a' : '#f8fff4', border: `1px solid ${BORDER_GREEN}`, borderRadius: 14, padding: '12px 10px', textAlign: 'center' }}>
                   <p style={{ fontSize: 12, color: subTextColor, marginBottom: 4 }}>{item.label}</p>
                   <p style={{ fontSize: 24, fontWeight: 800, color: DARK_GREEN }}>{item.value}</p>
                 </div>
               ))}
             </div>
 
-            <div style={{ maxHeight: 260, overflowY: 'auto', border: `1px solid ${isDark ? '#50505a' : '#e8f5e9'}`, borderRadius: 16 }}>
+            <div style={{ maxHeight: 260, overflowY: 'auto', border: `1px solid ${isDark ? '#1a1a1a' : '#e8f5e9'}`, borderRadius: 16 }}>
               {aiPreview.shifts.length === 0 ? (
-                <p style={{ textAlign: 'center', padding: '34px 0', color: subTextColor }}>생성된 근무가 없습니다.</p>
+                <p style={{ textAlign: 'center', padding: '34px 0', color: subTextColor }}>{t.noShiftsGenerated}</p>
               ) : (
                 aiPreview.shifts.slice(0, 20).map((shift) => (
-                  <div key={shift.id} style={{ padding: '12px 14px', borderBottom: `1px solid ${isDark ? '#50505a' : '#e8f5e9'}` }}>
+                  <div key={shift.id} style={{ padding: '12px 14px', borderBottom: `1px solid ${isDark ? '#1a1a1a' : '#e8f5e9'}` }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr 120px', gap: 12, alignItems: 'center' }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>{getWorkDateStr(shift)}</span>
                       <span style={{ fontSize: 13, fontWeight: 600, color: textColor }}>{getEmployeeName(shift.user_id)}</span>
                       <span style={{ fontSize: 13, color: subTextColor, textAlign: 'right' }}>{formatShiftTime(shift.start_at)} - {formatShiftTime(shift.end_at)}</span>
                     </div>
                     {getShiftReason(shift.id) && (
-                      <p style={{ marginTop: 8, padding: '8px 10px', borderRadius: 10, background: isDark ? '#3c3c46' : '#f1fae8', fontSize: 12, lineHeight: 1.5, color: subTextColor }}>
+                      <p style={{ marginTop: 8, padding: '8px 10px', borderRadius: 10, background: isDark ? '#141414' : '#f1fae8', fontSize: 12, lineHeight: 1.5, color: subTextColor }}>
                         {getShiftReason(shift.id)}
                       </p>
                     )}
@@ -467,16 +467,16 @@ export default function MonthlySchedule() {
                 ))
               )}
               {aiPreview.shifts.length > 20 && (
-                <p style={{ padding: '10px 14px', fontSize: 12, color: subTextColor, textAlign: 'center' }}>외 {aiPreview.shifts.length - 20}건 더 생성됨</p>
+                <p style={{ padding: '10px 14px', fontSize: 12, color: subTextColor, textAlign: 'center' }}>{t.moreShifts(aiPreview.shifts.length - 20)}</p>
               )}
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
               <button onClick={handleAiPreview} disabled={aiLoading} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 700, cursor: aiLoading ? 'default' : 'pointer', opacity: aiLoading ? 0.65 : 1 }}>
-                다시 생성
+                {t.regenerate}
               </button>
               <button onClick={handleAiApply} disabled={aiLoading || aiPreview.shifts.length === 0} style={{ flex: 1, padding: '12px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 700, cursor: aiLoading || aiPreview.shifts.length === 0 ? 'default' : 'pointer', opacity: aiLoading || aiPreview.shifts.length === 0 ? 0.65 : 1 }}>
-                {aiLoading ? '처리 중...' : '근무표에 반영'}
+                {aiLoading ? t.aiProcessing : t.applyToSchedule}
               </button>
             </div>
           </div>

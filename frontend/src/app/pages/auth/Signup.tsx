@@ -19,7 +19,7 @@ const GREEN = "#00A200";
 const INPUT_BG = "#F2F5EB";
 const LABEL_COLOR = "#606060";
 const PLACEHOLDER_COLOR = "#B7B4B4";
-const FONT = "'Bookk Gothic', 'Noto Sans KR', sans-serif";
+const FONT = "'Noto Sans JP', 'Noto Sans KR', sans-serif";
 const FONT_CAL = "'Cal Sans', 'Noto Sans KR', sans-serif";
 
 const INPUT_SHADOW = "inset -2px -1px 4px rgba(126, 147, 126, 0.15)";
