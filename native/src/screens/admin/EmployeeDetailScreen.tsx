@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { approveStoreMemberAPI, rejectStoreMemberAPI } from '../../../api/auth';
+import { approveStoreMemberAPI, rejectStoreMemberAPI, getAttendanceRecordsAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { format } from 'date-fns';
 
 const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: any }) => {
   const { employee } = route.params;
@@ -24,6 +26,63 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: a
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
 
   const [processing, setProcessing] = useState(false);
+  const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+
+  const isPending = employee.sectionStatus === 'PENDING' || employee.status === 'PENDING';
+
+  useEffect(() => {
+    if (isPending || !storeId || !employee.id) return;
+
+    const fetchTodayAttendance = async () => {
+      setAttendanceLoading(true);
+      try {
+        const today = new Date();
+        const monthStr = format(today, 'yyyy-MM');
+        const todayStr = format(today, 'yyyy-MM-dd');
+        
+        const { data } = await getAttendanceRecordsAPI(employee.id, monthStr, storeId);
+        
+        if (Array.isArray(data)) {
+          const todayRecord = data.find((item: any) => {
+            const itemDate = item.work_date || item.workDate || item.date;
+            return itemDate === todayStr;
+          });
+          setTodayAttendance(todayRecord || null);
+        }
+      } catch (error) {
+        console.error('오늘의 출퇴근 기록 조회 실패:', error);
+      } finally {
+        setAttendanceLoading(false);
+      }
+    };
+
+    fetchTodayAttendance();
+  }, [employee.id, storeId, isPending]);
+
+  const formatTimeOnly = (dateTimeStr: string) => {
+    if (!dateTimeStr) return '';
+    if (dateTimeStr.includes(' ')) {
+      const parts = dateTimeStr.split(' ');
+      if (parts[1]) {
+        return parts[1].substring(0, 5);
+      }
+    }
+    return dateTimeStr.substring(0, 5);
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'WORKING': return t('statusWorking');
+      case 'COMPLETED': return t('statusCompleted');
+      case 'CHECKED_OUT': return t('statusCheckedOut');
+      case 'LATE': return t('statusLate');
+      case 'EARLY_LEAVE': return t('statusEarlyLeave');
+      case 'ABSENT': return t('statusAbsent');
+      case 'NORMAL': return t('statusNormal');
+      default: return status;
+    }
+  };
 
   const handleApprove = async () => {
     if (!storeId) {
@@ -80,8 +139,6 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: a
     ]);
   };
 
-  const isPending = employee.sectionStatus === 'PENDING' || employee.status === 'PENDING';
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -115,6 +172,65 @@ const EmployeeDetailScreen = ({ route, navigation }: { route: any; navigation: a
             {isPending ? t('pendingApproval') : t('approved')}
           </Text>
         </View>
+
+        {!isPending && (
+          <View style={styles.attendanceSection}>
+            <Text style={styles.sectionHeader}>{t('todayAttendance')}</Text>
+            
+            {attendanceLoading ? (
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: 16 }} />
+            ) : todayAttendance ? (
+              <View style={styles.attendanceCard}>
+                <View style={styles.attendanceRow}>
+                  <Text style={styles.attendanceLabel}>{t('checkIn')}</Text>
+                  <Text style={styles.attendanceValue}>
+                    {todayAttendance.check_in_at || todayAttendance.checkInAt || todayAttendance.check_in 
+                      ? formatTimeOnly(todayAttendance.check_in_at || todayAttendance.checkInAt || todayAttendance.check_in)
+                      : t('notCheckedInYet')}
+                  </Text>
+                </View>
+                <View style={styles.attendanceRow}>
+                  <Text style={styles.attendanceLabel}>{t('checkOut')}</Text>
+                  <Text style={styles.attendanceValue}>
+                    {todayAttendance.check_out_at || todayAttendance.checkOutAt || todayAttendance.check_out
+                      ? formatTimeOnly(todayAttendance.check_out_at || todayAttendance.checkOutAt || todayAttendance.check_out)
+                      : (todayAttendance.check_in_at || todayAttendance.checkInAt || todayAttendance.check_in 
+                          ? t('notCheckedOutYet') 
+                          : '-')}
+                  </Text>
+                </View>
+                {todayAttendance.status && (
+                  <View style={styles.attendanceRow}>
+                    <Text style={styles.attendanceLabel}>{t('status')}</Text>
+                    <Text style={[
+                      styles.attendanceValue, 
+                      (todayAttendance.status === 'LATE' || todayAttendance.status === 'EARLY_LEAVE') && { color: colors.warning || '#F59E0B' },
+                      todayAttendance.status === 'ABSENT' && { color: colors.danger || '#EF4444' },
+                      (todayAttendance.status === 'NORMAL' || todayAttendance.status === 'COMPLETED' || todayAttendance.status === 'WORKING' || todayAttendance.status === 'CHECKED_OUT') && { color: colors.primary || '#00A200' }
+                    ]}>
+                      {getStatusText(todayAttendance.status)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <View style={styles.noAttendanceBox}>
+                <Text style={styles.noAttendanceText}>{t('noAttendanceToday')}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.historyButton}
+              onPress={() => navigation.navigate('AttendanceRecord', { 
+                employeeId: employee.id, 
+                employeeName: employee.name 
+              })}
+            >
+              <Ionicons name="calendar-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.historyButtonText}>{t('viewMonthlyAttendance')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       {isPending && (
@@ -167,6 +283,73 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   },
   pendingText: {
     color: '#F59E0B',
+  },
+  attendanceSection: {
+    marginTop: 16,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingBottom: 24,
+  },
+  sectionHeader: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  attendanceCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 16,
+  },
+  attendanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  attendanceLabel: {
+    fontSize: 15,
+    color: colors.subText,
+  },
+  attendanceValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  noAttendanceBox: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    marginBottom: 16,
+  },
+  noAttendanceText: {
+    color: colors.subText,
+    fontSize: 14,
+  },
+  historyButton: {
+    flexDirection: 'row',
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  historyButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   buttonContainer: {
     flexDirection: 'row',

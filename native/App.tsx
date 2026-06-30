@@ -45,7 +45,7 @@ import { Ionicons } from '@expo/vector-icons';
 // Contexts
 import { AppProvider, useApp } from './src/contexts/AppContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
-import { LanguageProvider } from './src/contexts/LanguageContext';
+import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { BoardProvider } from './src/contexts/BoardContext';
 import { ScheduleProvider } from './src/contexts/ScheduleContext';
@@ -138,6 +138,7 @@ function AuthNavigator() {
 
 function AdminTabNavigator() {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   return (
     <AdminTab.Navigator
       screenOptions={({ route }) => ({
@@ -171,10 +172,10 @@ function AdminTabNavigator() {
         },
       })}
     >
-      <AdminTab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: '대시보드' }} />
-      <AdminTab.Screen name="AdminSchedule" component={ScheduleScreen} options={{ title: '근무 관리' }} />
-      <AdminTab.Screen name="EmployeeManagement" component={EmployeeManagementScreen} options={{ title: '직원 관리' }} />
-      <AdminTab.Screen name="AdminMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
+      <AdminTab.Screen name="AdminDashboard" component={AdminDashboardScreen} options={{ title: t('tabDashboard') }} />
+      <AdminTab.Screen name="AdminSchedule" component={ScheduleScreen} options={{ title: t('tabSchedule') }} />
+      <AdminTab.Screen name="EmployeeManagement" component={EmployeeManagementScreen} options={{ title: t('tabEmployee') }} />
+      <AdminTab.Screen name="AdminMyPage" component={MyPageScreen} options={{ title: t('tabMyPage') }} />
     </AdminTab.Navigator>
   );
 }
@@ -191,6 +192,7 @@ function BoardNavigator() {
 
 function StaffTabNavigator() {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   return (
     <StaffTab.Navigator
       screenOptions={({ route }) => ({
@@ -224,10 +226,10 @@ function StaffTabNavigator() {
         },
       })}
     >
-      <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: '홈' }} />
-      <StaffTab.Screen name="StaffSchedule" component={ScheduleScreen} options={{ title: '스케줄' }} />
-      <StaffTab.Screen name="Notifications" component={NotificationScreen} options={{ title: '알림' }} />
-      <StaffTab.Screen name="StaffMyPage" component={MyPageScreen} options={{ title: '내 정보' }} />
+      <StaffTab.Screen name="StaffDashboard" component={StaffDashboardScreen} options={{ title: t('tabHome') }} />
+      <StaffTab.Screen name="StaffSchedule" component={ScheduleScreen} options={{ title: t('tabScheduleStaff') }} />
+      <StaffTab.Screen name="Notifications" component={NotificationScreen} options={{ title: t('tabNotification') }} />
+      <StaffTab.Screen name="StaffMyPage" component={MyPageScreen} options={{ title: t('tabMyPage') }} />
     </StaffTab.Navigator>
   );
 }
