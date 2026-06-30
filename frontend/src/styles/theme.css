@@ -139,6 +139,14 @@
     font-size: var(--font-size);
   }
 
+  /* Global UI scale applied via CSS transform to approximate 75% browser zoom.
+     Using transform + width compensation to keep layout width consistent. */
+  body {
+    transform: scale(var(--ui-scale, 1));
+    transform-origin: 0 0;
+    width: calc(100% / var(--ui-scale, 1));
+  }
+
   h1 {
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
