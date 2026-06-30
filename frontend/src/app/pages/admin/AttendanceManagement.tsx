@@ -438,7 +438,7 @@ export default function AttendanceManagement() {
             </select>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div style={{ overflowX: 'auto', background: cardBg, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, borderRadius: 16, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <colgroup>
                   <col style={{ width: '12%' }} />
@@ -450,10 +450,10 @@ export default function AttendanceManagement() {
                   <col style={{ width: '11%' }} />
                   <col style={{ width: '11%' }} />
                 </colgroup>
-                <thead style={{ background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN, borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden' }}>
-                  <tr style={{ borderBottom: `1px solid ${LIGHT_GREEN}` }}>
+                <thead style={{ overflow: 'hidden' }}>
+                  <tr style={{ borderBottom: `1px solid ${LIGHT_GREEN}`, background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
                     {[t.colDate, t.colEmployee, t.colScheduled, t.colCheckIn, t.colCheckOut, t.colWork, t.colStatus, t.colNote].map((header, i) => (
-                      <th key={header} style={{ padding: i === 0 ? '13px 20px 13px 52px' : '13px 20px', textAlign: (i === 0 || i === 1) ? 'center' : 'center', fontSize: 13, color: subText, fontWeight: 800 }}>{header}</th>
+                      <th key={header} style={{ padding: i === 0 ? '13px 20px 13px 52px' : '13px 20px', textAlign: 'center', fontSize: 13, color: subText, fontWeight: 800, borderTopLeftRadius: i === 0 ? 16 : 0, borderTopRightRadius: i === 7 ? 16 : 0 }}>{header}</th>
                     ))}
                   </tr>
                 </thead>
