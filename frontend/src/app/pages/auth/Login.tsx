@@ -157,7 +157,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: bgColor, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <div style={{ height: "100vh", background: bgColor, boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 16px", overflow: "auto" }}>
       <div style={{ width: "100%", maxWidth: 560 }}>
         <div style={{
           background: cardBg,
