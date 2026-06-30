@@ -122,6 +122,13 @@ export default function SubstituteList() {
 
   const handleSave = () => {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(availability));
+    if (user.id && storeId) {
+      const daysStr = availability.days.join(',');
+      const encoded = daysStr ? `${daysStr}|${availability.start}-${availability.end}` : '';
+      axiosInstance.put('/store_member/available-days', null, {
+        params: { store_id: storeId, user_id: user.id, available_days: encoded },
+      }).catch(() => {});
+    }
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2000);
   };

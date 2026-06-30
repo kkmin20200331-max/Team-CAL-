@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Outlet } from "react-router-dom";
 import {
   BrowserRouter as Router,
   Routes,
@@ -68,7 +69,7 @@ export default function App() {
       enableColorScheme={false}
     >
       <Router>
-        <div className="ui-scale">
+        <div style={{ zoom: 0.75, overflowX: 'hidden' }}>
           <div className="border-b bg-white px-4 py-2 text-sm font-medium text-slate-700">
             {"API \uC0C1\uD0DC"}: {apiMessage}
           </div>
@@ -247,85 +248,15 @@ export default function App() {
             }
           />
           {/* Employee routes */}
-          <Route
-            path="/employee/home"
-            element={
-              <ProtectedRoute>
-                <EmployeeHome />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/employee/schedule"
-            element={
-              <ProtectedRoute>
-                <MySchedule />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/employee/checkin"
-            element={
-              <ProtectedRoute>
-                <QRCheckIn />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/employee/leave"
-            element={
-              <ProtectedRoute>
-                <LeaveRequest />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/employee/substitute"
-            element={
-              <ProtectedRoute>
-                <SubstituteList />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/employee/payroll"
-            element={
-              <ProtectedRoute>
-                <EmployeePayroll />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/employee/attendance"
-            element={
-              <ProtectedRoute>
-                <MyAttendance />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/employee/board"
-            element={
-              <ProtectedRoute>
-                <EmployeeBoard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/employee/edit-profile"
-            element={
-              <ProtectedRoute>
-                <EditProfile />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/employee/home" element={<ProtectedRoute><EmployeeHome /></ProtectedRoute>} />
+          <Route path="/employee/schedule" element={<ProtectedRoute><MySchedule /></ProtectedRoute>} />
+          <Route path="/employee/checkin" element={<ProtectedRoute><QRCheckIn /></ProtectedRoute>} />
+          <Route path="/employee/leave" element={<ProtectedRoute><LeaveRequest /></ProtectedRoute>} />
+          <Route path="/employee/substitute" element={<ProtectedRoute><SubstituteList /></ProtectedRoute>} />
+          <Route path="/employee/payroll" element={<ProtectedRoute><EmployeePayroll /></ProtectedRoute>} />
+          <Route path="/employee/attendance" element={<ProtectedRoute><MyAttendance /></ProtectedRoute>} />
+          <Route path="/employee/board" element={<ProtectedRoute><EmployeeBoard /></ProtectedRoute>} />
+          <Route path="/employee/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route
             path="/admin/edit-profile"
             element={

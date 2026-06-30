@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import axiosInstance from "../../../lib/axiosInstance";
 import { useNavigate } from "react-router";
 import { useTheme } from "next-themes";
@@ -122,8 +123,13 @@ export default function EmployeeProfilePanel() {
   });
   const storeName = sessionStorage.getItem("store_name") || "";
 
+  const validUrl = (url: string) => !!url && url.startsWith('http');
+
   const [profileImage, setProfileImage] = useState<string>(
-    () => currentUser?.profile_image || sessionStorage.getItem("profile_image") || "",
+    () => {
+      const img = currentUser?.profile_image || sessionStorage.getItem("profile_image") || "";
+      return validUrl(img) ? img : "";
+    }
   );
   const [open, setOpen] = useState(false);
 
@@ -151,6 +157,7 @@ export default function EmployeeProfilePanel() {
     sessionStorage.removeItem("user");
     sessionStorage.removeItem("store_id");
     sessionStorage.removeItem("store_name");
+    sessionStorage.removeItem("profile_image");
     navigate("/");
   };
 
@@ -179,6 +186,7 @@ export default function EmployeeProfilePanel() {
             src={profileImage}
             alt="profile"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            onError={() => setProfileImage('')}
           />
         ) : (
           <span style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>
@@ -187,36 +195,35 @@ export default function EmployeeProfilePanel() {
         )}
       </button>
 
-      {/* 오버레이 */}
-      {open && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 40,
-            background: "rgba(0,0,0,0.35)",
-          }}
-          onClick={() => setOpen(false)}
-        />
-      )}
-
-      {/* 사이드 패널 */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          right: 0,
-          height: "100%",
-          width: 380,
-          background: panelBg,
-          zIndex: 50,
-          boxShadow: "-4px 0 32px rgba(0,0,0,0.24)",
-          display: "flex",
-          flexDirection: "column",
-          transform: open ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.3s ease",
-        }}
-      >
+      {/* 오버레이 + 사이드 패널 — portal로 body에 마운트 */}
+      {open && createPortal(
+        <div>
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 10000,
+              background: "rgba(0,0,0,0.35)",
+            }}
+            onClick={() => setOpen(false)}
+          />
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              right: 0,
+              height: "100%",
+              width: 420,
+              background: panelBg,
+              zIndex: 10001,
+              boxShadow: "-4px 0 32px rgba(0,0,0,0.24)",
+              display: "flex",
+              flexDirection: "column",
+              transform: "translateX(0)",
+              transition: "transform 0.3s ease",
+              zoom: 0.75,
+            }}
+          >
         {/* 헤더 */}
         <div
           style={{
@@ -402,7 +409,9 @@ export default function EmployeeProfilePanel() {
           </button>
         </div>
         {/* 라인 연동 */}
-        <LineLoginButton />
+        <div style={{ padding: "0 28px 8px" }}>
+          <LineLoginButton />
+        </div>
         {/* 하단 */}
         <div
           style={{
@@ -502,7 +511,10 @@ export default function EmployeeProfilePanel() {
             <span>{t.logout}</span>
           </button>
         </div>
-      </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   );
 }

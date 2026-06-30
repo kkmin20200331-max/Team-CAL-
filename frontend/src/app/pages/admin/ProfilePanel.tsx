@@ -196,18 +196,21 @@ export default function ProfilePanel() {
 
   const currentUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
 
+  const validUrl = (url: string) => !!url && url.startsWith('http');
+
   const [profileImage, setProfileImage] = useState<string>(
     () => {
-      const freshUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
-      return freshUser.profile_image || sessionStorage.getItem("profile_image") || '';
+      const freshUser = JSON.parse(sessionStorage.getItem('user') || '{}');
+      const img = freshUser.profile_image || sessionStorage.getItem("profile_image") || '';
+      return validUrl(img) ? img : '';
     }
   );
 
   useEffect(() => {
     const refresh = () => {
-      const freshUser = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
+      const freshUser = JSON.parse(sessionStorage.getItem('user') || '{}');
       const img = freshUser.profile_image || sessionStorage.getItem("profile_image") || '';
-      setProfileImage(img);
+      setProfileImage(validUrl(img) ? img : '');
     };
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
@@ -277,7 +280,7 @@ export default function ProfilePanel() {
     if (!currentUser.id) return;
     try {
       const r = await axiosInstance.get("/notification", { params: { user_id: currentUser.id } });
-      setBoardNotifications(Array.isArray(r.data) ? r.data.filter(isUnreadNotification) : []);
+      setBoardNotifications(Array.isArray(r.data) ? r.data.filter((n: any) => isUnreadNotification(n) && n.type !== "STAFF_APPROVAL_REQUEST") : []);
     } catch {}
   };
 
@@ -401,7 +404,7 @@ export default function ProfilePanel() {
             .then((r) =>
               setBoardNotifications(
                 Array.isArray(r.data)
-                  ? r.data.filter(isUnreadNotification)
+                  ? r.data.filter((n: any) => isUnreadNotification(n) && n.type !== "STAFF_APPROVAL_REQUEST")
                   : [],
               ),
             )
@@ -549,6 +552,7 @@ export default function ProfilePanel() {
     sessionStorage.removeItem("store_id");
     sessionStorage.removeItem("store_name");
     sessionStorage.removeItem("pendingList");
+    sessionStorage.removeItem("profile_image");
     navigate("/auth/login");
   };
 
@@ -584,7 +588,7 @@ export default function ProfilePanel() {
           }}
         >
           {profileImage
-            ? <img src={profileImage} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ? <img src={profileImage} alt="profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setProfileImage('')} />
             : <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{currentUser?.name?.[0] ?? '?'}</span>
           }
         </button>
@@ -604,7 +608,7 @@ export default function ProfilePanel() {
 
       {/* 슬라이드 패널 오버레이 + 패널 — body에 Portal로 마운트해서 stacking context 탈출 */}
       {open && createPortal(
-        <div className="ui-scale-portal">
+        <div style={{ zoom: 0.75 }}>
           {open && (
             <div
               style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(0,0,0,0.35)' }}
@@ -701,19 +705,14 @@ export default function ProfilePanel() {
             <div style={{ borderTop: `1px solid ${divider}` }} />
 
             {/* 알림 */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Bell className="w-4 h-4" style={{ color: textSub }} />
-                <h3
-                  className="font-semibold text-sm"
-                  style={{ color: textMain }}
-                >
-                  {t.notifications}
-                </h3>
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <Bell style={{ width: 20, height: 20, color: "#18A022" }} />
+                <span style={{ fontWeight: 800, fontSize: 16, color: textMain }}>{t.notifications}</span>
                 {totalBadge > 0 && (
-                  <Badge className="text-white text-xs" style={{ background: "#C0392B" }}>
+                  <span style={{ marginLeft: 2, minWidth: 22, height: 22, padding: "0 6px", background: "#C0392B", borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff", fontWeight: 700 }}>
                     {totalBadge}
-                  </Badge>
+                  </span>
                 )}
               </div>
 
@@ -723,321 +722,162 @@ export default function ProfilePanel() {
                     className="flex flex-col items-center justify-center"
                     style={{ paddingTop: 100, paddingBottom: 100, color: textSub }}
                   >
-                    <CheckCircle className="w-10 h-10 mb-2" style={{ color: "#18A022" }} />
-                    <p className="text-xs">{t.noPendingRequests}</p>
+                    <CheckCircle className="w-12 h-12 mb-3" style={{ color: "#18A022" }} />
+                    <p className="text-sm font-medium">{t.noPendingRequests}</p>
                   </div>
                 )}
 
-                {/* ── 직원 가입 승인 요청 ── */}
+                {/* ── 공통 카드 스타일 헬퍼 ── */}
                 {pendingList.map((emp) => (
-                  <div
-                    key={emp.id}
-                    className="rounded-xl p-4 space-y-3"
-                    style={{
-                      border: `1px solid ${cardBorder}`,
-                      background: cardBg,
-                    }}
-                  >
-                    <div
-                      className="flex items-center gap-1 text-xs font-semibold"
-                      style={{ color: "#18A022" }}
-                    >
-                      <Store className="w-3 h-3" />
-                      {emp.store_name}
+                  <div key={emp.id} style={{ borderRadius: 16, background: isDark ? darkCard : "#fff", border: `1.5px solid ${isDark ? "#2a4a2a" : "#E6F5C8"}`, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px", background: isDark ? "#0d1f0d" : "#f4fbf0" }}>
+                      <User style={{ width: 14, height: 14, color: "#18A022", flexShrink: 0 }} />
+                      <span style={{ fontWeight: 700, fontSize: 13, color: "#18A022" }}>신규 직원 가입 승인 요청</span>
+                      <span style={{ marginLeft: "auto", fontSize: 12, color: "#666", fontWeight: 500 }}>{emp.store_name}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                        style={{ background: "#E6F5C8" }}
-                      >
-                        <User
-                          className="w-4 h-4"
-                          style={{ color: "#07790F" }}
-                        />
+                    <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: "50%", background: isDark ? "#1a3a1a" : "#E6F5C8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <User style={{ width: 22, height: 22, color: "#07790F" }} />
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: 15, color: textMain, marginBottom: 2 }}>{emp.name}</p>
+                          <p style={{ fontSize: 13, color: textSub }}>{emp.phone}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p
-                          className="font-semibold text-xs"
-                          style={{ color: textMain }}
-                        >
-                          {emp.name}
-                        </p>
-                        <p className="text-xs" style={{ color: textSub }}>
-                          {emp.phone}
-                        </p>
+                      <p style={{ fontSize: 13, color: textSub, lineHeight: 1.5 }}>{t.employeeApprovalRequest}</p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => handleApprove(emp)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#18A022,#07790F)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                          <CheckCircle style={{ width: 15, height: 15 }} />{t.approve}
+                        </button>
+                        <button onClick={() => handleReject(emp)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1.5px solid #e53e3e", background: "transparent", color: "#e53e3e", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                          <XCircle style={{ width: 15, height: 15 }} />{t.reject}
+                        </button>
                       </div>
-                    </div>
-                    <p className="text-xs" style={{ color: textSub }}>
-                      {t.employeeApprovalRequest}
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1 text-xs h-7"
-                        onClick={() => handleApprove(emp)}
-                      >
-                        <CheckCircle className="w-3 h-3" />
-                        {t.approve}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 text-red-500 border-red-300 hover:bg-red-50 gap-1 text-xs h-7"
-                        onClick={() => handleReject(emp)}
-                      >
-                        <XCircle className="w-3 h-3" />
-                        {t.reject}
-                      </Button>
                     </div>
                   </div>
                 ))}
 
-                {/* ── 대타 지원 알림 ── */}
                 {substituteApps.map((app) => {
-                  const applicantName =
-                    userNameMap[app.applicant_user_id] || "직원";
+                  const applicantName = userNameMap[app.applicant_user_id] || "직원";
                   return (
-                    <div
-                      key={app.app_id}
-                      className="rounded-xl p-4 space-y-3"
-                      style={{
-                        border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
-                        background: isDark ? darkCard : "#E6F5C8",
-                      }}
-                    >
-                      <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#07790F" }}>
-                        <Store className="w-3 h-3" />
-                        {app.store_name}
-                        <span className="ml-1 font-normal" style={{ color: "#18A022" }}>
-                          · {t.substituteApply}
-                        </span>
+                    <div key={app.app_id} style={{ borderRadius: 16, background: isDark ? darkCard : "#fff", border: `1.5px solid ${isDark ? "#2a4a2a" : "#E6F5C8"}`, overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px", background: isDark ? "#0d1f0d" : "#f4fbf0" }}>
+                        <UserCheck style={{ width: 14, height: 14, color: "#18A022", flexShrink: 0 }} />
+                        <span style={{ fontWeight: 700, fontSize: 13, color: "#18A022" }}>대타 지원 신청</span>
+                        <span style={{ marginLeft: "auto", fontSize: 12, color: "#666", fontWeight: 500 }}>{app.store_name}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#E6F5C8" }}>
-                          <UserCheck className="w-4 h-4" style={{ color: "#07790F" }} />
+                      <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 44, height: 44, borderRadius: "50%", background: isDark ? "#1a3a1a" : "#E6F5C8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <UserCheck style={{ width: 22, height: 22, color: "#07790F" }} />
+                          </div>
+                          <div>
+                            <p style={{ fontWeight: 700, fontSize: 15, color: textMain, marginBottom: 2 }}>{applicantName}</p>
+                            <p style={{ fontSize: 13, color: textSub }}>{t.substituteApplyMsg}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p
-                            className="font-semibold text-xs"
-                            style={{ color: textMain }}
-                          >
-                            {applicantName}
+                        {app.message && (
+                          <p style={{ fontSize: 13, color: textSub, background: isDark ? "#141414" : "#f8fdf5", border: `1px solid ${isDark ? "#2a4a2a" : "#c8e8b0"}`, borderRadius: 8, padding: "10px 14px", lineHeight: 1.5 }}>
+                            "{app.message}"
                           </p>
-                          <p className="text-xs" style={{ color: textSub }}>
-                            {t.substituteApplyMsg}
-                          </p>
+                        )}
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={() => handleApproveSubstitute(app)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#18A022,#07790F)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                            <CheckCircle style={{ width: 15, height: 15 }} />승인
+                          </button>
+                          <button onClick={() => handleRejectSubstitute(app)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1.5px solid #e53e3e", background: "transparent", color: "#e53e3e", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                            <XCircle style={{ width: 15, height: 15 }} />거절
+                          </button>
                         </div>
-                      </div>
-                      {app.message && (
-                        <p
-                          className="text-xs rounded p-2"
-                          style={{
-                            color: textSub,
-                            background: isDark ? "#141414" : "#fff",
-                            border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
-                          }}
-                        >
-                          "{app.message}"
-                        </p>
-                      )}
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="flex-1 text-white gap-1 text-xs h-7" style={{ background: "#18A022" }}
-                          onClick={() => handleApproveSubstitute(app)}
-                        >
-                          <CheckCircle className="w-3 h-3" />
-                          승인
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 gap-1 text-xs h-7" style={{ color: "#C0392B", borderColor: "#C0392B" }}
-                          onClick={() => handleRejectSubstitute(app)}
-                        >
-                          <XCircle className="w-3 h-3" />
-                          거절
-                        </Button>
                       </div>
                     </div>
                   );
                 })}
 
-                {/* ── 게시판 푸시 알림 ── */}
                 {boardNotifications.map((notif) => {
                   if (notif.type === "STAFF_APPROVAL_REQUEST") {
                     return (
-                      <div
-                        key={notif.id}
-                        className="rounded-xl p-3 space-y-2"
-                        style={{
-                          border: `1px solid ${isDark ? "#1a4a1a" : "#bbf7d0"}`,
-                          background: isDark ? "rgba(10,40,10,0.3)" : "#f0fdf4",
-                        }}
-                      >
-                        <div
-                          className="flex items-center gap-1 text-xs font-semibold"
-                          style={{ color: "#18A022" }}
-                        >
-                          <UserCheck className="w-3 h-3" />
-                          {language === 'ja' ? 'スタッフ加入リクエスト' : language === 'en' ? 'Employee Join Request' : '직원 가입 요청'}
+                      <div key={notif.id} style={{ borderRadius: 16, background: isDark ? darkCard : "#fff", border: `1.5px solid ${isDark ? "#2a4a2a" : "#E6F5C8"}`, overflow: "hidden" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px", background: isDark ? "#0d1f0d" : "#f4fbf0" }}>
+                          <UserCheck style={{ width: 14, height: 14, color: "#18A022", flexShrink: 0 }} />
+                          <span style={{ fontWeight: 700, fontSize: 13, color: "#18A022" }}>
+                            {language === 'ja' ? 'スタッフ加入リクエスト' : language === 'en' ? 'Employee Join Request' : '직원 근무지 가입 요청'}
+                          </span>
                         </div>
-                        <p
-                          className="font-semibold text-xs"
-                          style={{ color: textMain }}
-                        >
-                          {notif.title}
-                        </p>
-                        {notif.content && (
-                          <p className="text-xs" style={{ color: textSub }}>
-                            {notif.content}
-                          </p>
-                        )}
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-1 text-xs h-7"
-                            onClick={() => handleApproveJoinNotification(notif)}
-                          >
-                            <CheckCircle className="w-3 h-3" />
-                            승인
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 text-red-500 border-red-300 hover:bg-red-50 gap-1 text-xs h-7"
-                            onClick={() => handleRejectJoinNotification(notif)}
-                          >
-                            <XCircle className="w-3 h-3" />
-                            거절
-                          </Button>
+                        <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+                          <p style={{ fontWeight: 700, fontSize: 15, color: textMain }}>{notif.title}</p>
+                          {notif.content && <p style={{ fontSize: 13, color: textSub, lineHeight: 1.5 }}>{notif.content}</p>}
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button onClick={() => handleApproveJoinNotification(notif)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#18A022,#07790F)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                              <CheckCircle style={{ width: 15, height: 15 }} />승인
+                            </button>
+                            <button onClick={() => handleRejectJoinNotification(notif)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1.5px solid #e53e3e", background: "transparent", color: "#e53e3e", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                              <XCircle style={{ width: 15, height: 15 }} />거절
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
                   }
-
                   return (
-                    <div
-                    key={notif.id}
-                    className="rounded-xl p-4 space-y-2"
-                    style={{
-                      border: `1px solid #00A200`,
-                      background: isDark ? "rgba(24,160,34,0.12)" : "#E6F5C8",
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div
-                        className="flex items-center gap-1 text-xs font-semibold"
-                        style={{ color: "#07790F" }}
-                      >
-                        <Bell className="w-3 h-3" />
-                        {language === 'ja' ? '掲示板通知' : language === 'en' ? 'Board Notification' : '게시판 알림'}
+                    <div key={notif.id} style={{ borderRadius: 16, background: isDark ? darkCard : "#fff", border: `1.5px solid ${isDark ? "#2a4a2a" : "#E6F5C8"}`, overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px", background: isDark ? "#0d1f0d" : "#f4fbf0", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Bell style={{ width: 14, height: 14, color: "#18A022", flexShrink: 0 }} />
+                          <span style={{ fontWeight: 700, fontSize: 13, color: "#18A022" }}>
+                            {language === 'ja' ? '掲示板通知' : language === 'en' ? 'Board Notification' : '게시판 알림'}
+                          </span>
+                        </div>
+                        <button onClick={() => markNotificationRead(notif.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#aaa", fontSize: 16, lineHeight: 1, padding: 0 }}>✕</button>
                       </div>
-                      <button
-                        onClick={() => markNotificationRead(notif.id)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "#888",
-                          fontSize: 12,
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <p
-                      className="font-semibold text-xs"
-                      style={{ color: textMain }}
-                    >
-                      {notif.title}
-                    </p>
-                    {notif.content && (
-                      <p className="text-xs" style={{ color: textSub }}>
-                        {notif.content}
-                      </p>
-                    )}
+                      <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
+                        <p style={{ fontWeight: 700, fontSize: 15, color: textMain }}>{notif.title}</p>
+                        {notif.content && <p style={{ fontSize: 13, color: textSub, lineHeight: 1.5 }}>{notif.content}</p>}
+                      </div>
                     </div>
                   );
                 })}
 
-                {/* ── 휴무 신청 ── */}
                 {leaveRequests.map((leave) => {
                   const shift = shiftMap[leave.shift_id];
                   const empName = userNameMap[leave.user_id] || "직원";
                   const datePart = shift ? getDatePart(shift.work_date) : "";
                   return (
-                    <div
-                      key={leave.id}
-                      className="rounded-xl p-4 space-y-3"
-                      style={{
-                        border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
-                        background: isDark ? darkCard : "#E6F5C8",
-                      }}
-                    >
-                      <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: "#07790F" }}>
-                        <Store className="w-3 h-3" />
-                        {leave.store_name}
-                        <span className="ml-1 font-normal" style={{ color: "#18A022" }}>
-                          · {t.leaveRequest}
-                        </span>
+                    <div key={leave.id} style={{ borderRadius: 16, background: isDark ? darkCard : "#fff", border: `1.5px solid ${isDark ? "#2a4a2a" : "#E6F5C8"}`, overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px", background: isDark ? "#0d1f0d" : "#f4fbf0" }}>
+                        <FileText style={{ width: 14, height: 14, color: "#18A022", flexShrink: 0 }} />
+                        <span style={{ fontWeight: 700, fontSize: 13, color: "#18A022" }}>{t.leaveRequest}</span>
+                        <span style={{ marginLeft: "auto", fontSize: 12, color: "#666", fontWeight: 500 }}>{leave.store_name}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: "#E6F5C8" }}>
-                          <User className="w-4 h-4" style={{ color: "#07790F" }} />
+                      <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 44, height: 44, borderRadius: "50%", background: isDark ? "#1a3a1a" : "#E6F5C8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <User style={{ width: 22, height: 22, color: "#07790F" }} />
+                          </div>
+                          <div>
+                            <p style={{ fontWeight: 700, fontSize: 15, color: textMain, marginBottom: 2 }}>{empName}</p>
+                            {shift ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: textSub }}>
+                                <Clock style={{ width: 12, height: 12 }} />
+                                {datePart} ({getDayLabel(shift.work_date)}) {formatTimePart(shift.start_at)}~{formatTimePart(shift.end_at)}
+                              </div>
+                            ) : (
+                              <p style={{ fontSize: 13, color: "#aaa" }}>{t.loadingShift}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                          <p
-                            className="font-semibold text-sm"
-                            style={{ color: textMain }}
-                          >
-                            {empName}
-                          </p>
-                          {shift ? (
-                            <div
-                              className="flex items-center gap-1 text-xs"
-                              style={{ color: textSub }}
-                            >
-                              <Clock className="w-3 h-3" />
-                              {datePart} ({getDayLabel(shift.work_date)}){" "}
-                              {formatTimePart(shift.start_at)}~
-                              {formatTimePart(shift.end_at)}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-gray-400">
-                              {t.loadingShift}
-                            </p>
-                          )}
+                        <p style={{ fontSize: 13, color: textSub, background: isDark ? "#141414" : "#f8fdf5", border: `1px solid ${isDark ? "#2a4a2a" : "#c8e8b0"}`, borderRadius: 8, padding: "10px 14px", lineHeight: 1.5 }}>
+                          "{leave.reason}"
+                        </p>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={() => handleApproveLeave(leave)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#18A022,#07790F)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                            <CheckCircle style={{ width: 15, height: 15 }} />승인
+                          </button>
+                          <button onClick={() => handleRejectLeave(leave)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1.5px solid #e53e3e", background: "transparent", color: "#e53e3e", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                            <XCircle style={{ width: 15, height: 15 }} />거절
+                          </button>
                         </div>
-                      </div>
-                      <p
-                        className="text-xs rounded p-2"
-                        style={{
-                          color: textSub,
-                          background: isDark ? darkCard : "#fff",
-                          border: `1px solid ${isDark ? darkCardBorder : "#00A200"}`,
-                        }}
-                      >
-                        "{leave.reason}"
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="flex-1 text-white gap-1 text-xs h-7" style={{ background: "#18A022" }}
-                          onClick={() => handleApproveLeave(leave)}
-                        >
-                          <CheckCircle className="w-3 h-3" />
-                          승인
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 gap-1 text-xs h-7" style={{ color: "#C0392B", borderColor: "#C0392B" }}
-                          onClick={() => handleRejectLeave(leave)}
-                        >
-                          <XCircle className="w-3 h-3" />
-                          거절
-                        </Button>
                       </div>
                     </div>
                   );

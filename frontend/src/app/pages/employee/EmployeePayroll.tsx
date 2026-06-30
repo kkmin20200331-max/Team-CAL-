@@ -125,7 +125,7 @@ export default function EmployeePayroll() {
   }, [storeId]);
 
   useEffect(() => {
-    if (!user.id || !storeId) return;
+    if (!user.id || !storeId) { setLoadingPayroll(false); return; }
     setLoadingPayroll(true);
     const start = toDateStr(startOfMonth(selectedMonth));
     const end = toDateStr(endOfMonth(selectedMonth));
@@ -151,7 +151,7 @@ export default function EmployeePayroll() {
   }, [storeId, selectedMonth]);
 
   useEffect(() => {
-    if (!user.id || !storeId) return;
+    if (!user.id || !storeId) { setLoadingHistory(false); return; }
     setLoadingHistory(true);
     const now = new Date();
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
