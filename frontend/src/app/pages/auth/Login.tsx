@@ -108,6 +108,16 @@ export default function Login() {
   }, [isDark]);
 
   const bgColor = isDark ? "#1c1c1e" : "#EEF5DD";
+
+  // 로그인 페이지에서 전역 그라디언트 숨기고 단색 배경 적용
+  useEffect(() => {
+    document.body.classList.add('no-global-gradient');
+    document.body.style.background = bgColor;
+    return () => {
+      document.body.classList.remove('no-global-gradient');
+      document.body.style.background = '';
+    };
+  }, [bgColor]);
   const cardBg = isDark ? "#2c2c2e" : "#FFFFFF";
   const labelColor = isDark ? "#aaa" : "#606060";
   const inputBg = isDark ? "#3a3a3c" : "#F2F5EB";
@@ -123,12 +133,14 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg("");
-    if (!username || !password) {
+    const loginUsername = username.trim();
+    const loginPassword = password.trim();
+    if (!loginUsername || !loginPassword) {
       setErrorMsg(t.errorEmpty);
       return;
     }
     try {
-      const res = await loginAPI(username, password);
+      const res = await loginAPI(loginUsername, loginPassword);
       const loginUser = {
         id: res.data.id,
         username: res.data.username,
@@ -157,7 +169,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: bgColor, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <div style={{ minHeight: "100%", background: bgColor, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 16px", boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: 560 }}>
         <div style={{
           background: cardBg,

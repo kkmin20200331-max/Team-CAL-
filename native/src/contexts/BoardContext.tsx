@@ -3,6 +3,7 @@ import React, { createContext, ReactNode, useContext, useState, useCallback } fr
 import {
   createBoardAPI,
   createBoardPostAPI,
+  deleteBoardAPI,
   getBoardPostListAPI,
   getBoardPostsAPI,
   updateBoardPostAPI,
@@ -27,6 +28,8 @@ interface BoardContextType {
   loading: boolean;
   setPosts: React.Dispatch<React.SetStateAction<Post[]>>;
   loadPosts: (storeId: string) => Promise<void>;
+  createBoard: (name: string, storeId: string, writerId: string) => Promise<BoardSummary>;
+  deleteBoard: (boardId: string, storeId: string) => Promise<void>;
   addPost: (newPost: Omit<Post, 'id' | 'date' | 'authorId'>, options: AddPostOptions) => Promise<void>;
   updatePost: (updatedPost: Post) => Promise<void>;
   updatePinStatus: (postId: string, isPinned: boolean) => Promise<void>;
@@ -106,10 +109,26 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
       created_by: writerId,
     };
 
-    await createBoardAPI(board);
-    setBoards((prev) => [...prev, board]);
-    return board;
+    const response = await createBoardAPI(board);
+    const savedBoard: BoardSummary = response.data || board;
+    setBoards((prev) => {
+      if (prev.some((item) => item.id === savedBoard.id)) return prev;
+      return [...prev, savedBoard];
+    });
+    return savedBoard;
   }, [boards]);
+
+  const createBoard = useCallback(async (name: string, storeId: string, writerId: string) => {
+    return ensureBoard(name, storeId, writerId);
+  }, [ensureBoard]);
+
+  const deleteBoard = useCallback(async (boardId: string, storeId: string) => {
+    await deleteBoardAPI(boardId);
+    setBoards((prev) => prev.filter((board) => board.id !== boardId));
+    if (storeId) {
+      await loadPosts(storeId);
+    }
+  }, [loadPosts]);
 
   const addPost = useCallback(async (
     newPostData: Omit<Post, 'id' | 'date' | 'authorId'>,
@@ -154,6 +173,8 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
     loading,
     setPosts,
     loadPosts,
+    createBoard,
+    deleteBoard,
     addPost,
     updatePost,
     updatePinStatus,

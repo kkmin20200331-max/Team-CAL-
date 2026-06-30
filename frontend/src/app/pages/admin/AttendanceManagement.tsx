@@ -1,8 +1,10 @@
 import axiosInstance, { API_BASE } from "../../../lib/axiosInstance";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "next-themes";
 import AdminHeader from "./AdminHeader";
+import { useLanguage } from "../../i18n/useLanguage";
+import { translations } from "../../i18n/translations";
 import {
   AlertCircle,
   BarChart3,
@@ -130,15 +132,15 @@ const monthBounds = (month: string) => {
   return { start: toDateStr(start), end: toDateStr(end) };
 };
 
-const statusMeta: Record<RowStatus, { label: string; color: string; bg: string }> = {
-  normal: { label: "정상", color: DARK_GREEN, bg: "#E6F5C8" },
-  late: { label: "지각", color: "#B45309", bg: "#FEF3C7" },
-  early: { label: "조퇴", color: "#B45309", bg: "#FFEDD5" },
-  absent: { label: "결근", color: "#B91C1C", bg: "#FEE2E2" },
-  working: { label: "근무중", color: "#1D4ED8", bg: "#DBEAFE" },
-  scheduled: { label: "예정", color: "#475569", bg: "#E2E8F0" },
-  cancelled: { label: "취소", color: "#6B7280", bg: "#E5E7EB" },
-  unscheduled: { label: "퇴근", color: "#0369A1", bg: "#E0F2FE" },
+const statusMeta: Record<RowStatus, { label: string; color: string; bg: string; darkColor: string; darkBg: string; darkBorder: string; lightBorder: string }> = {
+  normal: { label: "정상", color: DARK_GREEN, bg: "#E6F5C8", darkColor: "#4cd964", darkBg: "rgba(24,160,34,0.15)", darkBorder: "rgba(24,160,34,0.3)", lightBorder: "#86efac" },
+  late: { label: "지각", color: "#B45309", bg: "#FEF3C7", darkColor: "#facc15", darkBg: "rgba(234,179,8,0.15)", darkBorder: "rgba(234,179,8,0.3)", lightBorder: "#fde047" },
+  early: { label: "조퇴", color: "#B45309", bg: "#FFEDD5", darkColor: "#fb923c", darkBg: "rgba(249,115,22,0.15)", darkBorder: "rgba(249,115,22,0.3)", lightBorder: "#fdba74" },
+  absent: { label: "결근", color: "#B91C1C", bg: "#FEE2E2", darkColor: "#f87171", darkBg: "rgba(239,68,68,0.15)", darkBorder: "rgba(239,68,68,0.3)", lightBorder: "#fca5a5" },
+  working: { label: "근무중", color: "#1D4ED8", bg: "#DBEAFE", darkColor: "#60a5fa", darkBg: "rgba(59,130,246,0.15)", darkBorder: "rgba(59,130,246,0.3)", lightBorder: "#93c5fd" },
+  scheduled: { label: "예정", color: "#475569", bg: "#E2E8F0", darkColor: "#94a3b8", darkBg: "rgba(100,116,139,0.15)", darkBorder: "rgba(100,116,139,0.3)", lightBorder: "#cbd5e1" },
+  cancelled: { label: "취소", color: "#6B7280", bg: "#E5E7EB", darkColor: "#9ca3af", darkBg: "rgba(107,114,128,0.15)", darkBorder: "rgba(107,114,128,0.3)", lightBorder: "#d1d5db" },
+  unscheduled: { label: "퇴근", color: "#0369A1", bg: "#E0F2FE", darkColor: "#38bdf8", darkBg: "rgba(14,165,233,0.15)", darkBorder: "rgba(14,165,233,0.3)", lightBorder: "#7dd3fc" },
 };
 
 export default function AttendanceManagement() {
@@ -147,7 +149,21 @@ export default function AttendanceManagement() {
   const { branchId } = useParams();
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const language = useLanguage();
+  const t = translations.attendanceManagement[language];
 
+  const localizedStatusMeta = {
+    normal: { ...statusMeta.normal, label: t.statusLabels.normal },
+    late: { ...statusMeta.late, label: t.statusLabels.late },
+    early: { ...statusMeta.early, label: t.statusLabels.early },
+    absent: { ...statusMeta.absent, label: t.statusLabels.absent },
+    working: { ...statusMeta.working, label: t.statusLabels.working },
+    scheduled: { ...statusMeta.scheduled, label: t.statusLabels.scheduled },
+    cancelled: { ...statusMeta.cancelled, label: t.statusLabels.cancelled },
+    unscheduled: { ...statusMeta.unscheduled, label: t.statusLabels.unscheduled },
+  };
+
+  const monthInputRef = useRef<HTMLInputElement>(null);
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -168,22 +184,22 @@ export default function AttendanceManagement() {
   const pageBg = isDark
     ? "linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)"
     : "linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)";
-  const mainBg = isDark ? "rgba(44,44,46,0.96)" : "rgba(255,255,255,0.97)";
-  const cardBg = isDark ? "rgba(58,58,62,0.95)" : "rgba(230,245,200,0.35)";
-  const sidebarBg = isDark ? "rgba(44,44,46,0.95)" : "rgba(255,255,255,0.85)";
+  const mainBg = isDark ? "#0f0f0f" : "rgba(255,255,255,0.97)";
+  const cardBg = isDark ? "rgba(20,20,20,0.7)" : "rgba(255,255,255,0.5)";
+  const sidebarBg = isDark ? "rgba(8,8,8,0.97)" : "rgba(255,255,255,0.85)";
   const textColor = isDark ? "#fff" : "#111";
-  const subText = isDark ? "#aaa" : "#6B8068";
+  const subText = isDark ? "#c8c8c8" : "#6B8068";
 
   const menuItems = [
-    { icon: Calendar, label: "근무표 관리", path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: ClipboardCheck, label: "근태 관리", path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: UserPlus, label: "대타 모집", path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: Users, label: "직원 관리", path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: Wallet, label: "급여 관리", path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: FileText, label: "문서 관리", path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: MessageSquare, label: "게시판", path: selectedBranchId ? `/admin/board/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: BarChart3, label: "AI 고객 분석", path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : "/admin/branch-selection" },
-    { icon: Video, label: "CCTV 분석", path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: ClipboardCheck, label: translations.adminDashboard[language].menuItems.attendanceManagement, path: selectedBranchId ? `/admin/attendance/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: UserPlus, label: translations.adminDashboard[language].menuItems.substituteRecruitment, path: selectedBranchId ? `/admin/substitute/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Users, label: translations.adminDashboard[language].menuItems.employeeManagement, path: selectedBranchId ? `/admin/employees/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Wallet, label: translations.adminDashboard[language].menuItems.payrollManagement, path: selectedBranchId ? `/admin/payroll/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: FileText, label: translations.adminDashboard[language].menuItems.documentManagement, path: selectedBranchId ? `/admin/documents/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: MessageSquare, label: translations.adminDashboard[language].menuItems.board, path: selectedBranchId ? `/admin/board/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: BarChart3, label: translations.adminDashboard[language].menuItems.aiAnalytics, path: selectedBranchId ? `/admin/analytics/${selectedBranchId}` : "/admin/branch-selection" },
+    { icon: Video, label: translations.adminDashboard[language].menuItems.cctvAnalysis, path: selectedBranchId ? `/admin/cctv/${selectedBranchId}` : "/admin/branch-selection" },
   ];
 
   useEffect(() => {
@@ -322,12 +338,12 @@ export default function AttendanceManagement() {
     : 0;
 
   return (
-    <div style={{ minHeight: "100vh", background: pageBg, fontFamily: "'Bookk Gothic', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: "flex", gap: 20, padding: "24px 40px 40px", alignItems: "flex-start" }}>
-        <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${isDark ? "#3a3a3c" : BORDER_GREEN}`, borderRadius: 20, padding: "16px 12px", position: "sticky", top: 140, maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}>
+        <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${isDark ? "#1a1a1a" : BORDER_GREEN}`, borderRadius: 20, padding: "16px 12px", position: "sticky", top: 140, maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}>
           <div style={{ position: "relative", marginBottom: 16 }}>
-            <button onClick={() => setBranchDropdownOpen((open) => !open)} style={{ width: "100%", padding: "10px 14px", background: isDark ? "#50505a" : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
+            <button onClick={() => setBranchDropdownOpen((open) => !open)} style={{ width: "100%", padding: "10px 14px", background: isDark ? "#1a1a1a" : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentBranch}</span>
               <span style={{ fontSize: 10 }}>{branchDropdownOpen ? "▲" : "▼"}</span>
             </button>
@@ -342,7 +358,7 @@ export default function AttendanceManagement() {
             )}
           </div>
           {menuItems.map(({ icon: Icon, label, path }) => {
-            const isActive = location.pathname.startsWith("/admin/attendance/") ? label === "근태 관리" : location.pathname === path || location.pathname.startsWith(path);
+            const isActive = location.pathname.startsWith("/admin/attendance/") ? label === translations.adminDashboard[language].menuItems.attendanceManagement : location.pathname === path || location.pathname.startsWith(path);
             return (
               <button key={label} onClick={() => navigate(path)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 12, border: "none", marginBottom: 4, cursor: "pointer", fontSize: 14, fontWeight: 600, background: isActive ? GREEN : "transparent", color: isActive ? "#fff" : isDark ? "#ccc" : DARK_GREEN, textAlign: "left" }}>
                 <Icon size={16} color={isActive ? "#fff" : GREEN} />
@@ -352,29 +368,54 @@ export default function AttendanceManagement() {
           })}
         </aside>
 
-        <main style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: "28px 28px 32px", boxShadow: "0px 8px 40px rgba(0,0,0,0.18)" }}>
+        <main style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: "28px 28px 32px", boxShadow: "0px 8px 40px rgba(0,0,0,0.18)", minHeight: "calc(100vh - 120px)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 13, color: "#8BA68D", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
-                {currentBranch} <ChevronRight size={12} /> 근태 관리
+                {currentBranch} <ChevronRight size={12} /> {t.title}
               </div>
               <h1 style={{ fontSize: 28, fontWeight: 900, color: DARK_GREEN, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 10 }}>
-                <ClipboardCheck size={28} />지각/출석/결근 현황
+                <ClipboardCheck size={28} />{t.pageTitle}
               </h1>
-              <p style={{ fontSize: 13, color: "#8BA68D", margin: 0 }}>근무표와 QR 출퇴근 기록을 비교해 근태 상태를 확인합니다.</p>
+              <p style={{ fontSize: 13, color: "#8BA68D", margin: 0 }}>{t.pageSubtitle}</p>
             </div>
-            <input type="month" value={month} onChange={(event) => setMonth(event.target.value)} style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${BORDER_GREEN}`, background: isDark ? "#3a3a3c" : "#fff", color: textColor, fontSize: 14, fontWeight: 700 }} />
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <div
+                onClick={() => {
+                  const el = monthInputRef.current;
+                  if (!el) return;
+                  if (typeof el.showPicker === 'function') el.showPicker();
+                  else el.click();
+                }}
+                style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${BORDER_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', userSelect: 'none' }}
+              >
+                {(() => {
+                  const [y, m] = month.split('-');
+                  if (!y || !m) return month;
+                  if (language === 'ja') return `${y}年${parseInt(m)}月`;
+                  if (language === 'en') return `${new Date(parseInt(y), parseInt(m) - 1).toLocaleString('en-US', { month: 'long' })} ${y}`;
+                  return `${y}년 ${parseInt(m)}월`;
+                })()}
+              </div>
+              <input
+                ref={monthInputRef}
+                type="month"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                style={{ position: 'absolute', bottom: 0, right: 0, width: '1px', height: '1px', opacity: 0.01, border: 'none', padding: 0, pointerEvents: 'none' }}
+              />
+            </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12, marginBottom: 20 }}>
             {[
-              { label: "출석률", value: `${attendanceRate}%`, icon: <CheckCircle size={18} /> },
-              { label: "예정 근무", value: stats.scheduled, icon: <Calendar size={18} /> },
-              { label: "정상", value: stats.normal, icon: <CheckCircle size={18} /> },
-              { label: "지각", value: stats.late, icon: <Clock size={18} /> },
-              { label: "결근", value: stats.absent, icon: <AlertCircle size={18} /> },
+              { label: t.attendanceRate, value: `${attendanceRate}%`, icon: <CheckCircle size={18} /> },
+              { label: t.scheduledWork, value: stats.scheduled, icon: <Calendar size={18} /> },
+              { label: t.normal, value: stats.normal, icon: <CheckCircle size={18} /> },
+              { label: t.late, value: stats.late, icon: <Clock size={18} /> },
+              { label: t.absent, value: stats.absent, icon: <AlertCircle size={18} /> },
             ].map((item) => (
-              <div key={item.label} style={{ background: cardBg, border: `1px solid ${LIGHT_GREEN}`, borderRadius: 16, padding: "16px 18px" }}>
+              <div key={item.label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, borderRadius: 16, padding: "16px 18px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: DARK_GREEN, marginBottom: 10 }}>
                   <span style={{ fontSize: 13, color: subText, fontWeight: 700 }}>{item.label}</span>
                   {item.icon}
@@ -387,57 +428,66 @@ export default function AttendanceManagement() {
           <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220, position: "relative" }}>
               <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#8BA68D" }} />
-              <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="직원명 또는 ID 검색" style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px 11px 36px", borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, background: isDark ? "#3a3a3c" : "#fff", color: textColor, outline: "none" }} />
+              <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={t.searchPlaceholder} style={{ width: "100%", boxSizing: "border-box", padding: "11px 14px 11px 36px", borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, outline: "none" }} />
             </div>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RowStatus | "all")} style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${LIGHT_GREEN}`, background: isDark ? "#3a3a3c" : "#fff", color: textColor, outline: "none" }}>
-              <option value="all">전체 상태</option>
-              {Object.entries(statusMeta).map(([value, meta]) => (
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as RowStatus | "all")} style={{ padding: "11px 14px", borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, background: isDark ? "#1a1a1a" : "#fff", color: textColor, outline: "none" }}>
+              <option value="all">{t.allStatus}</option>
+              {Object.entries(localizedStatusMeta).map(([value, meta]) => (
                 <option key={value} value={value}>{meta.label}</option>
               ))}
             </select>
           </div>
 
-          <div style={{ overflowX: "auto", background: cardBg, border: `1px solid ${LIGHT_GREEN}`, borderRadius: 16 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 920 }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${LIGHT_GREEN}` }}>
-                  {["날짜", "직원", "예정 시간", "출근", "퇴근", "근무", "상태", "비고"].map((header) => (
-                    <th key={header} style={{ padding: "14px 16px", textAlign: "left", fontSize: 13, color: subText, fontWeight: 800 }}>{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} style={{ padding: 36, textAlign: "center", color: subText }}>근태 기록을 불러오는 중...</td></tr>
-                ) : filteredRows.length === 0 ? (
-                  <tr><td colSpan={8} style={{ padding: 36, textAlign: "center", color: subText }}>표시할 근태 기록이 없습니다.</td></tr>
-                ) : (
-                  filteredRows.map((row) => {
-                    const meta = statusMeta[row.status];
-                    return (
-                      <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? "#3a3a3c" : "rgba(230,245,200,0.8)"}` }}>
-                        <td style={{ padding: "14px 16px", color: textColor, fontWeight: 700 }}>{row.date}</td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>
-                          <div style={{ fontWeight: 800 }}>{row.employeeName}</div>
-                          <div style={{ fontSize: 12, color: subText }}>{row.employeeId}</div>
-                        </td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>{row.start} - {row.end}</td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>{row.checkIn}</td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>{row.checkOut}</td>
-                        <td style={{ padding: "14px 16px", color: textColor }}>{row.workMinutes ? `${Math.floor(row.workMinutes / 60)}h ${row.workMinutes % 60}m` : "-"}</td>
-                        <td style={{ padding: "14px 16px" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", padding: "5px 10px", borderRadius: 999, background: meta.bg, color: meta.color, fontSize: 12, fontWeight: 800 }}>{meta.label}</span>
-                        </td>
-                        <td style={{ padding: "14px 16px", color: subText, fontSize: 13 }}>
-                          {row.lateMinutes > 5 ? `${row.lateMinutes}분 지각` : row.earlyMinutes > 5 ? `${row.earlyMinutes}분 조퇴` : row.status === "absent" ? "출근 기록 없음" : "-"}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+          <div style={{ overflowX: 'auto', background: cardBg, border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`, borderRadius: 16, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <colgroup>
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '22%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '11%' }} />
+                  <col style={{ width: '11%' }} />
+                </colgroup>
+                <thead style={{ overflow: 'hidden' }}>
+                  <tr style={{ borderBottom: `1px solid ${BORDER_GREEN}`, background: isDark ? 'rgba(24,160,34,0.1)' : LIGHT_GREEN }}>
+                    {[t.colDate, t.colEmployee, t.colScheduled, t.colCheckIn, t.colCheckOut, t.colWork, t.colStatus, t.colNote].map((header, i) => (
+                      <th key={header} style={{ padding: i === 0 ? '13px 20px 13px 52px' : '13px 20px', textAlign: 'center', fontSize: 13, color: subText, fontWeight: 800, borderTopLeftRadius: i === 0 ? 16 : 0, borderTopRightRadius: i === 7 ? 16 : 0 }}>{header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={8} style={{ padding: 36, textAlign: 'center', color: subText }}>{t.loading}</td></tr>
+                  ) : filteredRows.length === 0 ? (
+                    <tr><td colSpan={8} style={{ padding: 36, textAlign: 'center', color: subText }}>{t.noData}</td></tr>
+                  ) : (
+                    filteredRows.map((row) => {
+                      const meta = localizedStatusMeta[row.status];
+                      return (
+                        <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : 'rgba(0,162,0,0.2)'}` }}>
+                          <td style={{ padding: '14px 20px 14px 52px', color: textColor, fontWeight: 700, textAlign: 'center' }}>{row.date}</td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>
+                            <div style={{ fontWeight: 800 }}>{row.employeeName}</div>
+                          </td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>{row.start} - {row.end}</td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>{row.checkIn}</td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>{row.checkOut}</td>
+                          <td style={{ padding: '14px 20px', color: textColor, textAlign: 'center' }}>{row.workMinutes ? `${Math.floor(row.workMinutes / 60)}h ${row.workMinutes % 60}m` : '-'}</td>
+                          <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 10px', borderRadius: 999, background: isDark ? meta.darkBg : meta.bg, color: isDark ? meta.darkColor : meta.color, fontSize: 12, fontWeight: 800, border: `1px solid ${isDark ? meta.darkBorder : meta.lightBorder}` }}>{meta.label}</span>
+                          </td>
+                          <td style={{ padding: '14px 20px', color: subText, fontSize: 13, textAlign: 'center' }}>
+                            {row.lateMinutes > 5 ? t.noteMinLate(row.lateMinutes) : row.earlyMinutes > 5 ? t.noteMinEarly(row.earlyMinutes) : row.status === 'absent' ? t.noteAbsent : '-'}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
         </main>
       </div>
     </div>

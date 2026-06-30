@@ -3,9 +3,19 @@ package com.dm.backend.controller;
 import com.dm.backend.service.BoardService;
 import com.dm.backend.vo.BoardVO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/board")
@@ -14,52 +24,73 @@ public class BoardC {
     @Autowired
     private BoardService boardService;
 
-    // =========================
-    // [관리자]
-    // =========================
-
-    // 게시판 생성
     @PostMapping
-    public void registerBoard(
+    public ResponseEntity<?> registerBoard(
             @RequestBody BoardVO boardVO
-    ){
-        boardService.registerBoard(boardVO);
+    ) {
+        try {
+            return ResponseEntity.ok(
+                    boardService.registerBoard(boardVO)
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    e.getMessage()
+                            )
+                    );
+        }
     }
 
-    // 게시판 수정
+    @PostMapping("/tab")
+    public ResponseEntity<?> registerBoardTab(
+            @RequestBody BoardVO boardVO
+    ) {
+        return registerBoard(boardVO);
+    }
+
     @PutMapping
     public void updateBoard(
             @RequestBody BoardVO boardVO
-    ){
+    ) {
         boardService.updateBoard(boardVO);
     }
 
-    // 게시판 삭제
     @DeleteMapping
-    public void deleteBoard(
+    public ResponseEntity<?> deleteBoard(
             @RequestParam String id
-    ){
-        boardService.deleteBoard(id);
+    ) {
+        try {
+            boardService.deleteBoard(id);
+            return ResponseEntity.ok(
+                    Map.of(
+                            "message",
+                            "deleted"
+                    )
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    e.getMessage()
+                            )
+                    );
+        }
     }
 
-
-    // =========================
-    // [공통]
-    // =========================
-
-    // 게시판 목록 조회
     @GetMapping
     public List<BoardVO> getBoardList(
             @RequestParam String store_id
-    ){
+    ) {
         return boardService.getBoardList(store_id);
     }
 
-    // 게시판 단건 조회
     @GetMapping("/{id}")
     public BoardVO getBoard(
             @PathVariable String id
-    ){
+    ) {
         return boardService.getBoard(id);
     }
 }

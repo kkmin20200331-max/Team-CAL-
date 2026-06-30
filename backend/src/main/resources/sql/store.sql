@@ -3,6 +3,7 @@ create table store(
     name varchar2(30 char) not null,
     address varchar(255) not null,
     capacity number(5) default 0,
+    type varchar2(20 char),
     open_time varchar2(5 char) not null,
     close_time varchar2(5 char) not null
 );
@@ -24,8 +25,6 @@ VALUES ('X7yZ8aB9_c0DeF1gH2iJ3', '신주쿠 우동 강남본점', '서울시 서
 
 select * from store;
 
-ALTER TABLE STORE
-    ADD TYPE VARCHAR2(20 CHAR);
 UPDATE STORE
 SET TYPE = 'CAFE'
 WHERE ID = 'V1StGXR8_Z5jdHi6B-myT';
