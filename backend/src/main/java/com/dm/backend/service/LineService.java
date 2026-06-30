@@ -45,7 +45,7 @@ public class LineService {
                 """
                         .formatted(
                                 lineUserId,
-                                message
+                                escapeJson(message)
                         );
 
         HttpEntity<String> entity =
@@ -61,5 +61,15 @@ public class LineService {
         );
     }
 
+    private String escapeJson(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n");
+    }
 
 }

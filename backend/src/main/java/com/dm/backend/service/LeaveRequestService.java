@@ -114,12 +114,32 @@ public class LeaveRequestService {
 
         leaveRequestMapper.registerLeaveRequest(leaveRequestVO);
 
+        sendLeaveRequestSubmittedToRequester(leaveRequestVO);
         sendLeaveRequestToOwner(leaveRequestVO);
     }
 
     // =========================
     // LINE 알림 - 관리자
     // =========================
+    private void sendLeaveRequestSubmittedToRequester(LeaveRequestVO vo) {
+
+        try {
+
+            String lineUserId =
+                    userLineService.getLineUserIdByUserId(vo.getUser_id());
+
+            if (lineUserId != null) {
+                lineService.sendMessage(
+                        lineUserId,
+                        "휴무 신청이 완료되었습니다.\n사유: " + defaultText(vo.getReason(), "-")
+                );
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private void sendLeaveRequestToOwner(LeaveRequestVO vo) {
 
         try {
@@ -192,5 +212,9 @@ public class LeaveRequestService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String defaultText(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 }
