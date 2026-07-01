@@ -82,6 +82,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
     if (activeCategory === 'ALL') return true;
 
     const getDbName = (cat: string) => {
+      if (!cat) return '';
       const upper = cat.toUpperCase();
       if (upper === 'NOTICE' || cat === '공지사항') return '공지사항';
       if (upper === 'MENU' || cat === '건의사항') return '건의사항';
