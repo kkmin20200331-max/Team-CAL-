@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { useTheme } from 'next-themes';
@@ -31,13 +32,13 @@ export default function EmployeeBottomNav() {
   const inactiveColor = isDark ? '#4cd964' : GREEN;
   const activeBg = isDark ? '#07790F' : DARK_GREEN;
 
-  return (
+  const nav = (
     <nav style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
-      height: 114, background: navBg,
+      height: 86, background: navBg,
       display: 'flex',
       boxShadow: isDark ? '0 -2px 8px rgba(0,0,0,0.4)' : '0 -2px 8px rgba(0,0,0,0.06)',
-      zIndex: 40,
+      zIndex: 9999,
     }}>
       {NAV_ITEMS.map(({ path, NavIcon }, i) => {
         const active = pathname === path;
@@ -50,11 +51,11 @@ export default function EmployeeBottomNav() {
               background: active ? activeBg : navBg,
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'flex-end',
-              paddingBottom: 18, gap: 5,
+              paddingBottom: 14, gap: 4,
             }}
           >
-            <NavIcon size={28} color={active ? '#fff' : inactiveColor} />
-            <span style={{ fontSize: 18, fontWeight: 600, color: active ? '#fff' : inactiveColor }}>
+            <NavIcon size={21} color={active ? '#fff' : inactiveColor} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: active ? '#fff' : inactiveColor }}>
               {labels[i]}
             </span>
           </button>
@@ -62,4 +63,6 @@ export default function EmployeeBottomNav() {
       })}
     </nav>
   );
+
+  return createPortal(nav, document.body);
 }

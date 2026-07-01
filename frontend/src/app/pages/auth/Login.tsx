@@ -147,8 +147,14 @@ export default function Login() {
         name: res.data.name,
         role: res.data.role,
         phone: res.data.phone || '',
+        profile_image: res.data.profile_image || '',
       };
       sessionStorage.setItem("user", JSON.stringify(loginUser));
+      if (res.data.profile_image) {
+        sessionStorage.setItem("profile_image", res.data.profile_image);
+      } else {
+        sessionStorage.removeItem("profile_image");
+      }
 
       if (loginUser.role === "MASTER") {
         navigate("/master/applications");
