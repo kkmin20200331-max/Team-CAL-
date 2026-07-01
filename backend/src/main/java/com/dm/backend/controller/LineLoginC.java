@@ -22,8 +22,11 @@ public class LineLoginC {
     @Value("${line.login.redirect-uri:https://bitemate.kro.kr/api/line/callback}")
     private String redirectUri;
 
-    @Value("${app.frontend-base-url:https://bitemate.kro.kr}")
+    @Value("${app.frontend-base-url:http://localhost:5173}")
     private String frontendBaseUrl;
+
+    @Value("${line.official-account-url:https://line.me/R/ti/p/@354cpsdr}")
+    private String officialAccountUrl;
 
     @Autowired
     private LineLoginService lineLoginService;
@@ -178,7 +181,11 @@ public class LineLoginC {
             // =========================
 
             return new RedirectView(
-                    "https://line.me/R/ti/p/@354cpsdr"
+                    frontendBaseUrl + "/line/success?friendUrl="
+                            + URLEncoder.encode(
+                            officialAccountUrl,
+                            StandardCharsets.UTF_8
+                    )
             );
 
         } catch (Exception e) {

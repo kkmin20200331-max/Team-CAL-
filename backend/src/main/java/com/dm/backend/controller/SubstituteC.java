@@ -55,6 +55,15 @@ public class SubstituteC {
         );
     }
 
+    // application_id 하나로 승인 처리 (shift 없는 경우 포함)
+    @PutMapping("/manager/approve")
+    public void approveByApplicationId(
+            @RequestParam String application_id,
+            @RequestParam(required = false, defaultValue = "") String approved_by
+    ) {
+        substituteService.approveByApplicationId(application_id, approved_by);
+    }
+
     // 모집글 취소
     @DeleteMapping("/manager")
     public void cancelPost(
