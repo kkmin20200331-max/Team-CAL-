@@ -180,15 +180,6 @@ public class LeaveRequestService {
         }
     }
 
-    // shift_id → 관리자 LINE ID (없으면 UserLineService에서 가져옴)
-    private String getOwnerLineUserId(String shift_id) {
-        try {
-            return userLineService.getOwnerLineUserIdByShiftId(shift_id);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     private String defaultText(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
     }

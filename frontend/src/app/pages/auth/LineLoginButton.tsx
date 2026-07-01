@@ -22,6 +22,11 @@ type LineStatusResponse = {
   lineUserId?: string;
 };
 
+type LineLinkedMessage = {
+  type?: string;
+  userId?: string;
+};
+
 const getStoredUser = (): StoredUser => {
   try {
     return JSON.parse(sessionStorage.getItem("user") || "{}");
@@ -96,14 +101,33 @@ const LineLoginButton = () => {
       }
     };
 
+    const handleLineMessage = (event: MessageEvent<LineLinkedMessage>) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (event.data?.type !== "LINE_LINKED") {
+        return;
+      }
+
+      if (event.data.userId && event.data.userId !== userId) {
+        return;
+      }
+
+      setIsLinked(true);
+      fetchLineStatus();
+    };
+
     window.addEventListener("focus", handleFocus);
+    window.addEventListener("message", handleLineMessage);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("message", handleLineMessage);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [fetchLineStatus]);
+  }, [fetchLineStatus, userId]);
 
   const handleLineLogin = () => {
     if (!userId || isLinked) {

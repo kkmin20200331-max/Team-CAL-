@@ -181,7 +181,12 @@ public class LineLoginC {
             // =========================
 
             return new RedirectView(
-                    frontendBaseUrl + "/line/success?friendUrl="
+                    frontendBaseUrl + "/line/success?userId="
+                            + URLEncoder.encode(
+                            userId,
+                            StandardCharsets.UTF_8
+                    )
+                            + "&friendUrl="
                             + URLEncoder.encode(
                             officialAccountUrl,
                             StandardCharsets.UTF_8

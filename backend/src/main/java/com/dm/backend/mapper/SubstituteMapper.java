@@ -200,14 +200,6 @@ public interface SubstituteMapper {
             """)
     void approveApplication(String id);
 
-    // 모집글 마감
-    @Update("""
-            UPDATE substitute_post
-            SET status = 'closed'
-            WHERE id = #{id}
-            """)
-    void closePost(String id);
-
     // 내 지원 내역 조회
     @Select("""
             SELECT *

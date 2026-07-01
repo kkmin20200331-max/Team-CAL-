@@ -53,49 +53,26 @@ public class SubstituteService {
     // application_id 하나로 대타 승인 처리 (shift 없는 경우 포함)
     @Transactional
     public void approveByApplicationId(String applicationId, String approvedBy) {
-        SubstituteApplicationVO app = substituteMapper.getApplication(applicationId);
-        if (app == null) throw new RuntimeException("Application not found: " + applicationId);
+        SubstituteApplicationVO application = substituteMapper.getApplication(applicationId);
+        if (application == null) {
+            throw new IllegalArgumentException("존재하지 않는 대타 지원입니다.");
+        }
 
-        SubstitutePostVO post = substituteMapper.getPost(app.getSubstitute_post_id());
-        if (post == null) throw new RuntimeException("Post not found");
-
-        // 지원 상태 승인으로 변경
-        substituteMapper.approveApplication(applicationId);
-
-        // 모집글 마감
-        substituteMapper.closePost(post.getId());
+        SubstitutePostVO post = substituteMapper.getPost(application.getSubstitute_post_id());
+        if (post == null) {
+            throw new IllegalArgumentException("대타 모집글을 찾을 수 없습니다.");
+        }
 
         String shiftId = post.getShift_id();
-        if (shiftId != null && !shiftId.trim().isEmpty()) {
-            // shift가 있으면 shift 담당자 교체 + 상태 변경 + 이력 기록
-            substituteMapper.updateShiftUser(shiftId, app.getApplicant_user_id());
-            substituteMapper.updateShiftStatus(shiftId, "SUBSTITUTED");
-
-            SubstituteHistoryVO history = new SubstituteHistoryVO();
-            String uniquePart = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 6);
-            history.setId("SH_" + (System.currentTimeMillis() / 1000) + uniquePart);
-            history.setShift_id(shiftId);
-            history.setStore_id(post.getStore_id());
-            history.setOriginal_user_id(post.getRequester_user_id());
-            history.setSubstitute_user_id(app.getApplicant_user_id());
-            history.setApproved_by(approvedBy);
-            history.setApproved_at(LocalDateTime.now());
-            substituteMapper.insertHistory(history);
+        if (shiftId == null || shiftId.isBlank()) {
+            approveEmergencyApplication(application, post);
+            return;
         }
 
-        // LINE 알림
-        String lineUserId = userLineMapper.getLineUserId(app.getApplicant_user_id());
-        if (lineUserId != null) {
-            lineService.sendMessage(lineUserId,
-                """
-                [대타 승인]
+        SubstituteHistoryVO history = new SubstituteHistoryVO();
+        history.setApproved_by(approvedBy);
 
-                신청하신 대타 근무가 승인되었습니다.
-
-                앱에서 근무 일정을 확인해주세요.
-                """
-            );
-        }
+        approveSubstitute(shiftId, application.getApplicant_user_id(), history);
     }
 
     // 대타 승인
@@ -526,6 +503,29 @@ public class SubstituteService {
         }
 
         substituteMapper.closePost(post.getId());
+    }
+
+    private void approveEmergencyApplication(
+            SubstituteApplicationVO application,
+            SubstitutePostVO post
+    ) {
+
+        substituteMapper.updateApplicationStatus(application.getId(), "APPROVED");
+        substituteMapper.rejectOtherApplications(post.getId(), application.getId());
+        substituteMapper.closePost(post.getId());
+
+        sendLineToUser(
+                application.getApplicant_user_id(),
+                "[대타 승인]\n신청하신 긴급 대타 요청이 승인되었습니다.\n앱에서 내용을 확인해주세요."
+        );
+
+        if (post.getRequester_user_id() != null
+                && !post.getRequester_user_id().equals(application.getApplicant_user_id())) {
+            sendLineToUser(
+                    post.getRequester_user_id(),
+                    "[대타 승인]\n요청하신 긴급 대타 근무자가 확정되었습니다.\n앱에서 내용을 확인해주세요."
+            );
+        }
     }
 
     private void sendLineToAdmins(String storeId, String message) {

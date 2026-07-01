@@ -1,13 +1,40 @@
+import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import "../../../styles/LineError.css";
 
 const LineSuccess = () => {
   const [searchParams] = useSearchParams();
+  const userId = searchParams.get("userId") || "";
   const friendUrl = searchParams.get("friendUrl") || "";
 
+  const notifyOpener = () => {
+    window.opener?.postMessage(
+      {
+        type: "LINE_LINKED",
+        userId,
+      },
+      window.location.origin,
+    );
+  };
+
+  const goToQrCheckIn = () => {
+    notifyOpener();
+
+    if (window.opener) {
+      window.opener.location.href = "/employee/checkin";
+      window.close();
+      return;
+    }
+
+    window.location.href = "/employee/checkin";
+  };
+
+  useEffect(() => {
+    goToQrCheckIn();
+  }, [userId]);
+
   const closePopup = () => {
-    window.opener?.location.reload();
-    window.close();
+    goToQrCheckIn();
   };
 
   return (
