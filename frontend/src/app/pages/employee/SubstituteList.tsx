@@ -3,8 +3,8 @@ import { useTheme } from 'next-themes';
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
-import { Search, Clock, MapPin, AlertCircle, Check, Save, ChevronRight } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Search, Clock, MapPin, AlertCircle, Check, Save, ChevronRight, Plus, X } from 'lucide-react';
 import EmployeeHeader from './EmployeeHeader';
 import EmployeeBottomNav from './EmployeeBottomNav';
 
@@ -81,6 +81,17 @@ export default function SubstituteList() {
   const [memberInfo, setMemberInfo] = useState<StoreMemberVo | null>(null);
   const [loadingPosts, setLoadingPosts] = useState(true);
 
+  // 포스터 이름 맵 (user_id → {name, role})
+  const [userMap, setUserMap] = useState<Record<string, { name: string; role: string }>>({});
+
+  // 대타 요청 모달
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [requestDate, setRequestDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [requestReason, setRequestReason] = useState('');
+  const [requesting, setRequesting] = useState(false);
+  const [requestShift, setRequestShift] = useState<ShiftVO | null>(null);
+  const [fetchingShift, setFetchingShift] = useState(false);
+
   const STORAGE_KEY = `substitute_availability_${user.id ?? 'guest'}`;
   const [availability, setAvailability] = useState<AvailabilitySetting>(() => {
     try { const s = sessionStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : { days: [], start: '09:00', end: '18:00' }; }
@@ -113,6 +124,17 @@ export default function SubstituteList() {
       .then((r) => setMemberInfo(r.data)).catch(() => {});
   }, [user.id, storeId]);
 
+  // 같은 지점 직원 목록 → 포스터 이름 맵 빌드
+  useEffect(() => {
+    if (!storeId) return;
+    axiosInstance.get('/users', { params: { store_id: storeId } })
+      .then((r) => {
+        const m: Record<string, { name: string; role: string }> = {};
+        (Array.isArray(r.data) ? r.data : []).forEach((u: any) => { m[u.id] = { name: u.name, role: u.role }; });
+        setUserMap(m);
+      }).catch(() => {});
+  }, [storeId]);
+
   useEffect(() => {
     if (!user.id) return;
     axiosInstance.get('/substitute/staff', { params: { user_id: user.id } })
@@ -122,8 +144,64 @@ export default function SubstituteList() {
 
   const handleSave = () => {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(availability));
+    if (user.id && storeId) {
+      const daysStr = availability.days.join(',');
+      const encoded = daysStr ? `${daysStr}|${availability.start}-${availability.end}` : '';
+      axiosInstance.put('/store_member/available-days', null, {
+        params: { store_id: storeId, user_id: user.id, available_days: encoded },
+      }).catch(() => {});
+    }
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2000);
+  };
+
+  // 날짜 바뀔 때마다 그날 내 shift 조회
+  const handleRequestDateChange = (date: string) => {
+    setRequestDate(date);
+    setRequestShift(null);
+    if (!user.id || !storeId || !date) return;
+    setFetchingShift(true);
+    axiosInstance.get('/shift', { params: { store_id: storeId, user_id: user.id, start_date: date, end_date: date } })
+      .then((r) => {
+        const shifts: ShiftVO[] = Array.isArray(r.data) ? r.data : [];
+        const matched = shifts.find((s) => s.work_date?.slice(0, 10) === date && s.status !== 'VACANT' && s.status !== 'CANCELLED');
+        setRequestShift(matched ?? null);
+      })
+      .catch(() => {})
+      .finally(() => setFetchingShift(false));
+  };
+
+  const handleRequestPost = () => {
+    if (!user.id || !storeId) return;
+    setRequesting(true);
+    axiosInstance.post('/substitute/staff', {
+      shift_id: requestShift?.id ?? '',
+      store_id: storeId,
+      requester_user_id: user.id,
+      reason: requestReason || `[${requestDate}] 대타 구합니다`,
+      status: 'open',
+    })
+      .then(() => {
+        setRequestModalOpen(false);
+        setRequestReason('');
+        // 목록 새로고침
+        return axiosInstance.get('/substitute', { params: { store_id: storeId } });
+      })
+      .then(async (r) => {
+        if (!r) return;
+        const open = (Array.isArray(r.data) ? r.data : []).filter((p: SubstitutePostVO) => p.status === 'open');
+        const enriched: EnrichedPost[] = await Promise.all(
+          open.map(async (p: SubstitutePostVO) => {
+            if (!p.shift_id) return { ...p };
+            try { const sr = await axiosInstance.get(`/shift/${p.shift_id}`); return { ...p, shift: sr.data }; }
+            catch { return { ...p }; }
+          }),
+        );
+        enriched.sort((a, b) => (a.shift?.work_date ?? '9999').localeCompare(b.shift?.work_date ?? '9999'));
+        setPosts(enriched);
+      })
+      .catch(() => alert(t.errRequest))
+      .finally(() => setRequesting(false));
   };
 
   const toggleDay = (key: AvailabilitySetting['days'][number]) => {
@@ -350,24 +428,37 @@ export default function SubstituteList() {
           </button>
         </div>
 
-        {/* ── 검색 ── */}
-        <div style={{ position: 'relative' }}>
-          <Search style={{
-            position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-            width: 18, height: 18, color: '#5a8a5c',
-          }} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t.searchPlaceholder}
+        {/* ── 대타 요청 버튼 + 검색 ── */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => setRequestModalOpen(true)}
             style={{
-              width: '100%', padding: '12px 16px 12px 42px',
-              border: `1px solid ${BORDER_GREEN}`, borderRadius: 12,
-              fontSize: 15, background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
-              color: isDark ? '#fff' : '#333', outline: 'none', boxSizing: 'border-box',
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '12px 20px', borderRadius: 12, border: 'none', cursor: 'pointer',
+              background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`,
+              color: '#fff', fontSize: 15, fontWeight: 700, whiteSpace: 'nowrap',
             }}
-          />
+          >
+            <Plus style={{ width: 16, height: 16 }} />{t.requestBtn}
+          </button>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search style={{
+              position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+              width: 18, height: 18, color: '#5a8a5c',
+            }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t.searchPlaceholder}
+              style={{
+                width: '100%', padding: '12px 16px 12px 42px',
+                border: `1px solid ${BORDER_GREEN}`, borderRadius: 12,
+                fontSize: 15, background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
+                color: isDark ? '#fff' : '#333', outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+          </div>
         </div>
 
         {/* ── 모집중 목록 ── */}
@@ -378,31 +469,50 @@ export default function SubstituteList() {
           </p>
 
           {loadingPosts ? (
-            <p style={{ textAlign: 'center', padding: '48px 0', color: '#888' }}>{t.loading}</p>
+            <p style={{ textAlign: 'center', padding: '48px 0', color: '#888', fontSize: 16 }}>{t.loading}</p>
           ) : filteredPosts.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: '48px 0', color: '#888' }}>{t.noOpenings}</p>
+            <p style={{ textAlign: 'center', padding: '48px 0', color: '#888', fontSize: 16, fontWeight: 500 }}>{t.noOpenings}</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filteredPosts.map((post) => {
-                const workDate  = post.shift?.work_date ?? '';
-                const startTime = post.shift ? getTimePart(post.shift.start_at) : '--:--';
-                const endTime   = post.shift ? getTimePart(post.shift.end_at)   : '--:--';
+                // shift 없는 경우 reason에서 [YYYY-MM-DD] 파싱
+                const reasonDate = post.reason?.match(/\[(\d{4}-\d{2}-\d{2})\]/)?.[1] ?? '';
+                const workDate  = post.shift?.work_date ?? reasonDate;
+                const startTime = post.shift ? getTimePart(post.shift.start_at) : null;
+                const endTime   = post.shift ? getTimePart(post.shift.end_at)   : null;
                 const hours     = post.shift ? calcHours(post.shift.start_at, post.shift.end_at) : 0;
                 const totalPay  = memberInfo?.pay_amount && hours ? hours * memberInfo.pay_amount : null;
                 const urgency   = getUrgency(workDate);
                 const done      = appliedIds.has(post.id);
+                const isOwnPost = post.requester_user_id === user.id;
+                const poster    = userMap[post.requester_user_id];
+                const posterName = poster?.name ?? '';
+                const isAdminPost = poster ? (poster.role === 'ADMIN' || poster.role === 'MASTER') : !poster && !!post.requester_user_id;
 
                 return (
                   <div
                     key={post.id}
                     style={{
                       background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
-                      border: '1px solid rgba(0,162,0,0.12)',
+                      border: isOwnPost ? `1.5px solid ${DARK_GREEN}` : '1px solid rgba(0,162,0,0.12)',
                       borderRadius: 20,
                       padding: '18px 20px',
                       boxShadow: '0px 2px 6px rgba(0,0,0,0.06)',
                     }}
                   >
+                    {/* 포스터 배지 */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                        background: isOwnPost ? DARK_GREEN : (isAdminPost ? '#1a56db' : LIGHT_GREEN),
+                        color: isOwnPost ? '#fff' : (isAdminPost ? '#fff' : DARK_GREEN),
+                      }}>
+                        {isOwnPost ? t.ownPost : (isAdminPost ? t.postedByAdmin : t.postedByEmployee)}
+                        {!isOwnPost && posterName && <span style={{ opacity: 0.85 }}> · {posterName}</span>}
+                      </div>
+                    </div>
+
                     {/* 날짜 + 긴급도 */}
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -422,7 +532,7 @@ export default function SubstituteList() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <Clock style={{ width: 16, height: 16, color: GREEN }} />
                             <span style={{ fontSize: 18, fontWeight: 700, color: isDark ? '#fff' : '#222' }}>
-                              {startTime} - {endTime}
+                              {startTime && endTime ? `${startTime} - ${endTime}` : t.timeUnknown}
                             </span>
                             {hours > 0 && (
                               <span style={{
@@ -473,19 +583,48 @@ export default function SubstituteList() {
 
                     {/* 지원 버튼 */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(0,162,0,0.1)', paddingTop: 12 }}>
-                      <button
-                        disabled={done}
-                        onClick={() => { setSelectedPost(post); setApplyDialogOpen(true); }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          padding: '9px 22px', borderRadius: 12, border: 'none',
-                          fontSize: 15, fontWeight: 700, cursor: done ? 'not-allowed' : 'pointer',
-                          background: done ? LIGHT_GREEN : `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`,
-                          color: done ? '#5a8a5c' : '#fff',
-                        }}
-                      >
-                        {done ? <><Check style={{ width: 14, height: 14 }} />{t.applied}</> : <>{t.apply}<ChevronRight style={{ width: 14, height: 14 }} /></>}
-                      </button>
+                      {isOwnPost ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '9px 16px', borderRadius: 12,
+                            fontSize: 14, fontWeight: 600, color: DARK_GREEN,
+                            background: LIGHT_GREEN,
+                          }}>
+                            <Check style={{ width: 14, height: 14 }} />{t.ownPost}
+                          </span>
+                          <button
+                            onClick={() => {
+                              if (!confirm('대타 요청을 삭제하시겠습니까?')) return;
+                              axiosInstance.delete('/substitute/manager', { params: { post_id: post.id } })
+                                .then(() => setPosts((prev) => prev.filter((p) => p.id !== post.id)))
+                                .catch(() => alert('삭제 중 오류가 발생했습니다.'));
+                            }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 4,
+                              padding: '9px 14px', borderRadius: 12, border: '1px solid #e53e3e',
+                              background: 'transparent', color: '#e53e3e',
+                              fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                            }}
+                          >
+                            <X style={{ width: 13, height: 13 }} />삭제
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          disabled={done}
+                          onClick={() => { setSelectedPost(post); setApplyDialogOpen(true); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '9px 22px', borderRadius: 12, border: 'none',
+                            fontSize: 15, fontWeight: 700, cursor: done ? 'not-allowed' : 'pointer',
+                            background: done ? LIGHT_GREEN : `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`,
+                            color: done ? '#5a8a5c' : '#fff',
+                          }}
+                        >
+                          {done ? <><Check style={{ width: 14, height: 14 }} />{t.applied}</> : <>{t.apply}<ChevronRight style={{ width: 14, height: 14 }} /></>}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -495,65 +634,174 @@ export default function SubstituteList() {
         </div>
       </div>
 
-      {/* ── 지원 확인 다이얼로그 ── */}
-      <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{t.dialogTitle}</DialogTitle></DialogHeader>
-          {selectedPost && (
+      {/* ── 대타 요청 모달 ── */}
+      {requestModalOpen && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setRequestModalOpen(false)} />
+          <div style={{
+            position: 'relative', zIndex: 1,
+            background: isDark ? '#2a2a2c' : '#fff',
+            borderRadius: 24, padding: '28px 24px',
+            width: 'min(480px, 90vw)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: DARK_GREEN }}>{t.requestModalTitle}</h2>
+              <button onClick={() => setRequestModalOpen(false)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#888' }}>
+                <X style={{ width: 22, height: 22 }} />
+              </button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ background: LIGHT_GREEN, borderRadius: 16, padding: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: 12, color: '#5a8a5c' }}>
-                      {getDayName(selectedPost.shift?.work_date ?? '', translations.employeeHome[language].days)}
-                    </p>
-                    <p style={{ fontSize: 26, fontWeight: 800, color: DARK_GREEN }}>
-                      {getDayNum(selectedPost.shift?.work_date ?? '')}
-                    </p>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: 16, fontWeight: 700, color: DARK_GREEN }}>
-                      {selectedPost.shift
-                        ? `${getTimePart(selectedPost.shift.start_at)} - ${getTimePart(selectedPost.shift.end_at)}`
-                        : t.timeUnknown}
-                    </p>
-                    <p style={{ fontSize: 13, color: '#5a8a5c' }}>{storeName}</p>
-                  </div>
-                </div>
-                {memberInfo?.pay_amount && selectedPost.shift && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    paddingTop: 12, borderTop: `1px solid rgba(0,162,0,0.2)`,
-                  }}>
-                    <span style={{ fontSize: 14, color: '#5a8a5c' }}>{t.expectedPay}</span>
-                    <span style={{ fontSize: 18, fontWeight: 800, color: DARK_GREEN }}>
-                      {(calcHours(selectedPost.shift.start_at, selectedPost.shift.end_at) * memberInfo.pay_amount).toLocaleString()}원
-                    </span>
-                  </div>
+              <div>
+                <label style={{ fontSize: 14, color: '#5a8a5c', fontWeight: 600, display: 'block', marginBottom: 6 }}>{t.requestDate}</label>
+                <input
+                  type="date"
+                  value={requestDate}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => handleRequestDateChange(e.target.value)}
+                  style={{
+                    width: '100%', padding: '12px 14px', borderRadius: 12,
+                    border: `1px solid ${BORDER_GREEN}`, fontSize: 16,
+                    background: isDark ? '#3a3a3c' : '#f8fdf4',
+                    color: isDark ? '#fff' : '#222', outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+                {fetchingShift && <p style={{ fontSize: 13, color: '#5a8a5c', marginTop: 6 }}>근무 조회 중...</p>}
+                {!fetchingShift && requestDate && (
+                  requestShift ? (
+                    <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 10, background: LIGHT_GREEN, fontSize: 13, color: DARK_GREEN, fontWeight: 600 }}>
+                      🕐 {getTimePart(requestShift.start_at)} - {getTimePart(requestShift.end_at)} 근무 확인됨
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 13, color: '#999', marginTop: 6 }}>해당 날짜에 등록된 근무가 없습니다.</p>
+                  )
                 )}
               </div>
-              <p style={{ fontSize: 14, color: isDark ? '#aaa' : '#666' }}>{t.confirmApply}</p>
+              <div>
+                <label style={{ fontSize: 14, color: '#5a8a5c', fontWeight: 600, display: 'block', marginBottom: 6 }}>{t.requestReason}</label>
+                <input
+                  type="text"
+                  value={requestReason}
+                  onChange={(e) => setRequestReason(e.target.value)}
+                  placeholder="예: 개인 사정, 병원 방문..."
+                  style={{
+                    width: '100%', padding: '12px 14px', borderRadius: 12,
+                    border: `1px solid ${BORDER_GREEN}`, fontSize: 15,
+                    background: isDark ? '#3a3a3c' : '#f8fdf4',
+                    color: isDark ? '#fff' : '#222', outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              <div style={{ background: LIGHT_GREEN, borderRadius: 12, padding: '12px 16px', fontSize: 13, color: '#5a8a5c' }}>
+                📋 요청을 올리면 같은 지점 직원들이 확인하고 지원할 수 있으며, 최종 승인은 관리자가 처리합니다.
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <button
+                  onClick={() => setRequestModalOpen(false)}
+                  style={{
+                    flex: 1, padding: '12px 0', borderRadius: 12,
+                    border: `1px solid ${BORDER_GREEN}`, background: 'transparent',
+                    color: DARK_GREEN, fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >{t.cancelBtn}</button>
+                <button
+                  onClick={handleRequestPost}
+                  disabled={requesting || !requestDate}
+                  style={{
+                    flex: 2, padding: '12px 0', borderRadius: 12, border: 'none',
+                    background: requesting ? '#ccc' : `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`,
+                    color: '#fff', fontSize: 15, fontWeight: 700, cursor: requesting ? 'not-allowed' : 'pointer',
+                  }}
+                >{requesting ? t.requestSubmitting : t.requestSubmit}</button>
+              </div>
             </div>
-          )}
-          <DialogFooter>
-            <button
-              onClick={() => setApplyDialogOpen(false)} disabled={applying}
-              style={{
-                padding: '10px 20px', borderRadius: 10, border: `1px solid ${BORDER_GREEN}`,
-                background: 'transparent', color: DARK_GREEN, fontWeight: 600, cursor: 'pointer',
-              }}
-            >{t.cancelBtn}</button>
-            <button
-              onClick={confirmApply} disabled={applying}
-              style={{
-                padding: '10px 20px', borderRadius: 10, border: 'none',
-                background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`,
-                color: '#fff', fontWeight: 700, cursor: applying ? 'not-allowed' : 'pointer',
-              }}
-            >{applying ? t.applying : t.apply}</button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── 지원 확인 모달 ── */}
+      {applyDialogOpen && selectedPost && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 24px' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={() => setApplyDialogOpen(false)} />
+          <div style={{
+            position: 'relative', zIndex: 1,
+            background: isDark ? '#1e2820' : '#fff',
+            borderRadius: 24,
+            padding: '28px 24px',
+            width: '100%', maxWidth: 400,
+            boxShadow: '0 8px 40px rgba(0,0,0,0.2)',
+          }}>
+            {/* 핸들 바 */}
+            <div style={{ width: 40, height: 4, borderRadius: 2, background: '#ddd', margin: '0 auto 24px' }} />
+
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: DARK_GREEN, marginBottom: 14 }}>{t.dialogTitle}</h2>
+
+            {/* 근무 정보 카드 */}
+            <div style={{
+              background: isDark ? '#2a3a2a' : LIGHT_GREEN,
+              borderRadius: 14, padding: '14px',
+              marginBottom: 12,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
+                <div style={{
+                  background: DARK_GREEN, borderRadius: 10,
+                  padding: '6px 12px', textAlign: 'center', minWidth: 44,
+                }}>
+                  <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginBottom: 1 }}>
+                    {getDayName(selectedPost.shift?.work_date ?? '', translations.employeeHome[language].days)}
+                  </p>
+                  <p style={{ fontSize: 20, fontWeight: 900, color: '#fff', lineHeight: 1 }}>
+                    {getDayNum(selectedPost.shift?.work_date ?? '')}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: isDark ? '#7ccc7c' : DARK_GREEN, marginBottom: 3 }}>
+                    {selectedPost.shift
+                      ? `${getTimePart(selectedPost.shift.start_at)} - ${getTimePart(selectedPost.shift.end_at)}`
+                      : t.timeUnknown}
+                  </p>
+                  <p style={{ fontSize: 12, color: '#5a8a5c' }}>📍 {storeName}</p>
+                </div>
+              </div>
+              {memberInfo?.pay_amount && selectedPost.shift && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  paddingTop: 10, borderTop: `1px solid rgba(0,162,0,0.2)`,
+                }}>
+                  <span style={{ fontSize: 12, color: '#5a8a5c', fontWeight: 600 }}>{t.expectedPay}</span>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: DARK_GREEN }}>
+                    {(calcHours(selectedPost.shift.start_at, selectedPost.shift.end_at) * memberInfo.pay_amount).toLocaleString()}원
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <p style={{ fontSize: 12, color: isDark ? '#aaa' : '#666', marginBottom: 16, lineHeight: 1.6 }}>{t.confirmApply}</p>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => setApplyDialogOpen(false)} disabled={applying}
+                style={{
+                  flex: 1, padding: '11px 0', borderRadius: 10,
+                  border: `1.5px solid ${BORDER_GREEN}`, background: 'transparent',
+                  color: DARK_GREEN, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
+              >{t.cancelBtn}</button>
+              <button
+                onClick={confirmApply} disabled={applying}
+                style={{
+                  flex: 2, padding: '11px 0', borderRadius: 10, border: 'none',
+                  background: applying ? '#ccc' : `linear-gradient(135deg, ${GREEN}, ${DARK_GREEN})`,
+                  color: '#fff', fontSize: 13, fontWeight: 700,
+                  cursor: applying ? 'not-allowed' : 'pointer',
+                }}
+              >{applying ? t.applying : t.apply}</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <EmployeeBottomNav />
     </div>

@@ -125,6 +125,9 @@ const SubstituteManagement: React.FC = () => {
   >({});
   const [loadingStaff, setLoadingStaff] = useState(true);
 
+  /* 직원별 대타 가능 일정 (user_id → {days, start, end}) */
+  const [availabilityMap, setAvailabilityMap] = useState<Record<string, { days: string[]; start: string; end: string }>>({});
+
   /* 대타 요청하기 모달 */
   const [stores, setStores] = useState<StoreVo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -150,9 +153,19 @@ const SubstituteManagement: React.FC = () => {
           end_date: toDateStr(today),
         },
       }),
+      axiosInstance.get("/store_member/available-days", { params: { store_id: selectedBranchId } }).catch(() => ({ data: [] })),
     ])
-      .then(([usersRes, shiftsRes]) => {
+      .then(([usersRes, shiftsRes, availRes]) => {
         setEmployees(Array.isArray(usersRes.data) ? usersRes.data : []);
+        const avMap: Record<string, { days: string[]; start: string; end: string }> = {};
+        (Array.isArray(availRes.data) ? availRes.data : []).forEach((m: any) => {
+          if (!m.user_id || !m.available_days) return;
+          const [daysPart, timePart] = m.available_days.split('|');
+          const days = daysPart ? daysPart.split(',').filter(Boolean) : [];
+          const [start, end] = timePart ? timePart.split('-') : ['09:00', '18:00'];
+          avMap[m.user_id] = { days, start: start || '09:00', end: end || '18:00' };
+        });
+        setAvailabilityMap(avMap);
 
         const shifts: ShiftVO[] = Array.isArray(shiftsRes.data)
           ? shiftsRes.data
@@ -344,12 +357,32 @@ const SubstituteManagement: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Calendar size={13} /><span>{t.recentWork} {lastWorkedByUser[emp.id] ? formatDate(lastWorkedByUser[emp.id]) : t.noRecord}</span></div>
                 </div>
                 <div style={{ marginBottom: 16 }}>
-                  <p style={{ fontSize: 11, color: subTextColor, marginBottom: 6 }}>{t.availableSchedule} <span style={{ opacity: 0.5 }}>({t.settingPending})</span></p>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {t.dayLabels.map((day: string) => (
-                      <div key={day} style={{ flex: 1, textAlign: 'center', padding: '4px 0', borderRadius: 6, background: isDark ? '#1a1a1a' : LIGHT_GREEN, color: subTextColor, fontSize: 12 }}>{day}</div>
-                    ))}
-                  </div>
+                  {availabilityMap[emp.id] ? (() => {
+                    const av = availabilityMap[emp.id];
+                    const DAY_KEYS = ['mon','tue','wed','thu','fri'];
+                    return (
+                      <>
+                        <p style={{ fontSize: 11, color: subTextColor, marginBottom: 6 }}>{t.availableSchedule} <span style={{ color: DARK_GREEN, fontWeight: 600 }}>{av.start} ~ {av.end}</span></p>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {DAY_KEYS.map((key, i) => {
+                            const active = av.days.includes(key);
+                            return (
+                              <div key={key} style={{ flex: 1, textAlign: 'center', padding: '4px 0', borderRadius: 6, background: active ? DARK_GREEN : (isDark ? '#1a1a1a' : LIGHT_GREEN), color: active ? '#fff' : subTextColor, fontSize: 12, fontWeight: active ? 700 : 400 }}>{t.dayLabels[i]}</div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })() : (
+                    <>
+                      <p style={{ fontSize: 11, color: subTextColor, marginBottom: 6 }}>{t.availableSchedule} <span style={{ opacity: 0.5 }}>({t.settingPending})</span></p>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {t.dayLabels.map((day: string) => (
+                          <div key={day} style={{ flex: 1, textAlign: 'center', padding: '4px 0', borderRadius: 6, background: isDark ? '#1a1a1a' : LIGHT_GREEN, color: subTextColor, fontSize: 12 }}>{day}</div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
                 <button disabled={!emp.phone} onClick={() => handleContact(emp.phone, emp.name)} style={{ width: '100%', padding: '10px 0', background: emp.phone ? 'none' : 'transparent', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: emp.phone ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: emp.phone ? 1 : 0.5 }}>
                   <Phone size={14} />{t.contactBtn}
