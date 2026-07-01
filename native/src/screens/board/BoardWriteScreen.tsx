@@ -15,7 +15,7 @@ import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { translateTexts } from '../../api/translation';
+// import { translateTexts } from '../../api/translation';
 import { Post } from '../../types/Post';
 
 const BoardWriteScreen = ({ route, navigation }: any) => {
