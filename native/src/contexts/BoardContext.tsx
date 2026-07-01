@@ -4,6 +4,7 @@ import {
   createBoardAPI,
   createBoardPostAPI,
   deleteBoardAPI,
+  deleteBoardPostAPI,
   getBoardPostListAPI,
   getBoardPostsAPI,
   updateBoardPostAPI,
@@ -33,6 +34,7 @@ interface BoardContextType {
   addPost: (newPost: Omit<Post, 'id' | 'date' | 'authorId'>, options: AddPostOptions) => Promise<void>;
   updatePost: (updatedPost: Post) => Promise<void>;
   updatePinStatus: (postId: string, isPinned: boolean) => Promise<void>;
+  deletePost: (postId: string, storeId: string) => Promise<void>;
 }
 
 const BoardContext = createContext<BoardContextType | undefined>(undefined);
@@ -167,6 +169,13 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
     await updatePost({ ...post, isPinned });
   }, [posts, updatePost]);
 
+  const deletePost = useCallback(async (postId: string, storeId: string) => {
+    await deleteBoardPostAPI(postId);
+    if (storeId) {
+      await loadPosts(storeId);
+    }
+  }, [loadPosts]);
+
   const value = {
     posts,
     boards,
@@ -178,6 +187,7 @@ export const BoardProvider = ({ children }: BoardProviderProps) => {
     addPost,
     updatePost,
     updatePinStatus,
+    deletePost,
   };
 
   return <BoardContext.Provider value={value}>{children}</BoardContext.Provider>;

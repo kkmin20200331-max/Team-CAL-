@@ -35,16 +35,75 @@ const BoardScreen = ({ route, navigation }: Props) => {
   const { posts, boards, loading, loadPosts, createBoard, deleteBoard } = useBoard();
   const { postToOpenId } = route.params || {};
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
+  const { t, language } = useLanguage();
+
+  const parseJSON = useCallback((str: string) => {
+    try {
+      if (str && str.startsWith('{') && str.endsWith('}')) {
+        const obj = JSON.parse(str);
+        if (obj.ko !== undefined || obj.en !== undefined || obj.ja !== undefined) {
+          return {
+            ko: obj.ko || '',
+            en: obj.en || '',
+            ja: obj.ja || ''
+          };
+        }
+      }
+    } catch {}
+    return {
+      ko: str || '',
+      en: str || '',
+      ja: str || ''
+    };
+  }, []);
+
+  const displayTitle = useCallback((rawTitle: string) => {
+    const parsed = parseJSON(rawTitle);
+    const langCode = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
+    return parsed[langCode] || parsed.ko || rawTitle;
+  }, [language, parseJSON]);
+
+  const translateBoardName = useCallback((name: string) => {
+    if (!name) return '';
+    const upper = name.toUpperCase();
+    if (upper === 'ALL') return t('boardTabAll');
+    if (upper === 'NOTICE' || name === '공지사항') return t('boardTabNotice');
+    if (upper === 'MENU' || name === '건의사항') return t('boardTabMenu');
+    if (upper === 'EVENT' || name === '자유게시판') return t('boardTabEvent');
+    if (upper === 'MANUAL' || name === '매뉴얼' || name === '메뉴얼') return t('boardTabManual');
+    if (upper === 'LOST' || name === '분실물' || name === '분실물 관리' || name === '분실물 공유') return t('boardTabLost');
+    if (upper === 'CHECKLIST' || name === '체크리스트') return t('boardTabChecklist');
+    if (name === '프로모션/이벤트' || name === '프로모션' || name === '이벤트' || upper === 'PROMOTION') return t('boardTabPromotion');
+    if (name === '업무지시' || name === '업무 지시' || upper === 'WORKORDER') return t('boardTabWorkOrder');
+    return name;
+  }, [t]);
+
+  const matchCategory = useCallback((postCategory: string, activeCategory: string) => {
+    if (activeCategory === 'ALL') return true;
+
+    const getDbName = (cat: string) => {
+      const upper = cat.toUpperCase();
+      if (upper === 'NOTICE' || cat === '공지사항') return '공지사항';
+      if (upper === 'MENU' || cat === '건의사항') return '건의사항';
+      if (upper === 'EVENT' || cat === '자유게시판') return '자유게시판';
+      if (upper === 'MANUAL' || cat === '매뉴얼' || cat === '메뉴얼') return '매뉴얼';
+      if (upper === 'LOST' || cat === '분실물' || cat === '분실물 관리') return '분실물';
+      if (upper === 'CHECKLIST' || cat === '체크리스트') return '체크리스트';
+      return cat;
+    };
+
+    return getDbName(postCategory).toUpperCase() === getDbName(activeCategory).toUpperCase();
+  }, []);
 
   const CATEGORIES = React.useMemo(() => {
     const list = [
-      { id: 'ALL', label: '전체' },
-      { id: 'NOTICE', label: '공지사항' },
-      { id: 'MENU', label: '건의사항' },
-      { id: 'EVENT', label: '자유게시판' },
-      { id: 'MANUAL', label: '매뉴얼' },
-      { id: 'LOST', label: '분실물' },
-      { id: 'CHECKLIST', label: '체크리스트' },
+      { id: 'ALL', label: translateBoardName('ALL') },
+      { id: 'NOTICE', label: translateBoardName('NOTICE') },
+      { id: 'MENU', label: translateBoardName('MENU') },
+      { id: 'EVENT', label: translateBoardName('EVENT') },
+      { id: 'MANUAL', label: translateBoardName('MANUAL') },
+      { id: 'LOST', label: translateBoardName('LOST') },
+      { id: 'CHECKLIST', label: translateBoardName('CHECKLIST') },
     ];
 
     const predefinedKeys = ['NOTICE', 'MENU', 'EVENT', 'MANUAL', 'LOST', 'CHECKLIST', '공지사항', '건의사항', '자유게시판', '매뉴얼', '분실물', '체크리스트', '공지', '건의'];
@@ -52,19 +111,19 @@ const BoardScreen = ({ route, navigation }: Props) => {
       const upperName = board.name.toUpperCase();
       if (!predefinedKeys.includes(upperName)) {
         if (!list.some((item) => item.id === board.name)) {
-          list.push({ id: board.name, label: board.name });
+          list.push({ id: board.name, label: translateBoardName(board.name) });
         }
       }
     });
 
     return list;
-  }, [boards]);
+  }, [boards, translateBoardName]);
+
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [showBoardModal, setShowBoardModal] = useState(false);
   const [boardNameInput, setBoardNameInput] = useState('');
   const [savingBoard, setSavingBoard] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const { t } = useLanguage();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
 
@@ -92,19 +151,19 @@ const BoardScreen = ({ route, navigation }: Props) => {
     setRefreshing(false);
   }, [refreshPosts]);
 
-  const activeBoard = boards.find(
-    (board) => board.name.toUpperCase() === activeCategory.toUpperCase(),
+  const activeBoard = boards.find((board) =>
+    matchCategory(board.name, activeCategory)
   );
 
   const handleCreateBoard = useCallback(async () => {
     const name = boardNameInput.trim();
     if (!name) {
-      Alert.alert('입력 오류', '탭 이름을 입력해주세요.');
+      Alert.alert(t('inputError') || '입력 오류', t('enterTabName') || '탭 이름을 입력해주세요.');
       return;
     }
 
     if (!storeId || !userInfo?.id) {
-      Alert.alert('추가 실패', '매장 또는 사용자 정보가 없습니다.');
+      Alert.alert(t('error') || '추가 실패', t('noStoreOrUserInfo') || '매장 또는 사용자 정보가 없습니다.');
       return;
     }
 
@@ -115,20 +174,20 @@ const BoardScreen = ({ route, navigation }: Props) => {
       setBoardNameInput('');
       setShowBoardModal(false);
     } catch {
-      Alert.alert('추가 실패', '탭 추가 중 오류가 발생했습니다.');
+      Alert.alert(t('error') || '추가 실패', t('failedToAddTab') || '탭 추가 중 오류가 발생했습니다.');
     } finally {
       setSavingBoard(false);
     }
-  }, [boardNameInput, createBoard, storeId, userInfo?.id]);
+  }, [boardNameInput, createBoard, storeId, userInfo?.id, t]);
 
   const handleDeleteBoard = useCallback((boardId: string, boardName: string) => {
     Alert.alert(
-      '탭 삭제',
-      `'${boardName}' 탭을 삭제하시겠습니까?`,
+      t('deleteConfirmTitle') || '탭 삭제',
+      t('confirmDeleteTab').replace('{name}', translateBoardName(boardName)),
       [
-        { text: '취소', style: 'cancel' },
+        { text: t('cancel') || '취소', style: 'cancel' },
         {
-          text: '삭제',
+          text: t('delete') || '삭제',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -136,18 +195,18 @@ const BoardScreen = ({ route, navigation }: Props) => {
               setActiveCategory('ALL');
             } catch (error: any) {
               Alert.alert(
-                '삭제 실패',
-                error?.response?.data?.message || '탭 삭제 중 오류가 발생했습니다.',
+                t('error') || '삭제 실패',
+                error?.response?.data?.message || t('failedToDeleteTab') || '탭 삭제 중 오류가 발생했습니다.',
               );
             }
           },
         },
       ],
     );
-  }, [deleteBoard, storeId]);
+  }, [deleteBoard, storeId, translateBoardName, t]);
 
   const filteredPosts = posts
-    .filter((post) => activeCategory === 'ALL' || post.category === activeCategory)
+    .filter((post) => activeCategory === 'ALL' || matchCategory(post.category, activeCategory))
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
@@ -170,12 +229,12 @@ const BoardScreen = ({ route, navigation }: Props) => {
         {activeCategory === 'ALL' && (
           <View style={styles.categoryBadge}>
             <Text style={styles.categoryBadgeText}>
-              {CATEGORIES.find((category) => category.id === item.category)?.label || '공지'}
+              {translateBoardName(item.category)}
             </Text>
           </View>
         )}
         <Text style={styles.noticeItemTitle} numberOfLines={1}>
-          {item.title}
+          {displayTitle(item.title)}
         </Text>
         {item.badge && (
           <View style={styles.newBadge}>
@@ -193,10 +252,14 @@ const BoardScreen = ({ route, navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>게시판</Text>
-        <TouchableOpacity onPress={() => setShowBoardModal(true)} style={styles.headerAction}>
-          <Ionicons name="add" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('board')}</Text>
+        {userInfo?.role === 'ADMIN' ? (
+          <TouchableOpacity onPress={() => setShowBoardModal(true)} style={styles.headerAction}>
+            <Ionicons name="add" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
 
       <View style={styles.tabContainer}>
@@ -210,7 +273,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
               <Text style={[styles.tabText, activeCategory === category.id && styles.tabTextActive]}>
                 {category.label}
               </Text>
-              {activeCategory === category.id && category.id !== 'ALL' && activeBoard && (
+              {activeCategory === category.id && category.id !== 'ALL' && activeBoard && userInfo?.role === 'ADMIN' && (
                 <TouchableOpacity
                   onPress={() => handleDeleteBoard(activeBoard.id, activeBoard.name)}
                   style={styles.tabDeleteButton}
@@ -242,7 +305,7 @@ const BoardScreen = ({ route, navigation }: Props) => {
           loading ? (
             <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
           ) : (
-            <Text style={styles.emptyText}>등록된 게시글이 없습니다.</Text>
+            <Text style={styles.emptyText}>{t('noNotices')}</Text>
           )
         }
       />
@@ -256,14 +319,14 @@ const BoardScreen = ({ route, navigation }: Props) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>탭 추가</Text>
+              <Text style={styles.modalTitle}>{t('addTab')}</Text>
               <TouchableOpacity onPress={() => setShowBoardModal(false)}>
                 <Ionicons name="close" size={22} color={colors.subText} />
               </TouchableOpacity>
             </View>
             <TextInput
               style={styles.modalInput}
-              placeholder="예: 업무 지시"
+              placeholder={t('tabNamePlaceholder')}
               value={boardNameInput}
               onChangeText={setBoardNameInput}
               placeholderTextColor={colors.subText}
@@ -272,14 +335,14 @@ const BoardScreen = ({ route, navigation }: Props) => {
             />
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancelButton} onPress={() => setShowBoardModal(false)}>
-                <Text style={styles.modalCancelButtonText}>취소</Text>
+                <Text style={styles.modalCancelButtonText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, savingBoard && { opacity: 0.6 }]}
                 onPress={handleCreateBoard}
                 disabled={savingBoard}
               >
-                <Text style={styles.modalButtonText}>{savingBoard ? '추가 중...' : '추가'}</Text>
+                <Text style={styles.modalButtonText}>{savingBoard ? t('adding') : t('add')}</Text>
               </TouchableOpacity>
             </View>
           </View>
