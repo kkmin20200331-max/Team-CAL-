@@ -7,23 +7,26 @@ import { format } from 'date-fns';
 import { useSchedule } from '../../contexts/ScheduleContext';
 
 const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigation: any }) => {
-  const { date } = route.params;
+  const { date, shifts: paramShifts, employees: paramEmployees } = route.params;
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   
-  const { shifts, employees, deleteShift } = useSchedule();
+  const { shifts: contextShifts, employees: contextEmployees, deleteShift } = useSchedule();
+
+  const shifts = paramShifts || contextShifts || [];
+  const employees = paramEmployees || contextEmployees || [];
   
   const [dailyShifts, setDailyShifts] = useState(() => 
-    shifts.filter(s => s.date === date).map(s => ({
+    shifts.filter((s: any) => s.date === date).map((s: any) => ({
       ...s,
-      user: employees.find(e => e.id === s.userId)
+      user: employees.find((e: any) => e.id === s.userId)
     }))
   );
 
   useEffect(() => {
-    setDailyShifts(shifts.filter(s => s.date === date).map(s => ({
+    setDailyShifts(shifts.filter((s: any) => s.date === date).map((s: any) => ({
       ...s,
-      user: employees.find(e => e.id === s.userId)
+      user: employees.find((e: any) => e.id === s.userId)
     })));
   }, [shifts, date, employees]);
   

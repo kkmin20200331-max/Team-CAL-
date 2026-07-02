@@ -49,12 +49,35 @@ const normalizeShiftStatus = (status?: string): Shift['status'] => {
   return 'SCHEDULED';
 };
 
+const getRealTimeItem = (item: Shift): Shift => {
+  if (item.status === 'OFF' || item.status === 'SUBSTITUTE_REQ' || !item.time || !item.time.includes(' - ')) {
+    return item;
+  }
+  const now = new Date();
+  const todayStr = toDateStr(now);
+  if (item.fullDate < todayStr) return { ...item, status: 'COMPLETED' };
+  if (item.fullDate > todayStr) return { ...item, status: 'SCHEDULED' };
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const [startStr, endStr] = item.time.split(' - ');
+  const [startH, startM] = startStr.split(':').map(Number);
+  const [endH, endM] = endStr.split(':').map(Number);
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+
+  let newStatus: Shift['status'] = 'COMPLETED';
+  if (currentMinutes < startMinutes) newStatus = 'SCHEDULED';
+  else if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) newStatus = 'IN_PROGRESS';
+  
+  return { ...item, status: newStatus };
+};
+
 const mapShift = (raw: any, storeName: string): Shift => {
   const fullDate = getDatePart(raw.work_date) || toDateStr(new Date());
   const start = getTimePart(raw.start_at);
   const end = getTimePart(raw.end_at);
 
-  return {
+  return getRealTimeItem({
     id: raw.id,
     fullDate,
     date: fullDate.slice(8, 10),
@@ -64,7 +87,7 @@ const mapShift = (raw: any, storeName: string): Shift => {
     status: normalizeShiftStatus(raw.status),
     checkInTime: raw.check_in_at ? getTimePart(raw.check_in_at) : null,
     checkOutTime: raw.check_out_at ? getTimePart(raw.check_out_at) : null,
-  };
+  });
 };
 
 const DashboardScreen = ({ navigation }: Props) => {
