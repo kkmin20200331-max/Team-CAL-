@@ -14,6 +14,27 @@ import { Switch } from "../../components/ui/switch";
 import { signupAPI } from "../../components/api/auth";
 import { getAllStoresAPI, createStoreMemberAPI } from "../../components/api/store";
 
+// 물리 키코드 → 영문 변환 (한타 입력 방지용)
+const CODE_MAP: Record<string, string> = {
+  KeyQ:'q',KeyW:'w',KeyE:'e',KeyR:'r',KeyT:'t',KeyY:'y',KeyU:'u',KeyI:'i',KeyO:'o',KeyP:'p',
+  KeyA:'a',KeyS:'s',KeyD:'d',KeyF:'f',KeyG:'g',KeyH:'h',KeyJ:'j',KeyK:'k',KeyL:'l',
+  KeyZ:'z',KeyX:'x',KeyC:'c',KeyV:'v',KeyB:'b',KeyN:'n',KeyM:'m',
+  Digit1:'1',Digit2:'2',Digit3:'3',Digit4:'4',Digit5:'5',
+  Digit6:'6',Digit7:'7',Digit8:'8',Digit9:'9',Digit0:'0',
+  Minus:'-',Equal:'=',BracketLeft:'[',BracketRight:']',Backslash:'\\',
+  Semicolon:';',Quote:"'",Comma:',',Period:'.',Slash:'/',Backquote:'`',
+};
+const CODE_MAP_SHIFT: Record<string, string> = {
+  KeyQ:'Q',KeyW:'W',KeyE:'E',KeyR:'R',KeyT:'T',KeyY:'Y',KeyU:'U',KeyI:'I',KeyO:'O',KeyP:'P',
+  KeyA:'A',KeyS:'S',KeyD:'D',KeyF:'F',KeyG:'G',KeyH:'H',KeyJ:'J',KeyK:'K',KeyL:'L',
+  KeyZ:'Z',KeyX:'X',KeyC:'C',KeyV:'V',KeyB:'B',KeyN:'N',KeyM:'M',
+  Digit1:'!',Digit2:'@',Digit3:'#',Digit4:'$',Digit5:'%',
+  Digit6:'^',Digit7:'&',Digit8:'*',Digit9:'(',Digit0:')',
+  Minus:'_',Equal:'+',BracketLeft:'{',BracketRight:'}',Backslash:'|',
+  Semicolon:':',Quote:'"',Comma:'<',Period:'>',Slash:'?',Backquote:'~',
+};
+const isKorean = (key: string) => /^[ㄱ-ㅎㅏ-ㅣ가-힣]$/.test(key);
+
 const BG = "#EEF5DD";
 const GREEN = "#00A200";
 const INPUT_BG = "#F2F5EB";
@@ -213,6 +234,25 @@ export default function Signup() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  // 한글 IME 조합 시작 시 blur→focus로 강제 해제 (전화번호 등에 사용)
+  const resetIme = (e: React.CompositionEvent<HTMLInputElement>) => {
+    const el = e.currentTarget;
+    el.blur();
+    requestAnimationFrame(() => el.focus());
+  };
+
+  // 한타 입력 시 물리 키코드로 영문 변환 (아이디 필드용)
+  const makeEnglishKeyDown = (
+    value: string,
+    setter: (v: string) => void
+  ) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (isKorean(e.key)) {
+      e.preventDefault();
+      const char = (e.shiftKey ? CODE_MAP_SHIFT : CODE_MAP)[e.nativeEvent.code];
+      if (char) setter(value + char);
+    }
+  };
 
   const [language] = useState(
     () => sessionStorage.getItem("app-language") || "ko",
@@ -635,23 +675,26 @@ export default function Signup() {
               <Field labelStyle={labelStyle} label={t.phone}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <input
-                    type="tel" maxLength={3}
+                    type="tel" maxLength={3} lang="en"
                     value={phone1}
                     onChange={(e) => setPhone1(e.target.value.replace(/\D/g, ''))}
+                    onCompositionStart={resetIme}
                     style={{ ...inputStyle, width: "28%", textAlign: "center" }} className="signup-input"
                   />
                   <span style={{ color: "#aaa", fontWeight: 400, flexShrink: 0 }}>-</span>
                   <input
-                    type="tel" maxLength={4}
+                    type="tel" maxLength={4} lang="en"
                     value={phone2}
                     onChange={(e) => setPhone2(e.target.value.replace(/\D/g, ''))}
+                    onCompositionStart={resetIme}
                     style={{ ...inputStyle, flex: 1, textAlign: "center" }} className="signup-input"
                   />
                   <span style={{ color: "#aaa", fontWeight: 400, flexShrink: 0 }}>-</span>
                   <input
-                    type="tel" maxLength={4}
+                    type="tel" maxLength={4} lang="en"
                     value={phone3}
                     onChange={(e) => setPhone3(e.target.value.replace(/\D/g, ''))}
+                    onCompositionStart={resetIme}
                     style={{ ...inputStyle, flex: 1, textAlign: "center" }} className="signup-input"
                   />
                 </div>
@@ -660,8 +703,10 @@ export default function Signup() {
               <Field labelStyle={labelStyle} label={t.username}>
                 <input
                   type="text"
+                  lang="en"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => setUsername(e.target.value.replace(/[ㄱ-ㅎㅏ-ㅣ가-힣]/g, ''))}
+                  onKeyDown={makeEnglishKeyDown(username, setUsername)}
                   placeholder={t.username}
                   style={{ ...inputStyle }}
                   className="signup-input"
@@ -890,8 +935,10 @@ export default function Signup() {
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       <input
                         type="text"
+                        lang="en"
                         value={businessNumber}
                         onChange={(e) => handleBusinessNumberChange(e.target.value)}
+                        onCompositionStart={resetIme}
                         placeholder="123-45-67890"
                         style={{ ...inputStyle, flex: 1, width: "auto" }} className="signup-input"
                       />

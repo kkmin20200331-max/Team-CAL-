@@ -971,7 +971,7 @@ export default function AdminDashboard() {
                   background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
                   borderRadius: 16,
                   padding: "18px 20px",
-                  border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                  border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                 }}
               >
                 <div
@@ -1031,7 +1031,7 @@ export default function AdminDashboard() {
               background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
               borderRadius: 18,
               padding: "22px",
-              border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+              border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               marginBottom: 14,
               display: "grid",
               gridTemplateColumns: "260px 1fr",
@@ -1045,7 +1045,7 @@ export default function AdminDashboard() {
                 height: 240,
                 borderRadius: 16,
                 background: "#fff",
-                border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1088,7 +1088,7 @@ export default function AdminDashboard() {
                     padding: "8px 14px",
                     borderRadius: 999,
                     background: "#fff",
-                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                    border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                     color: isDark ? GREEN : DARK_GREEN,
                     fontSize: 14,
                     fontWeight: 800,
@@ -1107,7 +1107,7 @@ export default function AdminDashboard() {
               background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
               borderRadius: 18,
               padding: "22px",
-              border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+              border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               marginBottom: 14,
             }}
           >
@@ -1174,7 +1174,7 @@ export default function AdminDashboard() {
               background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
               borderRadius: 18,
               padding: "20px 22px",
-              border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+              border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               marginBottom: 14,
             }}
           >
@@ -1251,7 +1251,7 @@ export default function AdminDashboard() {
                     padding: "13px 16px",
                     borderRadius: 12,
                     background: "rgba(255,255,255,0.7)",
-                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                    border: `1.5px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >
                   <p
@@ -1325,7 +1325,7 @@ export default function AdminDashboard() {
                 background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
                 borderRadius: 18,
                 padding: "22px",
-                border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               }}
             >
               <p
@@ -1377,7 +1377,7 @@ export default function AdminDashboard() {
                           padding: "11px 14px",
                           background: isDark ? "#1e1e1e" : "rgba(230,245,200,0.5)",
                           borderRadius: 14,
-                          border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                          border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                         }}
                       >
                         <div
@@ -1451,7 +1451,7 @@ export default function AdminDashboard() {
                 background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
                 borderRadius: 18,
                 padding: "22px",
-                border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               }}
             >
               <div
@@ -1530,7 +1530,7 @@ export default function AdminDashboard() {
                     borderRadius: 14,
                     padding: "15px",
                     background: "rgba(230,245,200,0.3)",
-                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                    border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >
                   <h4
@@ -1550,7 +1550,7 @@ export default function AdminDashboard() {
                     borderRadius: 14,
                     padding: "15px",
                     background: "rgba(230,245,200,0.3)",
-                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                    border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >
                   <h4
