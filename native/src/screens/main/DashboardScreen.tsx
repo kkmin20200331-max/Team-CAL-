@@ -195,6 +195,7 @@ const DashboardScreen = ({ navigation }: Props) => {
     if (!userInfo?.id || !userInfo.store_id) return;
     
     setLoading(true);
+    let payRate = userInfo?.payRate || 9860;
 
     try {
       // [선민 수정] 대시보드 로드 시 직원의 소속 매장 승인 시급 정보(payRate) 조회하여 연동
@@ -203,8 +204,11 @@ const DashboardScreen = ({ navigation }: Props) => {
         const activeMembership = Array.isArray(membershipRes.data)
           ? membershipRes.data.find((m: any) => m.id === userInfo.store_id)
           : null;
-        if (activeMembership && activeMembership.pay_amount && userInfo.payRate !== activeMembership.pay_amount) {
-          updateUserInfo({ payRate: activeMembership.pay_amount });
+        if (activeMembership && activeMembership.pay_amount) {
+          payRate = activeMembership.pay_amount;
+          if (userInfo.payRate !== activeMembership.pay_amount) {
+            updateUserInfo({ payRate: activeMembership.pay_amount });
+          }
         }
       } catch (err) {
         console.error('시급 정보 동기화 실패:', err);
@@ -257,7 +261,6 @@ const DashboardScreen = ({ navigation }: Props) => {
 
       setFullSchedule(mergedSchedule);
 
-      const payroll = payrollRes.status === 'fulfilled' ? payrollRes.value.data : null;
       const scheduledMinutes = mergedSchedule.reduce((sum, item) => {
         // [선민 수정] 휴무(OFF), 휴무 대기중(LEAVE_PENDING), 대타 요청(SUBSTITUTE_REQ) 상태인 근무는 이번 주 근무 시간에서 제외
         if (item.status === 'OFF' || (item.status as any) === 'LEAVE_PENDING' || item.status === 'SUBSTITUTE_REQ') {
@@ -272,9 +275,19 @@ const DashboardScreen = ({ navigation }: Props) => {
         return sum + diff;
       }, 0);
 
+      const weeklyHours = scheduledMinutes / 60;
+      const basePay = weeklyHours * payRate;
+      let totalPay = basePay;
+      
+      // 주휴수당 계산: 주 15시간 이상 근무 시 (근무시간/40)*8*시급
+      if (weeklyHours >= 15) {
+        const holidayHours = (Math.min(weeklyHours, 40) / 40) * 8;
+        totalPay += holidayHours * payRate;
+      }
+
       setWeeklyStats({
-        totalHours: scheduledMinutes / 60,
-        expectedSalary: Number(payroll?.totalPay || 0),
+        totalHours: weeklyHours,
+        expectedSalary: Math.round(totalPay),
       });
 
       setTodayShift(mergedSchedule.find((item) => item.fullDate === todayString) || null);
