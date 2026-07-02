@@ -213,6 +213,7 @@ public class SubstituteService {
         }
 
         substituteMapper.createPost(postVO);
+        notifyAdminsForSubstitutePost(postVO);
 
         if (postVO.getShift_id() != null) {
             substituteMapper.updateShiftStatus(
@@ -225,6 +226,21 @@ public class SubstituteService {
         }
 
         notifyAvailableStaffForEmergencyPost(postVO);
+    }
+
+    private void notifyAdminsForSubstitutePost(SubstitutePostVO postVO) {
+
+        String reason =
+                postVO.getReason() == null || postVO.getReason().isBlank()
+                        ? "미입력"
+                        : postVO.getReason();
+
+        sendLineToAdmins(
+                postVO.getStore_id(),
+                "[대타 신청]\n새로운 대타 요청이 등록되었습니다.\n사유: "
+                        + reason
+                        + "\n앱에서 대타 요청을 확인해주세요."
+        );
     }
 
     private void notifyAvailableStaffForShiftPost(SubstitutePostVO postVO) {
@@ -533,6 +549,8 @@ public class SubstituteService {
         try {
             List<String> adminLineIds =
                     userLineService.getAdminLineUserIdsByStoreId(storeId);
+
+            System.out.println("Admin LINE target count for store_id " + storeId + ": " + adminLineIds.size());
 
             if (adminLineIds.isEmpty()) {
                 System.out.println("No admin LINE user found for store_id: " + storeId);

@@ -21,6 +21,10 @@ public class UserLineService {
             UserLineVO vo
     ) {
 
+        if (vo.getFollow_yn() == null || vo.getFollow_yn().isBlank()) {
+            vo.setFollow_yn("N");
+        }
+
         UserLineVO userInfo =
                 userLineMapper.findByUserId(
                         vo.getUser_id()

@@ -6,6 +6,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpStatusCodeException;
 
 import java.util.List;
 import java.util.Map;
@@ -51,11 +52,24 @@ public class LineService {
                         headers
                 );
 
-        restTemplate.postForEntity(
-                "https://api.line.me/v2/bot/message/push",
-                entity,
-                String.class
-        );
+        try {
+            restTemplate.postForEntity(
+                    "https://api.line.me/v2/bot/message/push",
+                    entity,
+                    String.class
+            );
+            System.out.println("LINE push success to " + lineUserId);
+        } catch (HttpStatusCodeException e) {
+            System.err.println(
+                    "LINE push failed to "
+                            + lineUserId
+                            + ": "
+                            + e.getStatusCode()
+                            + " "
+                            + e.getResponseBodyAsString()
+            );
+            throw e;
+        }
     }
 
     private String escapeJson(String value) {

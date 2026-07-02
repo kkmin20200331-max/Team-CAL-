@@ -35,9 +35,15 @@ public class UserLineC {
 
         String lineUserId =
                 lineInfo == null ? null : lineInfo.getLine_user_id();
+        String followYn =
+                lineInfo == null ? null : lineInfo.getFollow_yn();
+        boolean followed =
+                "Y".equalsIgnoreCase(followYn);
 
         return Map.of(
                 "linked", lineUserId != null && !lineUserId.isBlank(),
+                "followed", followed,
+                "follow_yn", followYn == null ? "N" : followYn,
                 "user_id", lineInfo == null || lineInfo.getUser_id() == null ? "" : lineInfo.getUser_id(),
                 "line_user_id", lineUserId == null ? "" : lineUserId
         );

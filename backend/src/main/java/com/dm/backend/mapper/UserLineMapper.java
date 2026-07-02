@@ -23,7 +23,7 @@ public interface UserLineMapper {
         (
             #{user_id},
             #{line_user_id},
-            'N'
+            #{follow_yn}
         )
     """)
     void register(
@@ -39,7 +39,8 @@ public interface UserLineMapper {
     @Select("""
         SELECT
             USER_ID AS user_id,
-            LINE_USER_ID AS line_user_id
+            LINE_USER_ID AS line_user_id,
+            FOLLOW_YN AS follow_yn
         FROM USER_LINE
         WHERE USER_ID = #{user_id}
     """)
@@ -56,7 +57,8 @@ public interface UserLineMapper {
     @Select("""
         SELECT
             USER_ID AS user_id,
-            LINE_USER_ID AS line_user_id
+            LINE_USER_ID AS line_user_id,
+            FOLLOW_YN AS follow_yn
         FROM USER_LINE
         WHERE LINE_USER_ID = #{line_user_id}
     """)
@@ -73,7 +75,8 @@ public interface UserLineMapper {
     @Select("""
         SELECT
             USER_ID AS user_id,
-            LINE_USER_ID AS line_user_id
+            LINE_USER_ID AS line_user_id,
+            FOLLOW_YN AS follow_yn
         FROM USER_LINE
         WHERE USER_ID = #{user_id}
     """)
@@ -105,7 +108,11 @@ public interface UserLineMapper {
 
     @Update("""
         UPDATE USER_LINE
-        SET LINE_USER_ID = #{line_user_id}
+        SET LINE_USER_ID = #{line_user_id},
+            FOLLOW_YN = CASE
+                WHEN #{follow_yn} IS NULL THEN FOLLOW_YN
+                ELSE #{follow_yn}
+            END
         WHERE USER_ID = #{user_id}
     """)
     void updateLineUserId(

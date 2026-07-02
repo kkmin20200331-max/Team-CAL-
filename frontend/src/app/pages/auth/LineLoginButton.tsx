@@ -16,6 +16,9 @@ type StoredUser = {
 
 type LineStatusResponse = {
   linked?: boolean;
+  followed?: boolean;
+  follow_yn?: string;
+  followYn?: string;
   user_id?: string;
   userId?: string;
   line_user_id?: string;
@@ -40,7 +43,11 @@ const isLinkedResponse = (data: LineStatusResponse | null) => {
     return false;
   }
 
-  return Boolean(data.linked || data.line_user_id || data.lineUserId);
+  return Boolean(
+    data.followed ||
+      data.follow_yn?.toUpperCase() === "Y" ||
+      data.followYn?.toUpperCase() === "Y",
+  );
 };
 
 const LineLoginButton = () => {
@@ -114,7 +121,6 @@ const LineLoginButton = () => {
         return;
       }
 
-      setIsLinked(true);
       fetchLineStatus();
     };
 
