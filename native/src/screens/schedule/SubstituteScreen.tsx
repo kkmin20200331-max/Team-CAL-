@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -7,7 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
 import { useApp } from '../../contexts/AppContext';
 import { format, parseISO } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko, enUS, ja } from 'date-fns/locale';
 import {
   getSubstitutePostsAPI,
   applySubstituteAPI,
@@ -21,9 +21,15 @@ const isOpenSubstitutePost = (status?: string) => {
 };
 
 const SubstituteScreen = ({ navigation }: any) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { userInfo } = useApp();
   const [activeTab, setActiveTab] = useState<'REQUEST' | 'HISTORY'>('REQUEST');
+
+  const dateLocale = useMemo(() => {
+    if (language === 'English') return enUS;
+    if (language === '日本語') return ja;
+    return ko;
+  }, [language]);
 
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
@@ -62,7 +68,7 @@ const SubstituteScreen = ({ navigation }: any) => {
               const start = shift.start_time || shift.startTime || '';
               const end = shift.end_time || shift.endTime || '';
               timeStr = `${start.slice(0, 5)} ~ ${end.slice(0, 5)}`;
-              dateStr = format(parseISO(shift.work_date || shift.date), 'M월 d일 (eee)', { locale: ko });
+              dateStr = format(parseISO(shift.work_date || shift.date), t('dateFormatPattern'), { locale: dateLocale });
               
               const [sH, sM] = start.split(':').map(Number);
               const [eH, eM] = end.split(':').map(Number);
@@ -79,7 +85,7 @@ const SubstituteScreen = ({ navigation }: any) => {
               date: dateStr,
               time: timeStr,
               wage: wageStr,
-              role: post.reason || '대타 근무',
+              role: post.reason || t('substituteRoleDefault'),
               bonus: '+1',
             };
           } catch (e) {
@@ -110,7 +116,7 @@ const SubstituteScreen = ({ navigation }: any) => {
               const start = shift.start_time || shift.startTime || '';
               const end = shift.end_time || shift.endTime || '';
               timeStr = `${start.slice(0, 5)} ~ ${end.slice(0, 5)}`;
-              dateStr = format(parseISO(shift.work_date || shift.date), 'M월 d일 (eee)', { locale: ko });
+              dateStr = format(parseISO(shift.work_date || shift.date), t('dateFormatPattern'), { locale: dateLocale });
             }
 
             return {
@@ -129,7 +135,7 @@ const SubstituteScreen = ({ navigation }: any) => {
 
     } catch (error) {
       console.error('대타 데이터 로딩 실패:', error);
-      Toast.show({ type: 'error', text1: '대타 정보 로드 실패', text2: '서버 연결 상태를 확인해주세요.' });
+      Toast.show({ type: 'error', text1: t('loadSubstituteFail'), text2: t('checkServerConnection') });
     } finally {
       setLoadingData(false);
     }
@@ -154,14 +160,14 @@ const SubstituteScreen = ({ navigation }: any) => {
                 id: appId,
                 substitute_post_id: item.post_id,
                 applicant_user_id: userInfo?.id || '',
-                message: '대타 신청합니다.',
+                message: t('substituteApplyDefaultMsg'),
                 status: 'PENDING',
               });
               Toast.show({ type: 'success', text1: t('subApplySuccessTitle'), text2: t('subApplySuccessMsg') });
               fetchData();
             } catch (error) {
               console.error('대타 지원 에러:', error);
-              Toast.show({ type: 'error', text1: '지원 실패', text2: '이미 지원했거나 서버 오류가 발생했습니다.' });
+              Toast.show({ type: 'error', text1: t('applyFail'), text2: t('applyFailDetail') });
             }
           }
         }

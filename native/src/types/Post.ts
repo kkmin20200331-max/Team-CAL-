@@ -9,4 +9,5 @@ export interface Post {
   authorId?: string; // ✅ [오류 수정] 작성자 ID 속성 추가 (optional)
   author?: string;   // ✅ [오류 수정] 작성자 이름 속성 추가 (optional)
   isPinned?: boolean; // boolean trues
+  createdAt?: string; // 원본 생성 시간 (ISO)
 }

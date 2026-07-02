@@ -1,6 +1,7 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ShiftWithUser {
   time: string;
@@ -24,6 +25,7 @@ type Props = {
 
 const TodayScheduleCard = ({ schedule, onPress, colors }: Props) => {
   const styles = getThemedStyles(colors);
+  const { t } = useLanguage();
 
   const renderShiftGroup = (title: string, shifts: ShiftWithUser[]) => (
     <View style={styles.shiftGroup}>
@@ -34,7 +36,7 @@ const TodayScheduleCard = ({ schedule, onPress, colors }: Props) => {
             <View key={index} style={styles.employeeChip}>
               {/* [오류 수정] 옵셔널 체이닝(?.)을 사용하여 안전하게 정보 접근 */}
               <View style={[styles.colorDot, { backgroundColor: shift?.user?.color || '#A1A1AA' }]} />
-              <Text style={styles.employeeName}>{shift?.user?.name || '직원없음'}</Text>
+              <Text style={styles.employeeName}>{shift?.user?.name || t('noEmployee')}</Text>
             </View>
           ))
         ) : (
@@ -47,15 +49,15 @@ const TodayScheduleCard = ({ schedule, onPress, colors }: Props) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.header}>
-        <Text style={styles.title}>오늘의 스케줄</Text>
+        <Text style={styles.title}>{t('todaySchedule')}</Text>
         <Ionicons name="chevron-forward-outline" size={18} color={colors.subText} />
       </View>
       <View style={styles.content}>
-        {renderShiftGroup("오전", schedule.morning)}
+        {renderShiftGroup(t('morning'), schedule.morning)}
         <View style={styles.divider} />
-        {renderShiftGroup("오후", schedule.afternoon)}
+        {renderShiftGroup(t('afternoon'), schedule.afternoon)}
         <View style={styles.divider} />
-        {renderShiftGroup("마감", schedule.closing)}
+        {renderShiftGroup(t('closing'), schedule.closing)}
       </View>
     </TouchableOpacity>
   );

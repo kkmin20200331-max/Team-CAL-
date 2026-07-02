@@ -136,6 +136,9 @@ export const createBoardAPI = (data: any) => API.post(`/board`, data);
 export const deleteBoardAPI = (boardId: string) =>
   API.delete(`/board`, { params: { id: boardId } });
 
+export const deleteBoardPostAPI = (postId: string) =>
+  API.delete(`/board/post`, { params: { id: postId } });
+
 export const getBoardPostAPI = (postId: string) => API.get(`/board/post/${postId}`);
 
 export const updateBoardPostAPI = (data: any) => API.put(`/board/post`, data);
@@ -308,6 +311,13 @@ export const createCommentAPI = (data: {
 
 export const deleteCommentAPI = (id: string, postId: string, userId: string) =>
   API.delete("/board/comment", { params: { id, post_id: postId, user_id: userId } });
+
+// LINE 연동 관련 API
+export const getLineInfoAPI = (userId: string) =>
+  API.get('/user-line', { params: { user_id: userId } });
+
+export const deleteLineInfoAPI = (userId: string) =>
+  API.delete('/user-line', { params: { user_id: userId } });
 
 
 

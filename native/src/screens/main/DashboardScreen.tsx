@@ -70,9 +70,21 @@ const mapShift = (raw: any, storeName: string): Shift => {
 const DashboardScreen = ({ navigation }: Props) => {
   const { userInfo } = useApp();
   const { posts, loadPosts } = useBoard(); // 2. BoardContext에서 posts 및 loadPosts 가져오기
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
+
+  const getLogoSource = () => {
+    switch (language) {
+      case 'English':
+        return require('../../../assets/img/logo_en_long.png');
+      case '日本語':
+        return require('../../../assets/img/logo_2.png');
+      case '한국어':
+      default:
+        return require('../../../assets/img/logo_ko_long.png');
+    }
+  };
 
   const userName = userInfo?.name || t('defaultUserName');
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
@@ -111,9 +123,9 @@ const DashboardScreen = ({ navigation }: Props) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
       
-      const aDate = new Date(a.date.replace(/\./g, '-')).getTime();
-      const bDate = new Date(b.date.replace(/\./g, '-')).getTime();
-      return bDate - aDate;
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date.replace(/\./g, '-')).getTime();
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date.replace(/\./g, '-')).getTime();
+      return bTime - aTime;
   });
 
   // 4. 네비게이션 파라미터에서 함수 전달 제거
@@ -248,7 +260,7 @@ const DashboardScreen = ({ navigation }: Props) => {
       
       <View style={styles.header}>
         <Image 
-          source={require('../../../assets/img/logo_2.png')} 
+          source={getLogoSource()} 
           style={styles.headerLogo} 
           resizeMode="contain" 
         />
