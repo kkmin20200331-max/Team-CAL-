@@ -28,7 +28,7 @@ const MyPageScreen = ({ navigation }: Props) => {
     if (!userId) return;
     try {
       const response = await getLineInfoAPI(userId);
-      if (response.data && response.data.line_user_id) {
+      if (response.data?.followed || response.data?.follow_yn === 'Y') {
         setIsLineLinked(true);
       } else {
         setIsLineLinked(false);
@@ -55,7 +55,8 @@ const MyPageScreen = ({ navigation }: Props) => {
       return;
     }
     
-    const loginUrl = `${baseUrl}/line/login?userId=${userId}`;
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const loginUrl = `${normalizedBaseUrl}/line/login?userId=${encodeURIComponent(userId)}&source=app`;
     try {
       const supported = await Linking.canOpenURL(loginUrl);
       if (supported) {

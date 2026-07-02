@@ -39,3 +39,11 @@ out/
 # Spring Boot 환경설정 파일 (가장 중요)
 src/main/resources/application.properties
 src/main/resources/application.yml
+
+
+# =========================
+# Oracle Autonomous DB Wallet
+# =========================
+**/wallet/
+wallet/
+wallet.zip
