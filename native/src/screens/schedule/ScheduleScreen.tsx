@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useIsFocused } from '@react-navigation/native';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
@@ -37,6 +38,7 @@ const normalizeStatus = (status?: string): Shift['status'] => {
   if (upper === 'WORKING' || upper === 'CHECKED_IN' || upper === 'IN_PROGRESS') return 'IN_PROGRESS';
   if (upper === 'SUBSTITUTE_REQ') return 'SUBSTITUTE_REQ';
   if (upper === 'LEAVE_PENDING') return 'LEAVE_PENDING' as any;
+  if (upper === 'VACANT') return 'OFF';
   return 'SCHEDULED';
 };
 
@@ -84,6 +86,7 @@ const getRealTimeItem = (item: Shift): Shift => {
 };
 
 const ScheduleScreen = () => {
+  const isFocused = useIsFocused();
   const { userInfo } = useApp();
   const { colors, isDarkMode } = useTheme();
   const { t } = useLanguage();
@@ -128,7 +131,7 @@ const ScheduleScreen = () => {
         const response = await getMyScheduleAPI(userInfo.id, startDate, endDate);
         const shifts = Array.isArray(response.data)
           ? response.data
-              .filter((item: any) => item.status !== 'VACANT' && item.status !== 'CANCELLED')
+              .filter((item: any) => item.status !== 'CANCELLED')
               .map((item: any) => mapShift(item, storeName))
           : [];
 
@@ -144,12 +147,14 @@ const ScheduleScreen = () => {
       }
     };
 
-    loadSchedule();
+    if (isFocused) {
+      loadSchedule();
+    }
 
     return () => {
       alive = false;
     };
-  }, [baseDate, storeName, userInfo?.id]);
+  }, [baseDate, storeName, userInfo?.id, isFocused]);
 
   const renderStatusBadge = (status: string) => {
     const statusMap = {

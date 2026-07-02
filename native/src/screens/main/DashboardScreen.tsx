@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert, Ref
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useIsFocused } from '@react-navigation/native';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -47,6 +48,7 @@ const normalizeShiftStatus = (status?: string): Shift['status'] => {
   if (upper === 'WORKING' || upper === 'CHECKED_IN' || upper === 'IN_PROGRESS') return 'IN_PROGRESS';
   if (upper === 'SUBSTITUTE_REQ') return 'SUBSTITUTE_REQ';
   if (upper === 'LEAVE_PENDING') return 'LEAVE_PENDING' as any;
+  if (upper === 'VACANT') return 'OFF';
   return 'SCHEDULED';
 };
 
@@ -92,6 +94,7 @@ const mapShift = (raw: any, storeName: string): Shift => {
 };
 
 const DashboardScreen = ({ navigation }: Props) => {
+  const isFocused = useIsFocused();
   const { userInfo } = useApp();
   const { posts, loadPosts } = useBoard(); // 2. BoardContext에서 posts 및 loadPosts 가져오기
   const { t, language } = useLanguage();
@@ -182,10 +185,10 @@ const DashboardScreen = ({ navigation }: Props) => {
   }, [userInfo]);
 
   useEffect(() => {
-    if (userInfo) {
+    if (isFocused && userInfo) {
       fetchData();
     }
-  }, [userInfo]);
+  }, [isFocused, userInfo]);
 
   // 5. fetchData에서 게시글 관련 로직 제거
   const fetchData = async () => {
@@ -217,7 +220,7 @@ const DashboardScreen = ({ navigation }: Props) => {
         ? shiftRes.value.data
         : [];
       const schedule = rawShifts
-        .filter((item: any) => item.status !== 'VACANT' && item.status !== 'CANCELLED')
+        .filter((item: any) => item.status !== 'CANCELLED')
         .map((item: any) => mapShift(item, storeName));
 
       const attendanceList = attendanceRes.status === 'fulfilled' && Array.isArray(attendanceRes.value.data)
@@ -243,6 +246,10 @@ const DashboardScreen = ({ navigation }: Props) => {
 
       const payroll = payrollRes.status === 'fulfilled' ? payrollRes.value.data : null;
       const scheduledMinutes = mergedSchedule.reduce((sum, item) => {
+        // [선민 수정] 휴무(OFF), 휴무 대기중(LEAVE_PENDING), 대타 요청(SUBSTITUTE_REQ) 상태인 근무는 이번 주 근무 시간에서 제외
+        if (item.status === 'OFF' || (item.status as any) === 'LEAVE_PENDING' || item.status === 'SUBSTITUTE_REQ') {
+          return sum;
+        }
         if (!item.time.includes(' - ')) return sum;
         const [start, end] = item.time.split(' - ');
         const [sH, sM] = start.split(':').map(Number);

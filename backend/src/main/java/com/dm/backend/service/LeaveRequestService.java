@@ -75,20 +75,19 @@ public class LeaveRequestService {
         // =========================
         try {
             com.dm.backend.vo.ShiftVO shift = shiftMapper.getShift(leave.getShift_id());
-            if (shift != null) {
-                String title = "APPROVED".equals(status) ? "휴무 신청 승인" : "휴무 신청 거절";
-                String content = "APPROVED".equals(status)
-                        ? "신청하신 휴무가 승인되었습니다."
-                        : "신청하신 휴무가 거절되었습니다. 사유는 매장 관리자에게 문의하세요.";
-                createNotification(
-                        leave.getUser_id(),
-                        shift.getStore_id(),
-                        "LEAVE_" + status,
-                        title,
-                        content,
-                        leave.getId()
-                );
-            }
+            String storeId = shift != null ? shift.getStore_id() : "";
+            String title = "APPROVED".equals(status) ? "휴무 신청 승인" : "휴무 신청 거절";
+            String content = "APPROVED".equals(status)
+                    ? "신청하신 휴무가 승인되었습니다."
+                    : "신청하신 휴무가 거절되었습니다. 사유는 매장 관리자에게 문의하세요.";
+            createNotification(
+                    leave.getUser_id(),
+                    storeId,
+                    "LEAVE_" + status,
+                    title,
+                    content,
+                    leave.getId()
+            );
         } catch (Exception e) {
             e.printStackTrace();
         }

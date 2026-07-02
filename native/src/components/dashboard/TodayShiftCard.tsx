@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useApp } from '../../contexts/AppContext';
 
 // Props 타입 정의
 type Props = {
@@ -38,10 +39,27 @@ const getStatusColor = (status: string, isDarkMode: boolean) => {
   }
 };
 
+const calculateDailyWage = (time: string, payRate: number) => {
+  if (!time || !time.includes(' - ')) return 0;
+  const [start, end] = time.split(' - ');
+  const [sH, sM] = start.split(':').map(Number);
+  const [eH, eM] = end.split(':').map(Number);
+  
+  let diff = (eH * 60 + eM) - (sH * 60 + sM);
+  if (diff < 0) diff += 24 * 60;
+  
+  const dailyHours = diff / 60;
+  return Math.round(dailyHours * payRate);
+};
+
 const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }: Props) => {
+  const { userInfo } = useApp();
   const styles = getThemedStyles(colors, isDarkMode);
   const statusColor = todayShift ? getStatusColor(todayShift.status, isDarkMode) : getStatusColor('', isDarkMode);
   const statusText = todayShift ? getStatusText(todayShift.status, t) : '';
+
+  const payRate = userInfo?.payRate || 9860;
+  const dailyWage = todayShift ? calculateDailyWage(todayShift.time, payRate) : 0;
 
   return (
     <View style={styles.card}>
@@ -104,7 +122,7 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
           {/* 급여 정보 */}
           <View style={styles.salaryRow}>
             <Text style={styles.salaryLabel}>{t('expectedDailyWage')}</Text>
-            <Text style={styles.salaryValue}>72,000{t('currency')}</Text>
+            <Text style={styles.salaryValue}>{dailyWage.toLocaleString()}{t('currency')}</Text>
           </View>
         </>
       ) : (

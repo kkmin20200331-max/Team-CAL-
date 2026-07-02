@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
-import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, startOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Shift } from '../../types/Schedule';
 import { User } from '../../types/User';
@@ -52,11 +52,12 @@ const PayrollScreen = ({ route, navigation }: any) => {
 
     let totalMinutes = 0;
     const wages: DailyWage[] = [];
+    const weekMap: { [key: string]: number } = {};
 
     schedule.forEach(item => {
       const shiftDate = parseISO(item.fullDate);
       if (isWithinInterval(shiftDate, { start: monthStart, end: monthEnd })) {
-        if (item.status !== 'OFF' && item.status !== 'SUBSTITUTE_REQ' && item.time && item.time.includes(' - ')) {
+        if (item.status !== 'OFF' && (item.status as any) !== 'LEAVE_PENDING' && item.status !== 'SUBSTITUTE_REQ' && item.time && item.time.includes(' - ')) {
           const [start, end] = item.time.split(' - ');
           const [sH, sM] = start.split(':').map(Number);
           const [eH, eM] = end.split(':').map(Number);
@@ -67,6 +68,10 @@ const PayrollScreen = ({ route, navigation }: any) => {
           totalMinutes += diff;
           const dailyHours = diff / 60;
           const dailyAmount = dailyHours * payRate;
+
+          // 주차별 근무시간 합산 (월요일 기준)
+          const weekStartStr = format(startOfWeek(shiftDate, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+          weekMap[weekStartStr] = (weekMap[weekStartStr] || 0) + dailyHours;
 
           wages.push({
             id: item.id,
@@ -79,12 +84,21 @@ const PayrollScreen = ({ route, navigation }: any) => {
     });
 
     const totalHours = totalMinutes / 60;
-    const totalPay = totalHours * payRate;
+    const basePay = totalHours * payRate;
+
+    // 주휴수당 계산: 주 15시간 이상 근무 시 (근무시간/40)*8*시급
+    let totalHolidayPay = 0;
+    Object.values(weekMap).forEach(hours => {
+      if (hours >= 15) {
+        const holidayHours = (Math.min(hours, 40) / 40) * 8;
+        totalHolidayPay += holidayHours * payRate;
+      }
+    });
 
     setSummary({
-      estimatedTotal: Math.round(totalPay),
-      basePay: Math.round(totalPay),
-      holidayPay: 0,
+      estimatedTotal: Math.round(basePay + totalHolidayPay),
+      basePay: Math.round(basePay),
+      holidayPay: Math.round(totalHolidayPay),
       substituteBonus: 0,
     });
 
