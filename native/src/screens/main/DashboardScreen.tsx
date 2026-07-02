@@ -46,6 +46,7 @@ const normalizeShiftStatus = (status?: string): Shift['status'] => {
   if (upper === 'COMPLETED') return 'COMPLETED';
   if (upper === 'WORKING' || upper === 'CHECKED_IN' || upper === 'IN_PROGRESS') return 'IN_PROGRESS';
   if (upper === 'SUBSTITUTE_REQ') return 'SUBSTITUTE_REQ';
+  if (upper === 'LEAVE_PENDING') return 'LEAVE_PENDING' as any;
   return 'SCHEDULED';
 };
 

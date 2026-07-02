@@ -36,6 +36,7 @@ const normalizeStatus = (status?: string): Shift['status'] => {
   if (upper === 'COMPLETED') return 'COMPLETED';
   if (upper === 'WORKING' || upper === 'CHECKED_IN' || upper === 'IN_PROGRESS') return 'IN_PROGRESS';
   if (upper === 'SUBSTITUTE_REQ') return 'SUBSTITUTE_REQ';
+  if (upper === 'LEAVE_PENDING') return 'LEAVE_PENDING' as any;
   return 'SCHEDULED';
 };
 
@@ -157,6 +158,7 @@ const ScheduleScreen = () => {
       COMPLETED: { style: styles.badgeCompleted, textStyle: styles.badgeTextCompleted, label: t('completed') },
       SUBSTITUTE_REQ: { style: styles.badgeSubstitute, textStyle: styles.badgeTextSubstitute, label: t('substituteReq') },
       OFF: { style: styles.badgeOff, textStyle: styles.badgeTextOff, label: t('offDay') },
+      LEAVE_PENDING: { style: styles.badgeSubstitute, textStyle: styles.badgeTextSubstitute, label: '휴무 대기중' },
     };
     const currentStatus = statusMap[status as keyof typeof statusMap];
     if (!currentStatus) return null;
@@ -185,7 +187,7 @@ const ScheduleScreen = () => {
           reason,
         });
         setScheduleData(prev => prev.map(shift =>
-          shift.id === selectedShift.id ? { ...shift, status: 'OFF', time: 'OFF' } : shift
+          shift.id === selectedShift.id ? { ...shift, status: 'LEAVE_PENDING' as any } : shift
         ));
       } else {
         const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';

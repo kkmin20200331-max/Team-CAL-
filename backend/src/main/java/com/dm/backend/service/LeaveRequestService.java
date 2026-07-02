@@ -21,6 +21,12 @@ public class LeaveRequestService {
     @Autowired
     private UserLineService userLineService;
 
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private com.dm.backend.mapper.ShiftMapper shiftMapper;
+
     // =========================
     // [공통]
     // =========================
@@ -59,6 +65,32 @@ public class LeaveRequestService {
 
         if ("APPROVED".equals(status)) {
             leaveRequestMapper.updateShiftStatusVacant(leave.getShift_id());
+        } else if ("REJECTED".equals(status)) {
+            // 선민 수정 - 휴무 거절 시 shift 상태를 SCHEDULED로 롤백
+            leaveRequestMapper.rollbackShiftStatusScheduled(leave.getShift_id());
+        }
+
+        // =========================
+        // 선민 수정 - 휴무 최종 처리(승인/거절) 시 해당 직원 대상 앱 알림(Notification) 추가
+        // =========================
+        try {
+            com.dm.backend.vo.ShiftVO shift = shiftMapper.getShift(leave.getShift_id());
+            if (shift != null) {
+                String title = "APPROVED".equals(status) ? "휴무 신청 승인" : "휴무 신청 거절";
+                String content = "APPROVED".equals(status)
+                        ? "신청하신 휴무가 승인되었습니다."
+                        : "신청하신 휴무가 거절되었습니다. 사유는 매장 관리자에게 문의하세요.";
+                createNotification(
+                        leave.getUser_id(),
+                        shift.getStore_id(),
+                        "LEAVE_" + status,
+                        title,
+                        content,
+                        leave.getId()
+                );
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         // =========================
@@ -113,6 +145,9 @@ public class LeaveRequestService {
         );
 
         leaveRequestMapper.registerLeaveRequest(leaveRequestVO);
+
+        // 선민 수정 - 휴무 신청 시 shift 상태를 LEAVE_PENDING으로 변경
+        leaveRequestMapper.updateShiftStatusLeavePending(leaveRequestVO.getShift_id());
 
         sendLeaveRequestSubmittedToRequester(leaveRequestVO);
         sendLeaveRequestToOwner(leaveRequestVO);
@@ -177,6 +212,9 @@ public class LeaveRequestService {
         }
 
         leaveRequestMapper.cancelLeaveRequest(id);
+
+        // 선민 수정 - 대기 중 휴무 취소 시 shift 상태를 SCHEDULED로 복구
+        leaveRequestMapper.rollbackShiftStatusScheduled(leave.getShift_id());
     }
 
     public List<LeaveRequestVO> getMyLeaveRequests(
@@ -216,5 +254,33 @@ public class LeaveRequestService {
 
     private String defaultText(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    // =========================
+    // 선민 수정 - 앱 알림 헬퍼 메서드 추가
+    // =========================
+    private void createNotification(
+            String userId,
+            String storeId,
+            String type,
+            String title,
+            String content,
+            String refId
+    ) {
+        com.dm.backend.vo.NotificationVO notification = new com.dm.backend.vo.NotificationVO();
+        notification.setId(
+                "NOTI_" + UUID.randomUUID()
+                        .toString()
+                        .replace("-", "")
+                        .substring(0, 16)
+        );
+        notification.setUser_id(userId);
+        notification.setStore_id(storeId);
+        notification.setType(type);
+        notification.setTitle(title);
+        notification.setContent(content);
+        notification.setRef_id(refId);
+
+        notificationService.createNotification(notification);
     }
 }

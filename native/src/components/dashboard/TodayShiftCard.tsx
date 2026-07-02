@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -19,6 +19,7 @@ const getStatusText = (status: string, t: (key: string) => string) => {
     case 'IN_PROGRESS': return t('inProgress');
     case 'COMPLETED': return t('completed');
     case 'SUBSTITUTE_REQ': return t('substituteReq');
+    case 'LEAVE_PENDING': return '휴무 대기중';
     case 'OFF': return t('offDay');
     default: return '';
   }
@@ -31,6 +32,7 @@ const getStatusColor = (status: string, isDarkMode: boolean) => {
     case 'IN_PROGRESS': return { bg: isDarkMode ? '#004D00' : '#D6F2C5', text: isDarkMode ? '#00A200' : '#008200' };
     case 'COMPLETED': return { bg: isDarkMode ? '#1F293D' : '#F3F4F6', text: isDarkMode ? '#94A3B8' : '#4B5563' };
     case 'SUBSTITUTE_REQ': return { bg: isDarkMode ? '#78350F' : '#FEF3C7', text: isDarkMode ? '#FDE68A' : '#D97706' };
+    case 'LEAVE_PENDING': return { bg: isDarkMode ? '#78350F' : '#FEF3C7', text: isDarkMode ? '#FDE68A' : '#D97706' };
     case 'OFF': return { bg: isDarkMode ? '#7F1D1D' : '#FEE2E2', text: isDarkMode ? '#FECACA' : '#DC2626' };
     default: return { bg: isDarkMode ? '#1F293D' : '#F3F4F6', text: isDarkMode ? '#94A3B8' : '#4B5563' };
   }
