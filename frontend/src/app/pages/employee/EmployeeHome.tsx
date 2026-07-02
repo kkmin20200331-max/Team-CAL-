@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -69,7 +69,9 @@ const formatTime = (s: string) => {
 const calcHours = (start: string, end: string) => {
   const [sh, sm] = formatTime(start).split(":").map(Number);
   const [eh, em] = formatTime(end).split(":").map(Number);
-  return (eh * 60 + em - (sh * 60 + sm)) / 60;
+  let diff = (eh * 60 + em) - (sh * 60 + sm);
+  if (diff < 0) diff += 24 * 60;
+  return diff / 60;
 };
 
 interface ShiftVO {
@@ -188,12 +190,20 @@ export default function EmployeeHome() {
     const d = getDatePart(s.work_date);
     return d >= toDateStr(ws) && d <= toDateStr(we);
   });
-  const totalHours = Math.round(
-    thisWeekShifts.filter(s => s.status !== 'cancelled').reduce((sum, s) => sum + calcHours(s.start_at, s.end_at), 0)
+  const totalHours = Number(
+    thisWeekShifts
+      .filter(s => {
+        const status = s.status?.toLowerCase() || '';
+        return status !== 'cancelled' && status !== 'vacant' && status !== 'leave_pending' && status !== 'substitute_req' && status !== 'off';
+      })
+      .reduce((sum, s) => sum + calcHours(s.start_at, s.end_at), 0)
+      .toFixed(1)
   );
-  const completedShifts = thisWeekShifts.filter(
-    (s) => getDatePart(s.work_date) < todayStr && s.status !== "cancelled",
-  ).length;
+  const completedShifts = thisWeekShifts.filter(s => {
+    const d = getDatePart(s.work_date);
+    const status = s.status?.toLowerCase() || '';
+    return d < todayStr && status !== 'cancelled' && status !== 'vacant' && status !== 'leave_pending' && status !== 'substitute_req' && status !== 'off';
+  }).length;
 
   const getStatusLabel = (status: string) => {
     switch (status) {

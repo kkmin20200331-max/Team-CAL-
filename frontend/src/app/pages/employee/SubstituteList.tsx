@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { useTheme } from 'next-themes';
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -45,7 +45,9 @@ const getTimePart = (s: string) => { if (!s) return '--:--'; const p = s.split('
 const calcHours   = (s: string, e: string) => {
   if (!s || !e) return 0;
   const toMin = (x: string) => { const t = x.includes(' ') ? x.split(' ')[1] : x.slice(11); const [h,m] = t.split(':').map(Number); return h*60+m; };
-  return Math.max(0, (toMin(e) - toMin(s)) / 60);
+  let diff = toMin(e) - toMin(s);
+  if (diff < 0) diff += 24 * 60;
+  return diff / 60;
 };
 const getUrgency = (d: string): 'high'|'medium'|'low' => {
   if (!d) return 'low';

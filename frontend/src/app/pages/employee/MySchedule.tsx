@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from 'next-themes';
@@ -73,7 +73,9 @@ const getWorkDate = (shift: ShiftVO): string => {
 const calcHours = (start: string, end: string): number => {
   const [sh, sm] = formatTime(start).split(":").map(Number);
   const [eh, em] = formatTime(end).split(":").map(Number);
-  return Math.round(((eh * 60 + em - (sh * 60 + sm)) / 60) * 10) / 10;
+  let diff = (eh * 60 + em) - (sh * 60 + sm);
+  if (diff < 0) diff += 24 * 60;
+  return Math.round((diff / 60) * 10) / 10;
 };
 
 const getDayLabel = (dateStr: string, days: string[]): string => {
