@@ -95,7 +95,7 @@ const mapShift = (raw: any, storeName: string): Shift => {
 
 const DashboardScreen = ({ navigation }: Props) => {
   const isFocused = useIsFocused();
-  const { userInfo } = useApp();
+  const { userInfo, updateUserInfo } = useApp();
   const { posts, loadPosts } = useBoard(); // 2. BoardContext에서 posts 및 loadPosts 가져오기
   const { t, language } = useLanguage();
   const { colors, isDarkMode } = useTheme();
@@ -182,13 +182,13 @@ const DashboardScreen = ({ navigation }: Props) => {
     setRefreshing(true);
     fetchData();
     setTimeout(() => setRefreshing(false), 1000);
-  }, [userInfo]);
+  }, [userInfo?.id, userInfo?.store_id]);
 
   useEffect(() => {
     if (isFocused && userInfo) {
       fetchData();
     }
-  }, [isFocused, userInfo]);
+  }, [isFocused, userInfo?.id, userInfo?.store_id]);
 
   // 5. fetchData에서 게시글 관련 로직 제거
   const fetchData = async () => {
@@ -203,8 +203,8 @@ const DashboardScreen = ({ navigation }: Props) => {
         const activeMembership = Array.isArray(membershipRes.data)
           ? membershipRes.data.find((m: any) => m.id === userInfo.store_id)
           : null;
-        if (activeMembership && activeMembership.pay_amount) {
-          userInfo.payRate = activeMembership.pay_amount;
+        if (activeMembership && activeMembership.pay_amount && userInfo.payRate !== activeMembership.pay_amount) {
+          updateUserInfo({ payRate: activeMembership.pay_amount });
         }
       } catch (err) {
         console.error('시급 정보 동기화 실패:', err);
