@@ -129,11 +129,11 @@ const PayrollScreen = ({ route, navigation }: any) => {
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>급여 내역을 계산 중입니다...</Text>
+          <Text style={styles.loadingText}>{t('calculatingPayroll')}</Text>
         </View>
       ) : !summary || dailyWages.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <Text style={styles.emptyText}>이번 달 근무 기록이 없습니다.</Text>
+          <Text style={styles.emptyText}>{t('noWorkRecordThisMonth')}</Text>
         </View>
       ) : (
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

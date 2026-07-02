@@ -21,7 +21,7 @@ import SubstituteAlertCard from '../../components/dashboard/SubstituteAlertCard'
 import NoticeSection from '../../components/dashboard/NoticeSection';
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext'; // 1. useBoard 훅 임포트
-import { getMonthlyAttendanceAPI, getMyScheduleAPI, getPayrollAPI } from '../../../api/auth';
+import { getMonthlyAttendanceAPI, getMyScheduleAPI, getPayrollAPI, getMyStoreMembershipsAPI } from '../../../api/auth';
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
@@ -197,6 +197,19 @@ const DashboardScreen = ({ navigation }: Props) => {
     setLoading(true);
 
     try {
+      // [선민 수정] 대시보드 로드 시 직원의 소속 매장 승인 시급 정보(payRate) 조회하여 연동
+      try {
+        const membershipRes = await getMyStoreMembershipsAPI(userInfo.id);
+        const activeMembership = Array.isArray(membershipRes.data)
+          ? membershipRes.data.find((m: any) => m.id === userInfo.store_id)
+          : null;
+        if (activeMembership && activeMembership.pay_amount) {
+          userInfo.payRate = activeMembership.pay_amount;
+        }
+      } catch (err) {
+        console.error('시급 정보 동기화 실패:', err);
+      }
+
       const now = new Date();
       
       // ✅ [추가] 대시보드 로드 시 게시판 목록도 함께 새로고침하여 첫 렌더링에 노출 보장
