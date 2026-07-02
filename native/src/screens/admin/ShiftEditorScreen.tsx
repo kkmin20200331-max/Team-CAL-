@@ -93,8 +93,10 @@ const ShiftEditorScreen = ({ route, navigation }: { route: any, navigation: any 
       id: isEdit ? shiftToEdit.id : undefined,
       store_id: userInfo.store_id,
       user_id: userId,
-      start_time: finalStartTime.toISOString(),
-      end_time: finalEndTime.toISOString(),
+      work_date: format(date, 'yyyy-MM-dd'),
+      start_at: format(finalStartTime, 'yyyy-MM-dd HH:mm:ss'),
+      end_at: format(finalEndTime, 'yyyy-MM-dd HH:mm:ss'),
+      status: isEdit ? shiftToEdit.status : 'SCHEDULED',
     };
 
     try {
