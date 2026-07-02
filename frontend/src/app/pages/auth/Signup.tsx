@@ -50,9 +50,16 @@ const translations = {
     maxCapacity: "최대 수용 인원 (명)",
     storeAddress: "매장 주소",
     storeType: "업종",
+    storeTypeCafe: "카페",
+    storeTypeRestaurant: "음식점",
+    storeTypeFastFood: "패스트푸드",
+    storeTypeRetail: "소매업",
+    storeTypeService: "서비스업",
+    storeTypeEtc: "ETC",
     businessNumber: "사업자등록번호",
     validateBusiness: "인증",
     businessValSuccess: "인증 성공",
+    businessValFail: "유효하지 않은 사업자 번호입니다.",
     errorValidateBusiness: "사업자등록번호 인증을 완료해주세요.",
     selectStore: "근무할 매장 선택",
     errorEmpty: "모든 항목을 입력해주세요.",
@@ -94,9 +101,16 @@ const translations = {
     maxCapacity: "Max Capacity",
     storeAddress: "Store Address",
     storeType: "Business Type",
+    storeTypeCafe: "Cafe",
+    storeTypeRestaurant: "Restaurant",
+    storeTypeFastFood: "Fast Food",
+    storeTypeRetail: "Retail",
+    storeTypeService: "Service",
+    storeTypeEtc: "Other",
     businessNumber: "Business Number",
     validateBusiness: "Verify",
     businessValSuccess: "Verified",
+    businessValFail: "Invalid business number.",
     errorValidateBusiness: "Please verify your business number.",
     selectStore: "Select Workplace",
     errorEmpty: "Please fill in all fields.",
@@ -138,9 +152,16 @@ const translations = {
     maxCapacity: "最大収容人数 (人)",
     storeAddress: "店舗住所",
     storeType: "業種",
+    storeTypeCafe: "カフェ",
+    storeTypeRestaurant: "レストラン",
+    storeTypeFastFood: "ファストフード",
+    storeTypeRetail: "小売",
+    storeTypeService: "サービス業",
+    storeTypeEtc: "その他",
     businessNumber: "事業者登録番号",
     validateBusiness: "認証",
     businessValSuccess: "認証完了",
+    businessValFail: "無効な事業者番号です。",
     errorValidateBusiness: "事業者登録番号の検証をしてください。",
     selectStore: "勤務店舗を選択",
     errorEmpty: "すべての項目を入力してください。",
@@ -319,10 +340,10 @@ export default function Signup() {
         businessNumber: businessNumber,
       });
       setBusinessValidated(true);
-      setBusinessMsg(res.data.message);
+      setBusinessMsg(t.businessValSuccess);
     } catch (err: any) {
       setBusinessValidated(false);
-      setBusinessMsg(err.response?.data?.message || "유효하지 않은 사업자 번호입니다.");
+      setBusinessMsg(t.businessValFail);
     } finally {
       setBusinessChecking(false);
     }
@@ -849,13 +870,19 @@ export default function Signup() {
 
                   <div style={{ marginBottom: 18 }}>
                     <div style={labelStyle}>{t.storeType}</div>
-                    <input
-                      type="text"
+                    <select
                       value={storeType}
                       onChange={(e) => setStoreType(e.target.value)}
-                      placeholder="CAFE"
-                      style={inputStyle} className="signup-input"
-                    />
+                      style={{ ...inputStyle, cursor: "pointer" }}
+                      className="signup-input"
+                    >
+                      <option value="CAFE">{t.storeTypeCafe}</option>
+                      <option value="RESTAURANT">{t.storeTypeRestaurant}</option>
+                      <option value="FAST_FOOD">{t.storeTypeFastFood}</option>
+                      <option value="RETAIL">{t.storeTypeRetail}</option>
+                      <option value="SERVICE">{t.storeTypeService}</option>
+                      <option value="ETC">{t.storeTypeEtc}</option>
+                    </select>
                   </div>
 
                   <div style={{ marginBottom: 18 }}>
