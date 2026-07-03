@@ -8,6 +8,7 @@ import { getStoreShiftsAPI, getStoreStaffAPI } from '../../../api/auth';
 import TodayScheduleCard from '../../components/admin/TodayScheduleCard';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const colorPalette = ['#4A90E2', '#50E3C2', '#F5A623', '#BD10E0', '#9013FE', '#FF7A00', '#00C4FF'];
 
@@ -30,6 +31,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   const styles = getThemedStyles(colors);
   const isFocused = useIsFocused();
   const { userInfo, setActiveBranch } = useApp();
+  const { t } = useLanguage();
 
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
   const [loading, setLoading] = useState(false);
@@ -69,7 +71,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
         const staffWithColor = staff.map((member: any, index: number) => ({
           ...member,
           id: member.id || member.user_id,
-          name: member.name || member.username || '직원',
+          name: member.name || member.username || t('staff'),
           color: colorPalette[index % colorPalette.length],
         }));
         const staffMap = new Map(staffWithColor.map((member: any) => [member.id, member]));
@@ -82,7 +84,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
             return {
               ...shift,
               user: {
-                name: user?.name || shift.user_name || '직원',
+                name: user?.name || shift.user_name || t('staff'),
                 color: user?.color || '#A1A1AA',
               },
             };
@@ -145,21 +147,21 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const menuItems = [
-    { title: '직원 관리', icon: 'people-outline', screen: 'EmployeeManagement' },
-    { title: '월간 근무표', icon: 'calendar-outline', screen: 'AdminSchedule' },
-    { title: '급여 정산', icon: 'cash-outline', screen: 'Payroll' },
-    { title: '사내 게시판', icon: 'document-text-outline', screen: 'BoardNavigator' },
+    { title: t('employeeManagement'), icon: 'people-outline', screen: 'EmployeeManagement' },
+    { title: t('monthlySchedule'), icon: 'calendar-outline', screen: 'AdminSchedule' },
+    { title: t('payroll'), icon: 'cash-outline', screen: 'Payroll' },
+    { title: t('internalBoard'), icon: 'document-text-outline', screen: 'BoardNavigator' },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>관리자 대시보드</Text>
+          <Text style={styles.headerTitle}>{t('adminDashboard')}</Text>
           <TouchableOpacity style={styles.branchSelector} onPress={() => setBranchModalVisible(true)}>
             <View style={styles.branchSelectorContent}>
               <Text style={styles.storeName}>
-                {activeBranch ? `${activeBranch.brandName} ${activeBranch.branchName}` : '지점 선택'}
+                {activeBranch ? `${activeBranch.brandName} ${activeBranch.branchName}` : t('selectBranch')}
               </Text>
               <Ionicons name="chevron-down-outline" size={16} color={colors.primary} style={{ marginLeft: 4 }} />
             </View>
@@ -168,12 +170,12 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
 
         <View style={styles.summaryContainer}>
           <TouchableOpacity style={styles.summaryBox} onPress={handleNavigateToDailySchedule}>
-            {loading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.summaryValue}>{currentlyWorking}명</Text>}
-            <Text style={styles.summaryLabel}>현재 근무중</Text>
+            {loading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.summaryValue}>{currentlyWorking}{t('peopleUnit')}</Text>}
+            <Text style={styles.summaryLabel}>{t('currentlyWorking')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.summaryBox} onPress={() => navigation.navigate('SubstituteManagement')}>
-            {loading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.summaryValue}>{substituteRequests}건</Text>}
-            <Text style={styles.summaryLabel}>대타 요청</Text>
+            {loading ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.summaryValue}>{substituteRequests}{t('casesUnit')}</Text>}
+            <Text style={styles.summaryLabel}>{t('substituteRequestsLabel')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -201,7 +203,7 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>지점 선택</Text>
+            <Text style={styles.modalTitle}>{t('selectBranch')}</Text>
             {userInfo?.branches?.map((branch) => (
               <TouchableOpacity
                 key={branch.id}
@@ -223,10 +225,10 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
                 navigation.navigate('AddBranch');
               }}
             >
-              <Text style={styles.addBranchButtonText}>+ 지점 추가</Text>
+              <Text style={styles.addBranchButtonText}>{t('addNewBranch')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.closeButton} onPress={() => setBranchModalVisible(false)}>
-              <Text style={styles.closeButtonText}>닫기</Text>
+              <Text style={styles.closeButtonText}>{t('close')}</Text>
             </TouchableOpacity>
           </View>
         </View>

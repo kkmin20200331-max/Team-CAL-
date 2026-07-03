@@ -27,10 +27,42 @@ type Props = {
 const BoardDetailScreen = ({ route, navigation }: Props) => {
   const { postId } = route.params;
   const { userInfo } = useApp();
-  const { posts, updatePinStatus } = useBoard();
+  const { posts, updatePinStatus, deletePost } = useBoard();
   const { colors, isDarkMode } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const styles = getThemedStyles(colors, isDarkMode);
+
+  const parseJSON = (str: string) => {
+    try {
+      if (str && str.startsWith('{') && str.endsWith('}')) {
+        const obj = JSON.parse(str);
+        if (obj.ko !== undefined || obj.en !== undefined || obj.ja !== undefined) {
+          return {
+            ko: obj.ko || '',
+            en: obj.en || '',
+            ja: obj.ja || ''
+          };
+        }
+      }
+    } catch {}
+    return {
+      ko: str || '',
+      en: str || '',
+      ja: str || ''
+    };
+  };
+
+  const displayTitle = (rawTitle: string) => {
+    const parsed = parseJSON(rawTitle);
+    const langCode = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
+    return parsed[langCode] || parsed.ko || rawTitle;
+  };
+
+  const displayContent = (rawContent: string) => {
+    const parsed = parseJSON(rawContent);
+    const langCode = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
+    return parsed[langCode] || parsed.ko || rawContent;
+  };
 
   const [post, setPost] = useState<Post | null>(null);
   // ✅ [추가] 댓글 관련 상태값 정의 (댓글 리스트, 입력 폼 텍스트, 로딩 여부)
@@ -64,12 +96,41 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
       await updatePinStatus(post.id, nextPinned);
       Toast.show({
         type: 'success',
-        text1: nextPinned ? '상단 고정 완료' : '상단 고정 해제',
+        text1: nextPinned ? (t('pin') || '상단 고정') : (t('unpin') || '상단 고정 해제'),
       });
     } catch (error) {
       console.error('게시글 고정 변경 오류:', error);
-      Alert.alert('처리 실패', '게시글 고정 상태를 변경하지 못했습니다.');
+      Alert.alert(t('error') || '처리 실패', t('processErrorMsg') || '게시글 고정 상태를 변경하지 못했습니다.');
     }
+  };
+
+  const handleDeletePost = () => {
+    if (!post) return;
+    Alert.alert(
+      t('deleteConfirmTitle') || '게시글 삭제',
+      t('deletePostConfirmMsg') || '이 게시글을 정말 삭제하시겠습니까?',
+      [
+        { text: t('cancel') || '취소', style: 'cancel' },
+        {
+          text: t('delete') || '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
+            try {
+              await deletePost(post.id, storeId);
+              Toast.show({
+                type: 'success',
+                text1: t('deleteCommentSuccessMsg') || '삭제 완료',
+              });
+              navigation.goBack();
+            } catch (error) {
+              console.error('게시글 삭제 오류:', error);
+              Alert.alert(t('error') || '삭제 실패', '게시글을 삭제하지 못했습니다.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   // ✅ [추가] 새 댓글 등록 API 호출 함수 (누구나 가능)
@@ -148,7 +209,7 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>게시글 상세</Text>
+        <Text style={styles.headerTitle}>{t('boardDetailTitle')}</Text>
         {userInfo?.role === 'ADMIN' ? (
           <TouchableOpacity onPress={handleTogglePin} style={styles.pinButton}>
             <Ionicons 
@@ -168,14 +229,32 @@ const BoardDetailScreen = ({ route, navigation }: Props) => {
       >
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
           <View style={styles.postContainer}>
-            <Text style={styles.postTitle}>{post.title}</Text>
+            <Text style={styles.postTitle}>{displayTitle(post.title)}</Text>
             <View style={styles.postMeta}>
-              <Text style={styles.postAuthor}>작성자: {post.author || post.authorId || '알 수 없음'}</Text>
+              <Text style={styles.postAuthor}>{t('writer')}: {post.author || post.authorId || t('unknown')}</Text>
               <Text style={styles.postDate}>{post.date}</Text>
             </View>
             <View style={styles.postContentContainer}>
-              <Text style={styles.postContent}>{post.content}</Text>
+              <Text style={styles.postContent}>{displayContent(post.content)}</Text>
             </View>
+            {(post.authorId === userInfo?.id || userInfo?.role === 'ADMIN') && (
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity 
+                  style={styles.actionButton} 
+                  onPress={() => navigation.navigate('BoardWrite', { isEdit: true, postId: post.id })}
+                >
+                  <Ionicons name="create-outline" size={16} color={colors.primary} />
+                  <Text style={styles.actionButtonText}>{t('editPost') || '수정'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.deleteActionButton]} 
+                  onPress={handleDeletePost}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                  <Text style={[styles.actionButtonText, styles.deleteActionButtonText]}>{t('delete') || '삭제'}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* ✅ [추가] 댓글 표시 및 작성 폼 섹션 */}
@@ -427,6 +506,35 @@ const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create(
   },
   sendButtonDisabled: {
     backgroundColor: '#CCCCCC',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: isDarkMode ? '#2A2A2A' : '#F3F4F6',
+  },
+  actionButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  deleteActionButton: {
+    backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+  },
+  deleteActionButtonText: {
+    color: '#EF4444',
   },
 });
 

@@ -1,12 +1,14 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
+  const { t } = useLanguage();
 
   const handleSelectRole = (role: 'STAFF') => {
     navigation.navigate('Signup', { role });
@@ -18,21 +20,21 @@ const SignupChoiceScreen = ({ navigation }: { navigation: any }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
           <Ionicons name="chevron-back-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>회원가입</Text>
+        <Text style={styles.headerTitle}>{t('signupBtn')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>직원으로 가입</Text>
-        <Text style={styles.subtitle}>매장에서 근무하는 직원으로 가입을 진행합니다.</Text>
+        <Text style={styles.title}>{t('signupAsStaff')}</Text>
+        <Text style={styles.subtitle}>{t('signupAsStaffDesc')}</Text>
 
         <TouchableOpacity
           style={[styles.choiceButton, styles.staffButton]}
           onPress={() => handleSelectRole('STAFF')}
         >
           <Ionicons name="people-outline" size={40} color={colors.primary} style={styles.choiceIcon} />
-          <Text style={styles.choiceButtonText}>직원 (Staff)</Text>
-          <Text style={styles.choiceButtonDescription}>매장 스케줄에 따라 근무하는 직원입니다.</Text>
+          <Text style={styles.choiceButtonText}>{t('staffLabel')}</Text>
+          <Text style={styles.choiceButtonDescription}>{t('staffButtonDesc')}</Text>
         </TouchableOpacity>
 
         {/* 
