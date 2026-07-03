@@ -3,7 +3,8 @@ name: OpenCV Docker
 on:
   push:
     branches:
-      - "**"
+      - dev
+      - main
     paths:
       - "opencv/**"
       - ".github/workflows/opencv-docker.yml"
