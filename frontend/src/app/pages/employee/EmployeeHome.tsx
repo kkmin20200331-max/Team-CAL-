@@ -295,6 +295,7 @@ export default function EmployeeHome() {
               borderRadius: 16,
               display: 'flex', flexDirection: 'column',
               justifyContent: 'space-between', padding: '12px 30px',
+              boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
             }}>
               <div style={{ fontSize: 16, fontWeight: 400, color: textSub }}>{stat.label}</div>
               <div style={{ fontSize: 28, fontWeight: 800, color: textMain, textAlign: 'right' }}>{stat.value}</div>
@@ -330,7 +331,15 @@ export default function EmployeeHome() {
               {formatTime(todayShift.start_at)} - {formatTime(todayShift.end_at)}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: isDark ? '#4cd964' : GREEN, padding: '8px 0' }}>
+            <div style={{
+              textAlign: 'center', fontSize: 24, fontWeight: 800,
+              color: isDark ? '#4cd964' : GREEN,
+              padding: '18px 0',
+              background: isDark ? 'rgba(24,160,34,0.08)' : 'rgba(245,253,232,0.5)',
+              border: `1px solid ${BORDER_GREEN}`,
+              borderRadius: 54,
+              boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
+            }}>
               {t.noWorkToday}
             </div>
           )}
@@ -339,7 +348,7 @@ export default function EmployeeHome() {
         {/* ── QR BANNER ── */}
         <div
           style={{
-            background: LIGHT_GREEN, borderRadius: 14, height: 63,
+            background: GREEN, borderRadius: 14, height: 63,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
             marginTop: 80, marginBottom: 40, cursor: 'pointer',
             boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
@@ -359,8 +368,8 @@ export default function EmployeeHome() {
           </div>
           {/* Row 1 */}
           <div style={{ display: 'flex', gap: 16, marginBottom: 18 }}>
-            <QuickCard style={cardGreen} onClick={() => navigate('/employee/checkin')}
-              icon={<QrCardIcon size={38} />} label={t.qrCheckInLabel} />
+            <QuickCard style={cardGreen} onClick={() => navigate('/employee/attendance')}
+              icon={<Clock size={38} color="#fff" />} label={t.myAttendanceLabel} />
             <QuickCard style={cardLight} onClick={() => navigate('/employee/schedule')}
               icon={<CalendarCardIcon size={38} />} label={t.mySchedule} />
             <QuickCard style={cardGreen} onClick={() => navigate('/employee/leave')}
@@ -374,10 +383,6 @@ export default function EmployeeHome() {
               icon={<PayrollCardIcon size={38} />} label={t.payrollCheck} />
             <QuickCard style={cardLight} onClick={() => navigate('/employee/board')}
               icon={<BoardCardIcon size={38} />} label={t.boardLabel} />
-          </div>
-          <div style={{ display: 'flex', gap: 16, marginTop: 18 }}>
-            <QuickCard style={cardLight} onClick={() => navigate('/employee/attendance')}
-              icon={<Clock size={38} color={GREEN} />} label="내 근태 기록" />
           </div>
         </div>
 
@@ -399,7 +404,7 @@ export default function EmployeeHome() {
             </button>
           </div>
 
-          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: '28px 40px', minHeight: 140 }}>
+          <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 16, padding: '28px 40px', minHeight: 140, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
             {upcomingShifts.length === 0 ? (
               <div style={{ textAlign: 'center', fontSize: 24, fontWeight: 800, color: textMain, padding: '20px 0' }}>
                 {t.noUpcoming}
@@ -422,7 +427,6 @@ export default function EmployeeHome() {
                       padding: '14px 18px', borderRadius: 16,
                       background: shiftRowBg,
                       border: `1px solid ${shiftRowBorder}`,
-                      boxShadow: '0px 2px 6px rgba(0,0,0,0.06)',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                         <div style={{ textAlign: 'center', minWidth: 48 }}>

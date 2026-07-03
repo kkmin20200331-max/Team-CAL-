@@ -148,6 +148,8 @@ export default function EmployeeProfilePanel() {
       setProfileImage(url);
       const updatedUser = { ...currentUser, profile_image: url };
       sessionStorage.setItem('user', JSON.stringify(updatedUser));
+      sessionStorage.setItem('profile_image', url);
+      if (url) localStorage.setItem(`profile_image_${currentUser.id}`, url);
     } catch (err) {
       console.error('프로필 이미지 업로드 실패:', err);
     }
