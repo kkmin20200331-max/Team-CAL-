@@ -42,7 +42,7 @@ public interface UserLineMapper {
             LINE_USER_ID AS line_user_id,
             FOLLOW_YN AS follow_yn
         FROM USER_LINE
-        WHERE USER_ID = #{user_id}
+        WHERE TRIM(USER_ID) = TRIM(#{user_id})
     """)
     UserLineVO findByUserId(
             String user_id
@@ -78,7 +78,7 @@ public interface UserLineMapper {
             LINE_USER_ID AS line_user_id,
             FOLLOW_YN AS follow_yn
         FROM USER_LINE
-        WHERE USER_ID = #{user_id}
+        WHERE TRIM(USER_ID) = TRIM(#{user_id})
     """)
     UserLineVO getLineInfo(
             String user_id
@@ -93,8 +93,8 @@ public interface UserLineMapper {
     @Select("""
         SELECT LINE_USER_ID
         FROM USER_LINE
-        WHERE USER_ID = #{user_id}
-        AND FOLLOW_YN = 'Y'
+        WHERE TRIM(USER_ID) = TRIM(#{user_id})
+        AND UPPER(TRIM(FOLLOW_YN)) = 'Y'
     """)
     String getLineUserId(
             String user_id
@@ -113,10 +113,18 @@ public interface UserLineMapper {
                 WHEN #{follow_yn} IS NULL THEN FOLLOW_YN
                 ELSE #{follow_yn}
             END
-        WHERE USER_ID = #{user_id}
+        WHERE TRIM(USER_ID) = TRIM(#{user_id})
     """)
     void updateLineUserId(
             UserLineVO vo
+    );
+
+    @Delete("""
+        DELETE FROM USER_LINE
+        WHERE LINE_USER_ID = #{line_user_id}
+    """)
+    void deleteByLineUserId(
+            String line_user_id
     );
 
 
@@ -157,7 +165,7 @@ public interface UserLineMapper {
 
     @Delete("""
         DELETE FROM USER_LINE
-        WHERE USER_ID = #{user_id}
+        WHERE TRIM(USER_ID) = TRIM(#{user_id})
     """)
     void delete(
             String user_id
@@ -175,7 +183,7 @@ public interface UserLineMapper {
         JOIN USERS u
             ON u.ID = sm.USER_ID
         JOIN USER_LINE ul
-            ON ul.USER_ID = sm.USER_ID
+            ON TRIM(ul.USER_ID) = TRIM(sm.USER_ID)
         WHERE s.ID = #{shift_id}
         AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
         AND (
@@ -192,7 +200,7 @@ public interface UserLineMapper {
         JOIN USERS u
             ON u.ID = sm.USER_ID
         JOIN USER_LINE ul
-            ON ul.USER_ID = sm.USER_ID
+            ON TRIM(ul.USER_ID) = TRIM(sm.USER_ID)
         WHERE sm.STORE_ID = #{store_id}
         AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
         AND (

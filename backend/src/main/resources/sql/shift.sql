@@ -109,3 +109,33 @@ WHEN NOT MATCHED THEN
     VALUES (source.id, source.store_id, source.user_id, source.work_date, source.start_at, source.end_at, source.status);
 
 COMMIT;
+SELECT id, store_id, user_id, status
+FROM shift
+WHERE id = 'FIX_3e229e74bb154520a';
+
+SELECT
+    sm.store_id,
+    sm.user_id,
+    sm.member_role,
+    sm.approval_status,
+    u.role,
+    ul.line_user_id,
+    ul.follow_yn
+FROM store_member sm
+         JOIN users u
+              ON u.id = sm.user_id
+         LEFT JOIN user_line ul
+                   ON ul.user_id = sm.user_id
+WHERE sm.store_id = 'ST_2ab1420abea9483ab4';
+SELECT
+    sm.store_id,
+    sm.user_id AS store_member_user_id,
+    sm.member_role,
+    sm.approval_status,
+    ul.user_id AS user_line_user_id,
+    ul.line_user_id,
+    ul.follow_yn
+FROM store_member sm
+         LEFT JOIN user_line ul
+                   ON ul.user_id = sm.user_id
+WHERE sm.store_id = 'ST_2ab1420abea9483ab4';
