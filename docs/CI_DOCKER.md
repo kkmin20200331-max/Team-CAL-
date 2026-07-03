@@ -10,7 +10,7 @@ Add these in GitHub repository settings:
 - `DOCKERHUB_TOKEN`: Docker Hub access token
 - `VM_HOST`: VM host or IP, for example `20.196.96.1`
 - `VM_USER`: SSH user, for example `dongmin`
-- `VM_SSH_KEY`: private SSH key for the VM user
+- `VM_PASSWORD`: SSH password for the VM user
 
 ## Workflows
 
