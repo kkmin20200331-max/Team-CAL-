@@ -21,7 +21,7 @@ interface SubstitutePostVO {
   status: string; created_at: string;
 }
 interface ShiftVO {
-  id: string; work_date: string;
+  id: string; store_id?: string; user_id?: string; work_date: string;
   start_at: string; end_at: string; status: string;
 }
 interface SubstituteApplicationVO {
@@ -63,6 +63,17 @@ const clampTime = (hh: number, mm: number) =>
 const isOpenSubstitutePost = (status?: string) => {
   const normalized = (status || '').toLowerCase();
   return normalized === 'open' || normalized === 'pending';
+};
+const getDatePart = (value?: string) => {
+  if (!value) return '';
+  return value.includes('T') ? value.split('T')[0] : value.split(' ')[0];
+};
+const isRequestableShift = (shift: ShiftVO, date: string, storeId: string, userId: string) => {
+  const status = (shift.status || '').toUpperCase();
+  return getDatePart(shift.work_date) === date
+    && (!shift.store_id || shift.store_id === storeId)
+    && (!shift.user_id || shift.user_id === userId)
+    && !['VACANT', 'CANCELLED', 'OFF'].includes(status);
 };
 
 export default function SubstituteList() {
@@ -163,17 +174,24 @@ export default function SubstituteList() {
   const handleRequestDateChange = (date: string) => {
     setRequestDate(date);
     setRequestShift(null);
-    if (!user.id || !storeId || !date) return;
+  };
+
+  useEffect(() => {
+    if (!requestModalOpen || !user.id || !storeId || !requestDate) {
+      setRequestShift(null);
+      return;
+    }
+
     setFetchingShift(true);
-    axiosInstance.get('/shift', { params: { store_id: storeId, user_id: user.id, start_date: date, end_date: date } })
+    axiosInstance.get('/shift/staff', { params: { user_id: user.id, start_date: requestDate, end_date: requestDate } })
       .then((r) => {
         const shifts: ShiftVO[] = Array.isArray(r.data) ? r.data : [];
-        const matched = shifts.find((s) => s.work_date?.slice(0, 10) === date && s.status !== 'VACANT' && s.status !== 'CANCELLED');
+        const matched = shifts.find((s) => isRequestableShift(s, requestDate, storeId, user.id));
         setRequestShift(matched ?? null);
       })
-      .catch(() => {})
+      .catch(() => setRequestShift(null))
       .finally(() => setFetchingShift(false));
-  };
+  }, [requestModalOpen, requestDate, storeId, user.id]);
 
   const handleRequestPost = () => {
     if (!user.id || !storeId) return;

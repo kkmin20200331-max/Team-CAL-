@@ -28,7 +28,7 @@ public interface ShiftMapper {
             SELECT *
             FROM shift
             WHERE user_id = #{user_id}
-            AND work_date BETWEEN #{start_date} AND #{end_date}
+            AND TRUNC(work_date) BETWEEN TRUNC(#{start_date}) AND TRUNC(#{end_date})
             """)
     List<ShiftVO> getMonthlyShift(
             @Param("user_id") String user_id,
@@ -60,8 +60,8 @@ public interface ShiftMapper {
             SELECT *
             FROM shift
             WHERE store_id = #{store_id}
-            AND work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
-            AND work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
             ORDER BY work_date, start_at
             """)
     List<ShiftVO> getShiftList(
@@ -134,8 +134,8 @@ public interface ShiftMapper {
             SELECT *
             FROM shift
             WHERE user_id = #{user_id}
-            AND work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
-            AND work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
             ORDER BY work_date, start_at
             """)
     List<ShiftVO> getMyShiftList(
