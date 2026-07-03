@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -14,6 +14,8 @@ import Ionicons from '@expo/vector-icons/Ionicons'; // ✅ Ionicons 임포트
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+// import { translateTexts } from '../../api/translation';
 import { Post } from '../../types/Post';
 
 const BoardWriteScreen = ({ route, navigation }: any) => {
@@ -21,28 +23,73 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
   const { userInfo } = useApp();
   const { posts, addPost, updatePost, boards } = useBoard();
   const { colors, isDarkMode } = useTheme();
+  const { t, language } = useLanguage();
   const styles = getThemedStyles(colors, isDarkMode);
 
   const isAdmin = userInfo?.role === 'ADMIN';
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
   const postToEdit = isEdit ? posts.find((post) => post.id === postId) : null;
 
-  const [title, setTitle] = useState(isEdit && postToEdit ? postToEdit.title : '');
-  const [content, setContent] = useState(isEdit && postToEdit ? postToEdit.content : '');
+  const parseJSON = (str: string) => {
+    try {
+      if (str && str.startsWith('{') && str.endsWith('}')) {
+        const obj = JSON.parse(str);
+        if (obj.ko !== undefined || obj.en !== undefined || obj.ja !== undefined) {
+          return {
+            ko: obj.ko || '',
+            en: obj.en || '',
+            ja: obj.ja || ''
+          };
+        }
+      }
+    } catch {}
+    return {
+      ko: str || '',
+      en: str || '',
+      ja: str || ''
+    };
+  };
+
+  const initialParsedTitle = isEdit && postToEdit ? parseJSON(postToEdit.title) : { ko: '', en: '', ja: '' };
+  const initialParsedContent = isEdit && postToEdit ? parseJSON(postToEdit.content) : { ko: '', en: '', ja: '' };
+
+  const langCode = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
+
+  const [title, setTitle] = useState(
+    isEdit && postToEdit ? (initialParsedTitle[langCode] || initialParsedTitle.ko) : ''
+  );
+  const [content, setContent] = useState(
+    isEdit && postToEdit ? (initialParsedContent[langCode] || initialParsedContent.ko) : ''
+  );
   const [category, setCategory] = useState<string>(
     isEdit && postToEdit ? postToEdit.category : 'NOTICE',
   );
   const [customCategory, setCustomCategory] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const translateBoardName = useCallback((name: string) => {
+    if (!name) return '';
+    const upper = name.toUpperCase();
+    if (upper === 'ALL') return t('boardTabAll');
+    if (upper === 'NOTICE' || name === '공지사항') return t('boardTabNotice');
+    if (upper === 'MENU' || name === '건의사항') return t('boardTabMenu');
+    if (upper === 'EVENT' || name === '자유게시판') return t('boardTabEvent');
+    if (upper === 'MANUAL' || name === '매뉴얼' || name === '메뉴얼') return t('boardTabManual');
+    if (upper === 'LOST' || name === '분실물' || name === '분실물 관리' || name === '분실물 공유') return t('boardTabLost');
+    if (upper === 'CHECKLIST' || name === '체크리스트') return t('boardTabChecklist');
+    if (name === '프로모션/이벤트' || name === '프로모션' || name === '이벤트' || upper === 'PROMOTION') return t('boardTabPromotion');
+    if (name === '업무지시' || name === '업무 지시' || upper === 'WORKORDER') return t('boardTabWorkOrder');
+    return name;
+  }, [t]);
+
   const categoryChoices = React.useMemo(() => {
     const list = [
-      { label: '공지사항', value: 'NOTICE' },
-      { label: '건의사항', value: 'MENU' },
-      { label: '분실물', value: 'LOST' },
-      { label: '자유게시판', value: 'EVENT' },
-      { label: '매뉴얼', value: 'MANUAL' },
-      { label: '체크리스트', value: 'CHECKLIST' },
+      { label: t('boardTabNotice') || '공지사항', value: 'NOTICE' },
+      { label: t('boardTabMenu') || '건의사항', value: 'MENU' },
+      { label: t('boardTabLost') || '분실물', value: 'LOST' },
+      { label: t('boardTabEvent') || '자유게시판', value: 'EVENT' },
+      { label: t('boardTabManual') || '매뉴얼', value: 'MANUAL' },
+      { label: t('boardTabChecklist') || '체크리스트', value: 'CHECKLIST' },
     ];
 
     // 기존 매장에 등록된 커스텀 카테고리(게시판)가 있다면 선택 항목에 동적으로 추가해 줍니다.
@@ -51,34 +98,34 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
       const nameUpper = board.name.toUpperCase();
       if (!predefinedKeys.includes(nameUpper)) {
         if (!list.some((item) => item.value === board.name)) {
-          list.push({ label: board.name, value: board.name });
+          list.push({ label: translateBoardName(board.name), value: board.name });
         }
       }
     });
 
     // 관리자일 경우에만 카테고리 직접 추가 옵션을 제공합니다.
     if (isAdmin) {
-      list.push({ label: '+ 직접 추가', value: 'CUSTOM' });
+      list.push({ label: `+ ${t('add') || '직접 추가'}`, value: 'CUSTOM' });
     }
 
     return list;
-  }, [boards, isAdmin]);
+  }, [boards, isAdmin, translateBoardName, t]);
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
-      Toast.show({ type: 'error', text1: '입력 오류', text2: '제목과 내용을 모두 입력해주세요.' });
+      Toast.show({ type: 'error', text1: t('inputError') || '입력 오류', text2: t('titleContentRequired') || '제목과 내용을 모두 입력해주세요.' });
       return;
     }
 
     if (!storeId || !userInfo?.id) {
-      Toast.show({ type: 'error', text1: '저장 실패', text2: '매장 또는 사용자 정보가 없습니다.' });
+      Toast.show({ type: 'error', text1: t('error') || '저장 실패', text2: t('noStoreOrUserInfo') || '매장 또는 사용자 정보가 없습니다.' });
       return;
     }
 
     let finalCategory = category;
     if (category === 'CUSTOM') {
       if (!customCategory.trim()) {
-        Toast.show({ type: 'error', text1: '입력 오류', text2: '추가할 카테고리명을 입력해주세요.' });
+        Toast.show({ type: 'error', text1: t('inputError') || '입력 오류', text2: t('enterTabName') || '추가할 카테고리명을 입력해주세요.' });
         return;
       }
       finalCategory = customCategory.trim();
@@ -86,21 +133,64 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
 
     setSubmitting(true);
 
+    const sourceLang = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
+
+    let titleObj = { ko: title.trim(), en: title.trim(), ja: title.trim() };
+    let contentObj = { ko: content.trim(), en: content.trim(), ja: content.trim() };
+
     try {
+      /* Google API 연동 임시 주석 처리
+      // 1. 영어 번역 수행
+      if (sourceLang !== 'en') {
+        try {
+          const resEn = await translateTexts([title.trim(), content.trim()], 'en');
+          titleObj.en = resEn[0] || title.trim();
+          contentObj.en = resEn[1] || content.trim();
+        } catch (err) {
+          console.error('영어 번역 실패:', err);
+        }
+      }
+
+      // 2. 일어 번역 수행
+      if (sourceLang !== 'ja') {
+        try {
+          const resJa = await translateTexts([title.trim(), content.trim()], 'ja');
+          titleObj.ja = resJa[0] || title.trim();
+          contentObj.ja = resJa[1] || content.trim();
+        } catch (err) {
+          console.error('일어 번역 실패:', err);
+        }
+      }
+
+      // 3. 한국어 번역 수행
+      if (sourceLang !== 'ko') {
+        try {
+          const resKo = await translateTexts([title.trim(), content.trim()], 'ko');
+          titleObj.ko = resKo[0] || title.trim();
+          contentObj.ko = resKo[1] || content.trim();
+        } catch (err) {
+          console.error('한국어 번역 실패:', err);
+        }
+      }
+      */
+
+      const serializedTitle = JSON.stringify(titleObj);
+      const serializedContent = JSON.stringify(contentObj);
+
       if (isEdit && postToEdit) {
         await updatePost({
           ...postToEdit,
           category: finalCategory,
-          title: title.trim(),
-          content: content.trim(),
+          title: serializedTitle,
+          content: serializedContent,
         });
-        Toast.show({ type: 'success', text1: '수정 완료', text2: '게시글이 수정되었습니다.' });
+        Toast.show({ type: 'success', text1: t('success') || '수정 완료', text2: t('postEditSuccess') || '게시글이 수정되었습니다.' });
       } else {
         await addPost(
           {
             category: finalCategory,
-            title: title.trim(),
-            content: content.trim(),
+            title: serializedTitle,
+            content: serializedContent,
             badge: 'badgeNew',
             isPinned: false,
           },
@@ -109,13 +199,13 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
             writerId: userInfo.id,
           },
         );
-        Toast.show({ type: 'success', text1: '등록 완료', text2: '게시글이 등록되었습니다.' });
+        Toast.show({ type: 'success', text1: t('success') || '등록 완료', text2: t('postCreateSuccess') || '게시글이 등록되었습니다.' });
       }
 
       navigation.goBack();
     } catch (error) {
       console.error('게시글 저장 오류:', error);
-      Toast.show({ type: 'error', text1: '저장 실패', text2: '게시글 저장 중 오류가 발생했습니다.' });
+      Toast.show({ type: 'error', text1: t('error') || '저장 실패', text2: t('unknownErrorMsg') || '게시글 저장 중 오류가 발생했습니다.' });
     } finally {
       setSubmitting(false);
     }
@@ -127,12 +217,12 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEdit ? '글 수정' : '새 글 작성'}</Text>
+        <Text style={styles.headerTitle}>{isEdit ? t('editPost') : t('writeNewPost')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={styles.label}>카테고리</Text>
+        <Text style={styles.label}>{t('categoryLabel') || '카테고리'}</Text>
         <View style={styles.categoryContainer}>
           {categoryChoices.map((item) => (
             <TouchableOpacity
@@ -150,26 +240,30 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
         {category === 'CUSTOM' && (
           <TextInput
             style={[styles.input, { marginTop: 12 }]}
-            placeholder="추가할 카테고리명을 입력하세요 (예: 업무지시)"
+            placeholder={t('enterTabName') || '추가할 카테고리명을 입력해주세요.'}
             value={customCategory}
             onChangeText={setCustomCategory}
             placeholderTextColor={colors.subText}
           />
         )}
 
-        <Text style={styles.label}>제목</Text>
+        <Text style={styles.label}>
+          {t('title') || '제목'}
+        </Text>
         <TextInput
           style={styles.input}
-          placeholder="제목을 입력하세요"
+          placeholder={t('titlePlaceholder') || '제목을 입력하세요'}
           value={title}
           onChangeText={setTitle}
           placeholderTextColor={colors.subText}
         />
 
-        <Text style={styles.label}>내용</Text>
+        <Text style={styles.label}>
+          {t('content') || '내용'}
+        </Text>
         <TextInput
           style={[styles.input, styles.contentInput]}
-          placeholder="내용을 작성해주세요."
+          placeholder={t('contentPlaceholder') || '내용을 작성해주세요.'}
           value={content}
           onChangeText={setContent}
           multiline
@@ -185,7 +279,9 @@ const BoardWriteScreen = ({ route, navigation }: any) => {
           {submitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitButtonText}>{isEdit ? '수정하기' : '등록하기'}</Text>
+            <Text style={styles.submitButtonText}>
+              {isEdit ? (t('editComplete') || '수정하기') : (t('createComplete') || '등록하기')}
+            </Text>
           )}
         </TouchableOpacity>
       </ScrollView>

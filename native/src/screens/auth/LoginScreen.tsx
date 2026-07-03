@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getStoresAPI, loginAPI, getMyStoreAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 type LoginScreenNavigationProp = StackNavigationProp<any, 'Login'>;
 
@@ -31,7 +32,20 @@ export default function LoginScreen({ navigation }: Props) {
   const [loginRole, setLoginRole] = useState<LoginRole>('STAFF');
   const { login } = useApp();
   const { colors, isDarkMode } = useTheme();
+  const { t, language, setLanguage } = useLanguage();
   const styles = getThemedStyles(colors, isDarkMode);
+
+  const getLogoSource = () => {
+    switch (language) {
+      case 'English':
+        return require('../../../assets/img/logo_en.png');
+      case '日本語':
+        return require('../../../assets/img/logo_3.png');
+      case '한국어':
+      default:
+        return require('../../../assets/img/logo_ko.png');
+    }
+  };
 
   const handleInputChange = (name: string, text: string) => {
     setInputs({ ...inputs, [name]: text });
@@ -39,7 +53,7 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert('입력 오류', '아이디와 비밀번호를 모두 입력해주세요.');
+      Alert.alert(t('inputError'), t('loginFieldsRequired'));
       return;
     }
 
@@ -53,7 +67,7 @@ export default function LoginScreen({ navigation }: Props) {
           : serverRole === 'STAFF';
 
       if (serverRole && !isRoleMatched) {
-        Alert.alert('로그인 실패', '선택한 로그인 유형과 계정 권한이 일치하지 않습니다.');
+        Alert.alert(t('loginFailed'), t('loginRoleMismatch'));
         return;
       }
 
@@ -66,7 +80,7 @@ export default function LoginScreen({ navigation }: Props) {
         const stores = Array.isArray(storesResponse.data) ? storesResponse.data : [];
         const branches = stores.map((store: any) => ({
           id: store.id,
-          brandName: store.name || store.store_name || '매장',
+          brandName: store.name || store.store_name || t('brand'),
           branchName: store.address || store.location || store.id,
         }));
 
@@ -81,7 +95,7 @@ export default function LoginScreen({ navigation }: Props) {
           if (store && store.id) {
             finalUserInfo.store_id = store.id;
             finalUserInfo.activeBranchId = store.id;
-            finalUserInfo.brandName = store.name || '매장';
+            finalUserInfo.brandName = store.name || t('brand');
             finalUserInfo.branchName = store.address || store.id;
             hasBranch = true;
           }
@@ -97,7 +111,7 @@ export default function LoginScreen({ navigation }: Props) {
         typeof error?.response?.data === 'string'
           ? error.response.data
           : error?.response?.data?.message;
-      Alert.alert('로그인 실패', message || '아이디 또는 비밀번호를 확인해주세요.');
+      Alert.alert(t('loginFailed'), message || t('loginCredentialsCheck'));
     }
   };
 
@@ -108,7 +122,7 @@ export default function LoginScreen({ navigation }: Props) {
     >
       <ScrollView contentContainerStyle={styles.container}>
         <Image
-          source={require('../../../assets/img/logo_3.png')}
+          source={getLogoSource()}
           style={styles.logoImage}
           resizeMode="contain"
         />
@@ -120,7 +134,7 @@ export default function LoginScreen({ navigation }: Props) {
             activeOpacity={0.8}
           >
             <Text style={[styles.roleButtonText, loginRole === 'STAFF' && styles.roleButtonTextActive]}>
-              직원
+              {t('staffLabel')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -129,7 +143,7 @@ export default function LoginScreen({ navigation }: Props) {
             activeOpacity={0.8}
           >
             <Text style={[styles.roleButtonText, loginRole === 'ADMIN' && styles.roleButtonTextActive]}>
-              관리자
+              {t('adminLabel')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -138,7 +152,7 @@ export default function LoginScreen({ navigation }: Props) {
           <Ionicons name="person-outline" size={20} color={colors.subText} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="아이디를 입력하세요"
+            placeholder={t('usernamePlaceholder')}
             placeholderTextColor={colors.subText}
             value={username}
             onChangeText={(text) => handleInputChange('username', text)}
@@ -150,7 +164,7 @@ export default function LoginScreen({ navigation }: Props) {
           <Ionicons name="lock-closed-outline" size={20} color={colors.subText} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="비밀번호를 입력하세요"
+            placeholder={t('passwordPlaceholder')}
             placeholderTextColor={colors.subText}
             value={password}
             onChangeText={(text) => handleInputChange('password', text)}
@@ -159,11 +173,32 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
 
         <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
-          <Text style={styles.primaryButtonText}>로그인</Text>
+          <Text style={styles.primaryButtonText}>{t('loginBtn')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('SignupChoice')}>
-          <Text style={styles.secondaryButtonText}>회원가입</Text>
+          <Text style={styles.secondaryButtonText}>{t('signupBtn')}</Text>
         </TouchableOpacity>
+
+        <View style={styles.languageToggleContainer}>
+          <TouchableOpacity 
+            style={[styles.languageToggleOption, language === '한국어' && styles.languageToggleOptionActive]} 
+            onPress={() => setLanguage('한국어')}
+          >
+            <Text style={[styles.languageToggleText, language === '한국어' && styles.languageToggleTextActive]}>KO</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.languageToggleOption, language === 'English' && styles.languageToggleOptionActive]} 
+            onPress={() => setLanguage('English')}
+          >
+            <Text style={[styles.languageToggleText, language === 'English' && styles.languageToggleTextActive]}>EN</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.languageToggleOption, language === '日本語' && styles.languageToggleOptionActive]} 
+            onPress={() => setLanguage('日本語')}
+          >
+            <Text style={[styles.languageToggleText, language === '日本語' && styles.languageToggleTextActive]}>JA</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -172,6 +207,39 @@ export default function LoginScreen({ navigation }: Props) {
 const getThemedStyles = (colors: any, isDarkMode: boolean) => StyleSheet.create({
   keyboardAvoidingContainer: { flex: 1 },
   container: { flexGrow: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.background },
+  languageToggleContainer: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    backgroundColor: isDarkMode ? '#2C2C2E' : '#F1F5F9',
+    borderRadius: 20,
+    padding: 3,
+    marginTop: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  languageToggleOption: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  languageToggleOptionActive: {
+    backgroundColor: colors.primary,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  languageToggleText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.subText,
+  },
+  languageToggleTextActive: {
+    color: '#FFFFFF',
+  },
   logoImage: { width: 320, height: 120, alignSelf: 'center', marginBottom: 36 },
   roleToggleContainer: { 
     flexDirection: 'row', 

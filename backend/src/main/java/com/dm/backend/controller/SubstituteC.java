@@ -44,15 +44,35 @@ public class SubstituteC {
     // 대타 승인
     @PutMapping("/manager")
     public void approveSubstitute(
-            @RequestParam String shift_id,
-            @RequestParam String selected_user_id,
-            @RequestBody SubstituteHistoryVO historyVO
+            @RequestParam(required = false) String shift_id,
+            @RequestParam(required = false) String selected_user_id,
+            @RequestParam(required = false) String application_id,
+            @RequestParam(required = false) String status,
+            @RequestBody(required = false) SubstituteHistoryVO historyVO
     ) {
+        if (application_id != null && !application_id.isBlank()) {
+            substituteService.processSubstituteApplication(
+                    application_id,
+                    status,
+                    historyVO
+            );
+            return;
+        }
+
         substituteService.approveSubstitute(
                 shift_id,
                 selected_user_id,
                 historyVO
         );
+    }
+
+    // application_id 하나로 승인 처리 (shift 없는 경우 포함)
+    @PutMapping("/manager/approve")
+    public void approveByApplicationId(
+            @RequestParam String application_id,
+            @RequestParam(required = false, defaultValue = "") String approved_by
+    ) {
+        substituteService.approveByApplicationId(application_id, approved_by);
     }
 
     // 모집글 취소

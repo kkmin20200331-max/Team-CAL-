@@ -3,18 +3,34 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { format, addMonths, startOfMonth, getDaysInMonth, startOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko, enUS, ja } from 'date-fns/locale';
 import { getAttendanceRecordsAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
-
-const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation: any }) => {
   const { employeeId, employeeName } = route.params;
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   const { userInfo } = useApp();
+  const { t, language } = useLanguage();
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
+
+  const dateLocale = useMemo(() => {
+    if (language === 'English') return enUS;
+    if (language === '日本語') return ja;
+    return ko;
+  }, [language]);
+
+  const dayLabels = useMemo(() => [
+    t('sun'),
+    t('mon'),
+    t('tue'),
+    t('wed'),
+    t('thu'),
+    t('fri'),
+    t('sat')
+  ], [t]);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [records, setRecords] = useState<any[]>([]);
@@ -26,24 +42,38 @@ const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation:
       try {
         const monthStr = format(currentMonth, 'yyyy-MM');
         
-        // 백엔드 API 호출 활성화
-        // 가정: 백엔드는 { date, check_in, check_out, status } 형태의 배열을 반환
+        // 백엔드 API 호출
         const { data } = await getAttendanceRecordsAPI(employeeId, monthStr, storeId);
         
-        // 백엔드 데이터(snake_case)를 프론트엔드(camelCase)에 맞게 변환
-        const formattedData = data.map((item: any) => ({
-          date: item.date,
-          checkIn: item.check_in,
-          checkOut: item.check_out,
-          status: item.status,
-        }));
+        // 백엔드 데이터(snake_case 등)를 프론트엔드 포맷으로 안전하게 변환
+        const formattedData = data.map((item: any) => {
+          const rawDate = item.work_date || item.workDate || item.date || '';
+          const rawCheckIn = item.check_in_at || item.checkInAt || item.check_in || item.checkIn || '';
+          const rawCheckOut = item.check_out_at || item.checkOutAt || item.check_out || item.checkOut || '';
+          
+          const formatTime = (timeStr: string) => {
+            if (!timeStr) return '';
+            if (timeStr.includes(' ')) {
+              const parts = timeStr.split(' ');
+              if (parts[1]) return parts[1].substring(0, 5);
+            }
+            return timeStr.substring(0, 5);
+          };
+
+          return {
+            date: rawDate,
+            checkIn: formatTime(rawCheckIn),
+            checkOut: formatTime(rawCheckOut),
+            status: item.status || 'NORMAL',
+          };
+        });
+        
         setRecords(formattedData);
 
       } catch (error) {
         console.error("출퇴근 기록 조회 실패:", error);
-        // 백엔드 API가 아직 구현되지 않았을 경우를 대비한 에러 메시지
-        Alert.alert("오류", "출퇴근 기록을 불러오는 데 실패했습니다. API가 구현되었는지 확인해주세요.");
-        setRecords([]); // 에러 발생 시 목록을 비움
+        Alert.alert("오류", "출퇴근 기록을 불러오는 데 실패했습니다. API 연결을 확인해주세요.");
+        setRecords([]);
       } finally {
         setLoading(false);
       }
@@ -74,7 +104,12 @@ const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation:
       case 'LATE': return styles.lateDot;
       case 'EARLY_LEAVE': return styles.earlyLeaveDot;
       case 'ABSENT': return styles.absentDot;
-      default: return styles.onTimeDot;
+      case 'NORMAL':
+      case 'WORKING':
+      case 'COMPLETED':
+      case 'CHECKED_OUT':
+      default:
+        return styles.onTimeDot;
     }
   };
 
@@ -94,12 +129,25 @@ const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation:
     );
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'WORKING': return t('statusWorking');
+      case 'COMPLETED': return t('statusCompleted');
+      case 'CHECKED_OUT': return t('statusCheckedOut');
+      case 'LATE': return t('statusLate');
+      case 'EARLY_LEAVE': return t('statusEarlyLeave');
+      case 'ABSENT': return t('statusAbsent');
+      case 'NORMAL': return t('statusNormal');
+      default: return status;
+    }
+  };
+
   const renderRecordItem = ({ item }: { item: any }) => (
     <View style={styles.recordItem}>
-      <Text style={styles.recordDate}>{format(new Date(item.date), 'M/d (eee)')}</Text>
+      <Text style={styles.recordDate}>{format(new Date(item.date), 'M/d (eee)', { locale: dateLocale })}</Text>
       <View style={styles.recordStatus}>
         <View style={[styles.statusDot, getStatusStyle(item.status)]} />
-        <Text style={styles.recordStatusText}>{item.status}</Text>
+        <Text style={styles.recordStatusText}>{getStatusText(item.status)}</Text>
       </View>
       <Text style={styles.recordTime}>{item.checkIn || '-'} / {item.checkOut || '-'}</Text>
     </View>
@@ -111,7 +159,7 @@ const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation:
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{employeeName} 님의 출퇴근 기록</Text>
+        <Text style={styles.headerTitle}>{employeeName}{t('attendanceRecordSuffix')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -119,14 +167,14 @@ const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation:
         <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.arrowButton}>
           <Text style={styles.arrowText}>◀</Text>
         </TouchableOpacity>
-        <Text style={styles.monthText}>{format(currentMonth, 'yyyy년 M월', { locale: ko })}</Text>
+        <Text style={styles.monthText}>{format(currentMonth, t('monthYearFormatPattern'), { locale: dateLocale })}</Text>
         <TouchableOpacity onPress={() => changeMonth(1)} style={styles.arrowButton}>
           <Text style={styles.arrowText}>▶</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.dayLabels}>
-        {DAY_LABELS.map(day => <Text key={day} style={styles.dayLabel}>{day}</Text>)}
+        {dayLabels.map(day => <Text key={day} style={styles.dayLabel}>{day}</Text>)}
       </View>
       <View style={styles.calendarGrid}>
         {calendarDates.map((date, index) => (
@@ -142,8 +190,8 @@ const AttendanceRecordScreen = ({ route, navigation }: { route: any, navigation:
           renderItem={renderRecordItem}
           keyExtractor={(item) => item.date}
           contentContainerStyle={styles.listContainer}
-          ListHeaderComponent={<Text style={styles.listHeader}>상세 기록</Text>}
-          ListEmptyComponent={<Text style={styles.emptyText}>해당 월의 출퇴근 기록이 없습니다.</Text>}
+          ListHeaderComponent={<Text style={styles.listHeader}>{t('detailedRecord')}</Text>}
+          ListEmptyComponent={<Text style={styles.emptyText}>{t('noAttendanceMonth')}</Text>}
         />
       )}
     </SafeAreaView>
@@ -168,10 +216,10 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   dateText: { fontSize: 12, color: colors.text, marginBottom: 4 },
   todayText: { color: colors.primary, fontWeight: 'bold' },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  onTimeDot: { backgroundColor: colors.green },
-  lateDot: { backgroundColor: colors.yellow },
-  earlyLeaveDot: { backgroundColor: colors.orange },
-  absentDot: { backgroundColor: colors.red },
+  onTimeDot: { backgroundColor: colors.primary || '#00A200' },
+  lateDot: { backgroundColor: colors.warning || '#F59E0B' },
+  earlyLeaveDot: { backgroundColor: '#F97316' },
+  absentDot: { backgroundColor: colors.danger || '#EF4444' },
   listContainer: { padding: 16 },
   listHeader: { fontSize: 16, fontWeight: 'bold', color: colors.text, marginBottom: 12 },
   recordItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 8, padding: 16, marginBottom: 8 },

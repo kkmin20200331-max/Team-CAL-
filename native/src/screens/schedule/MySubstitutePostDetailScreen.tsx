@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -7,13 +7,21 @@ import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { getSubstituteApplicantsAPI, approveSubstituteAPI } from '../../../api/auth'; // 함수명 변경
 import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko, enUS, ja } from 'date-fns/locale';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const MySubstitutePostDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
   const { post } = route.params;
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
   const { userInfo } = useApp();
+  const { t, language } = useLanguage();
+
+  const dateLocale = useMemo(() => {
+    if (language === 'English') return enUS;
+    if (language === '日本語') return ja;
+    return ko;
+  }, [language]);
 
   const [applicants, setApplicants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +34,7 @@ const MySubstitutePostDetailScreen = ({ route, navigation }: { route: any, navig
       setApplicants(res.data);
     } catch (error) {
       console.error("지원자 목록 조회 실패:", error);
-      Alert.alert("오류", "지원자 목록을 불러오는 데 실패했습니다.");
+      Alert.alert(t('error'), t('loadApplicantsFail'));
     } finally {
       setLoading(false);
     }
@@ -40,24 +48,24 @@ const MySubstitutePostDetailScreen = ({ route, navigation }: { route: any, navig
 
   const handleSelectApplicant = (applicant: any) => {
     Alert.alert(
-      "대타 선택",
-      `${applicant.name}님을 대타 근무자로 선택하시겠습니까? 관리자의 최종 승인이 필요합니다.`,
+      t('selectSubstitute'),
+      t('selectSubstituteConfirm').replace('{name}', applicant.name),
       [
-        { text: "취소", style: "cancel" },
+        { text: t('cancel'), style: "cancel" },
         {
-          text: "확인",
+          text: t('confirm'),
           onPress: async () => {
             try {
               // TODO: 현재 API는 관리자 최종 승인용. 
               // 직원이 '선택'하는 중간 단계를 위한 별도 API가 백엔드에 필요함.
               // (예: updateSubstitutePostStatus(postId, 'SELECTED', applicant.id))
               
-              Alert.alert("선택 완료", `${applicant.name}님을 대타로 선택했습니다. 관리자에게 최종 승인을 요청하세요.`);
+              Alert.alert(t('selectComplete'), t('selectSubstituteSuccess').replace('{name}', applicant.name));
               navigation.goBack();
 
             } catch (error) {
               console.error("대타 선택 처리 오류:", error);
-              Alert.alert("오류", "처리 중 문제가 발생했습니다.");
+              Alert.alert(t('error'), t('processErrorMsg'));
             }
           },
         },
@@ -69,7 +77,7 @@ const MySubstitutePostDetailScreen = ({ route, navigation }: { route: any, navig
     <View style={styles.applicantCard}>
       <Text style={styles.applicantName}>{item.name}</Text>
       <TouchableOpacity style={styles.selectButton} onPress={() => handleSelectApplicant(item)}>
-        <Text style={styles.selectButtonText}>선택</Text>
+        <Text style={styles.selectButtonText}>{t('select')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -80,12 +88,12 @@ const MySubstitutePostDetailScreen = ({ route, navigation }: { route: any, navig
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>지원자 목록</Text>
+        <Text style={styles.headerTitle}>{t('applicantsList')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.postInfo}>
-        <Text style={styles.postDate}>{format(new Date(post.shift_start_time), 'M월 d일 (eee)', { locale: ko })}</Text>
+        <Text style={styles.postDate}>{format(new Date(post.shift_start_time), t('dateFormatPattern'), { locale: dateLocale })}</Text>
         <Text style={styles.postTime}>{`${format(new Date(post.shift_start_time), 'HH:mm')} - ${format(new Date(post.shift_end_time), 'HH:mm')}`}</Text>
         <Text style={styles.postReason}>{post.reason}</Text>
       </View>
@@ -100,7 +108,7 @@ const MySubstitutePostDetailScreen = ({ route, navigation }: { route: any, navig
           contentContainerStyle={styles.listContainer}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>아직 지원자가 없습니다.</Text>
+              <Text style={styles.emptyText}>{t('noApplicantsYet')}</Text>
             </View>
           }
         />
