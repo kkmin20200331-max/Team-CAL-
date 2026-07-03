@@ -82,7 +82,7 @@ jobs:
     name: Update backend tag on VM
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.update_vm_tag)
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.update_vm_tag)
     steps:
       - name: Update BACKEND_IMAGE_TAG
         uses: appleboy/ssh-action@v1.2.0

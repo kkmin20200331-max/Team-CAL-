@@ -23,13 +23,13 @@ Add these in GitHub repository settings:
 
 The Docker workflows publish:
 
-- `latest` on pushes to `main`
+- `latest` on pushes to the repository default branch
 - `sha-<short-git-sha>` on every run
 - a manual tag such as `006` when provided through `workflow_dispatch`
 
 ## VM Tag Variables
 
-GitHub Actions can update only the VM `.env` image tag. It does not run `docker compose pull` or `docker compose up -d`.
+GitHub Actions updates the VM `.env` image tag automatically on pushes to `dev` or `main`. It does not run `docker compose pull` or `docker compose up -d`.
 
 ```env
 BACKEND_IMAGE_TAG=sha-xxxxxxx
