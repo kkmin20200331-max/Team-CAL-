@@ -2,11 +2,18 @@ package com.dm.backend.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.dm.backend.service.PeopleLogService;
+import com.dm.backend.vo.OpenCvCongestionPayloadVO;
+import com.dm.backend.vo.PeopleLogVO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +27,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
@@ -30,7 +39,10 @@ public class CctvCameraC {
     @Value("${fastapi.base-url:http://127.0.0.1:8000}")
     private String fastApiBaseUrl;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private PeopleLogService peopleLogService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @PostMapping("/start")
@@ -56,6 +68,56 @@ public class CctvCameraC {
     @GetMapping("/aggregate/latest")
     public ResponseEntity<String> latestAggregate() {
         return get("/camera/aggregate/latest");
+    }
+
+    @PostMapping(value = "/frame", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> analyzeBrowserFrame(
+            @RequestParam String storeId,
+            @RequestParam(defaultValue = "BROWSER-CAM") String cameraId,
+            @RequestParam(defaultValue = "yolo11s") String modelName,
+            @RequestParam(defaultValue = "640") int imageSize,
+            @RequestParam(defaultValue = "0.3") double confidence,
+            @RequestParam("image") MultipartFile image
+    ) {
+        try {
+            String boundary = "----bitemate-frame-" + UUID.randomUUID();
+            byte[] body = multipartBody(boundary, "image", image);
+            String uri = openCvBaseUrl()
+                    + "/inference/image"
+                    + "?storeId=" + encode(storeId)
+                    + "&cameraId=" + encode(cameraId)
+                    + "&modelName=" + encode(modelName)
+                    + "&imageSize=" + encode(imageSize)
+                    + "&confidence=" + encode(confidence)
+                    + "&sendToSpring=false";
+
+            HttpRequest request =
+                    HttpRequest.newBuilder()
+                            .uri(URI.create(uri))
+                            .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                            .header("Accept", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofByteArray(body))
+                            .build();
+            HttpResponse<String> response =
+                    httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                saveFrameResult(response.body(), storeId, cameraId);
+            }
+
+            return ResponseEntity
+                    .status(response.statusCode())
+                    .body(response.body());
+        } catch (IOException e) {
+            return ResponseEntity
+                    .status(502)
+                    .body("{\"message\":\"OpenCV frame request failed\"}");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity
+                    .status(502)
+                    .body("{\"message\":\"OpenCV frame request interrupted\"}");
+        }
     }
 
     @GetMapping("/stream")
@@ -187,6 +249,48 @@ public class CctvCameraC {
 
     private String encode(Object value) {
         return URLEncoder.encode(String.valueOf(value), StandardCharsets.UTF_8);
+    }
+
+    private byte[] multipartBody(String boundary, String fieldName, MultipartFile file) throws IOException {
+        String filename = file.getOriginalFilename() == null || file.getOriginalFilename().isBlank()
+                ? "frame.jpg"
+                : file.getOriginalFilename();
+        String contentType = file.getContentType() == null || file.getContentType().isBlank()
+                ? "image/jpeg"
+                : file.getContentType();
+        String head = "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"" + fieldName + "\"; filename=\"" + filename + "\"\r\n"
+                + "Content-Type: " + contentType + "\r\n\r\n";
+        String tail = "\r\n--" + boundary + "--\r\n";
+
+        byte[] headBytes = head.getBytes(StandardCharsets.UTF_8);
+        byte[] fileBytes = file.getBytes();
+        byte[] tailBytes = tail.getBytes(StandardCharsets.UTF_8);
+        byte[] body = new byte[headBytes.length + fileBytes.length + tailBytes.length];
+        System.arraycopy(headBytes, 0, body, 0, headBytes.length);
+        System.arraycopy(fileBytes, 0, body, headBytes.length, fileBytes.length);
+        System.arraycopy(tailBytes, 0, body, headBytes.length + fileBytes.length, tailBytes.length);
+        return body;
+    }
+
+    private void saveFrameResult(String responseBody, String fallbackStoreId, String fallbackCameraId) {
+        try {
+            OpenCvCongestionPayloadVO payload =
+                    objectMapper.readValue(responseBody, OpenCvCongestionPayloadVO.class);
+            if (payload.getStoreId() == null) {
+                payload.setStoreId(fallbackStoreId);
+            }
+            if (payload.getCameraId() == null) {
+                payload.setCameraId(fallbackCameraId);
+            }
+            if (payload.getMeasuredAt() == null) {
+                payload.setMeasuredAt(LocalDateTime.now());
+            }
+            PeopleLogVO saved = peopleLogService.saveOpenCvPayload(fallbackStoreId, payload);
+            System.out.println("[CCTV_FRAME] people_log saved: " + saved);
+        } catch (Exception e) {
+            System.out.println("[CCTV_FRAME] people_log save skipped: " + e.getMessage());
+        }
     }
 
     private String openCvBaseUrl() {
