@@ -112,6 +112,8 @@ public class LeaveRequestService {
             List<String> adminLineIds =
                     userLineService.getOwnerLineUserIdsByShiftId(vo.getShift_id());
 
+            System.out.println("Leave admin LINE target count for shift_id " + vo.getShift_id() + ": " + adminLineIds.size());
+
             if (adminLineIds.isEmpty()) {
                 System.out.println("No admin LINE user found for shift_id: " + vo.getShift_id());
                 return;
