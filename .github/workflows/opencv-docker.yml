@@ -16,6 +16,7 @@ on:
 
 env:
   REGISTRY: docker.io
+  DOCKERHUB_NAMESPACE: kkmin1106
   IMAGE_NAME: bitemateopencv
 
 jobs:
@@ -41,7 +42,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.DOCKERHUB_NAMESPACE }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short,prefix=sha-
