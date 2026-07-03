@@ -5,6 +5,7 @@ import com.dm.backend.vo.AiInsightAnalyzeRequestVO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -26,10 +27,8 @@ public class AiInsightProxyC {
     // =========================
     // OpenCV FastAPI 연동 URL
     // =========================
-    private static final String OPEN_CV_AI_INSIGHT_LLM_URL =
-            "http://127.0.0.1:8000/api/v1/ai-insights/analyze/llm";
-    private static final String OPEN_CV_AI_INSIGHT_RULE_URL =
-            "http://127.0.0.1:8000/api/v1/ai-insights/analyze";
+    @Value("${fastapi.base-url:http://127.0.0.1:8000}")
+    private String fastApiBaseUrl;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestClient restClient =
@@ -43,7 +42,7 @@ public class AiInsightProxyC {
     // =========================
     @PostMapping("/analyze")
     public ResponseEntity<String> analyze(@RequestBody AiInsightAnalyzeRequestVO request) {
-        return forwardAnalysis(request, OPEN_CV_AI_INSIGHT_RULE_URL);
+        return forwardAnalysis(request, openCvUrl("/api/v1/ai-insights/analyze"));
     }
 
     // =========================
@@ -51,7 +50,7 @@ public class AiInsightProxyC {
     // =========================
     @PostMapping("/analyze/llm")
     public ResponseEntity<String> analyzeWithLlm(@RequestBody AiInsightAnalyzeRequestVO request) {
-        return forwardAnalysis(request, OPEN_CV_AI_INSIGHT_LLM_URL);
+        return forwardAnalysis(request, openCvUrl("/api/v1/ai-insights/analyze/llm"));
     }
 
     // =========================
@@ -114,5 +113,12 @@ public class AiInsightProxyC {
                 .replace("\"", "\\\"")
                 .replace("\r", "\\r")
                 .replace("\n", "\\n");
+    }
+
+    private String openCvUrl(String path) {
+        String baseUrl = fastApiBaseUrl.endsWith("/")
+                ? fastApiBaseUrl.substring(0, fastApiBaseUrl.length() - 1)
+                : fastApiBaseUrl;
+        return baseUrl + path;
     }
 }

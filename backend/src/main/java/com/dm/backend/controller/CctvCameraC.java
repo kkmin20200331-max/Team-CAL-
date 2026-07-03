@@ -2,14 +2,18 @@ package com.dm.backend.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -23,7 +27,8 @@ import java.util.LinkedHashMap;
 @RequestMapping("/api/cctv")
 public class CctvCameraC {
 
-    private static final String OPEN_CV_BASE_URL = "http://localhost:8000/api/v1";
+    @Value("${fastapi.base-url:http://127.0.0.1:8000}")
+    private String fastApiBaseUrl;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -53,12 +58,54 @@ public class CctvCameraC {
         return get("/camera/aggregate/latest");
     }
 
+    @GetMapping("/stream")
+    public ResponseEntity<StreamingResponseBody> stream() {
+        try {
+            HttpRequest request =
+                    HttpRequest.newBuilder()
+                            .uri(URI.create(openCvBaseUrl() + "/camera/stream"))
+                            .header("Accept", "multipart/x-mixed-replace")
+                            .GET()
+                            .build();
+            HttpResponse<InputStream> response =
+                    httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+            String contentType =
+                    response.headers()
+                            .firstValue("content-type")
+                            .orElse("multipart/x-mixed-replace; boundary=frame");
+
+            StreamingResponseBody body =
+                    outputStream -> {
+                        try (InputStream inputStream = response.body()) {
+                            inputStream.transferTo(outputStream);
+                        }
+                    };
+
+            return ResponseEntity
+                    .status(response.statusCode())
+                    .header(HttpHeaders.CONTENT_TYPE, contentType)
+                    .body(body);
+        } catch (IOException e) {
+            return ResponseEntity
+                    .status(502)
+                    .body(outputStream ->
+                            outputStream.write("{\"message\":\"OpenCV stream request failed\"}".getBytes(StandardCharsets.UTF_8)));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity
+                    .status(502)
+                    .body(outputStream ->
+                            outputStream.write("{\"message\":\"OpenCV stream request interrupted\"}".getBytes(StandardCharsets.UTF_8)));
+        }
+    }
+
     private ResponseEntity<String> post(String uri, Object body) {
         try {
             String jsonBody = objectMapper.writeValueAsString(body);
             HttpRequest request =
                     HttpRequest.newBuilder()
-                            .uri(URI.create(OPEN_CV_BASE_URL + uri))
+                            .uri(URI.create(openCvBaseUrl() + uri))
                             .header("Content-Type", "application/json")
                             .header("Accept", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -89,7 +136,7 @@ public class CctvCameraC {
         try {
             HttpRequest request =
                     HttpRequest.newBuilder()
-                            .uri(URI.create(OPEN_CV_BASE_URL + uri))
+                            .uri(URI.create(openCvBaseUrl() + uri))
                             .header("Accept", "application/json")
                             .POST(HttpRequest.BodyPublishers.noBody())
                             .build();
@@ -142,11 +189,18 @@ public class CctvCameraC {
         return URLEncoder.encode(String.valueOf(value), StandardCharsets.UTF_8);
     }
 
+    private String openCvBaseUrl() {
+        String baseUrl = fastApiBaseUrl.endsWith("/")
+                ? fastApiBaseUrl.substring(0, fastApiBaseUrl.length() - 1)
+                : fastApiBaseUrl;
+        return baseUrl + "/api/v1";
+    }
+
     private ResponseEntity<String> get(String uri) {
         try {
             HttpRequest request =
                     HttpRequest.newBuilder()
-                            .uri(URI.create(OPEN_CV_BASE_URL + uri))
+                            .uri(URI.create(openCvBaseUrl() + uri))
                             .header("Accept", "application/json")
                             .GET()
                             .build();

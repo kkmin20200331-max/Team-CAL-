@@ -1,14 +1,18 @@
 package com.dm.backend.controller;
 
-import java.util.Map;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
+@RequestMapping("/api")
 public class HealthC {
 
-    @GetMapping("/api/hello")
-    public Map<String, String> hello() {
-        return Map.of("message", "Spring Boot OK");
+    @GetMapping("/hello")
+    public ResponseEntity<Map<String, String>> hello() {
+        return ResponseEntity.ok(Map.of("message", "Spring Boot OK"));
     }
 }
