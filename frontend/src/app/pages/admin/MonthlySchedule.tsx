@@ -201,6 +201,8 @@ export default function MonthlySchedule() {
         store_id: selectedBranchId,
         start_date: start,
         end_date: end,
+      }, {
+        timeout: 60000,
       });
       setAiPreview(res.data);
     } catch (err) {
