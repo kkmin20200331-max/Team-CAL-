@@ -1,0 +1,102 @@
+name: OpenCV Docker
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "opencv/**"
+      - ".github/workflows/opencv-docker.yml"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Optional release tag, for example 006"
+        required: false
+        type: string
+      update_vm_tag:
+        description: "Update OPENCV_IMAGE_TAG in the VM .env after push"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: docker.io
+  DOCKERHUB_NAMESPACE: kkmin1106
+  IMAGE_NAME: bitemateopencv
+  VM_COMPOSE_DIR: /home/dongmin/Team-CAL-
+
+jobs:
+  build:
+    name: Build and push OpenCV
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      image-tag: ${{ steps.vars.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image tag
+        id: vars
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          if [ -n "$RELEASE_TAG" ]; then
+            echo "image_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "image_tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.DOCKERHUB_NAMESPACE }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short,prefix=sha-
+            type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.tag != '' }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./opencv
+          file: ./opencv/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=opencv
+          cache-to: type=gha,scope=opencv,mode=max
+
+  update-vm-tag:
+    name: Update OpenCV tag on VM
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.update_vm_tag)
+    steps:
+      - name: Update OPENCV_IMAGE_TAG
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          password: ${{ secrets.VM_PASSWORD }}
+          script: |
+            set -e
+            cd "${{ env.VM_COMPOSE_DIR }}"
+            touch .env
+            if grep -q '^OPENCV_IMAGE_TAG=' .env; then
+              sed -i 's/^OPENCV_IMAGE_TAG=.*/OPENCV_IMAGE_TAG=${{ needs.build.outputs.image-tag }}/' .env
+            else
+              printf '\nOPENCV_IMAGE_TAG=${{ needs.build.outputs.image-tag }}\n' >> .env
+            fi
+            grep '^OPENCV_IMAGE_TAG=' .env

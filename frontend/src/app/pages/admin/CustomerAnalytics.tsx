@@ -128,12 +128,6 @@ const branchNames: Record<string, string> = {
   dongcheon: "컴포즈 동천점",
 };
 
-const branchStoreIds: Record<string, number> = {
-  migeum: 1,
-  sunae: 2,
-  dongcheon: 3,
-};
-
 const branchShiftStoreIds: Record<string, string> = {
   "1": "V1StGXR8_Z5jdHi6B-myT",
   migeum: "V1StGXR8_Z5jdHi6B-myT",
@@ -166,10 +160,8 @@ const fallbackWeeklyPattern: WeeklyPatternRow[] = [
 const TAB_KEYS: TabKey[] = ["live", "pattern", "insight", "schedule"];
 
 const resolveStoreId = (branchId?: string) => {
-  if (!branchId) return 1;
-  const numericId = Number(branchId);
-  if (Number.isFinite(numericId) && numericId > 0) return numericId;
-  return branchStoreIds[branchId] || 1;
+  if (!branchId) return "V1StGXR8_Z5jdHi6B-myT";
+  return branchShiftStoreIds[branchId] || branchId;
 };
 
 const resolveShiftStoreId = (branchId?: string) => {
@@ -324,6 +316,13 @@ export default function CustomerAnalytics() {
     if (!text) return text || '';
     const m = aiTextTranslations[text];
     return m ? (m[language] || m['en']) : text;
+  };
+  const aiSourceLabel = (source?: AiInsightResponse["source"]) => {
+    if (source === "llm") return translateAiText("OpenAI 분석");
+    if (source === "llm-fallback") return language === "ko" ? "규칙 기반 AI 분석" : "Rule-based AI analysis";
+    if (source === "rule-based") return language === "ko" ? "규칙 기반 AI 분석" : "Rule-based AI analysis";
+    if (source === "dummy") return language === "ko" ? "샘플 AI 분석" : "Sample AI analysis";
+    return translateAiText("대기");
   };
   const navigate = useNavigate();
   const location = useLocation();
@@ -765,7 +764,7 @@ export default function CustomerAnalytics() {
           {/* AI summary banner */}
           {aiResult?.summary && (
             <div style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #bfdbfe', background: '#eff6ff', padding: '12px 16px', fontSize: 14, color: '#1e40af' }}>
-              <span style={{ fontWeight: 700 }}>{aiResult.source === "llm" ? translateAiText("OpenAI 분석") : translateAiText("AI fallback 분석")} : </span>
+              <span style={{ fontWeight: 700 }}>{aiSourceLabel(aiResult.source)} : </span>
               {translateAiText(aiResult.summary.mainMessage)}
             </div>
           )}
@@ -853,7 +852,7 @@ export default function CustomerAnalytics() {
                 <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.7)', borderRadius: 10, padding: '12px 14px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                   <Wallet size={18} color={DARK_GREEN} style={{ marginBottom: 6 }} />
                   <p style={{ fontSize: 12, color: '#8BA68D', margin: '0 0 4px' }}>{t.aiSourceLabel}</p>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>{aiResult?.source === "llm" ? translateAiText('OpenAI 분석') : (aiResult?.source ? translateAiText(aiResult.source) : translateAiText('대기'))}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: textColor, margin: 0 }}>{aiSourceLabel(aiResult?.source)}</p>
                 </div>
               </div>
             </div>
