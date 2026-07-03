@@ -13,6 +13,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+RUN test -n "$VITE_SUPABASE_URL" && test -n "$VITE_SUPABASE_ANON_KEY"
 RUN npm run build
 
 FROM nginx:alpine
