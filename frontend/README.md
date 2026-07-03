@@ -1,11 +1,30 @@
+# Team-CAL Frontend
 
-  # Implement feature
+React/Vite admin web application.
 
-  This is a code bundle for Implement feature. The original project is available at https://www.figma.com/design/GPSzbml0jR3btFh6NMLStf/Implement-feature.
+## Run Locally
 
-  ## Running the code
+```powershell
+npm install
+npm run dev
+```
 
-  Run `npm i` to install the dependencies.
+Local `.env`:
 
-  Run `npm run dev` to start the development server.
-  
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+## Build
+
+```powershell
+npm run build
+```
+
+For production deployment, use:
+
+```env
+VITE_API_BASE_URL=/api
+```
+
+See [../docs](../docs/README.md) for deployment and troubleshooting.

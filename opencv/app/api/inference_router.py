@@ -14,6 +14,7 @@ async def infer_image(
     modelName: str = Query(settings.default_model_name, pattern="^(yolo11s|yolov8[ns])$"),
     imageSize: int = Query(640, ge=320, le=1280),
     confidence: float = Query(0.3, ge=0.01, le=1.0),
+    sendToSpring: bool = True,
     image: UploadFile = File(...),
 ):
     content = await image.read()
@@ -25,6 +26,7 @@ async def infer_image(
             model_name=modelName,
             image_size=imageSize,
             confidence_threshold=confidence,
+            send_to_spring=sendToSpring,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -333,11 +333,6 @@ export default function AdminDashboard() {
     const load = async () => {
       try {
         const today = toDateStr(new Date());
-        await axiosInstance
-          .post("/people_log/opencv", null, {
-            params: { store_id: selectedBranchId },
-          })
-          .catch(() => {});
 
         const [shiftRes, userRes, subRes, peopleLogRes] =
           await Promise.allSettled([
@@ -429,11 +424,6 @@ export default function AdminDashboard() {
     const refreshCustomerTrend = async () => {
       try {
         const today = toDateStr(new Date());
-        await axiosInstance
-          .post("/people_log/opencv", null, {
-            params: { store_id: selectedBranchId },
-          })
-          .catch(() => {});
 
         const [shiftRes, peopleLogRes] = await Promise.allSettled([
           axiosInstance.get("/shift", {

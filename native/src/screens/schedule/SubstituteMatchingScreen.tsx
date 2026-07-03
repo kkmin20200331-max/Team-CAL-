@@ -1,21 +1,32 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
 import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko, enUS, ja } from 'date-fns/locale';
 import Toast from 'react-native-toast-message';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { getSubstitutePostsAPI, getMySubstitutePostsAPI, getMySubstituteApplicationsAPI, applyForSubstituteAPI } from '../../../api/auth';
 
+const isOpenSubstitutePost = (status?: string) => {
+  const normalized = (status || '').toLowerCase();
+  return normalized === 'open' || normalized === 'pending';
+};
+
 const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, route: any }) => {
   const { initialTab = 'requests' } = route.params || {};
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const styles = getThemedStyles(colors);
   const { userInfo } = useApp();
+
+  const dateLocale = useMemo(() => {
+    if (language === 'English') return enUS;
+    if (language === '日本語') return ja;
+    return ko;
+  }, [language]);
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
@@ -30,7 +41,10 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
     try {
       if (activeTab === 'requests') {
         const res = await getSubstitutePostsAPI(userInfo.store_id);
-        setRequests(res.data.filter((req: any) => req.requester_id !== userInfo.id));
+        setRequests((Array.isArray(res.data) ? res.data : []).filter((req: any) =>
+          isOpenSubstitutePost(req.status)
+          && req.requester_user_id !== userInfo.id
+        ));
       } else {
         const [postsRes, appsRes] = await Promise.all([
           getMySubstitutePostsAPI(userInfo.id),
@@ -41,7 +55,7 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
       }
     } catch (error) {
       console.error(`${activeTab} 데이터 조회 실패:`, error);
-      Toast.show({ type: 'error', text1: '오류', text2: '데이터를 불러오는데 실패했습니다.' });
+      Toast.show({ type: 'error', text1: t('error'), text2: t('loadDataFail') });
     } finally {
       setLoading(false);
     }
@@ -78,7 +92,7 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
   const renderRequestItem = ({ item }: { item: any }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.dateText}>{format(new Date(item.shift_start_time), 'M월 d일 (eee)', { locale: ko })}</Text>
+        <Text style={styles.dateText}>{format(new Date(item.shift_start_time), t('dateFormatPattern'), { locale: dateLocale })}</Text>
         <Text style={styles.timeText}>{`${format(new Date(item.shift_start_time), 'HH:mm')} - ${format(new Date(item.shift_end_time), 'HH:mm')}`}</Text>
       </View>
       <View style={styles.cardBody}>
@@ -98,10 +112,10 @@ const SubstituteMatchingScreen = ({ navigation, route }: { navigation: any, rout
     const cardContent = (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.dateText}>{format(new Date(item.shift_start_time || item.created_at), 'M월 d일 (eee)', { locale: ko })}</Text>
+          <Text style={styles.dateText}>{format(new Date(item.shift_start_time || item.created_at), t('dateFormatPattern'), { locale: dateLocale })}</Text>
         </View>
         <View style={styles.cardBody}>
-          <Text style={styles.reasonText}>{item.reason || `[${item.post_id}]에 지원함`}</Text>
+          <Text style={styles.reasonText}>{item.reason || t('appliedToPost').replace('{id}', item.post_id || '')}</Text>
         </View>
         <View style={styles.statusFooter}>
           <Text style={styles.statusText}>

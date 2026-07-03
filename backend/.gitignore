@@ -40,7 +40,10 @@ out/
 src/main/resources/application.properties
 src/main/resources/application.yml
 
+
+# =========================
 # Oracle Autonomous DB Wallet
+# =========================
 **/wallet/
 wallet/
 wallet.zip

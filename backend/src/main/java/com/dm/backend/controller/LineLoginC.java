@@ -22,8 +22,11 @@ public class LineLoginC {
     @Value("${line.login.redirect-uri:https://bitemate.kro.kr/api/line/callback}")
     private String redirectUri;
 
-    @Value("${app.frontend-base-url:https://bitemate.kro.kr}")
+    @Value("${app.frontend-base-url:http://localhost:5173}")
     private String frontendBaseUrl;
+
+    @Value("${line.official-account-url:https://line.me/R/ti/p/@354cpsdr}")
+    private String officialAccountUrl;
 
     @Autowired
     private LineLoginService lineLoginService;
@@ -37,8 +40,13 @@ public class LineLoginC {
 
     @GetMapping("/login")
     public RedirectView lineLogin(
-            @RequestParam String userId
+            @RequestParam String userId,
+            @RequestParam(required = false, defaultValue = "web") String source
     ) {
+        String normalizedSource =
+                "app".equalsIgnoreCase(source) ? "app" : "web";
+        String state =
+                userId + "::" + normalizedSource;
 
         String url =
                 "https://access.line.me/oauth2/v2.1/authorize"
@@ -49,8 +57,13 @@ public class LineLoginC {
                         redirectUri,
                         StandardCharsets.UTF_8
                 )
-                        + "&state=" + userId
-                        + "&scope=profile%20openid";
+                        + "&state="
+                        + URLEncoder.encode(
+                        state,
+                        StandardCharsets.UTF_8
+                )
+                        + "&scope=profile%20openid"
+                        + ("app".equals(normalizedSource) ? "&bot_prompt=aggressive" : "");
 
         System.out.println(
                 "LINE LOGIN URL = " + url
@@ -113,6 +126,13 @@ public class LineLoginC {
         }
 
         String userId = state;
+        String source = "web";
+
+        if (state != null && state.contains("::")) {
+            String[] stateParts = state.split("::", 2);
+            userId = stateParts[0];
+            source = stateParts.length > 1 ? stateParts[1] : "web";
+        }
 
         if (userId == null) {
 
@@ -144,6 +164,10 @@ public class LineLoginC {
                     lineLoginService.getProfile(
                             accessToken
                     );
+            boolean friend =
+                    lineLoginService.isFriend(
+                            accessToken
+                    );
 
             System.out.println(
                     "LINE USER ID = "
@@ -164,6 +188,9 @@ public class LineLoginC {
             vo.setLine_user_id(
                     profile.getUserId()
             );
+            vo.setFollow_yn(
+                    friend ? "Y" : "N"
+            );
 
             userLineService.register(
                     vo
@@ -177,8 +204,23 @@ public class LineLoginC {
             // 친구추가 페이지
             // =========================
 
+            if ("app".equalsIgnoreCase(source)) {
+                return new RedirectView(
+                        officialAccountUrl
+                );
+            }
+
             return new RedirectView(
-                    "https://line.me/R/ti/p/@354cpsdr"
+                    frontendBaseUrl + "/line/success?userId="
+                            + URLEncoder.encode(
+                            userId,
+                            StandardCharsets.UTF_8
+                    )
+                            + "&friendUrl="
+                            + URLEncoder.encode(
+                            officialAccountUrl,
+                            StandardCharsets.UTF_8
+                    )
             );
 
         } catch (Exception e) {

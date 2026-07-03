@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from 'react'; // useMemo 임포트
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react'; // useMemo 임포트
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Pressable, Switch, Image, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage, Language } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
 import Toast from 'react-native-toast-message';
+import { useFocusEffect } from '@react-navigation/native';
+import { getLineInfoAPI, deleteLineInfoAPI } from '../../../api/auth';
 
 type Props = {
   navigation: any;
@@ -19,6 +21,83 @@ const MyPageScreen = ({ navigation }: Props) => {
   const { language, setLanguage, t } = useLanguage();
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [isPushEnabled, setIsPushEnabled] = useState(true);
+  const [isLineLinked, setIsLineLinked] = useState(false);
+
+  const checkLineLinkStatus = async () => {
+    const userId = userInfo?.id;
+    if (!userId) return;
+    try {
+      const response = await getLineInfoAPI(userId);
+      if (response.data?.followed || response.data?.follow_yn === 'Y') {
+        setIsLineLinked(true);
+      } else {
+        setIsLineLinked(false);
+      }
+    } catch (error) {
+      console.error("LINE 연동 조회 오류:", error);
+      setIsLineLinked(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      checkLineLinkStatus();
+    }, [userInfo?.id])
+  );
+
+  const handleLineLink = async () => {
+    const userId = userInfo?.id;
+    if (!userId) return;
+    
+    const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+    if (!baseUrl) {
+      Alert.alert(t('error'), 'API Base URL is not configured.');
+      return;
+    }
+    
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const loginUrl = `${normalizedBaseUrl}/line/login?userId=${encodeURIComponent(userId)}&source=app`;
+    try {
+      const supported = await Linking.canOpenURL(loginUrl);
+      if (supported) {
+        await Linking.openURL(loginUrl);
+      } else {
+        Alert.alert(t('error'), 'Cannot open URL: ' + loginUrl);
+      }
+    } catch (error) {
+      console.error("LINE 연동 열기 실패:", error);
+      Alert.alert(t('error'), t('processErrorMsg'));
+    }
+  };
+
+  const handleLineUnlink = () => {
+    const userId = userInfo?.id;
+    if (!userId) return;
+    Alert.alert(
+      t('lineLink'),
+      t('unlinkLineConfirm'),
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('confirm'),
+          onPress: async () => {
+            try {
+              await deleteLineInfoAPI(userId);
+              setIsLineLinked(false);
+              Toast.show({
+                type: 'success',
+                text1: t('lineLink'),
+                text2: t('unlinkLineBtn') + ' ' + t('confirm'),
+              });
+            } catch (error) {
+              console.error("LINE 연동 해제 실패:", error);
+              Alert.alert(t('error'), t('processErrorMsg'));
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const name = userInfo?.name || '사용자';
   const role = userInfo?.role || 'STAFF';
@@ -106,6 +185,27 @@ const MyPageScreen = ({ navigation }: Props) => {
               {branchDisplayName} | {role === 'ADMIN' ? t('admin') : t('staff')}
             </Text>
           </View>
+        </View>
+
+        {/* LINE 연동 섹션 */}
+        <View style={styles.lineSection}>
+          <View style={styles.lineHeader}>
+            <Image source={require('../../../assets/img/line-icon-144.png')} style={styles.lineLogo} />
+            <View style={styles.lineTextContainer}>
+              <Text style={styles.lineTitle}>{t('lineLink')}</Text>
+              <Text style={styles.lineStatusText}>
+                {isLineLinked ? t('lineLinked') : t('lineUnlinked')}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.lineButton, isLineLinked ? styles.lineButtonUnlink : styles.lineButtonLink]}
+            onPress={isLineLinked ? handleLineUnlink : handleLineLink}
+          >
+            <Text style={[styles.lineButtonText, isLineLinked ? styles.lineButtonTextUnlink : styles.lineButtonTextLink]}>
+              {isLineLinked ? t('unlinkLineBtn') : t('linkLineBtn')}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.menuSection}>
@@ -334,6 +434,63 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
   modalOptionTextSelected: {
     color: colors.primary,
     fontWeight: 'bold',
+  },
+  lineSection: {
+    marginTop: 20,
+    marginHorizontal: 20,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  lineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  lineLogo: {
+    width: 32,
+    height: 32,
+    marginRight: 12,
+    borderRadius: 6,
+  },
+  lineTextContainer: {
+    flex: 1,
+  },
+  lineTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+  lineStatusText: {
+    fontSize: 13,
+    color: colors.subText,
+    marginTop: 2,
+  },
+  lineButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lineButtonLink: {
+    backgroundColor: '#06C755',
+  },
+  lineButtonUnlink: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  lineButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  lineButtonTextLink: {
+    color: '#FFFFFF',
+  },
+  lineButtonTextUnlink: {
+    color: colors.text,
   },
 });
 

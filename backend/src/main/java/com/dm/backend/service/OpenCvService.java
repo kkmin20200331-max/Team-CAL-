@@ -1,6 +1,7 @@
 package com.dm.backend.service;
 
 import com.dm.backend.vo.OpenCvResponseVO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -9,11 +10,13 @@ public class OpenCvService {
 
     private final RestClient restClient;
 
-    public OpenCvService() {
+    public OpenCvService(
+            @Value("${fastapi.base-url:http://127.0.0.1:8000}") String fastApiBaseUrl
+    ) {
 
         this.restClient =
                 RestClient.builder()
-                        .baseUrl("http://localhost:8000")
+                        .baseUrl(fastApiBaseUrl)
                         .build();
     }
 
