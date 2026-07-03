@@ -16,6 +16,7 @@ import com.dm.backend.vo.ShiftVO;
 import com.dm.backend.vo.StoreMemberVo;
 import com.dm.backend.vo.StoreVo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,8 +62,8 @@ public class ShiftService {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final String FASTAPI_SCHEDULE_EXPLAIN_URL =
-            "http://127.0.0.1:8000/api/v1/ai-schedules/explain";
+    @Value("${fastapi.base-url:http://127.0.0.1:8000}")
+    private String fastApiBaseUrl;
 
     private final RestClient restClient = RestClient.builder().build();
 
@@ -547,7 +548,7 @@ public class ShiftService {
         try {
             Map<?, ?> response = restClient
                     .post()
-                    .uri(FASTAPI_SCHEDULE_EXPLAIN_URL)
+                    .uri(openCvUrl("/api/v1/ai-schedules/explain"))
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .body(Map.of(
@@ -826,6 +827,13 @@ public class ShiftService {
 
     private String newFixedShiftId() {
         return "FIX_" + UUID.randomUUID().toString().replace("-", "").substring(0, 17);
+    }
+
+    private String openCvUrl(String path) {
+        String baseUrl = fastApiBaseUrl.endsWith("/")
+                ? fastApiBaseUrl.substring(0, fastApiBaseUrl.length() - 1)
+                : fastApiBaseUrl;
+        return baseUrl + path;
     }
 
     private record HourlyAssignment(

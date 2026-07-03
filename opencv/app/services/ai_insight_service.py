@@ -234,6 +234,44 @@ class AiInsightService:
         return default
 
     def _build_response(self, data: dict[str, Any], features: AiInsightFeatures, source: str) -> AiInsightResponse:
+        if self._has_no_customer_data(data, features):
+            return AiInsightResponse(
+                context=AiInsightContext(
+                    storeId=data["storeId"],
+                    storeName=data.get("storeName") or f"Store {data['storeId']}",
+                    storeType=data.get("storeType", "OTHER"),
+                    storeTypeLabel=data.get("storeTypeLabel"),
+                ),
+                calendarContext=self._build_calendar_context(data.get("date")),
+                summary=AiInsightSummary(
+                    overallStatus="분석 대기",
+                    mainMessage="아직 집계된 방문 데이터가 없어 피크 시간과 인력 부담을 판단할 수 없습니다. CCTV 분석을 시작한 뒤 다시 확인해 주세요.",
+                    riskLevel="LOW",
+                ),
+                insights=[
+                    AiInsightCard(
+                        id="insight-empty-001",
+                        type="CONGESTION",
+                        severity="LOW",
+                        badge="데이터 대기",
+                        title="방문 데이터가 아직 집계되지 않았습니다",
+                        message="현재 고객 수와 오늘 누적 방문 로그가 모두 0명입니다. 분석 서버는 연결되어 있지만 아직 판단할 데이터가 부족합니다.",
+                        actionLabel="CCTV 분석 시작",
+                        reason="방문 로그가 없는 상태에서는 피크 시간, 직원 1명당 고객 수, 추가 인력 추천을 계산하지 않습니다.",
+                    )
+                ],
+                scheduleRecommendations=[],
+                operationMetrics=OperationMetrics(
+                    congestionLevel="LOW",
+                    staffingRisk="LOW",
+                    conversionStatus="LOW",
+                    scheduleFit="GOOD",
+                    waitingRisk="LOW",
+                ),
+                features=features,
+                source=source,
+            )
+
         staffing_risk = self._risk_from_customers_per_staff(features.customersPerStaff)
         congestion_level = self._risk_from_peak(features.peakCustomerCount)
         waiting_risk = "HIGH" if staffing_risk == "HIGH" and congestion_level != "LOW" else congestion_level
@@ -278,6 +316,40 @@ class AiInsightService:
             features=features,
             source=source,
         )
+
+    def _has_no_customer_data(self, data: dict[str, Any], features: AiInsightFeatures) -> bool:
+        if features.peakCustomerCount > 0 or features.todayTotalVisitors > 0:
+            return False
+
+        camera_rows = data.get("cameraAggregates", [])
+        if any(self._row_has_positive_customer_count(row) for row in camera_rows):
+            return False
+
+        current = data.get("current", {})
+        current_count = self._first_value(
+            current,
+            "currentCustomerCount",
+            "current_customer_count",
+            "lastCustomerCount",
+            "last_customer_count",
+            default=0,
+        )
+        return int(round(float(current_count or 0))) == 0
+
+    def _row_has_positive_customer_count(self, row: dict[str, Any]) -> bool:
+        customer_count = self._first_value(
+            row,
+            "maxCustomerCount",
+            "max_customer_count",
+            "customerCount",
+            "customer_count",
+            "lastCustomerCount",
+            "last_customer_count",
+            "avgCustomerCount",
+            "avg_customer_count",
+            default=0,
+        )
+        return int(round(float(customer_count or 0))) > 0
 
     def _build_calendar_context(self, date_text: str | None) -> CalendarContext:
         if not date_text:

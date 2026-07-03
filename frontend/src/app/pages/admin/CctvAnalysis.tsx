@@ -50,6 +50,20 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
+const legacyStoreIdMap: Record<string, string> = {
+  "1": "V1StGXR8_Z5jdHi6B-myT",
+  migeum: "V1StGXR8_Z5jdHi6B-myT",
+  "2": "N2xY8pQ3_a1BcDeFgH1jK",
+  sunae: "N2xY8pQ3_a1BcDeFgH1jK",
+  "3": "k9L0mN1o_P2qR3sT4uV5w",
+  dongcheon: "k9L0mN1o_P2qR3sT4uV5w",
+};
+
+const resolveStoreId = (branchId?: string) => {
+  if (!branchId) return "V1StGXR8_Z5jdHi6B-myT";
+  return legacyStoreIdMap[branchId] || branchId;
+};
+
 type SourceType = "WEBCAM" | "RTSP" | "VIDEO_FILE";
 
 type CameraConfig = {
@@ -93,7 +107,7 @@ type CctvStatus = CctvMetrics & {
   lastError?: string;
 };
 
-const OPENCV_CAMERA_STREAM = "http://localhost:8000/api/v1/camera/stream";
+const OPENCV_CAMERA_STREAM = `${API_BASE}/cctv/stream`;
 
 const initialConfig: CameraConfig = {
   cameraId: "CAM-001",
@@ -160,7 +174,7 @@ export default function CctvAnalysis() {
   const [lastSavedAt, setLastSavedAt] = useState(t.notSet);
   const [lastResponse, setLastResponse] = useState(t.waitingReceive);
   const [errorMessage, setErrorMessage] = useState("");
-  const storeId = selectedBranchId;
+  const storeId = resolveStoreId(selectedBranchId);
   const CONFIG_KEY = `cctv_config_${storeId}`;
   const [config, setConfig] = useState<CameraConfig>(() => {
     try {
