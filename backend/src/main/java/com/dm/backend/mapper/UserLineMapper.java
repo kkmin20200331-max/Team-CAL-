@@ -177,12 +177,12 @@ public interface UserLineMapper {
         JOIN USER_LINE ul
             ON ul.USER_ID = sm.USER_ID
         WHERE s.ID = #{shift_id}
-        AND sm.APPROVAL_STATUS = 'APPROVED'
+        AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
         AND (
-            sm.MEMBER_ROLE IN ('ADMIN', 'OWNER', 'MANAGER')
-            OR u.ROLE = 'ADMIN'
+            UPPER(TRIM(sm.MEMBER_ROLE)) IN ('ADMIN', 'OWNER', 'MANAGER')
+            OR UPPER(TRIM(u.ROLE)) IN ('ADMIN', 'MASTER')
         )
-        AND ul.FOLLOW_YN = 'Y'
+        AND UPPER(TRIM(ul.FOLLOW_YN)) = 'Y'
     """)
     List<String> getOwnerLineUserIdsByShiftId(String shift_id);
 
@@ -194,12 +194,12 @@ public interface UserLineMapper {
         JOIN USER_LINE ul
             ON ul.USER_ID = sm.USER_ID
         WHERE sm.STORE_ID = #{store_id}
-        AND sm.APPROVAL_STATUS = 'APPROVED'
+        AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
         AND (
-            sm.MEMBER_ROLE IN ('ADMIN', 'OWNER', 'MANAGER')
-            OR u.ROLE = 'ADMIN'
+            UPPER(TRIM(sm.MEMBER_ROLE)) IN ('ADMIN', 'OWNER', 'MANAGER')
+            OR UPPER(TRIM(u.ROLE)) IN ('ADMIN', 'MASTER')
         )
-        AND ul.FOLLOW_YN = 'Y'
+        AND UPPER(TRIM(ul.FOLLOW_YN)) = 'Y'
     """)
     List<String> getAdminLineUserIdsByStoreId(String store_id);
 
