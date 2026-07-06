@@ -28,7 +28,7 @@ public interface ShiftMapper {
             SELECT *
             FROM shift
             WHERE user_id = #{user_id}
-            AND work_date BETWEEN #{start_date} AND #{end_date}
+            AND TRUNC(work_date) BETWEEN TRUNC(#{start_date}) AND TRUNC(#{end_date})
             """)
     List<ShiftVO> getMonthlyShift(
             @Param("user_id") String user_id,

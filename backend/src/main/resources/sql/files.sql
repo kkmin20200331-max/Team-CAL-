@@ -64,3 +64,14 @@ VALUES (
        );
 
 COMMIT;
+
+
+
+
+SELECT table_name
+FROM user_tables
+WHERE table_name = 'USER_LANGUAGE';
+
+SELECT owner, table_name
+FROM all_tables
+WHERE table_name = 'USER_LANGUAGE';

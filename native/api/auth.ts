@@ -319,5 +319,8 @@ export const getLineInfoAPI = (userId: string) =>
 export const deleteLineInfoAPI = (userId: string) =>
   API.delete('/user-line', { params: { user_id: userId } });
 
+export const updateUserLanguageAPI = (userId: string, language: string) =>
+  API.put(`/users/${encodeURIComponent(userId)}/language`, { language });
+
 
 

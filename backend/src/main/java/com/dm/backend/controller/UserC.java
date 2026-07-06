@@ -2,6 +2,7 @@ package com.dm.backend.controller;
 
 import com.dm.backend.service.UserService;
 import com.dm.backend.service.BusinessValidationService;
+import com.dm.backend.service.UserLanguageService;
 import com.dm.backend.vo.UserVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,9 @@ public class UserC {
 
     @Autowired
     private BusinessValidationService businessValidationService;
+
+    @Autowired
+    private UserLanguageService userLanguageService;
 
     // =========================
     // [공통] 사업자등록번호 진위여부 검증
@@ -166,5 +170,33 @@ public class UserC {
     ) {
         String profileImageUrl = userservice.uploadProfileImage(id, file);
         return ResponseEntity.ok(Map.of("profile_image", profileImageUrl));
+    }
+
+    @GetMapping("/{id}/language")
+    public Map<String, String> getLanguage(
+            @PathVariable String id
+    ) {
+        return Map.of(
+                "language",
+                userLanguageService.getLanguage(id)
+        );
+    }
+
+    @PutMapping("/{id}/language")
+    public Map<String, String> updateLanguage(
+            @PathVariable String id,
+            @RequestBody Map<String, String> body
+    ) {
+        String language =
+                body == null ? null : body.get("language");
+        userLanguageService.updateLanguage(
+                id,
+                language
+        );
+
+        return Map.of(
+                "language",
+                userLanguageService.getLanguage(id)
+        );
     }
 }
