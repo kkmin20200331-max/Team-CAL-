@@ -580,17 +580,17 @@ export default function CctvAnalysis() {
               </h1>
               <p style={{ fontSize: 13, color: '#8BA68D', margin: 0 }}>{t.subtitle}</p>
             </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                <button onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button disabled={isSubmitting} onClick={isRunning ? handleStop : handleStart} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: isRunning ? (isDark ? 'rgba(239,68,68,0.2)' : '#ef4444') : GREEN, border: isRunning ? `1px solid ${isDark ? 'rgba(239,68,68,0.5)' : 'transparent'}` : 'none', borderRadius: 54, color: isRunning ? (isDark ? '#f87171' : '#fff') : '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: isSubmitting ? 0.6 : 1, height: 42 }}>
+                  {isRunning ? <CircleStop size={16} /> : <Play size={16} />}
+                  {isSubmitting ? t.requesting : isRunning ? t.stopAnalysis : t.startAnalysis}
+                </button>
+                <button onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer', height: 42 }}>
                   <Save size={16} />{t.saveConfig}
                 </button>
-                <span style={{ fontSize: 11, color: '#c8c8c8' }}>{t.lastSaved} {lastSavedAt}</span>
               </div>
-              <button disabled={isSubmitting} onClick={isRunning ? handleStop : handleStart} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: isRunning ? (isDark ? 'rgba(239,68,68,0.2)' : '#ef4444') : GREEN, border: isRunning ? `1px solid ${isDark ? 'rgba(239,68,68,0.5)' : 'transparent'}` : 'none', borderRadius: 54, color: isRunning ? (isDark ? '#f87171' : '#fff') : '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: isSubmitting ? 0.6 : 1 }}>
-                {isRunning ? <CircleStop size={16} /> : <Play size={16} />}
-                {isSubmitting ? t.requesting : isRunning ? t.stopAnalysis : t.startAnalysis}
-              </button>
+              <span style={{ fontSize: 11, color: '#c8c8c8' }}>{t.lastSaved} {lastSavedAt}</span>
             </div>
           </div>
         {errorMessage && (

@@ -7,7 +7,7 @@ create table store_member(
     approval_status varchar2(20 char) not null,
     pay_type VARCHAR2(20),
     pay_amount NUMBER,
-    available_days VARCHAR2(20),
+    available_days VARCHAR2(100 CHAR),
     joined_at timestamp default current_timestamp
 );
 -- 1. 김점주(U1StGXR8_Z5jdHi6B-my1)를 시프트 커피 강남점(V1StGXR8_Z5jdHi6B-myT)의 점주(ADMIN)로 연결 (승인 완료)
@@ -27,3 +27,5 @@ INSERT INTO store_member (id, store_id, user_id, member_role, user_level, approv
 VALUES ('M_004_도쿄라운지_최대기', 'N2xY8pQ3_a1BcDeFgH1jK', 'U7yZ8aB9_c0DeF1gH2iJ4', 'STAFF', 'NEWBIE', 'PENDING');
 
 select * from store_member;
+
+ALTER TABLE store_member MODIFY available_days VARCHAR2(100 CHAR);

@@ -83,6 +83,8 @@ DELETE FROM users WHERE name = 'adminsm';
 
 DELETE FROM users WHERE username = '1234';
 
+DELETE FROM users WHERE username = 'gg';
+
 COMMIT;
 
 UPDATE users SET password = '123' WHERE username = 'admin01';

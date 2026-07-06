@@ -8,12 +8,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { ChevronLeft, ChevronRight, Plus, X, Paperclip, Edit, Trash2, Send, MessageSquare, ShieldCheck } from 'lucide-react';
 import EmployeeBottomNav from './EmployeeBottomNav';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL as string,
-  import.meta.env.VITE_SUPABASE_KEY as string,
-);
+import { supabase } from '../../../utils/supabase';
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
@@ -114,6 +109,9 @@ const parseContent = (raw: string) => {
   return { body, attachments };
 };
 
+const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|svg|bmp)$/i;
+const isImageFile = (name: string) => IMAGE_EXTS.test(name);
+
 function AttachmentLink({ name, url, color }: { name: string; url: string; color: string }) {
   const [href, setHref] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -126,6 +124,16 @@ function AttachmentLink({ name, url, color }: { name: string; url: string; color
     }
   }, [url]);
   if (!href) return <span style={{ fontSize: 14, color: '#999' }}>📄 {name} (로딩중...)</span>;
+  if (isImageFile(name)) {
+    return (
+      <div style={{ marginTop: 8 }}>
+        <a href={href} target="_blank" rel="noopener noreferrer">
+          <img src={href} alt={name} style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 12, display: 'block', cursor: 'pointer' }} />
+        </a>
+        <span style={{ fontSize: 12, color: '#999', marginTop: 4, display: 'block' }}>{name}</span>
+      </div>
+    );
+  }
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" download={name}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, color, textDecoration: 'none', fontWeight: 600 }}
@@ -215,7 +223,7 @@ function CommentItem({ comment: c, isDark, currentUserId, currentUserRole, isAdm
             style={{
               flex: 1, padding: '6px 10px', borderRadius: 8, fontSize: 14,
               border: `1.5px solid ${BORDER_GREEN}`,
-              background: isDark ? '#3a3a3c' : '#fff',
+              background: isDark ? '#1e1e1e' : '#fff',
               color: isDark ? '#fff' : '#333', outline: 'none',
             }}
           />
@@ -269,7 +277,7 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
       padding: '0 20px',
     }}>
       <div style={{
-        background: isDark ? '#2c2c2e' : '#fff',
+        background: isDark ? '#141414' : '#fff',
         borderRadius: 24, width: '100%', maxWidth: 600,
         padding: '28px 28px 24px',
         boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
@@ -291,7 +299,7 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
             style={{
               width: '100%', padding: '10px 14px', borderRadius: 12, fontSize: 15,
               border: `1.5px solid ${BORDER_GREEN}`,
-              background: isDark ? '#3a3a3c' : '#f9fdf9',
+              background: isDark ? '#1e1e1e' : '#f9fdf9',
               color: isDark ? '#fff' : '#111', outline: 'none',
               opacity: isEdit ? 0.6 : 1,
             }}
@@ -307,7 +315,7 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
             style={{
               width: '100%', padding: '10px 14px', borderRadius: 12, fontSize: 15,
               border: `1.5px solid ${BORDER_GREEN}`,
-              background: isDark ? '#3a3a3c' : '#f9fdf9',
+              background: isDark ? '#1e1e1e' : '#f9fdf9',
               color: isDark ? '#fff' : '#111', outline: 'none', boxSizing: 'border-box',
             }}
           />
@@ -320,7 +328,7 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
             style={{
               width: '100%', padding: '10px 14px', borderRadius: 12, fontSize: 15,
               border: `1.5px solid ${BORDER_GREEN}`,
-              background: isDark ? '#3a3a3c' : '#f9fdf9',
+              background: isDark ? '#1e1e1e' : '#f9fdf9',
               color: isDark ? '#fff' : '#111', outline: 'none', resize: 'vertical',
               boxSizing: 'border-box', fontFamily: 'inherit',
             }}
@@ -368,7 +376,7 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
               {files.map((f, i) => (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '6px 12px', background: isDark ? '#3a3a3c' : '#f0faf0', borderRadius: 8, fontSize: 14,
+                  padding: '6px 12px', background: isDark ? '#1e1e1e' : '#f0faf0', borderRadius: 8, fontSize: 14,
                 }}>
                   <span style={{ color: isDark ? '#fff' : '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {f.name}</span>
                   <button onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))}
@@ -408,13 +416,28 @@ export default function EmployeeBoard() {
   const navigate = useNavigate();
   const language = useLanguage();
   const t = translations.employeeBoard[language];
-  const storeId = sessionStorage.getItem('store_id') || '';
+  const [storeId, setStoreId] = useState(sessionStorage.getItem('store_id') || '');
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
   const isAdmin = ADMIN_ROLES.includes(currentUser.role?.toUpperCase?.() ?? '');
 
   const [boards, setBoards] = useState<BoardVO[]>([]);
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // store_id 없으면 /store/my로 가져오기
+  useEffect(() => {
+    if (storeId || !currentUser.id) return;
+    axiosInstance.get('/store/my', { params: { user_id: currentUser.id } })
+      .then(res => {
+        if (res.data?.id) {
+          sessionStorage.setItem('store_id', res.data.id);
+          setStoreId(res.data.id);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(() => setLoading(false));
+  }, []);
   const [selectedBoardId, setSelectedBoardId] = useState<string>('');
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   // writer_id → role 매핑 (기존 게시글 관리자 뱃지용)
@@ -452,7 +475,7 @@ export default function EmployeeBoard() {
   }, [storeId]);
 
   const fetchPosts = () => {
-    if (!storeId) return;
+    if (!storeId) { setLoading(false); return; }
     setLoading(true);
     axiosInstance.get('/board', { params: { store_id: storeId } })
       .then(res => {
@@ -614,7 +637,7 @@ export default function EmployeeBoard() {
     }
   }, [selectedPostId]);
 
-  const cardBg = isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)';
+  const cardBg = isDark ? '#141414' : 'rgba(255,255,255,0.8)';
   const textColor = isDark ? '#fff' : '#333';
 
   // 모달 열기 시 기본 board_id: 수정일 때 해당 게시글 board, 작성일 때 선택된 탭 or 첫 번째
@@ -855,7 +878,7 @@ export default function EmployeeBoard() {
               <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
                 <div style={{
                   flex: 1, display: 'flex', alignItems: 'center',
-                  background: isDark ? '#2c2c2e' : '#f0faf0',
+                  background: isDark ? '#141414' : '#f0faf0',
                   border: `1.5px solid ${BORDER_GREEN}`, borderRadius: 12,
                   padding: '0 14px', gap: 8,
                 }}>

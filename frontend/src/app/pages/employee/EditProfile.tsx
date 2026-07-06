@@ -74,7 +74,7 @@ export default function EditProfile() {
   const [checkingName, setCheckingName] = useState(false);
 
   const bgColor    = isDark ? '#1c1c1e' : '#EEF5DD';
-  const cardBg     = isDark ? '#2c2c2e' : '#FFFFFF';
+  const cardBg     = isDark ? '#141414' : '#FFFFFF';
   const labelColor = isDark ? '#aaa'    : '#606060';
   const inputBg    = isDark ? '#3a3a3c' : '#F2F5EB';
   const inputTxt   = isDark ? '#fff'    : '#333';

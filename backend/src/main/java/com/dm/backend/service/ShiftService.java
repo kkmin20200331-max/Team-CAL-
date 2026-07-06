@@ -106,13 +106,11 @@ public class ShiftService {
         shiftMapper.registerShift(shiftVO);
     }
 
-    @Transactional
     public List<ShiftVO> getShiftList(
             String store_id,
             String start_date,
             String end_date
     ) {
-        materializeFixedShifts(store_id, start_date, end_date);
         return shiftMapper.getShiftList(
                 store_id,
                 start_date,
@@ -159,6 +157,17 @@ public class ShiftService {
             // 선민 수정 (2026-07-06): 근무 삭제 시 연동된 출퇴근(QR) 기록도 같이 삭제
             attendanceMapper.deleteByShiftId(id);
         }
+    }
+
+    @Transactional
+    public void delFutureShifts(
+            String user_id,
+            String store_id,
+            String weekday,
+            String from_date
+    ) {
+        shiftMapper.delFutureShiftsByWeekday(user_id, store_id, weekday, from_date);
+        fixedscheduleMapper.deactivateFixedSchedule(user_id, store_id, weekday);
     }
 
     @Transactional
