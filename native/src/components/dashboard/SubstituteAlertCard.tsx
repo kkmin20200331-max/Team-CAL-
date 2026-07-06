@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -10,12 +10,20 @@ type Props = {
   colors: any;
   isDarkMode: boolean;
   t: (key: string) => string;
+  activeSubPost?: {
+    id: string;
+    requesterName: string;
+    workDate: string;
+    workTime: string;
+    reason: string;
+  } | null;
 };
 
-const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitute, setIsAlertVisible, colors, isDarkMode, t }: Props) => {
+const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitute, setIsAlertVisible, colors, isDarkMode, t, activeSubPost }: Props) => {
   const styles = getThemedStyles(colors, isDarkMode);
 
-  if (!isAlertVisible) {
+  // 선민 수정 (2026-07-06): 노출 가능한 실제 대타 요청이 없거나 비활성화인 경우 렌더링 생략
+  if (!isAlertVisible || !activeSubPost) {
     return null;
   }
 
@@ -27,8 +35,9 @@ const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitut
         <Ionicons name="alert-circle-outline" size={18} color={alertColor} style={styles.alertIcon} />
         <Text style={styles.alertTitle}>{t('subReqAlertTitle')}</Text>
       </View>
+      {/* 선민 수정 (2026-07-06): 하드코딩된 대타 알림 설명 대신 실제 접수된 대타 요청자명, 일정 일자 및 사유 동적 바인딩 */}
       <Text style={styles.alertDescription}>
-        {t('subReqAlertDesc')}
+        {activeSubPost.requesterName}님이 {activeSubPost.workDate} ({activeSubPost.workTime}) 대타를 요청했습니다.{"\n"}사유: {activeSubPost.reason}
       </Text>
       <View style={styles.buttonGroup}>
         <TouchableOpacity style={styles.acceptButton} onPress={handleAcceptSubstitute}>

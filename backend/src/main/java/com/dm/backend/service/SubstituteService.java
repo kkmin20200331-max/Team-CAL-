@@ -142,18 +142,23 @@ public class SubstituteService {
                 ? "APPROVED"
                 : status.toUpperCase();
 
+        SubstitutePostVO post = substituteMapper.getPost(application.getSubstitute_post_id());
+        if (post == null) {
+            throw new IllegalArgumentException("Substitute post not found.");
+        }
+
         if ("REJECTED".equals(nextStatus)) {
             substituteMapper.updateApplicationStatus(applicationId, "REJECTED");
+            // 선민 수정 (2026-07-06): 대타 거절(REJECTED)인 경우 교대글(post)을 취소하고 원본 시프트 상태를 다시 SCHEDULED(확정)로 복원하는 기능 보완
+            substituteMapper.cancelPost(post.getId());
+            if (post.getShift_id() != null && !post.getShift_id().isEmpty()) {
+                substituteMapper.updateShiftStatus(post.getShift_id(), "SCHEDULED");
+            }
             return;
         }
 
         if (!"APPROVED".equals(nextStatus)) {
             throw new IllegalArgumentException("Unsupported substitute application status.");
-        }
-
-        SubstitutePostVO post = substituteMapper.getPost(application.getSubstitute_post_id());
-        if (post == null) {
-            throw new IllegalArgumentException("Substitute post not found.");
         }
 
         if (post.getShift_id() == null || post.getShift_id().isBlank()) {

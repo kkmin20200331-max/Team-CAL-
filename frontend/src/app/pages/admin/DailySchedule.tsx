@@ -335,7 +335,8 @@ const DailySchedule: React.FC = () => {
     total: shifts.length,
     confirmed: shifts.filter((s) => {
       const st = (s.status || '').toLowerCase();
-      return st === "confirmed" || st === "substituted";
+      // 선민 수정 (2026-07-06): 확정(scheduled) 상태도 confirmed 카운트에 누락 없이 반영되도록 보완
+      return st === "confirmed" || st === "substituted" || st === "scheduled";
     }).length,
     pending: shifts.filter((s) => {
       const st = (s.status || '').toLowerCase();

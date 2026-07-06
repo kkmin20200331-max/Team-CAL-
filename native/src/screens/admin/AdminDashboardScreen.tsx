@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getStoreShiftsAPI, getStoreStaffAPI } from '../../../api/auth';
+import { getStoreShiftsAPI, getStoreStaffAPI, getSubstitutePostsAPI } from '../../../api/auth';
 import TodayScheduleCard from '../../components/admin/TodayScheduleCard';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -73,9 +73,10 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
 
       try {
         const today = format(new Date(), 'yyyy-MM-dd');
-        const [shiftResponse, staffResponse] = await Promise.all([
+        const [shiftResponse, staffResponse, subResponse] = await Promise.all([
           getStoreShiftsAPI(storeId, today, today),
           getStoreStaffAPI(storeId),
+          getSubstitutePostsAPI(storeId).catch(() => ({ data: [] })),
         ]);
 
         if (!alive) return;
@@ -128,8 +129,17 @@ const AdminDashboardScreen = ({ navigation }: { navigation: any }) => {
           const endMinutes = endH * 60 + endM;
           return currentMinutes >= startMinutes && currentMinutes < endMinutes;
         }).length;
+        const subPosts = Array.isArray(subResponse.data) ? subResponse.data : [];
+        const activeSubCount = subPosts.filter(
+          (p: any) => {
+            const st = (p.status || '').toLowerCase();
+            return st === 'open' || st === 'pending';
+          }
+        ).length;
+
         setCurrentlyWorking(workingNowCount);
-        setSubstituteRequests(processed.filter((shift: any) => shift.status === 'SUBSTITUTE_REQ').length);
+        // 선민 수정 (2026-07-06): 당일 근무뿐만 아니라 매장의 전체 활성화된 대타 요청 건수(pending, open)를 카운트하도록 개선
+        setSubstituteRequests(activeSubCount);
       } catch (error) {
         console.error('관리자 대시보드 로드 오류:', error);
         if (alive) {
