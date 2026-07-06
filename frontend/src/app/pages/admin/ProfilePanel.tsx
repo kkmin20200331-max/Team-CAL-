@@ -280,7 +280,8 @@ export default function ProfilePanel() {
     if (!currentUser.id) return;
     try {
       const r = await axiosInstance.get("/notification", { params: { user_id: currentUser.id } });
-      setBoardNotifications(Array.isArray(r.data) ? r.data.filter((n: any) => isUnreadNotification(n) && n.type !== "STAFF_APPROVAL_REQUEST") : []);
+      // 선민 수정 (2026-07-06): 알림 패널에 직원 가입 요청(STAFF_APPROVAL_REQUEST)이 필터링되지 않고 보이도록 로직 보완
+      setBoardNotifications(Array.isArray(r.data) ? r.data.filter((n: any) => isUnreadNotification(n)) : []);
     } catch {}
   };
 
@@ -357,7 +358,11 @@ export default function ProfilePanel() {
         if (r.status !== "fulfilled") return;
         const { store, posts } = r.value;
         posts
-          .filter((p: any) => (p.status || "").toLowerCase() === "open")
+          .filter((p: any) => {
+            const st = (p.status || "").toLowerCase();
+            // 선민 수정 (2026-07-06): 앱에서 등록한 대타 모집글(PENDING)도 승인 대상에 노출하기 위해 필터 조건에 pending 추가
+            return st === "open" || st === "pending";
+          })
           .forEach((post: any) => {
             appFetches.push(
               axiosInstance.get("/substitute/manager", { params: { post_id: post.id } })

@@ -381,8 +381,11 @@ export default function AdminDashboard() {
             ? subRes.value.data
             : [];
         setSubstituteCount(
-          subs.filter((s: any) => (s.status || "").toLowerCase() === "open")
-            .length,
+          subs.filter((s: any) => {
+            const st = (s.status || "").toLowerCase();
+            // 선민 수정 (2026-07-06): 앱에서 등록한 대타 모집글(PENDING)도 대시보드 통계 카운트에 포함
+            return st === "open" || st === "pending";
+          }).length,
         );
 
         const peopleLogs: PeopleLog[] =

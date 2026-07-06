@@ -9,8 +9,7 @@ export interface Shift {
   storeName: string;
   reason?: string;
 
-  // 근무 상태: 예정, 진행중, 완료, 대타요청, 또는 휴무
-  status: 'SCHEDULED' | 'CONFIRMED' | 'APPROVED' | 'IN_PROGRESS' | 'COMPLETED' | 'SUBSTITUTE_REQ' | 'OFF' | 'LEAVE_REQ';
+  status: 'SCHEDULED' | 'CONFIRMED' | 'APPROVED' | 'IN_PROGRESS' | 'COMPLETED' | 'SUBSTITUTE_REQ' | 'OFF' | 'LEAVE_REQ' | 'LEAVE_PENDING';
 
   // [선택] 실제 출근 시간 (예: "13:59")
   checkInTime?: string | null;
