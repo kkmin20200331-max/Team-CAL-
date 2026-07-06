@@ -1,7 +1,9 @@
 package com.dm.backend.service;
 
 import com.dm.backend.mapper.AttendanceMapper;
+import com.dm.backend.mapper.ShiftMapper;
 import com.dm.backend.vo.AttendanceVO;
+import com.dm.backend.vo.ShiftVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,7 @@ import java.util.UUID;
 public class AttendanceService {
 
     private final AttendanceMapper attendanceMapper;
+    private final ShiftMapper shiftMapper;
 
     public String checkAttendance(
             String store_id,
@@ -30,6 +33,14 @@ public class AttendanceService {
                 );
 
         if (attendance == null) {
+            // 선민 수정 (2026-07-06): 오늘 날짜의 스케줄(shift_id)을 조회하여 출퇴근 기록과 함께 매핑하여 저장
+            String todayStr = new java.text.SimpleDateFormat("yyyy-MM-dd").format(now);
+            List<ShiftVO> todayShifts = shiftMapper.getMyShiftList(user_id, todayStr, todayStr);
+            String shiftId = null;
+            if (todayShifts != null && !todayShifts.isEmpty()) {
+                shiftId = todayShifts.get(0).getId();
+            }
+
             AttendanceVO checkInVO =
                     new AttendanceVO(
                             UUID.randomUUID()
@@ -38,7 +49,7 @@ public class AttendanceService {
                                     .substring(0, 21),
                             store_id,
                             user_id,
-                            null,
+                            shiftId,
                             now,
                             now,
                             null,
