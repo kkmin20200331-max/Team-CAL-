@@ -1,12 +1,10 @@
 import axiosInstance from "../../../lib/axiosInstance";
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from 'next-themes';
 import Holidays from 'date-holidays';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Badge } from '../../components/ui/badge';
-import { Calendar } from '../../components/ui/calendar';
 import {
   Clock,
   MapPin,
@@ -27,6 +25,7 @@ import {
   startOfWeek,
   addDays,
   isSameDay,
+  isSameMonth,
 } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -169,59 +168,10 @@ export default function MySchedule() {
     (s) => getWorkDate(s) >= today,
   ).length;
 
-  // 날짜별 상태 맵 (달력 점 표시용)
-  const shiftsByDate = useMemo(() => {
-    const map: Record<string, Set<string>> = {};
-    shifts.forEach((s) => {
-      const date = getWorkDate(s);
-      if (!map[date]) map[date] = new Set();
-      map[date].add(s.status);
-    });
-    return map;
-  }, [shifts]);
-
-  // 달력 커스텀 DayContent - 컬러 점 + 공휴일 표시
-  const CustomDayContent = useCallback(({ date }: { date: Date }) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const statuses = shiftsByDate[dateStr];
-    const isHoliday = !!getHolidayName(dateStr);
-    const isSunday = date.getDay() === 0;
-    const isSaturday = date.getDay() === 6;
-    const isRed = isHoliday || isSunday || isSaturday;
-    const isToday = dateStr === format(new Date(), 'yyyy-MM-dd');
-    return (
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%',
-        background: isToday ? '#80D180' : undefined,
-        borderRadius: isToday ? 8 : undefined,
-        padding: isToday ? '2px 0' : undefined,
-      }}>
-        {/* 날짜 영역 - 항상 고정 높이 */}
-        <div style={{ height: 22, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: 14, lineHeight: 1, fontWeight: isToday ? 700 : 400, color: isRed ? '#c00000' : undefined }}>
-            {date.getDate()}
-          </span>
-          {isHoliday && (
-            <span style={{ fontSize: 7, color: '#FFA6A6', lineHeight: 1, marginTop: 1, maxWidth: 28, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {getHolidayName(dateStr)}
-            </span>
-          )}
-        </div>
-        {/* 점 영역 - 항상 고정 높이로 자리 차지 */}
-        <div style={{ height: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-          {statuses?.has('confirmed') && (
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#18A022', display: 'inline-block' }} />
-          )}
-          {statuses?.has('pending') && (
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FFE75D', display: 'inline-block' }} />
-          )}
-          {statuses && [...statuses].some(s => s !== 'confirmed' && s !== 'pending') && (
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#A20000', display: 'inline-block' }} />
-          )}
-        </div>
-      </div>
-    );
-  }, [shiftsByDate]);
+  const calendarDates = useMemo(() => {
+    const gridStart = startOfWeek(startOfMonth(currentMonth));
+    return Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
+  }, [currentMonth]);
 
   // 주간 뷰 7일
   const weekDates = Array.from({ length: 7 }, (_, i) =>
@@ -385,18 +335,125 @@ export default function MySchedule() {
         {viewMode === 'month' && (
           <>
             {/* 달력 */}
-            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: '20px 20px 0 20px', marginBottom: 20 }}>
-              <div style={{ display: 'inline-block', transform: 'scale(1.2)', transformOrigin: 'top left', marginBottom: 80 }}>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  month={currentMonth}
-                  onMonthChange={setCurrentMonth}
-                  className="rounded-md"
-                  classNames={{ day_today: '' }}
-                  components={{ DayContent: CustomDayContent }}
-                />
+            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: 18, marginBottom: 20, overflowX: 'auto' }}>
+              <div style={{ minWidth: 760 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', padding: '0 4px 10px', color: textSub, fontSize: 13, fontWeight: 800, textAlign: 'center' }}>
+                  {t.dayLabels.map((label, index) => (
+                    <div key={label} style={{ color: index === 0 || index === 6 ? '#c42a2a' : textSub }}>
+                      {label}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
+                  {calendarDates.map((date) => {
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    const dayShifts = shifts.filter((shift) => getWorkDate(shift) === dateStr);
+                    const holidayName = getHolidayName(dateStr);
+                    const isHoliday = !!holidayName;
+                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                    const isCurrentMonth = isSameMonth(date, currentMonth);
+                    const isToday = isSameDay(date, new Date());
+                    const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
+
+                    return (
+                      <button
+                        key={dateStr}
+                        type="button"
+                        onClick={() => setSelectedDate(date)}
+                        style={{
+                          position: 'relative',
+                          minHeight: 118,
+                          border: `1px solid ${isSelected ? '#18A022' : 'rgba(0,162,0,0.16)'}`,
+                          borderRadius: 14,
+                          background: isSelected ? '#F8FFF0' : isDark ? '#1e1e1e' : 'rgba(255,255,255,0.76)',
+                          boxShadow: isSelected ? 'inset 0 0 0 2px rgba(24,160,34,0.16)' : 'none',
+                          padding: 10,
+                          opacity: isCurrentMonth ? 1 : 0.42,
+                          overflow: 'hidden',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: 9,
+                          display: 'grid',
+                          placeItems: 'center',
+                          background: isToday ? '#80D180' : 'transparent',
+                          color: isHoliday || isWeekend ? '#D62828' : isDark ? '#fff' : '#263628',
+                          fontSize: 16,
+                          fontWeight: 800,
+                        }}>
+                          {date.getDate()}
+                        </div>
+
+                        {holidayName && (
+                          <div style={{
+                            position: 'absolute',
+                            top: 13,
+                            left: 46,
+                            right: 10,
+                            color: '#E58989',
+                            fontSize: 11,
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            {holidayName}
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
+                          {dayShifts.slice(0, 2).map((shift) => {
+                            const hours = calcHours(shift.start_at, shift.end_at);
+                            const isPending = shift.status === 'pending';
+                            const isConfirmed = shift.status === 'confirmed';
+                            return (
+                              <div
+                                key={shift.id}
+                                style={{
+                                  padding: '8px 9px',
+                                  borderRadius: 10,
+                                  background: isConfirmed
+                                    ? 'rgba(24,160,34,0.09)'
+                                    : isPending
+                                    ? 'rgba(243,200,0,0.12)'
+                                    : 'rgba(162,0,0,0.08)',
+                                  borderLeft: `4px solid ${isConfirmed ? '#18A022' : isPending ? '#F3C800' : '#A20000'}`,
+                                  color: isConfirmed ? textMain : isPending ? '#856B00' : '#A20000',
+                                  fontSize: 13,
+                                  lineHeight: 1.25,
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                                <div style={{
+                                  marginTop: 3,
+                                  color: textSub,
+                                  fontSize: 11,
+                                  fontWeight: 650,
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}>
+                                  {storeName} · {hours}h
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {dayShifts.length > 2 && (
+                            <div style={{ color: textSub, fontSize: 12, fontWeight: 800, paddingLeft: 4 }}>
+                              +{dayShifts.length - 2}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
