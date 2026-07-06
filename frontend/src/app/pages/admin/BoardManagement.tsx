@@ -1,11 +1,11 @@
-﻿import { useLanguage } from "../../i18n/useLanguage";
+import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
 import { API_BASE } from "../../../lib/axiosInstance";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Plus, Search, Edit, Trash2, Pin, Eye, MessageSquare,
-  Calendar, User, AlertCircle, CheckCircle, Bell,
+  Calendar, User, AlertCircle, CheckCircle,
   FileText, ClipboardCheck, UserPlus, Users, Wallet, BarChart3,
   Video, X, Send, ChevronLeft, ChevronRight,
 } from 'lucide-react';
@@ -79,14 +79,14 @@ const BoardManagement: React.FC = () => {
     outline: 'none', color: textColor, boxSizing: 'border-box',
   };
 
-  const currentBranch = sessionStorage.getItem('store_name') || '吏???좏깮';
+  const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
 
-  // ?좎? ?대쫫 留?(id ??name)
+  // 유저 이름 맵 (id → name)
   const [userNameMap, setUserNameMap] = useState<Record<string, string>>({});
   const displayName = (userId: string, customName?: string) => customName || userNameMap[userId] || userId;
 
-  // ---------- ?ъ씠?쒕컮 ----------
+  // ---------- 사이드바 ----------
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const selectedBranchId =
@@ -120,18 +120,18 @@ const BoardManagement: React.FC = () => {
       .then(r => r.json())
       .then((data: any[]) => {
         const map: Record<string, string> = {};
-        // ?꾩옱 濡쒓렇???좎? 癒쇱? ?깅줉
+        // 현재 로그인 유저 먼저 등록
         if (currentUser?.id) map[currentUser.id] = currentUser.name || currentUser.username || currentUser.id;
         if (Array.isArray(data)) data.forEach(u => { map[u.id] = u.name || u.username || u.id; });
         setUserNameMap(map);
       })
       .catch(() => {
-        // fetch ?ㅽ뙣?대룄 ?꾩옱 ?좎????쒖떆
+        // fetch 실패해도 현재 유저는 표시
         if (currentUser?.id) setUserNameMap({ [currentUser.id]: currentUser.name || currentUser.username || currentUser.id });
       });
   }, [selectedBranchId]);
 
-  // ---------- 寃뚯떆??寃뚯떆湲 ----------
+  // ---------- 게시판/게시글 ----------
   const [boards, setBoards] = useState<BoardVO[]>([]);
   const [selectedBoardId, setSelectedBoardId] = useState<string>('');
   const [posts, setPosts] = useState<BoardPostVO[]>([]);
@@ -161,7 +161,19 @@ const BoardManagement: React.FC = () => {
     }
   };
 
-  const boardNameTranslations: Record<string, Record<string, string>> = {};
+  const boardNameTranslations: Record<string, Record<string, string>> = {
+    '공지사항': { ko: '공지사항', en: 'Notice', ja: 'お知らせ' },
+    '메뉴얼': { ko: '메뉴얼', en: 'Manual', ja: 'マニュアル' },
+    '분실물 관리': { ko: '분실물 관리', en: 'Lost Items', ja: '遺失物管理' },
+    '분실물 공유': { ko: '분실물 공유', en: 'Lost & Found', ja: '遺失物共有' },
+    '프로모션/이벤트': { ko: '프로모션/이벤트', en: 'Promotions/Events', ja: 'プロモーション/イベント' },
+    '프로모션': { ko: '프로모션', en: 'Promotion', ja: 'プロモーション' },
+    '이벤트': { ko: '이벤트', en: 'Event', ja: 'イベント' },
+    '프로모셔/이벤트': { ko: '프로모셔/이벤트', en: 'Promotions/Events', ja: 'プロモーション/イベント' },
+    '체크리스트': { ko: '체크리스트', en: 'Checklist', ja: 'チェックリスト' },
+    '업무지시': { ko: '업무지시', en: 'Work Orders', ja: '業務指示' },
+    '업무 지시': { ko: '업무 지시', en: 'Work Orders', ja: '業務指示' },
+  };
 
   const translateBoardName = (name?: string) => {
     if (!name) return name || '';
@@ -213,7 +225,7 @@ const BoardManagement: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm(t.deletePostConfirm)) return;
-    // ?숆????낅뜲?댄듃: 利됱떆 ?쒓굅
+    // 낙관적 업데이트: 즉시 제거
     setPosts(prev => prev.filter(p => p.id !== id));
     setSelectedPost(null);
     await fetch(`${API_BASE}/board/post?id=${id}`, { method: 'DELETE' });
@@ -231,12 +243,12 @@ const BoardManagement: React.FC = () => {
   const handleCreateBoard = async () => {
     const name = boardNameInput.trim();
     if (!name) {
-      alert('???대쫫???낅젰?댁＜?몄슂.');
+      alert('탭 이름을 입력해주세요.');
       return;
     }
 
     if (!selectedBranchId || !currentUser?.id) {
-      alert('留ㅼ옣 ?먮뒗 ?ъ슜???뺣낫媛 ?놁뒿?덈떎.');
+      alert('매장 또는 사용자 정보가 없습니다.');
       return;
     }
 
@@ -253,7 +265,7 @@ const BoardManagement: React.FC = () => {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        alert(data?.message || '??異붽????ㅽ뙣?덉뒿?덈떎.');
+        alert(data?.message || '탭 추가에 실패했습니다.');
         return;
       }
 
@@ -270,7 +282,7 @@ const BoardManagement: React.FC = () => {
   };
 
   const handleDeleteBoard = async (board: BoardVO) => {
-    if (!confirm(`'${board.name}' ??쓣 ??젣?섏떆寃좎뒿?덇퉴?`)) return;
+    if (!confirm(`'${board.name}' 탭을 삭제하시겠습니까?`)) return;
 
     const res = await fetch(`${API_BASE}/board?id=${encodeURIComponent(board.id)}`, {
       method: 'DELETE',
@@ -278,7 +290,7 @@ const BoardManagement: React.FC = () => {
     const data = await res.json().catch(() => null);
 
     if (!res.ok) {
-      alert(data?.message || '????젣???ㅽ뙣?덉뒿?덈떎.');
+      alert(data?.message || '탭 삭제에 실패했습니다.');
       return;
     }
 
@@ -299,11 +311,12 @@ const BoardManagement: React.FC = () => {
     totalComments: posts.reduce((s, p) => s + (p.comment_count || 0), 0),
   };
 
-  // ---------- ?몄떆 ?뚮┝ 紐⑤떖 ----------
-  // ---------- 寃뚯떆湲 ?묒꽦/?섏젙 紐⑤떖 ----------
+  // ---------- 푸시 알림 모달 ----------
+  // ---------- 게시글 작성/수정 모달 ----------
   const [showPostModal, setShowPostModal] = useState(false);
   const [editingPost, setEditingPost] = useState<BoardPostVO | null>(null);
   const [form, setForm] = useState({ title: '', content: '', is_pinned: 'N', status: 'PUBLISHED' });
+
   const openCreateModal = () => {
     setEditingPost(null);
     setForm({ title: '', content: '', is_pinned: 'N', status: 'PUBLISHED' });
@@ -315,6 +328,7 @@ const BoardManagement: React.FC = () => {
     setForm({ title: post.title, content: post.content, is_pinned: post.is_pinned, status: post.status });
     setShowPostModal(true);
   };
+
 
   const handleSubmitPost = async () => {
     if (!form.title.trim()) { alert(t.titleRequired); return; }
@@ -343,7 +357,7 @@ const BoardManagement: React.FC = () => {
     fetchPosts();
   };
 
-  // ---------- 寃뚯떆湲 ?곸꽭 + ?볤? ----------
+  // ---------- 게시글 상세 + 댓글 ----------
   const [selectedPost, setSelectedPost] = useState<BoardPostVO | null>(null);
   const [comments, setComments] = useState<BoardCommentVO[]>([]);
   const [commentText, setCommentText] = useState('');
@@ -352,7 +366,7 @@ const BoardManagement: React.FC = () => {
   const openPostDetail = async (post: BoardPostVO) => {
     setSelectedPost(post);
     setCommentText('');
-    // 議고쉶??利앷???蹂꾨룄 API ?놁쑝誘濡?濡쒖뺄 諛섏쁺留?
+    // 조회수 증가는 별도 API 없으므로 로컬 반영만
     setPosts(prev => prev.map(p => p.id === post.id ? { ...p, view_count: (p.view_count || 0) + 1 } : p));
     await fetchComments(post.id);
   };
@@ -382,7 +396,7 @@ const BoardManagement: React.FC = () => {
     });
     setCommentText('');
     await fetchComments(selectedPost.id);
-    // comment_count 濡쒖뺄 ?숆린??
+    // comment_count 로컬 동기화
     setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, comment_count: (p.comment_count || 0) + 1 } : p));
   };
 
@@ -400,13 +414,13 @@ const BoardManagement: React.FC = () => {
     return new Date(d).toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
   };
 
-  // ---------- ?뚮뜑 ----------
+  // ---------- 렌더 ----------
   return (
     <div style={{ minHeight: '100vh', background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
       <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
 
-        {/* ?ъ씠?쒕컮 */}
+        {/* 사이드바 */}
         <aside style={{ width: 220, flexShrink: 0, background: sidebarBg, border: `1px solid ${sidebarBorder}`, borderRadius: 20, padding: '16px 12px', boxShadow: '0 4px 16px rgba(0,0,0,0.07)', position: 'sticky', top: 140, maxHeight: 'calc(100vh - 160px)', overflowY: 'auto' }}>
           <div style={{ position: 'relative', marginBottom: 16 }}>
             <button onClick={() => setBranchDropdownOpen(o => !o)} style={{ width: '100%', padding: '10px 14px', background: isDark ? '#1a1a1a' : LIGHT_GREEN, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: DARK_GREEN }}>
@@ -438,10 +452,10 @@ const BoardManagement: React.FC = () => {
           })}
         </aside>
 
-        {/* 硫붿씤 移대뱶 */}
+        {/* 메인 카드 */}
         <div style={{ flex: 1, minWidth: 0, background: mainBg, borderRadius: 24, padding: '28px 28px 32px', boxShadow: '0px 8px 40px rgba(0,0,0,0.18)', minHeight: 'calc(100vh - 120px)' }}>
 
-          {/* ?ㅻ뜑 */}
+          {/* 헤더 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -454,7 +468,7 @@ const BoardManagement: React.FC = () => {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowBoardModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                <Plus size={16} />??異붽?
+                <Plus size={16} />탭 추가
               </button>
 
               <button onClick={openCreateModal} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
@@ -463,9 +477,9 @@ const BoardManagement: React.FC = () => {
             </div>
           </div>
 
-          {/* 寃뚯떆????*/}
+          {/* 게시판 탭 */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-            {[{ id: '__all__', name: '?꾩껜' }, ...boards].map(b => (
+            {[{ id: '__all__', name: '전체' }, ...boards].map(b => (
               <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
                 {b.name}
                 {b.id !== '__all__' && (
@@ -481,7 +495,7 @@ const BoardManagement: React.FC = () => {
             ))}
           </div>
 
-          {/* 寃??*/}
+          {/* 검색 */}
           <div style={{ background: cardBg, borderRadius: 16, padding: '14px 18px', border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, marginBottom: 20 }}>
             <div style={{ position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: subText }} />
@@ -489,15 +503,15 @@ const BoardManagement: React.FC = () => {
             </div>
           </div>
 
-          {/* 寃뚯떆湲 ?곸꽭 酉?*/}
+          {/* 게시글 상세 뷰 */}
           {selectedPost ? (
             <div>
               <button onClick={() => setSelectedPost(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 16, padding: 0 }}>
                 <ChevronLeft size={16} />{t.backToList}
               </button>
-              {/* 蹂몃Ц + ?볤? ?듯빀 移대뱶 */}
+              {/* 본문 + 댓글 통합 카드 */}
               <div style={{ border: `1.5px solid ${BORDER_GREEN}`, borderRadius: 20, overflow: 'hidden' }}>
-                {/* 蹂몃Ц ????諛곌꼍 */}
+                {/* 본문 — 흰 배경 */}
                 <div style={{ background: contentBg, padding: '24px 24px 20px' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div style={{ flex: 1 }}>
@@ -515,12 +529,27 @@ const BoardManagement: React.FC = () => {
                       <button onClick={() => { handleDelete(selectedPost.id); setSelectedPost(null); }} style={{ background: 'none', border: '1px solid #EF4444', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', color: '#EF4444' }}><Trash2 size={14} /></button>
                     </div>
                   </div>
-                  <div style={{ borderTop: `1px solid ${LIGHT_GREEN}`, paddingTop: 18, minHeight: 80 }}>
-                    <p style={{ fontSize: 15, color: textColor, lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{selectedPost.content}</p>
-                  </div>
+                  {(() => {
+                    const { body, attachments } = parseContent(selectedPost.content);
+                    return (
+                      <div style={{ borderTop: `1px solid ${LIGHT_GREEN}`, paddingTop: 18, minHeight: 80 }}>
+                        <p style={{ fontSize: 15, color: textColor, lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{body}</p>
+                        {attachments.length > 0 && (
+                          <div style={{ marginTop: 16, padding: '12px 16px', background: isDark ? 'rgba(0,162,0,0.08)' : '#f0faf0', borderRadius: 12, border: `1px solid ${BORDER_GREEN}` }}>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: DARK_GREEN, marginBottom: 8 }}>📎 첨부파일</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                              {attachments.map((a, i) => (
+                                <AttachmentLink key={i} name={a.name} url={a.url} color={GREEN} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
-                {/* ?볤? */}
+                {/* 댓글 */}
                 <div style={{ background: contentBg, padding: '0 24px 24px' }}>
                 <div style={{ border: `1.5px solid ${BORDER_GREEN}`, borderRadius: 16, background: cardBg, padding: '18px 24px' }}>
                   <h3 style={{ fontSize: 15, fontWeight: 700, color: DARK_GREEN, margin: '0 0 2px', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -551,7 +580,7 @@ const BoardManagement: React.FC = () => {
                       ))}
                     </div>
                   )}
-                  {/* ?볤? ?낅젰 */}
+                  {/* 댓글 입력 */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '0 8px' }}>
                     <textarea
                       value={commentText}
@@ -571,7 +600,7 @@ const BoardManagement: React.FC = () => {
               </div>
             </div>
           ) : (
-            /* 寃뚯떆湲 紐⑸줉 */
+            /* 게시글 목록 */
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {loadingPosts ? (
                 <p style={{ textAlign: 'center', color: subText, padding: '40px 0' }}>{t.loadingPosts}</p>
@@ -620,7 +649,7 @@ const BoardManagement: React.FC = () => {
           <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 420 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Plus size={18} />??異붽?
+                <Plus size={18} />탭 추가
               </h2>
               <button onClick={() => setShowBoardModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
             </div>
@@ -638,16 +667,16 @@ const BoardManagement: React.FC = () => {
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={handleCreateBoard} disabled={savingBoard} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: savingBoard ? '#ccc' : GREEN, color: '#fff', borderRadius: 50, padding: '11px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: savingBoard ? 'default' : 'pointer' }}>
-                  <Plus size={15} />{savingBoard ? '異붽? 以?..' : '異붽?'}
+                  <Plus size={15} />{savingBoard ? '추가 중...' : '추가'}
                 </button>
-                <button onClick={() => setShowBoardModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>痍⑥냼</button>
+                <button onClick={() => setShowBoardModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '11px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>취소</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 寃뚯떆湲 ?묒꽦/?섏젙 紐⑤떖 */}
+      {/* 게시글 작성/수정 모달 */}
       {showPostModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
           <div style={{ background: isDark ? '#141414' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 680, maxHeight: '90vh', overflowY: 'auto' }}>
@@ -689,3 +718,5 @@ const BoardManagement: React.FC = () => {
 };
 
 export default BoardManagement;
+
+
