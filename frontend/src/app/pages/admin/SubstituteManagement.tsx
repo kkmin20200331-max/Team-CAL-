@@ -359,15 +359,15 @@ const SubstituteManagement: React.FC = () => {
                 <div style={{ marginBottom: 16 }}>
                   {availabilityMap[emp.id] ? (() => {
                     const av = availabilityMap[emp.id];
-                    const KO_DAYS = ['월','화','수','목','금','토','일'];
+                    const ENG_DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
                     return (
                       <>
                         <p style={{ fontSize: 11, color: subTextColor, marginBottom: 6 }}>{t.availableSchedule} <span style={{ color: DARK_GREEN, fontWeight: 600 }}>{av.start} ~ {av.end}</span></p>
                         <div style={{ display: 'flex', gap: 4 }}>
-                          {KO_DAYS.map((ko, i) => {
-                            const active = av.days.includes(ko);
+                          {ENG_DAYS.map((key, i) => {
+                            const active = av.days.includes(key);
                             return (
-                              <div key={ko} style={{ flex: 1, textAlign: 'center', padding: '4px 0', borderRadius: 6, background: active ? DARK_GREEN : (isDark ? '#1a1a1a' : LIGHT_GREEN), color: active ? '#fff' : subTextColor, fontSize: 12, fontWeight: active ? 700 : 400 }}>{t.dayLabels[i]}</div>
+                              <div key={key} style={{ flex: 1, textAlign: 'center', padding: '4px 0', borderRadius: 6, background: active ? DARK_GREEN : (isDark ? '#1a1a1a' : LIGHT_GREEN), color: active ? '#fff' : subTextColor, fontSize: 12, fontWeight: active ? 700 : 400 }}>{t.dayLabels[i]}</div>
                             );
                           })}
                         </div>
