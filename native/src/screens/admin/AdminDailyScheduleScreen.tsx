@@ -65,12 +65,41 @@ const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigatio
     );
   };
 
+  const renderStatusBadge = (status?: string) => {
+    const upper = (status || '').toUpperCase();
+    if (upper === 'VACANT') {
+      return (
+        <View style={[styles.badge, { backgroundColor: '#FEE2E2' }]}>
+          <Text style={[styles.badgeText, { color: '#EF4444' }]}>휴가(취소)</Text>
+        </View>
+      );
+    }
+    if (upper === 'LEAVE_PENDING') {
+      return (
+        <View style={[styles.badge, { backgroundColor: '#FEF3C7' }]}>
+          <Text style={[styles.badgeText, { color: '#D97706' }]}>휴가 신청</Text>
+        </View>
+      );
+    }
+    if (upper === 'SUBSTITUTE_REQ') {
+      return (
+        <View style={[styles.badge, { backgroundColor: '#E0F2FE' }]}>
+          <Text style={[styles.badgeText, { color: '#0284C7' }]}>대타 요청</Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
   const renderShiftItem = ({ item }: { item: any }) => (
     <View style={styles.shiftCard}>
       <TouchableOpacity style={styles.touchableArea} onPress={() => handleNavigateToEditor(item)}>
         <View style={[styles.userColorIndicator, { backgroundColor: item.user?.color || '#A1A1AA' }]} />
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.user?.name || '알 수 없음'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.userName}>{item.user?.name || '알 수 없음'}</Text>
+            {renderStatusBadge(item.status)}
+          </View>
           <Text style={styles.userRole}>{item.user?.role || ''}</Text>
         </View>
         <View style={styles.timeInfo}>
@@ -168,6 +197,16 @@ const getThemedStyles = (colors: any) => StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.text,
+  },
+  badge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   userRole: {
     fontSize: 14,

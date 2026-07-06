@@ -115,6 +115,7 @@ public interface LeaveRequestMapper {
             @Param("status") String status
     );
     // =========================
+    // 선민 수정 (2026-07-06): s.work_date가 시간 정보를 가질 때 범위 조회(특히 단일일자 조회)에서 배제되는 현상을 막기 위해 TRUNC 추가
     // [AI 스케줄용 - 승인된 휴무 조회]
     // =========================
     @Select("""
@@ -124,8 +125,8 @@ public interface LeaveRequestMapper {
             ON lr.shift_id = s.id
         WHERE s.store_id = #{store_id}
         AND lr.status = 'APPROVED'
-        AND s.work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
-        AND s.work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+        AND TRUNC(s.work_date) >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+        AND TRUNC(s.work_date) <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
         ORDER BY s.work_date
         """)
     List<LeaveRequestVO> getApprovedLeaveRequestsForPeriod(

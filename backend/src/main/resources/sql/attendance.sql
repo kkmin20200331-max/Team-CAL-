@@ -34,3 +34,12 @@ CREATE TABLE ATTENDANCE_QR (
                                IS_ACTIVE CHAR(1) DEFAULT 'Y'
 
 );
+
+select * from ATTENDANCE;
+
+commit;
+
+delete from ATTENDANCE where store_id = 'V1StGXR8_Z5jdHi6B-myT';
+
+
+
