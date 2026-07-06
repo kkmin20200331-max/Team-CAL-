@@ -62,6 +62,7 @@ public interface ShiftMapper {
             WHERE store_id = #{store_id}
             AND work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
             AND work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND status != 'cancelled'
             ORDER BY work_date, start_at
             """)
     List<ShiftVO> getShiftList(
@@ -136,6 +137,7 @@ public interface ShiftMapper {
             WHERE user_id = #{user_id}
             AND work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
             AND work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND status != 'cancelled'
             ORDER BY work_date, start_at
             """)
     List<ShiftVO> getMyShiftList(
