@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/backend/src/main/resources/sql/shift.sql" value="1faf6697-1e9c-4cf3-baae-d843d930a9ba" />
+    <file url="file://$PROJECT_DIR$/backend/src/main/resources/sql/user.sql" value="1faf6697-1e9c-4cf3-baae-d843d930a9ba" />
+  </component>
+</project>
