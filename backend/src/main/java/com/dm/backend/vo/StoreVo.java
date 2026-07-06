@@ -20,4 +20,9 @@ public class StoreVo {
     private String owner_user_id;
     private String approval_status;
     private String member_role;
+
+    // 시급 정보 동기화를 위한 필드 추가
+    private Double pay_amount;
+    private String pay_type;
 }
+

@@ -284,135 +284,137 @@ export default function ProfilePanel() {
     } catch {}
   };
 
+  const fetchManagerRequests = async () => {
+    if (!currentUser.id) return;
+    try {
+      const res = await axiosInstance.get("/store", { params: { user_id: currentUser.id } });
+      const stores: StoreVO[] = Array.isArray(res.data) ? res.data : [];
+
+      const [leaveResults, userResults] = await Promise.all([
+        Promise.allSettled(
+          stores.map((store) =>
+            axiosInstance.get("/leave_request", {
+              params: { store_id: store.id },
+            }).then((r) =>
+              (Array.isArray(r.data) ? r.data : []).map((lr: any) => ({
+                ...lr,
+                store_id: store.id,
+                store_name: store.name,
+              })),
+            ),
+          ),
+        ),
+        Promise.allSettled(
+          stores.map((store) =>
+            axiosInstance.get("/users", { params: { store_id: store.id } }),
+          ),
+        ),
+      ]);
+
+      const allLeaves: LeaveRequestVO[] = [];
+      leaveResults.forEach((r) => {
+        if (r.status === "fulfilled") allLeaves.push(...r.value);
+      });
+      setLeaveRequests(allLeaves);
+
+      const nameMap: Record<string, string> = {};
+      userResults.forEach((r) => {
+        if (r.status === "fulfilled") {
+          (Array.isArray(r.value.data) ? r.value.data : []).forEach(
+            (u: any) => {
+              nameMap[u.id] = u.name;
+            },
+          );
+        }
+      });
+      setUserNameMap(nameMap);
+
+      const uniqueShiftIds = [...new Set(allLeaves.map((lr) => lr.shift_id))];
+      if (uniqueShiftIds.length > 0) {
+        const shiftResults = await Promise.allSettled(
+          uniqueShiftIds.map((sid) => axiosInstance.get(`/shift/${sid}`)),
+        );
+        const newShiftMap: Record<string, ShiftVO> = {};
+        shiftResults.forEach((r, i) => {
+          if (r.status === "fulfilled")
+            newShiftMap[uniqueShiftIds[i]] = r.value.data;
+        });
+        setShiftMap(newShiftMap);
+      }
+
+      const subPostResults = await Promise.allSettled(
+        stores.map((store) =>
+          axiosInstance.get("/substitute", { params: { store_id: store.id } }).then(
+            (r) => ({ store, posts: Array.isArray(r.data) ? r.data : [] }),
+          ),
+        ),
+      );
+
+      const allPendingApps: SubstitutePendingApp[] = [];
+      const appFetches: Promise<void>[] = [];
+
+      subPostResults.forEach((r) => {
+        if (r.status !== "fulfilled") return;
+        const { store, posts } = r.value;
+        posts
+          .filter((p: any) => (p.status || "").toLowerCase() === "open")
+          .forEach((post: any) => {
+            appFetches.push(
+              axiosInstance.get("/substitute/manager", { params: { post_id: post.id } })
+                .then((r2) => {
+                  const apps = Array.isArray(r2.data) ? r2.data : [];
+                  apps
+                    .filter(
+                      (a: any) =>
+                        (a.status || "").toLowerCase() === "pending",
+                    )
+                    .forEach((app: any) => {
+                      allPendingApps.push({
+                        app_id: app.id,
+                        post_id: post.id,
+                        store_id: store.id,
+                        store_name: store.name,
+                        applicant_user_id: app.applicant_user_id,
+                        message: app.message || "",
+                        applied_at: app.applied_at,
+                        reason: post.reason || "",
+                      });
+                    });
+                })
+                .catch(() => {}),
+            );
+          });
+      });
+
+      await Promise.allSettled(appFetches);
+      setSubstituteApps(allPendingApps);
+    } catch (err) {
+      console.error("[ProfilePanel] 알림 조회 실패:", err);
+    }
+  };
+
+  const fetchAllData = async () => {
+    await Promise.allSettled([
+      fetchUnreadNotifications(),
+      fetchManagerRequests()
+    ]);
+  };
+
   useEffect(() => {
     if (!currentUser.id) return;
-    fetchUnreadNotifications();
-    const timer = window.setInterval(fetchUnreadNotifications, 3000);
-    window.addEventListener("focus", fetchUnreadNotifications);
-    return () => { window.clearInterval(timer); window.removeEventListener("focus", fetchUnreadNotifications); };
+    fetchAllData();
+    const timer = window.setInterval(fetchAllData, 5000);
+    window.addEventListener("focus", fetchAllData);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", fetchAllData);
+    };
   }, [currentUser.id]);
 
   useEffect(() => {
     if (!open || !currentUser.id) return;
     setNotifLoading(true);
-    fetchUnreadNotifications();
-    axiosInstance.get("/store", { params: { user_id: currentUser.id } })
-      .then(async (res) => {
-        const stores: StoreVO[] = Array.isArray(res.data) ? res.data : [];
-
-        const [leaveResults, userResults] = await Promise.all([
-          Promise.allSettled(
-            stores.map((store) =>
-              axiosInstance.get("/leave_request", {
-                params: { store_id: store.id },
-              }).then((r) =>
-                (Array.isArray(r.data) ? r.data : []).map((lr: any) => ({
-                  ...lr,
-                  store_id: store.id,
-                  store_name: store.name,
-                })),
-              ),
-            ),
-          ),
-          Promise.allSettled(
-            stores.map((store) =>
-              axiosInstance.get("/users", { params: { store_id: store.id } }),
-            ),
-          ),
-        ]);
-
-        const allLeaves: LeaveRequestVO[] = [];
-        leaveResults.forEach((r) => {
-          if (r.status === "fulfilled") allLeaves.push(...r.value);
-        });
-        setLeaveRequests(allLeaves);
-
-        const nameMap: Record<string, string> = {};
-        userResults.forEach((r) => {
-          if (r.status === "fulfilled") {
-            (Array.isArray(r.value.data) ? r.value.data : []).forEach(
-              (u: any) => {
-                nameMap[u.id] = u.name;
-              },
-            );
-          }
-        });
-        setUserNameMap(nameMap);
-
-        const uniqueShiftIds = [...new Set(allLeaves.map((lr) => lr.shift_id))];
-        if (uniqueShiftIds.length > 0) {
-          const shiftResults = await Promise.allSettled(
-            uniqueShiftIds.map((sid) => axiosInstance.get(`/shift/${sid}`)),
-          );
-          const newShiftMap: Record<string, ShiftVO> = {};
-          shiftResults.forEach((r, i) => {
-            if (r.status === "fulfilled")
-              newShiftMap[uniqueShiftIds[i]] = r.value.data;
-          });
-          setShiftMap(newShiftMap);
-        }
-
-        const subPostResults = await Promise.allSettled(
-          stores.map((store) =>
-            axiosInstance.get("/substitute", { params: { store_id: store.id } }).then(
-              (r) => ({ store, posts: Array.isArray(r.data) ? r.data : [] }),
-            ),
-          ),
-        );
-
-        const allPendingApps: SubstitutePendingApp[] = [];
-        const appFetches: Promise<void>[] = [];
-
-        subPostResults.forEach((r) => {
-          if (r.status !== "fulfilled") return;
-          const { store, posts } = r.value;
-          posts
-            .filter((p: any) => (p.status || "").toLowerCase() === "open")
-            .forEach((post: any) => {
-              appFetches.push(
-                axiosInstance.get("/substitute/manager", { params: { post_id: post.id } })
-                  .then((r2) => {
-                    const apps = Array.isArray(r2.data) ? r2.data : [];
-                    apps
-                      .filter(
-                        (a: any) =>
-                          (a.status || "").toLowerCase() === "pending",
-                      )
-                      .forEach((app: any) => {
-                        allPendingApps.push({
-                          app_id: app.id,
-                          post_id: post.id,
-                          store_id: store.id,
-                          store_name: store.name,
-                          applicant_user_id: app.applicant_user_id,
-                          message: app.message || "",
-                          applied_at: app.applied_at,
-                          reason: post.reason || "",
-                        });
-                      });
-                  })
-                  .catch(() => {}),
-              );
-            });
-        });
-
-        await Promise.allSettled(appFetches);
-        setSubstituteApps(allPendingApps);
-
-        if (currentUser.id) {
-          axiosInstance.get("/notification", { params: { user_id: currentUser.id } })
-            .then((r) =>
-              setBoardNotifications(
-                Array.isArray(r.data)
-                  ? r.data.filter((n: any) => isUnreadNotification(n) && n.type !== "STAFF_APPROVAL_REQUEST")
-                  : [],
-              ),
-            )
-            .catch(() => {});
-        }
-      })
-      .catch((err) => console.error("[ProfilePanel] 알림 조회 실패:", err))
-      .finally(() => setNotifLoading(false));
+    fetchAllData().finally(() => setNotifLoading(false));
   }, [open]);
 
   const handleApproveLeave = async (leave: LeaveRequestVO) => {

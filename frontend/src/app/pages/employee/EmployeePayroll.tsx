@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { useTheme } from 'next-themes';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
@@ -64,7 +64,9 @@ const calcHours = (start: string, end: string) => {
     const [h, m] = t.split(":").map(Number);
     return h * 60 + (m || 0);
   };
-  return Math.max(0, (getMin(end) - getMin(start)) / 60);
+  let diff = getMin(end) - getMin(start);
+  if (diff < 0) diff += 24 * 60;
+  return diff / 60;
 };
 // fmtW / fmtM are replaced by t.fmtCurrency / t.fmtCurrencyM at render time
 
@@ -191,7 +193,10 @@ export default function EmployeePayroll() {
   const today = useMemo(() => toDateStr(new Date()), []);
   const assignedShifts = useMemo(
     () =>
-      shifts.filter((s) => s.status !== "VACANT" && s.status !== "CANCELLED"),
+      shifts.filter((s) => {
+        const status = s.status?.toUpperCase() || '';
+        return status !== "VACANT" && status !== "CANCELLED" && status !== "LEAVE_PENDING" && status !== "SUBSTITUTE_REQ" && status !== "OFF";
+      }),
     [shifts],
   );
   const isCurrentMonth = useMemo(() => {

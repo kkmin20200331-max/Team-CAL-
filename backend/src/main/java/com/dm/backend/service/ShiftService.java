@@ -76,6 +76,17 @@ public class ShiftService {
     public void registerShift(
             ShiftVO shiftVO
     ) {
+        // 선민 수정 - 스케줄 등록 시 id, status, work_date null 방어 로직 추가
+        if (shiftVO.getId() == null || shiftVO.getId().isBlank()) {
+            shiftVO.setId("SHF_" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 17));
+        }
+        if (shiftVO.getStatus() == null || shiftVO.getStatus().isBlank()) {
+            shiftVO.setStatus("SCHEDULED");
+        }
+        if (shiftVO.getWork_date() == null && shiftVO.getStart_at() != null) {
+            shiftVO.setWork_date(shiftVO.getStart_at());
+        }
+
         int conflict = shiftMapper.checkShiftConflict(
                 shiftVO.getUser_id(),
                 shiftVO.getWork_date(),
@@ -107,6 +118,14 @@ public class ShiftService {
     public void updateShift(
             ShiftVO shiftVO
     ) {
+        // 선민 수정 - 스케줄 수정 시 status, work_date null 방어 로직 추가
+        if (shiftVO.getStatus() == null || shiftVO.getStatus().isBlank()) {
+            shiftVO.setStatus("SCHEDULED");
+        }
+        if (shiftVO.getWork_date() == null && shiftVO.getStart_at() != null) {
+            shiftVO.setWork_date(shiftVO.getStart_at());
+        }
+
         int conflict = shiftMapper.checkShiftConflictForUpdate(
                 shiftVO.getId(),
                 shiftVO.getUser_id(),
@@ -122,10 +141,15 @@ public class ShiftService {
         shiftMapper.updateShift(shiftVO);
     }
 
+    // 선민 수정 (2026-07-06): 고정 스케줄 자동 생성 재생성 버그 및 물리 삭제 방지를 위해 Soft Delete (status = 'cancelled') 로 변경
     public void delShift(
             String id
     ) {
-        shiftMapper.delShift(id);
+        ShiftVO shift = shiftMapper.getShift(id);
+        if (shift != null) {
+            shift.setStatus("cancelled");
+            shiftMapper.updateShift(shift);
+        }
     }
 
     @Transactional

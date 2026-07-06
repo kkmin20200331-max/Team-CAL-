@@ -50,9 +50,16 @@ public interface LeaveRequestMapper {
 
     @Update("""
             UPDATE shift
+            SET status = 'LEAVE_PENDING'
+            WHERE id = #{shift_id}
+            """)
+    void updateShiftStatusLeavePending(String shift_id);
+
+    @Update("""
+            UPDATE shift
             SET status = 'SCHEDULED'
             WHERE id = #{shift_id}
-            AND status = 'VACANT'
+            AND status IN ('VACANT', 'LEAVE_PENDING')
             """)
     void rollbackShiftStatusScheduled(String shift_id);
 
