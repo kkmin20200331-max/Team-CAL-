@@ -28,7 +28,7 @@ public interface ShiftMapper {
             SELECT *
             FROM shift
             WHERE user_id = #{user_id}
-            AND work_date BETWEEN #{start_date} AND #{end_date}
+            AND TRUNC(work_date) BETWEEN TRUNC(#{start_date}) AND TRUNC(#{end_date})
             """)
     List<ShiftVO> getMonthlyShift(
             @Param("user_id") String user_id,
@@ -55,13 +55,15 @@ public interface ShiftMapper {
             """)
     void registerShift(ShiftVO shiftVO);
 
+    // 선민 수정 (2026-07-06): work_date가 시간 정보를 가질 때 범위 조회(특히 단일일자 조회)에서 배제되는 현상을 막기 위해 TRUNC 추가
     // 매장별 기간 조회
     @Select("""
             SELECT *
             FROM shift
             WHERE store_id = #{store_id}
-            AND work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
-            AND work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND status != 'cancelled'
             ORDER BY work_date, start_at
             """)
     List<ShiftVO> getShiftList(
@@ -124,18 +126,56 @@ public interface ShiftMapper {
             @Param("end_at") Date end_at
     );
 
+    // 선민 수정 (2026-07-06): 수동 등록 시 취소된(cancelled) 근무는 중복 검사에서 제외
+    @Select("""
+            SELECT COUNT(*)
+            FROM shift
+            WHERE user_id = #{user_id}
+            AND TRUNC(work_date) = TRUNC(#{work_date})
+            AND start_at < #{end_at}
+            AND end_at > #{start_at}
+            AND status != 'cancelled'
+            """)
+    int checkShiftConflictActive(
+            @Param("user_id") String user_id,
+            @Param("work_date") Date work_date,
+            @Param("start_at") Date start_at,
+            @Param("end_at") Date end_at
+    );
+
+    // 선민 수정 (2026-07-06): 수동 수정 시 취소된(cancelled) 근무는 중복 검사에서 제외
+    @Select("""
+            SELECT COUNT(*)
+            FROM shift
+            WHERE id != #{id}
+            AND user_id = #{user_id}
+            AND TRUNC(work_date) = TRUNC(#{work_date})
+            AND start_at < #{end_at}
+            AND end_at > #{start_at}
+            AND status != 'cancelled'
+            """)
+    int checkShiftConflictForUpdateActive(
+            @Param("id") String id,
+            @Param("user_id") String user_id,
+            @Param("work_date") Date work_date,
+            @Param("start_at") Date start_at,
+            @Param("end_at") Date end_at
+    );
+
 
     // =========================
     // [직원]
     // =========================
 
+    // 선민 수정 (2026-07-06): work_date가 시간 정보를 가질 때 범위 조회(특히 단일일자 조회)에서 배제되는 현상을 막기 위해 TRUNC 추가
     // 내 근무표 조회
     @Select("""
             SELECT *
             FROM shift
             WHERE user_id = #{user_id}
-            AND work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
-            AND work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND status != 'cancelled'
             ORDER BY work_date, start_at
             """)
     List<ShiftVO> getMyShiftList(

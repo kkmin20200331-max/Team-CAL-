@@ -1,6 +1,7 @@
-import React, { useState, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Pressable, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useIsFocused } from '@react-navigation/native';
 import { NotificationContext, NotificationItem } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext'; // ✅ 테마 Context 추가
@@ -9,9 +10,16 @@ import { markAllNotificationsAsReadAPI, markNotificationAsReadAPI } from '../../
 import { useApp } from '../../contexts/AppContext';
 
 const NotificationListScreen = () => {
+  const isFocused = useIsFocused();
   // ✅ 1. 알림 데이터를 나홀로 상태가 아닌 전역 상태(Context)에서 가져옵니다.
   const { notifications, setNotifications, refreshNotifications } = useContext(NotificationContext);
   const { userInfo } = useApp();
+
+  useEffect(() => {
+    if (isFocused && userInfo?.id) {
+      refreshNotifications();
+    }
+  }, [isFocused, userInfo?.id, refreshNotifications]);
   
   // ✅ 전역 언어 설정 가져오기
   const { t } = useLanguage();

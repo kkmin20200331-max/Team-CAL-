@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getStoresAPI, loginAPI, getMyStoreAPI } from '../../../api/auth';
+import { getStoresAPI, loginAPI, getMyStoreAPI, updateUserLanguageAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -105,6 +105,7 @@ export default function LoginScreen({ navigation }: Props) {
       }
 
       login(finalUserInfo, hasBranch);
+      updateUserLanguageAPI(data.id, language).catch(() => {});
     } catch (error: any) {
       console.error('로그인 오류:', error);
       const message =

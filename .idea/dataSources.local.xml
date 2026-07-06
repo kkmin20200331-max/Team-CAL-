@@ -1,14 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="dataSourceStorageLocal" created-in="IU-253.33813.25">
-    <data-source name="Oracle" uuid="db95197b-ea22-4868-828b-abc51495f390">
-      <database-info product="Oracle" version="Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production&#10;Version 19.32.0.1.0" jdbc-version="4.3" driver-name="Oracle JDBC driver" driver-version="23.5.0.24.07" dbms="ORACLE" exact-version="19.0.0.0.0" exact-driver-version="23.5">
+    <data-source name="Oracle" uuid="1faf6697-1e9c-4cf3-baae-d843d930a9ba">
+      <database-info product="Oracle" version="Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production&#10;Version 19.32.0.1.0" jdbc-version="4.3" driver-name="Oracle JDBC driver" driver-version="23.26.2.0.0" dbms="ORACLE" exact-version="19.0.0.0.0" exact-driver-version="23.26">
         <extra-name-characters>$#</extra-name-characters>
         <identifier-quote-string>&quot;</identifier-quote-string>
       </database-info>
       <case-sensitivity plain-identifiers="upper" quoted-identifiers="exact" />
       <secret-storage>master_key</secret-storage>
       <user-name>ADMIN</user-name>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema">
+            <name qname="@" />
+            <name qname="PUBLIC" />
+          </node>
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
+    <data-source name="Oracle [2]" uuid="52dbdf91-671b-4448-8896-92095abf772c">
+      <database-info product="Oracle" version="Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production&#10;Version 19.32.0.1.0" jdbc-version="4.3" driver-name="Oracle JDBC driver" driver-version="23.5.0.24.07" dbms="ORACLE" exact-version="19.0.0.0.0" exact-driver-version="23.5">
+        <extra-name-characters>$#</extra-name-characters>
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="upper" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>admin</user-name>
       <schema-mapping>
         <introspection-scope>
           <node kind="schema">

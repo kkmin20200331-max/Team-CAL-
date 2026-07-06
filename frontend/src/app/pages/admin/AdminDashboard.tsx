@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router";
@@ -60,7 +60,9 @@ const fmt = (s: string) => {
 const calcHours = (startAt: string, endAt: string): number => {
   const t1 = (startAt?.split(" ")[1] || "00:00:00").split(":").map(Number);
   const t2 = (endAt?.split(" ")[1] || "00:00:00").split(":").map(Number);
-  return Math.max(0, (t2[0] * 60 + t2[1] - t1[0] * 60 - t1[1]) / 60);
+  let diff = (t2[0] * 60 + t2[1]) - (t1[0] * 60 + t1[1]);
+  if (diff < 0) diff += 24 * 60;
+  return diff / 60;
 };
 
 // ── 인터페이스 ──
@@ -961,7 +963,7 @@ export default function AdminDashboard() {
                   background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
                   borderRadius: 16,
                   padding: "18px 20px",
-                  border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                  border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                 }}
               >
                 <div
@@ -1021,7 +1023,7 @@ export default function AdminDashboard() {
               background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
               borderRadius: 18,
               padding: "22px",
-              border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+              border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               marginBottom: 14,
               display: "grid",
               gridTemplateColumns: "260px 1fr",
@@ -1035,7 +1037,7 @@ export default function AdminDashboard() {
                 height: 240,
                 borderRadius: 16,
                 background: "#fff",
-                border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1078,7 +1080,7 @@ export default function AdminDashboard() {
                     padding: "8px 14px",
                     borderRadius: 999,
                     background: "#fff",
-                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                    border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                     color: isDark ? GREEN : DARK_GREEN,
                     fontSize: 14,
                     fontWeight: 800,
@@ -1097,7 +1099,7 @@ export default function AdminDashboard() {
               background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
               borderRadius: 18,
               padding: "22px",
-              border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+              border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               marginBottom: 14,
             }}
           >
@@ -1164,7 +1166,7 @@ export default function AdminDashboard() {
               background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
               borderRadius: 18,
               padding: "20px 22px",
-              border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+              border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               marginBottom: 14,
             }}
           >
@@ -1241,7 +1243,7 @@ export default function AdminDashboard() {
                     padding: "13px 16px",
                     borderRadius: 12,
                     background: "rgba(255,255,255,0.7)",
-                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                    border: `1.5px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >
                   <p
@@ -1315,7 +1317,7 @@ export default function AdminDashboard() {
                 background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
                 borderRadius: 18,
                 padding: "22px",
-                border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               }}
             >
               <p
@@ -1367,7 +1369,7 @@ export default function AdminDashboard() {
                           padding: "11px 14px",
                           background: isDark ? "#1e1e1e" : "rgba(230,245,200,0.5)",
                           borderRadius: 14,
-                          border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                          border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                         }}
                       >
                         <div
@@ -1441,7 +1443,7 @@ export default function AdminDashboard() {
                 background: isDark ? "#141414" : "rgba(230,245,200,0.35)",
                 borderRadius: 18,
                 padding: "22px",
-                border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
               }}
             >
               <div
@@ -1520,7 +1522,7 @@ export default function AdminDashboard() {
                     borderRadius: 14,
                     padding: "15px",
                     background: "rgba(230,245,200,0.3)",
-                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                    border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >
                   <h4
@@ -1540,7 +1542,7 @@ export default function AdminDashboard() {
                     borderRadius: 14,
                     padding: "15px",
                     background: "rgba(230,245,200,0.3)",
-                    border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`,
+                    border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >
                   <h4
