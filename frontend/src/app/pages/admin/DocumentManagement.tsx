@@ -450,10 +450,10 @@ const DocumentManagement: React.FC = () => {
   const stats = calculateStats();
 
   return (
-    <div style={{ minHeight: '100vh', background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
+    <div style={{ minHeight: '100vh', overflowX: 'hidden', background: pageBg, backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
       <AdminHeader />
 
-      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 20, padding: '24px 40px 40px', alignItems: 'flex-start', maxWidth: '100%', boxSizing: 'border-box' }}>
         {/* Sidebar */}
         <aside style={{
           width: 220, flexShrink: 0,
@@ -546,10 +546,13 @@ const DocumentManagement: React.FC = () => {
           padding: '28px 28px 32px',
           boxShadow: '0px 8px 40px rgba(0,0,0,0.18)',
           minHeight: 'calc(100vh - 120px)',
+          maxWidth: '100%',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
         }}>
           {/* Page title row */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
-            <div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                 {currentBranch} <ChevronRight size={12} /> {t.title}
               </div>
@@ -558,7 +561,7 @@ const DocumentManagement: React.FC = () => {
               </h1>
               <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>{t.subtitle}</p>
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
               <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                 <Scan size={16} />{t.bulkOcr}
               </button>
@@ -569,7 +572,7 @@ const DocumentManagement: React.FC = () => {
           </div>
 
           {/* Statistics Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: 14, marginBottom: 20 }}>
             {[
             { label: t.totalDocs, value: stats.total, icon: <FileText size={20} color={DARK_GREEN} /> },
             { label: t.verified, value: stats.verified, icon: <CheckCircle size={20} color={GREEN} /> },
@@ -577,9 +580,9 @@ const DocumentManagement: React.FC = () => {
             { label: t.expired, value: stats.expired, icon: <AlertCircle size={20} color="#EF4444" /> },
             { label: t.ocrProcessing, value: stats.ocrProcessing, icon: <Scan size={20} color="#3B82F6" /> },
             ].map(({ label, value, icon }) => (
-              <div key={label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
+              <div key={label} style={{ minWidth: 0, background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#9dc49d' : '#8BA68D', margin: 0 }}>{label}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#9dc49d' : '#8BA68D', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</p>
                   {icon}
                 </div>
                 <p style={{ fontSize: 26, fontWeight: 800, color: isDark ? '#4cd964' : DARK_GREEN, margin: 0 }}>{value}</p>
@@ -603,7 +606,7 @@ const DocumentManagement: React.FC = () => {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, background: inputBg, outline: 'none', color: textColor }}
+                style={{ minWidth: 140, flex: '0 1 180px', padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, background: inputBg, outline: 'none', color: textColor }}
               >
                 {documentTypes.map((type) => (
                   <option key={type.value} value={type.value}>{type.label}</option>
@@ -612,7 +615,7 @@ const DocumentManagement: React.FC = () => {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                style={{ padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, background: inputBg, outline: 'none', color: textColor }}
+                style={{ minWidth: 140, flex: '0 1 180px', padding: '10px 14px', borderRadius: 12, border: `1px solid ${isDark ? "#2a2a2a" : LIGHT_GREEN}`, fontSize: 14, background: inputBg, outline: 'none', color: textColor }}
               >
                 {statuses.map((status) => (
                   <option key={status.value} value={status.value}>{status.label}</option>
@@ -622,11 +625,11 @@ const DocumentManagement: React.FC = () => {
           </div>
 
           {/* Documents Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 16 }}>
             {filteredDocuments.map((doc) => (
-              <div key={doc.id} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div key={doc.id} style={{ minWidth: 0, background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                     <div style={{ width: 44, height: 44, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {doc.type === "health_certificate" && <FileCheck size={22} color={isDark ? '#4cd964' : DARK_GREEN} />}
                       {doc.type === "contract" && <FileText size={22} color={isDark ? '#4cd964' : DARK_GREEN} />}
@@ -634,9 +637,9 @@ const DocumentManagement: React.FC = () => {
                       {doc.type === "bank_account" && <Image size={22} color={isDark ? '#4cd964' : DARK_GREEN} />}
                       {doc.type === "other" && <FileText size={22} color={isDark ? '#4cd964' : DARK_GREEN} />}
                     </div>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <span style={{ fontSize: 12, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, color: isDark ? '#4cd964' : DARK_GREEN, borderRadius: 6, padding: '2px 8px', fontWeight: 600 }}>{getDocumentTypeLabel(doc.type)}</span>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: textColor, margin: '4px 0 0' }}>{doc.employeeName}</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: textColor, margin: '4px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.employeeName}</p>
                     </div>
                   </div>
                   {getStatusBadge(doc.status)}
@@ -644,7 +647,7 @@ const DocumentManagement: React.FC = () => {
 
                 <div style={{ marginBottom: 12 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: textColor, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.fileName}</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D' }}>
                     <span>{formatFileSize(doc.fileSize)}</span>
                     <span>{doc.uploadDate}</span>
                   </div>
@@ -673,24 +676,24 @@ const DocumentManagement: React.FC = () => {
                 )}
 
                 {doc.notes && (
-                  <div style={{ background: isDark ? 'rgba(234,179,8,0.1)' : '#fef9c3', borderRadius: 8, padding: '8px 10px', marginBottom: 10, fontSize: 12, color: isDark ? '#facc15' : '#713f12', display: 'flex', alignItems: 'flex-start', gap: 4, border: `1px solid ${isDark ? 'rgba(234,179,8,0.2)' : '#fde68a'}` }}>
+                  <div style={{ background: isDark ? 'rgba(234,179,8,0.1)' : '#fef9c3', borderRadius: 8, padding: '8px 10px', marginBottom: 10, fontSize: 12, color: isDark ? '#facc15' : '#713f12', display: 'flex', alignItems: 'flex-start', gap: 4, border: `1px solid ${isDark ? 'rgba(234,179,8,0.2)' : '#fde68a'}`, overflowWrap: 'anywhere' }}>
                     <AlertCircle size={12} style={{ marginTop: 2, flexShrink: 0 }} />
                     {translateBackendNote(doc.notes)}
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <button
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    style={{ flex: '1 1 88px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                     onClick={() => { setSelectedDocument(doc); setShowDetailModal(true); }}
                   >
                   <Eye size={14} />{t.viewBtn}
                   </button>
-                  <button onClick={() => handleDownload(doc)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={() => handleDownload(doc)} style={{ flex: '1 1 88px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   <Download size={14} />{t.downloadBtn}
                   </button>
                   {doc.status === "pending" && (
-                    <button onClick={() => handleUpdateStatus(doc, "verified")} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: GREEN, border: 'none', color: '#fff', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                    <button onClick={() => handleUpdateStatus(doc, "verified")} style={{ flex: '1 1 88px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: GREEN, border: 'none', color: '#fff', borderRadius: 8, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                       {t.approveBtn}
                     </button>
                   )}
