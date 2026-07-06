@@ -10,7 +10,7 @@ import { Shift } from '../../types/Schedule';
 import { format, addDays, startOfWeek, getDay, getDaysInMonth, getMonth, getYear, setMonth, startOfMonth, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useApp } from '../../contexts/AppContext';
-import { getMyScheduleAPI, requestLeaveAPI } from '../../../api/auth';
+import { getMyScheduleAPI, requestLeaveAPI, getStoreShiftsAPI, getStoreStaffAPI } from '../../../api/auth';
 
 const today = new Date();
 const formatDate = (d: Date) => format(d, 'yyyy-MM-dd');
@@ -89,7 +89,7 @@ const ScheduleScreen = () => {
   const isFocused = useIsFocused();
   const { userInfo } = useApp();
   const { colors, isDarkMode } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const styles = getThemedStyles(colors, isDarkMode);
   const storeName = userInfo?.brandName || userInfo?.store_id || '컴포즈 미금점';
 
@@ -102,6 +102,38 @@ const ScheduleScreen = () => {
   const [modalType, setModalType] = useState<'LEAVE' | 'SUBSTITUTE'>('LEAVE');
   const [reason, setReason] = useState('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+
+  const [storeShifts, setStoreShifts] = useState<any[]>([]);
+  const [storeStaff, setStoreStaff] = useState<any[]>([]);
+  const [loadingStoreData, setLoadingStoreData] = useState(false);
+
+  const fetchStoreDailyData = async () => {
+    const storeId = userInfo?.activeBranchId || userInfo?.store_id;
+    if (!storeId || !selectedDate) return;
+    setLoadingStoreData(true);
+    try {
+      const [shiftsRes, staffRes] = await Promise.all([
+        getStoreShiftsAPI(storeId, selectedDate, selectedDate),
+        getStoreStaffAPI(storeId),
+      ]);
+      setStoreShifts(
+        Array.isArray(shiftsRes.data)
+          ? shiftsRes.data.filter((s: any) => s.status !== 'CANCELLED' && s.status !== 'VACANT')
+          : []
+      );
+      setStoreStaff(Array.isArray(staffRes.data) ? staffRes.data : []);
+    } catch (err) {
+      console.error('지점 전체 스케줄 조회 실패:', err);
+    } finally {
+      setLoadingStoreData(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchStoreDailyData();
+    }
+  }, [selectedDate, userInfo?.activeBranchId, userInfo?.store_id, isFocused]);
 
   const formatYearMonth = (date: Date) => {
     const y = getYear(date);
@@ -263,6 +295,50 @@ const ScheduleScreen = () => {
     </View>
   );
 
+  const renderCoWorkersList = () => {
+    if (loadingStoreData) {
+      return (
+        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+          <ActivityIndicator size="small" color={colors.primary} />
+        </View>
+      );
+    }
+
+    const colleagues = storeShifts.filter((s: any) => s.user_id !== userInfo?.id);
+
+    return (
+      <View style={styles.coWorkersContainer}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="people-outline" size={18} color={colors.primary} />
+          <Text style={styles.sectionTitle}>
+            {language === 'English' ? "Today's Co-workers" : language === '日本語' ? '今日の同僚勤務者' : '오늘 함께 일하는 동료'}
+          </Text>
+        </View>
+        
+        {colleagues.length === 0 ? (
+          <Text style={styles.noCoWorkersText}>
+            {language === 'English' ? 'No other workers scheduled today.' : language === '日本語' ? '今日、他の勤務予定はありません。' : '오늘 다른 근무 예정자가 없습니다.'}
+          </Text>
+        ) : (
+          colleagues.map((shift: any) => {
+            const staff = storeStaff.find((u: any) => u.id === shift.user_id);
+            const start = getTimePart(shift.start_at);
+            const end = getTimePart(shift.end_at);
+            return (
+              <View key={shift.id} style={styles.coWorkerRow}>
+                <View style={styles.coWorkerLeft}>
+                  <View style={[styles.avatarIndicator, { backgroundColor: staff?.color || colors.primary }]} />
+                  <Text style={styles.coWorkerName}>{staff?.name || '알바생'}</Text>
+                </View>
+                <Text style={styles.coWorkerTime}>{start} - {end}</Text>
+              </View>
+            );
+          })
+        )}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -302,12 +378,8 @@ const ScheduleScreen = () => {
           renderItem={renderShiftCard}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-outline" size={48} color={colors.subText} style={{ marginBottom: 16 }} />
-              <Text style={styles.emptyText}>{t('noSchedule')}</Text>
-            </View>
-          }
+          // 선민 수정 (2026-07-06): 근무가 없는 날(휴무)에도 '예정된 근무가 없습니다' 라는 무의미한 문구 대신 동료 근무자만 바로 볼 수 있도록 비어있을 때의 문구 컴포넌트(ListEmptyComponent) 제거
+          ListFooterComponent={renderCoWorkersList}
         />
       )}
 
@@ -469,6 +541,16 @@ const getThemedStyles = (colors: any, isDarkMode?: boolean) => StyleSheet.create
   dayNumber: { fontSize: 15, color: colors.text },
   dotsContainer: { flexDirection: 'row', position: 'absolute', bottom: -5 },
   dot: { width: 5, height: 5, borderRadius: 2.5, marginHorizontal: 1 },
+  // Co-workers list styles
+  coWorkersContainer: { marginTop: 24, padding: 18, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.02, shadowRadius: 4 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  noCoWorkersText: { fontSize: 14, color: colors.subText, textAlign: 'center', marginVertical: 16 },
+  coWorkerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border },
+  coWorkerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatarIndicator: { width: 10, height: 10, borderRadius: 5 },
+  coWorkerName: { fontSize: 15, fontWeight: '600', color: colors.text },
+  coWorkerTime: { fontSize: 14, color: colors.subText, fontWeight: '500' },
 });
 
 export default ScheduleScreen;
