@@ -62,6 +62,10 @@ const parseHHMM = (t: string) => {
 };
 const clampTime = (hh: number, mm: number) =>
   `${Math.min(23, Math.max(0, hh)).toString().padStart(2, '0')}:${Math.min(59, Math.max(0, mm)).toString().padStart(2, '0')}`;
+const isOpenSubstitutePost = (status?: string) => {
+  const normalized = (status || '').toLowerCase();
+  return normalized === 'open' || normalized === 'pending';
+};
 
 export default function SubstituteList() {
   const { theme } = useTheme();
@@ -105,7 +109,7 @@ export default function SubstituteList() {
     if (!storeId) { setLoadingPosts(false); return; }
     axiosInstance.get('/substitute', { params: { store_id: storeId } })
       .then(async (r) => {
-        const open = (Array.isArray(r.data) ? r.data : []).filter((p: SubstitutePostVO) => p.status === 'open');
+        const open = (Array.isArray(r.data) ? r.data : []).filter((p: SubstitutePostVO) => isOpenSubstitutePost(p.status));
         const enriched: EnrichedPost[] = await Promise.all(
           open.map(async (p: SubstitutePostVO) => {
             if (!p.shift_id) return { ...p };

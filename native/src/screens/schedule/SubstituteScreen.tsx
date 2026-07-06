@@ -15,6 +15,11 @@ import {
   getShiftAPI,
 } from '../../../api/auth';
 
+const isOpenSubstitutePost = (status?: string) => {
+  const normalized = (status || '').toLowerCase();
+  return normalized === 'open' || normalized === 'pending';
+};
+
 const SubstituteScreen = ({ navigation }: any) => {
   const { t, language } = useLanguage();
   const { userInfo } = useApp();
@@ -48,7 +53,7 @@ const SubstituteScreen = ({ navigation }: any) => {
       // 1. 대타 모집글 목록 조회
       const postsRes = await getSubstitutePostsAPI(storeId);
       const posts = Array.isArray(postsRes.data) ? postsRes.data : [];
-      const pendingPosts = posts.filter((p: any) => p.status === 'PENDING');
+      const pendingPosts = posts.filter((p: any) => isOpenSubstitutePost(p.status));
 
       const mappedRequests = await Promise.all(
         pendingPosts.map(async (post: any) => {

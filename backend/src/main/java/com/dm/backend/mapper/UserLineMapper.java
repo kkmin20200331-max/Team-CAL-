@@ -3,6 +3,8 @@ package com.dm.backend.mapper;
 import com.dm.backend.vo.UserLineVO;
 import org.apache.ibatis.annotations.*;
 
+import java.util.List;
+
 @Mapper
 public interface UserLineMapper {
 
@@ -21,7 +23,7 @@ public interface UserLineMapper {
         (
             #{user_id},
             #{line_user_id},
-            'N'
+            #{follow_yn}
         )
     """)
     void register(
@@ -35,7 +37,10 @@ public interface UserLineMapper {
     // =========================
 
     @Select("""
-        SELECT *
+        SELECT
+            USER_ID AS user_id,
+            LINE_USER_ID AS line_user_id,
+            FOLLOW_YN AS follow_yn
         FROM USER_LINE
         WHERE USER_ID = #{user_id}
     """)
@@ -50,7 +55,10 @@ public interface UserLineMapper {
     // =========================
 
     @Select("""
-        SELECT *
+        SELECT
+            USER_ID AS user_id,
+            LINE_USER_ID AS line_user_id,
+            FOLLOW_YN AS follow_yn
         FROM USER_LINE
         WHERE LINE_USER_ID = #{line_user_id}
     """)
@@ -65,7 +73,10 @@ public interface UserLineMapper {
     // =========================
 
     @Select("""
-        SELECT *
+        SELECT
+            USER_ID AS user_id,
+            LINE_USER_ID AS line_user_id,
+            FOLLOW_YN AS follow_yn
         FROM USER_LINE
         WHERE USER_ID = #{user_id}
     """)
@@ -97,7 +108,11 @@ public interface UserLineMapper {
 
     @Update("""
         UPDATE USER_LINE
-        SET LINE_USER_ID = #{line_user_id}
+        SET LINE_USER_ID = #{line_user_id},
+            FOLLOW_YN = CASE
+                WHEN #{follow_yn} IS NULL THEN FOLLOW_YN
+                ELSE #{follow_yn}
+            END
         WHERE USER_ID = #{user_id}
     """)
     void updateLineUserId(
@@ -153,14 +168,40 @@ public interface UserLineMapper {
     // (shift → user → line_user_id)
     // =========================
     @Select("""
-        SELECT ul.LINE_USER_ID
-        FROM USER_LINE ul
-        JOIN SHIFT s
-            ON s.USER_ID = ul.USER_ID
+        SELECT DISTINCT ul.LINE_USER_ID
+        FROM SHIFT s
+        JOIN STORE_MEMBER sm
+            ON sm.STORE_ID = s.STORE_ID
+        JOIN USERS u
+            ON u.ID = sm.USER_ID
+        JOIN USER_LINE ul
+            ON ul.USER_ID = sm.USER_ID
         WHERE s.ID = #{shift_id}
-        AND ul.FOLLOW_YN = 'Y'
+        AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
+        AND (
+            UPPER(TRIM(sm.MEMBER_ROLE)) IN ('ADMIN', 'OWNER', 'MANAGER')
+            OR UPPER(TRIM(u.ROLE)) IN ('ADMIN', 'MASTER')
+        )
+        AND UPPER(TRIM(ul.FOLLOW_YN)) = 'Y'
     """)
-    String getOwnerLineUserIdByShiftId(String shift_id);
+    List<String> getOwnerLineUserIdsByShiftId(String shift_id);
+
+    @Select("""
+        SELECT DISTINCT ul.LINE_USER_ID
+        FROM STORE_MEMBER sm
+        JOIN USERS u
+            ON u.ID = sm.USER_ID
+        JOIN USER_LINE ul
+            ON ul.USER_ID = sm.USER_ID
+        WHERE sm.STORE_ID = #{store_id}
+        AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
+        AND (
+            UPPER(TRIM(sm.MEMBER_ROLE)) IN ('ADMIN', 'OWNER', 'MANAGER')
+            OR UPPER(TRIM(u.ROLE)) IN ('ADMIN', 'MASTER')
+        )
+        AND UPPER(TRIM(ul.FOLLOW_YN)) = 'Y'
+    """)
+    List<String> getAdminLineUserIdsByStoreId(String store_id);
 
 
 }

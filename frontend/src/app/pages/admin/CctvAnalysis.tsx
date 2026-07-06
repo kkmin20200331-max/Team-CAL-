@@ -1,7 +1,7 @@
 import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
 import { API_BASE } from "../../../lib/axiosInstance";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Camera,
@@ -50,6 +50,20 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
+const legacyStoreIdMap: Record<string, string> = {
+  "1": "V1StGXR8_Z5jdHi6B-myT",
+  migeum: "V1StGXR8_Z5jdHi6B-myT",
+  "2": "N2xY8pQ3_a1BcDeFgH1jK",
+  sunae: "N2xY8pQ3_a1BcDeFgH1jK",
+  "3": "k9L0mN1o_P2qR3sT4uV5w",
+  dongcheon: "k9L0mN1o_P2qR3sT4uV5w",
+};
+
+const resolveStoreId = (branchId?: string) => {
+  if (!branchId) return "V1StGXR8_Z5jdHi6B-myT";
+  return legacyStoreIdMap[branchId] || branchId;
+};
+
 type SourceType = "WEBCAM" | "RTSP" | "VIDEO_FILE";
 
 type CameraConfig = {
@@ -93,7 +107,7 @@ type CctvStatus = CctvMetrics & {
   lastError?: string;
 };
 
-const OPENCV_CAMERA_STREAM = "http://localhost:8000/api/v1/camera/stream";
+const OPENCV_CAMERA_STREAM = `${API_BASE}/cctv/stream`;
 
 const initialConfig: CameraConfig = {
   cameraId: "CAM-001",
@@ -160,7 +174,11 @@ export default function CctvAnalysis() {
   const [lastSavedAt, setLastSavedAt] = useState(t.notSet);
   const [lastResponse, setLastResponse] = useState(t.waitingReceive);
   const [errorMessage, setErrorMessage] = useState("");
-  const storeId = selectedBranchId;
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const captureIntervalRef = useRef<number | null>(null);
+  const storeId = resolveStoreId(selectedBranchId);
   const CONFIG_KEY = `cctv_config_${storeId}`;
   const [config, setConfig] = useState<CameraConfig>(() => {
     try {
@@ -265,6 +283,10 @@ export default function CctvAnalysis() {
     let cancelled = false;
 
     const syncServerStatus = async () => {
+      if (config.sourceType === "WEBCAM") {
+        return;
+      }
+
       try {
         const [statusData, metricsData] = await Promise.all([
           requestCctv("/status"),
@@ -297,14 +319,19 @@ export default function CctvAnalysis() {
       }
     };
 
-    syncServerStatus();
-    const intervalId = window.setInterval(syncServerStatus, 3000);
+    if (config.sourceType !== "WEBCAM") {
+      syncServerStatus();
+    }
+    const intervalId =
+      config.sourceType !== "WEBCAM"
+        ? window.setInterval(syncServerStatus, 3000)
+        : undefined;
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
+      if (intervalId) window.clearInterval(intervalId);
     };
-  }, []);
+  }, [config.sourceType]);
 
   const handleSave = () => {
     try {
@@ -316,6 +343,11 @@ export default function CctvAnalysis() {
   };
 
   const handleStart = async () => {
+    if (config.sourceType === "WEBCAM") {
+      await startBrowserCapture();
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage("");
 
@@ -342,6 +374,11 @@ export default function CctvAnalysis() {
   };
 
   const handleStop = async () => {
+    if (mediaStreamRef.current) {
+      stopBrowserCapture();
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage("");
 
@@ -362,6 +399,138 @@ export default function CctvAnalysis() {
       setIsSubmitting(false);
     }
   };
+
+  const captureAndSendFrame = async () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState < 2) return;
+
+    const sourceWidth = video.videoWidth || 640;
+    const sourceHeight = video.videoHeight || 360;
+    const targetWidth = 640;
+    const targetHeight = Math.max(1, Math.round(targetWidth * (sourceHeight / sourceWidth)));
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.6),
+    );
+    if (!blob) return;
+
+    const formData = new FormData();
+    formData.append("image", blob, "frame.jpg");
+
+    const params = new URLSearchParams({
+      storeId,
+      cameraId: config.cameraId || "BROWSER-CAM",
+      modelName: config.modelName,
+      imageSize: String(config.imageSize),
+      confidence: String(config.confidence),
+    });
+
+    const response = await fetch(`${API_BASE}/cctv/frame?${params.toString()}`, {
+      method: "POST",
+      body: formData,
+    });
+    const data = await parseJsonOrText(response);
+
+    if (!response.ok) {
+      throw new Error(data?.message || data?.detail || "Browser frame analysis failed");
+    }
+
+    setMetrics((current) => ({
+      ...(current || {}),
+      running: true,
+      processedFrames: (current?.processedFrames || 0) + 1,
+      lastCustomerCount: data.customerCount ?? current?.lastCustomerCount,
+      lastConfidenceAvg: data.confidenceAvg ?? current?.lastConfidenceAvg,
+      lastMeasuredAt: data.measuredAt ?? current?.lastMeasuredAt,
+    }));
+    setCameraFrame(data.annotatedImage || "");
+    setLastSyncedAt(
+      new Date().toLocaleTimeString("ko-KR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+    );
+    setLastResponse(translateBackendText(JSON.stringify(data, null, 2)));
+  };
+
+  const startBrowserCapture = async () => {
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 360 },
+          facingMode: "environment",
+        },
+        audio: false,
+      });
+      mediaStreamRef.current = stream;
+      setIsRunning(true);
+      await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      setMetrics({
+        running: true,
+        processedFrames: 0,
+        droppedFrames: 0,
+        lastCustomerCount: undefined,
+        lastConfidenceAvg: undefined,
+      });
+      setLastResponse("Browser webcam capture started");
+
+      await captureAndSendFrame();
+      captureIntervalRef.current = window.setInterval(() => {
+        captureAndSendFrame().catch((error) => {
+          const message = error instanceof Error ? error.message : "Browser frame analysis failed";
+          setErrorMessage(message);
+          setLastResponse(message);
+        });
+      }, Math.max(1, config.intervalSec) * 1000);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Browser webcam permission failed";
+      setErrorMessage(message);
+      setLastResponse(message);
+      stopBrowserCapture();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const stopBrowserCapture = () => {
+    if (captureIntervalRef.current) {
+      window.clearInterval(captureIntervalRef.current);
+      captureIntervalRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsRunning(false);
+    setLastResponse("Browser webcam capture stopped");
+  };
+
+  useEffect(() => {
+    return () => {
+      stopBrowserCapture();
+    };
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', background: isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)', backgroundAttachment: 'fixed', backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundPosition: 'top center', fontFamily: "'Noto Sans JP', 'Noto Sans KR', sans-serif" }}>
@@ -485,7 +654,14 @@ export default function CctvAnalysis() {
             </div>
             <div style={{ padding: '16px 18px' }}>
               <div className="relative aspect-video overflow-hidden rounded-lg border bg-slate-950">
-                {isRunning ? (
+                {isRunning && config.sourceType === "WEBCAM" ? (
+                  <video
+                    ref={videoRef}
+                    muted
+                    playsInline
+                    className="absolute inset-0 h-full w-full object-contain"
+                  />
+                ) : isRunning ? (
                   <img
                     src={`${OPENCV_CAMERA_STREAM}?t=${streamNonce}`}
                     alt={t.realtimeCamera}
@@ -546,6 +722,7 @@ export default function CctvAnalysis() {
                       : cameraStatusMessage || t.streamHint}
                 </div>
               </div>
+              <canvas ref={canvasRef} style={{ display: "none" }} />
             </div>
           </div>
 

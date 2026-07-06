@@ -13,4 +13,6 @@ public class UserLineVO {
 
     private String line_user_id;
 
+    private String follow_yn;
+
 }

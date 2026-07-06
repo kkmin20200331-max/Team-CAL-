@@ -1,0 +1,52 @@
+# Build output and Gradle cache
+build/
+.gradle/
+out/
+bin/
+
+# IDE/editor files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+
+# Local runtime logs and temp files
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Runtime secrets and environment-specific config
+.env
+.env.*
+src/main/resources/application*.properties
+src/main/resources/application*.yml
+src/main/resources/application*.yaml
+!src/main/resources/application-example.properties
+!src/main/resources/application-example.yml
+!src/main/resources/application-example.yaml
+
+# Oracle wallet and database credentials
+wallet/
+wallet.zip
+*.p12
+*.pem
+*.jks
+*.sso
+
+# Local seed/schema files can contain sample PII and passwords.
+# Keep DB migrations/seeds outside the application image unless needed.
+src/main/resources/sql/
+*.sql
+
+# VCS and local docs cache
+.git/
+.gitignore
+HELP.md

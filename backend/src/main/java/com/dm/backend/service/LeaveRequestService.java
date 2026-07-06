@@ -35,10 +35,6 @@ public class LeaveRequestService {
         return leaveRequestMapper.getLeaveRequest(id);
     }
 
-    // =========================
-    // [관리자]
-    // =========================
-
     public List<LeaveRequestVO> getLeaveRequestList(String store_id) {
         return leaveRequestMapper.getLeaveRequestList(store_id);
     }
@@ -48,17 +44,17 @@ public class LeaveRequestService {
 
         if (!"APPROVED".equals(status)
                 && !"REJECTED".equals(status)) {
-            throw new IllegalArgumentException("잘못된 상태값");
+            throw new IllegalArgumentException("잘못된 상태입니다.");
         }
 
         LeaveRequestVO leave = leaveRequestMapper.getLeaveRequest(id);
 
         if (leave == null) {
-            throw new IllegalArgumentException("존재하지 않는 신청");
+            throw new IllegalArgumentException("존재하지 않는 신청입니다.");
         }
 
         if (!"PENDING".equals(leave.getStatus())) {
-            throw new IllegalStateException("이미 처리된 신청");
+            throw new IllegalStateException("이미 처리된 신청입니다.");
         }
 
         leaveRequestMapper.updateLeaveStatus(id, status);
@@ -86,57 +82,32 @@ public class LeaveRequestService {
                     "LEAVE_" + status,
                     title,
                     content,
-                    leave.getId()
-            );
+                    leave.getId());
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // =========================
-        // LINE 알림 (직원)
-        // =========================
-        try {
-
-            String lineUserId =
-                    userLineService.getLineUserIdByUserId(leave.getUser_id());
-
-            if (lineUserId != null) {
-
-                String message =
-                        "휴무 신청이 " +
-                                ("APPROVED".equals(status) ? "승인" : "거절") +
-                                "되었습니다.";
-
-                lineService.sendMessage(lineUserId, message);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        sendLeaveResultToStaff(leave, status);
     }
 
     @Transactional
     public void ownerCancelApprovedLeave(String id) {
 
-        LeaveRequestVO leave =
-                leaveRequestMapper.getLeaveRequest(id);
+        LeaveRequestVO leave = leaveRequestMapper.getLeaveRequest(id);
 
         if (leave == null) {
-            throw new IllegalArgumentException("존재하지 않는 신청");
+            throw new IllegalArgumentException("존재하지 않는 신청입니다.");
         }
 
         if (!"APPROVED".equals(leave.getStatus())) {
-            throw new IllegalStateException("승인된 신청만 취소 가능합니다.");
+            throw new IllegalStateException("승인된 신청만 취소할 수 있습니다.");
         }
 
         leaveRequestMapper.rollbackShiftStatusScheduled(leave.getShift_id());
         leaveRequestMapper.cancelLeaveRequest(id);
     }
 
-    // =========================
-    // [직원]
-    // =========================
-
+    @Transactional
     public void registerLeaveRequest(LeaveRequestVO leaveRequestVO) {
 
         leaveRequestVO.setId(
@@ -145,69 +116,77 @@ public class LeaveRequestService {
 
         leaveRequestMapper.registerLeaveRequest(leaveRequestVO);
 
+<<<<<<< HEAD
         // 선민 수정 - 휴무 신청 시 shift 상태를 LEAVE_PENDING으로 변경
         leaveRequestMapper.updateShiftStatusLeavePending(leaveRequestVO.getShift_id());
 
         sendLeaveRequestSubmittedToRequester(leaveRequestVO);
         sendLeaveRequestToOwner(leaveRequestVO);
+=======
+        sendLeaveRequestToAdmins(leaveRequestVO);
+>>>>>>> 594f28c69725719f25a4ea8af4093a12b6199c80
     }
 
-    // =========================
-    // LINE 알림 - 관리자
-    // =========================
-    private void sendLeaveRequestSubmittedToRequester(LeaveRequestVO vo) {
+    private void sendLeaveResultToStaff(LeaveRequestVO leave, String status) {
 
         try {
+            String lineUserId = userLineService.getLineUserIdByUserId(leave.getUser_id());
 
-            String lineUserId =
-                    userLineService.getLineUserIdByUserId(vo.getUser_id());
-
-            if (lineUserId != null) {
-                lineService.sendMessage(
-                        lineUserId,
-                        "휴무 신청이 완료되었습니다.\n사유: " + defaultText(vo.getReason(), "-")
-                );
+            if (lineUserId == null) {
+                return;
             }
 
+            String result = "APPROVED".equals(status) ? "승인" : "거절";
+            lineService.sendMessage(
+                    lineUserId,
+                    "휴무 신청이 " + result + "되었습니다.");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void sendLeaveRequestToOwner(LeaveRequestVO vo) {
+    private void sendLeaveRequestToAdmins(LeaveRequestVO vo) {
 
         try {
+            List<String> adminLineIds = userLineService.getOwnerLineUserIdsByShiftId(vo.getShift_id());
 
-            String ownerLineId =
-                    userLineService.getOwnerLineUserIdByShiftId(vo.getShift_id());
+            System.out.println(
+                    "Leave admin LINE target count for shift_id " + vo.getShift_id() + ": " + adminLineIds.size());
 
-            if (ownerLineId != null) {
-                lineService.sendMessage(
-                        ownerLineId,
-                        "휴무 신청이 접수되었습니다.\n사유: " + vo.getReason()
-                );
+            if (adminLineIds.isEmpty()) {
+                System.out.println("No admin LINE user found for shift_id: " + vo.getShift_id());
+                return;
             }
 
+            String reason = vo.getReason() == null || vo.getReason().isBlank()
+                    ? "미입력"
+                    : vo.getReason();
+
+            String message = "휴무 신청이 접수되었습니다.\n사유: " + reason;
+
+            for (String adminLineId : adminLineIds) {
+                try {
+                    lineService.sendMessage(adminLineId, message);
+                } catch (Exception e) {
+                    System.err.println("LINE send failed for admin line user: " + e.getMessage());
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // =========================
-    // 직원 취소 (기존 유지)
-    // =========================
     @Transactional
     public void cancelLeaveRequest(String id) {
 
-        LeaveRequestVO leave =
-                leaveRequestMapper.getLeaveRequest(id);
+        LeaveRequestVO leave = leaveRequestMapper.getLeaveRequest(id);
 
         if (leave == null) {
-            throw new IllegalArgumentException("존재하지 않는 신청");
+            throw new IllegalArgumentException("존재하지 않는 신청입니다.");
         }
 
         if (!"PENDING".equals(leave.getStatus())) {
-            throw new IllegalStateException("대기중인 신청만 취소 가능합니다.");
+            throw new IllegalStateException("대기 중인 신청만 취소할 수 있습니다.");
         }
 
         leaveRequestMapper.cancelLeaveRequest(id);
@@ -220,8 +199,7 @@ public class LeaveRequestService {
             String user_id,
             int year,
             int month,
-            String status
-    ) {
+            String status) {
 
         if (status == null || status.isBlank()) {
             return leaveRequestMapper.getMyLeaveRequests(user_id, year, month);
@@ -242,15 +220,6 @@ public class LeaveRequestService {
         }
     }
 
-    // shift_id → 관리자 LINE ID (없으면 UserLineService에서 가져옴)
-    private String getOwnerLineUserId(String shift_id) {
-        try {
-            return userLineService.getOwnerLineUserIdByShiftId(shift_id);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     private String defaultText(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
     }
@@ -264,15 +233,13 @@ public class LeaveRequestService {
             String type,
             String title,
             String content,
-            String refId
-    ) {
+            String refId) {
         com.dm.backend.vo.NotificationVO notification = new com.dm.backend.vo.NotificationVO();
         notification.setId(
                 "NOTI_" + UUID.randomUUID()
                         .toString()
                         .replace("-", "")
-                        .substring(0, 16)
-        );
+                        .substring(0, 16));
         notification.setUser_id(userId);
         notification.setStore_id(storeId);
         notification.setType(type);

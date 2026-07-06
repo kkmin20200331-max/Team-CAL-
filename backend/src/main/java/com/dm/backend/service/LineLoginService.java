@@ -116,4 +116,41 @@ public class LineLoginService {
 
         return response.getBody();
     }
+
+    public boolean isFriend(
+            String accessToken
+    ) {
+
+        try {
+            HttpHeaders headers =
+                    new HttpHeaders();
+
+            headers.setBearerAuth(
+                    accessToken
+            );
+
+            HttpEntity<?> request =
+                    new HttpEntity<>(
+                            headers
+                    );
+
+            ResponseEntity<Map> response =
+                    restTemplate.exchange(
+                            "https://api.line.me/friendship/v1/status",
+                            HttpMethod.GET,
+                            request,
+                            Map.class
+                    );
+
+            Object friendFlag =
+                    response.getBody() == null
+                            ? null
+                            : response.getBody().get("friendFlag");
+
+            return Boolean.TRUE.equals(friendFlag);
+        } catch (Exception e) {
+            System.err.println("LINE friendship status check failed: " + e.getMessage());
+            return false;
+        }
+    }
 }

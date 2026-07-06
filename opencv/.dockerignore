@@ -1,0 +1,32 @@
+# Python runtime and caches
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local environment and logs
+.env
+.env.*
+!.env.example
+logs/
+*.log
+
+# Local uploads and generated artifacts
+test_assets/uploads/
+app/data/uploads/
+tmp/
+temp/
+
+# IDE/editor files
+.idea/
+.vscode/
+*.iml
+
+# VCS and docs not needed in image
+.git/
+.gitignore
+docs/
+README.md

@@ -1,11 +1,13 @@
 package com.dm.backend.service;
 
 import com.dm.backend.mapper.PeopleLogMapper;
+import com.dm.backend.vo.OpenCvCongestionPayloadVO;
 import com.dm.backend.vo.OpenCvResponseVO;
 import com.dm.backend.vo.PeopleLogVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -90,6 +92,38 @@ public class PeopleLogService {
         System.out.println(
                 "PEOPLE_LOG 저장 완료"
         );
+    }
+
+    public PeopleLogVO saveOpenCvPayload(
+            String fallbackStoreId,
+            OpenCvCongestionPayloadVO payload
+    ) {
+        Integer peopleCount = payload.resolvePeopleCount();
+        String storeId = payload.getStoreId() != null
+                ? payload.getStoreId()
+                : fallbackStoreId;
+        String cameraId = payload.getCameraId() != null
+                ? payload.getCameraId()
+                : "CAM-001";
+        LocalDateTime measuredAt = payload.getMeasuredAt() != null
+                ? payload.getMeasuredAt()
+                : LocalDateTime.now();
+
+        if (storeId == null || storeId.isBlank() || peopleCount == null) {
+            throw new IllegalArgumentException("storeId and customerCount or lastCustomerCount is required");
+        }
+
+        PeopleLogVO vo =
+                new PeopleLogVO(
+                        null,
+                        storeId,
+                        cameraId,
+                        measuredAt,
+                        peopleCount
+                );
+
+        savePeopleLog(vo);
+        return vo;
     }
 
     public List<PeopleLogVO> getPeopleLogList(

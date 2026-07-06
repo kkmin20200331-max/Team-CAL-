@@ -144,6 +144,7 @@ class InferenceService:
         model_name: str | None = None,
         image_size: int | None = None,
         confidence_threshold: float | None = None,
+        send_to_spring: bool = True,
     ) -> DetectionResponse:
         try:
             import cv2
@@ -176,7 +177,8 @@ class InferenceService:
             boxes=detection.boxes,
             annotated_image=annotated_image,
         )
-        spring_client.send_congestion(payload)
+        if send_to_spring:
+            spring_client.send_congestion(payload)
         return payload
 
     def _run_loop(self, request: CameraStartRequest) -> None:
