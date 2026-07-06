@@ -268,7 +268,7 @@ const DailySchedule: React.FC = () => {
         },
       });
       setDeleteModalShift(null);
-      fetchShifts();
+      navigate(-1);
     } catch {
       alert(t.errDelete);
     }
