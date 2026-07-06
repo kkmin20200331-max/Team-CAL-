@@ -102,6 +102,25 @@ public interface FixedscheduleMapper {
             @Param("weekday") String weekday
     );
 
+    // 비활성화된 고정 스케줄 재활성화 (동일 조건)
+    @Update("""
+            UPDATE fixed_schedule
+            SET active = 'Y',
+                start_time = #{start_time},
+                end_time = #{end_time}
+            WHERE store_id = #{store_id}
+            AND user_id = #{user_id}
+            AND weekday = #{weekday}
+            AND active = 'N'
+            """)
+    int reactivateFixedSchedule(
+            @Param("store_id") String store_id,
+            @Param("user_id") String user_id,
+            @Param("weekday") String weekday,
+            @Param("start_time") String start_time,
+            @Param("end_time") String end_time
+    );
+
     // 동일 데이터 존재 여부
     @Select("""
             SELECT COUNT(*)
