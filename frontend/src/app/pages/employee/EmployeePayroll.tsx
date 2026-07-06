@@ -200,6 +200,19 @@ export default function EmployeePayroll() {
       selectedMonth.getMonth() === now.getMonth()
     );
   }, [selectedMonth]);
+
+  // 이번 달은 shift 기반 예상 급여 계산
+  const estimatedPayroll = useMemo<PayrollResult | null>(() => {
+    if (!isCurrentMonth || !memberInfo?.pay_amount) return null;
+    const rate = memberInfo.pay_amount;
+    if (memberInfo.pay_type === 'MONTHLY') {
+      return { basePay: rate, overtimePay: 0, nightPay: 0, weeklyPay: 0, totalPay: rate };
+    }
+    const basePay = assignedShifts.reduce((sum, s) => sum + calcHours(s.start_at, s.end_at) * rate, 0);
+    return { basePay, overtimePay: 0, nightPay: 0, weeklyPay: 0, totalPay: basePay };
+  }, [isCurrentMonth, memberInfo, assignedShifts]);
+
+  const displayPayroll = isCurrentMonth ? (estimatedPayroll ?? payroll) : payroll;
   const isCurrentYear = historyYear >= new Date().getFullYear();
 
   const dailyHistory = useMemo(() =>
@@ -384,11 +397,11 @@ export default function EmployeePayroll() {
             <div style={{ textAlign: 'center' }}>
               {loadingPayroll ? (
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>{t.calculating}</p>
-              ) : !payroll ? (
+              ) : !displayPayroll ? (
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>{t.cannotLoad}</p>
               ) : (
                 <p style={{ fontSize: 36, fontWeight: 800, color: '#fff' }}>
-                  {t.fmtCurrency(payroll.totalPay)}
+                  {t.fmtCurrency(displayPayroll.totalPay)}
                 </p>
               )}
             </div>
@@ -406,10 +419,10 @@ export default function EmployeePayroll() {
         }}>
           {loadingPayroll ? (
             <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 20 }}>{t.calculating}</p>
-          ) : !payroll ? (
+          ) : !displayPayroll ? (
             <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 20 }}>{t.cannotLoad}</p>
           ) : (
-            <PayDetail data={payroll} shiftList={assignedShifts} />
+            <PayDetail data={displayPayroll} shiftList={assignedShifts} />
           )}
         </div>
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Clock, MapPin, LayoutGrid } from 'lucide-react';
+import { Clock, MapPin } from 'lucide-react';
 
 const STORE_SVG = (
   <svg width="22" height="22" viewBox="1004 49 30 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -109,20 +109,6 @@ export default function BranchSelection() {
 
       {/* Store Cards */}
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '28px 32px' }}>
-        <button
-          onClick={() => navigate("/admin/multibranch")}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            width: '100%', marginBottom: 20, padding: '12px 0',
-            background: isDark ? '#1a1a1a' : LIGHT_GREEN,
-            border: `1px solid ${BORDER_GREEN}`, borderRadius: 54,
-            color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-          }}
-        >
-          <LayoutGrid size={16} />
-          {t.viewAllBranches}
-        </button>
-
         {storesLoading ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: subTextColor, fontSize: 14 }}>{t.loading}</div>
         ) : stores.length === 0 ? (

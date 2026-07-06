@@ -109,6 +109,9 @@ const parseContent = (raw: string) => {
   return { body, attachments };
 };
 
+const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|svg|bmp)$/i;
+const isImageFile = (name: string) => IMAGE_EXTS.test(name);
+
 function AttachmentLink({ name, url, color }: { name: string; url: string; color: string }) {
   const [href, setHref] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -121,6 +124,16 @@ function AttachmentLink({ name, url, color }: { name: string; url: string; color
     }
   }, [url]);
   if (!href) return <span style={{ fontSize: 14, color: '#999' }}>📄 {name} (로딩중...)</span>;
+  if (isImageFile(name)) {
+    return (
+      <div style={{ marginTop: 8 }}>
+        <a href={href} target="_blank" rel="noopener noreferrer">
+          <img src={href} alt={name} style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 12, display: 'block', cursor: 'pointer' }} />
+        </a>
+        <span style={{ fontSize: 12, color: '#999', marginTop: 4, display: 'block' }}>{name}</span>
+      </div>
+    );
+  }
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" download={name}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, color, textDecoration: 'none', fontWeight: 600 }}

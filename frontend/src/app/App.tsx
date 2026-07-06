@@ -29,7 +29,6 @@ import AttendanceManagement from "./pages/admin/AttendanceManagement";
 import DocumentManagement from "./pages/admin/DocumentManagement";
 import BoardManagement from "./pages/admin/BoardManagement";
 import CustomerAnalytics from "./pages/admin/CustomerAnalytics";
-import MultibranchDashboard from "./pages/admin/MultibranchDashboard";
 import MonthlySchedule from "./pages/admin/MonthlySchedule";
 import CctvAnalysis from "./pages/admin/CctvAnalysis";
 import MasterApplications from "./pages/master/MasterApplications";
@@ -107,15 +106,6 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin/multibranch"
-            element={
-              <ProtectedRoute>
-                <MultibranchDashboard />
               </ProtectedRoute>
             }
           />
