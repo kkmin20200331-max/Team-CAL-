@@ -2302,6 +2302,11 @@ const boardManagement = {
     noticeTitlePlaceholder: '알림 제목을 입력하세요',
     noticeContentPlaceholder: '알림 내용을 입력하세요',
     noticeTitleRequired: '알림 제목을 입력해주세요.',
+    addTab: '탭 추가',
+    addPost: '게시글 작성',
+    tabNameLabel: '탭 이름',
+    tabNameRequired: '탭 이름을 입력해주세요.',
+    tabAddFailed: '탭 추가에 실패했습니다.',
   },
   en: {
     backToDashboard: 'Back to Dashboard',
@@ -2374,6 +2379,11 @@ const boardManagement = {
     noticeTitlePlaceholder: 'Enter notification title',
     noticeContentPlaceholder: 'Enter notification content',
     noticeTitleRequired: 'Please enter a notification title.',
+    addTab: 'Add Tab',
+    addPost: 'Write Post',
+    tabNameLabel: 'Tab Name',
+    tabNameRequired: 'Please enter a tab name.',
+    tabAddFailed: 'Failed to add tab.',
   },
   ja: {
     backToDashboard: 'ダッシュボードに戻る',
@@ -2446,6 +2456,11 @@ const boardManagement = {
     noticeTitlePlaceholder: '通知タイトルを入力してください',
     noticeContentPlaceholder: '通知内容を入力してください',
     noticeTitleRequired: '通知タイトルを入力してください。',
+    addTab: 'タブ追加',
+    addPost: '投稿を作成',
+    tabNameLabel: 'タブ名',
+    tabNameRequired: 'タブ名を入力してください。',
+    tabAddFailed: 'タブの追加に失敗しました。',
   },
 };
 
