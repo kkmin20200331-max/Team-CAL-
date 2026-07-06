@@ -1,4 +1,4 @@
-﻿import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -170,21 +170,21 @@ const SubstituteManagementScreen = ({ navigation }: { navigation: any }) => {
     );
   };
 
-  const handleCancelPost = (item: SubstituteRequest) => {
-    Alert.alert('모집 취소', '해당 대타 모집글을 취소하시겠습니까?', [
+  const handleRejectPost = (item: SubstituteRequest) => {
+    Alert.alert('대타 거절', '해당 대타 요청을 거절하시겠습니까?', [
       { text: '취소', style: 'cancel' },
       {
-        text: '취소하기',
+        text: '거절하기',
         style: 'destructive',
         onPress: async () => {
           setProcessingId(item.post.id);
           try {
             await cancelSubstitutePostAPI(item.post.id);
-            Toast.show({ type: 'success', text1: '취소 완료', text2: '대타 모집글을 취소하였습니다.' });
+            Toast.show({ type: 'success', text1: '거절 완료', text2: '대타 요청을 거절하였습니다.' });
             await loadRequests();
           } catch (error) {
-            console.error('대타 모집 취소 오류:', error);
-            Alert.alert('취소 실패', '대타 모집글 취소 중 오류가 발생했습니다.');
+            console.error('대타 요청 거절 오류:', error);
+            Alert.alert('거절 실패', '대타 요청 거절 중 오류가 발생했습니다.');
           } finally {
             setProcessingId(null);
           }
@@ -234,10 +234,10 @@ const SubstituteManagementScreen = ({ navigation }: { navigation: any }) => {
 
         <TouchableOpacity
           style={styles.cancelButton}
-          onPress={() => handleCancelPost(item)}
+          onPress={() => handleRejectPost(item)}
           disabled={processingId === item.post.id}
         >
-          <Text style={styles.cancelButtonText}>모집 취소</Text>
+          <Text style={styles.cancelButtonText}>거절</Text>
         </TouchableOpacity>
       </View>
     );
