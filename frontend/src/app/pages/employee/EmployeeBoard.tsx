@@ -10,10 +10,13 @@ import { ChevronLeft, ChevronRight, Plus, X, Paperclip, Edit, Trash2, Send, Mess
 import EmployeeBottomNav from './EmployeeBottomNav';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL as string,
-  import.meta.env.VITE_SUPABASE_KEY as string,
-);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseKey = (
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_KEY ||
+  import.meta.env.VITE_SUPABASE_PROJECT_KEY
+) as string | undefined;
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
@@ -118,6 +121,7 @@ function AttachmentLink({ name, url, color }: { name: string; url: string; color
   const [href, setHref] = React.useState<string | null>(null);
   React.useEffect(() => {
     if (url.startsWith('SUPABASE:')) {
+      if (!supabase) return;
       const path = url.slice('SUPABASE:'.length);
       supabase.storage.from('documents').createSignedUrl(path, 3600)
         .then(({ data }) => { if (data?.signedUrl) setHref(data.signedUrl); });
@@ -502,6 +506,9 @@ export default function EmployeeBoard() {
   };
 
   const uploadFiles = async (files: File[]): Promise<string[]> => {
+    if (!supabase) {
+      throw new Error('Supabase 업로드 설정이 없습니다.');
+    }
     const links: string[] = [];
     for (const file of files) {
       const ext = file.name.includes('.') ? `.${file.name.split('.').pop()}` : '';
