@@ -1190,7 +1190,7 @@ export default function AdminDashboard() {
                   style={{
                     padding: "13px 16px",
                     borderRadius: 12,
-                    background: "rgba(255,255,255,0.7)",
+                    background: isDark ? "rgba(162,0,0,0.12)" : "rgba(255,255,255,0.7)",
                     border: `1.5px solid #A20000`,
                   }}
                 >
@@ -1216,8 +1216,8 @@ export default function AdminDashboard() {
                     style={{
                       padding: "13px 16px",
                       borderRadius: 12,
-                      background: "rgba(255,255,255,0.7)",
-                      border: `1.5px solid ${BORDER_GREEN}`,
+                      background: isDark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.7)",
+                      border: `1.5px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                     }}
                   >
                     <p
@@ -1240,7 +1240,7 @@ export default function AdminDashboard() {
                   style={{
                     padding: "13px 16px",
                     borderRadius: 12,
-                    background: "rgba(255,255,255,0.7)",
+                    background: isDark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.7)",
                     border: `1.5px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >
@@ -1263,7 +1263,7 @@ export default function AdminDashboard() {
                 style={{
                   padding: "13px 16px",
                   borderRadius: 12,
-                  background: "rgba(255,255,255,0.7)",
+                  background: isDark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.7)",
                   border: `1.5px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                 }}
               >
@@ -1285,8 +1285,8 @@ export default function AdminDashboard() {
                 style={{
                   padding: "13px 16px",
                   borderRadius: 12,
-                  background: "rgba(255,255,255,0.7)",
-                  border: `1.5px solid ${BORDER_GREEN}`,
+                  background: isDark ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.7)",
+                  border: `1.5px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                 }}
               >
                 <p
@@ -1479,8 +1479,8 @@ export default function AdminDashboard() {
                   style={{
                     borderRadius: 14,
                     padding: "15px",
-                    background: "rgba(230,245,200,0.6)",
-                    border: `1.5px solid ${BORDER_GREEN}`,
+                    background: isDark ? "rgba(255,255,255,0.05)" : "rgba(230,245,200,0.6)",
+                    border: `1.5px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >
                   <h4
@@ -1519,7 +1519,7 @@ export default function AdminDashboard() {
                   style={{
                     borderRadius: 14,
                     padding: "15px",
-                    background: "rgba(230,245,200,0.3)",
+                    background: isDark ? "rgba(255,255,255,0.05)" : "rgba(230,245,200,0.3)",
                     border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >
@@ -1539,7 +1539,7 @@ export default function AdminDashboard() {
                   style={{
                     borderRadius: 14,
                     padding: "15px",
-                    background: "rgba(230,245,200,0.3)",
+                    background: isDark ? "rgba(255,255,255,0.05)" : "rgba(230,245,200,0.3)",
                     border: `1px solid ${isDark ? "#2a2a2a" : BORDER_GREEN}`,
                   }}
                 >

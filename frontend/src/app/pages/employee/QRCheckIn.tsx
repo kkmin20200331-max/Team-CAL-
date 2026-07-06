@@ -134,8 +134,8 @@ export default function QRCheckIn() {
     ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)'
     : 'linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)';
   const dynCardStyle: React.CSSProperties = {
-    background: isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)',
-    border: `1px solid ${isDark ? '#3a3a3c' : '#00A200'}`,
+    background: isDark ? '#141414' : 'rgba(255,255,255,0.5)',
+    border: `1px solid ${isDark ? '#2a2a2a' : '#00A200'}`,
     borderRadius: 26,
     boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
     marginBottom: 16,
@@ -437,13 +437,13 @@ export default function QRCheckIn() {
                   {t.checkedInAt(currentTime.toLocaleTimeString(language === 'ko' ? 'ko-KR' : language === 'ja' ? 'ja-JP' : 'en-US', { hour: '2-digit', minute: '2-digit' }))}
                 </p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-                  <div style={{ background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
+                  <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
                     <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 4 }}>{t.scheduledTime}</p>
                     <p style={{ fontSize: 20, fontWeight: 700, color: '#07790F', margin: 0 }}>
                       {todayShift ? getTimePart(todayShift.start_at) : '-'}
                     </p>
                   </div>
-                  <div style={{ background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
+                  <div style={{ background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.8)', borderRadius: 16, padding: 14, border: '1px solid rgba(0,162,0,0.12)' }}>
                     <p style={{ fontSize: 13, color: '#8BA68D', marginBottom: 4 }}>{t.actualTime}</p>
                     <p style={{ fontSize: 20, fontWeight: 700, color: '#18A022', margin: 0 }}>
                       {currentTime.toLocaleTimeString(language === 'ko' ? 'ko-KR' : language === 'ja' ? 'ja-JP' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -537,7 +537,7 @@ export default function QRCheckIn() {
                 const endTime = getTimePart(shift.end_at);
                 return (
                   <div key={index} style={{
-                    background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
+                    background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.8)',
                     border: '1px solid rgba(0,162,0,0.12)',
                     borderRadius: 16,
                     padding: '14px 20px',

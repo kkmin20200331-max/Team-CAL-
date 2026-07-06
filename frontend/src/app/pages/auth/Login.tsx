@@ -107,7 +107,9 @@ export default function Login() {
     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
   }, [isDark]);
 
-  const bgColor = isDark ? "#1c1c1e" : "#EEF5DD";
+  const bgColor = isDark
+    ? "linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)"
+    : "#EEF5DD";
 
   // 로그인 페이지에서 전역 그라디언트 숨기고 단색 배경 적용
   useEffect(() => {
@@ -118,7 +120,7 @@ export default function Login() {
       document.body.style.background = '';
     };
   }, [bgColor]);
-  const cardBg = isDark ? "#2c2c2e" : "#FFFFFF";
+  const cardBg = isDark ? "#141414" : "#FFFFFF";
   const labelColor = isDark ? "#aaa" : "#606060";
   const inputBg = isDark ? "#3a3a3c" : "#F2F5EB";
   const secondaryBtnBg = isDark ? "#3a3a3c" : "#F2F5EB";

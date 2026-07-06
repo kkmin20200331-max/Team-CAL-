@@ -27,3 +27,5 @@ INSERT INTO store_member (id, store_id, user_id, member_role, user_level, approv
 VALUES ('M_004_도쿄라운지_최대기', 'N2xY8pQ3_a1BcDeFgH1jK', 'U7yZ8aB9_c0DeF1gH2iJ4', 'STAFF', 'NEWBIE', 'PENDING');
 
 select * from store_member;
+
+ALTER TABLE store_member MODIFY available_days VARCHAR2(100 CHAR);
