@@ -1,5 +1,5 @@
 import axiosInstance from "../../../lib/axiosInstance";
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from 'next-themes';
 import Holidays from 'date-holidays';
@@ -459,129 +459,147 @@ export default function MySchedule() {
         {viewMode === 'month' && (
           <>
             {/* 달력 */}
-            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: 18, marginBottom: 20, overflowX: 'auto' }}>
-              <div style={{ minWidth: 760 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', padding: '0 4px 10px', color: textSub, fontSize: 13, fontWeight: 800, textAlign: 'center' }}>
-                  {t.dayLabels.map((label, index) => (
-                    <div key={label} style={{ color: index === 0 || index === 6 ? '#c42a2a' : textSub }}>
-                      {label}
-                    </div>
-                  ))}
-                </div>
+            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', marginBottom: 20, overflow: 'hidden' }}>
+              {/* 요일 헤더 */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,162,0,0.15)'}` }}>
+                {t.dayLabels.map((label, index) => (
+                  <div key={label} style={{
+                    textAlign: 'center',
+                    fontSize: 13,
+                    fontWeight: 800,
+                    color: index === 0 || index === 6 ? '#c42a2a' : textSub,
+                    padding: '12px 0',
+                  }}>
+                    {label}
+                  </div>
+                ))}
+              </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
-                  {calendarDates.map((date) => {
-                    const dateStr = format(date, 'yyyy-MM-dd');
-                    const dayShifts = shifts.filter((shift) => getWorkDate(shift) === dateStr);
-                    const holidayName = getHolidayName(dateStr);
-                    const isHoliday = !!holidayName;
-                    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                    const isCurrentMonth = isSameMonth(date, currentMonth);
-                    const isToday = isSameDay(date, new Date());
-                    const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
+              {/* 날짜 그리드 — 선으로만 구분 */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+                {calendarDates.map((date, idx) => {
+                  const dateStr = format(date, 'yyyy-MM-dd');
+                  const dayShifts = shifts.filter((shift) => getWorkDate(shift) === dateStr);
+                  const daySubs = subApplications.filter(a =>
+                    getSubAppDate(a) === dateStr && a.application_status?.toUpperCase() !== 'APPROVED'
+                  );
+                  const holidayName = getHolidayName(dateStr);
+                  const isHoliday = !!holidayName;
+                  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                  const isCurrentMonth = isSameMonth(date, currentMonth);
+                  const isToday = isSameDay(date, new Date());
+                  const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
+                  const col = idx % 7;
+                  const row = Math.floor(idx / 7);
+                  const lineColor = isDark ? 'rgba(24,160,34,0.25)' : 'rgba(0,162,0,0.3)';
 
-                    return (
-                      <button
-                        key={dateStr}
-                        type="button"
-                        onClick={() => setSelectedDate(date)}
-                        style={{
-                          position: 'relative',
-                          minHeight: 118,
-                          border: `1px solid ${isSelected ? '#18A022' : 'rgba(0,162,0,0.16)'}`,
-                          borderRadius: 14,
-                          background: isSelected ? '#F8FFF0' : isDark ? '#1e1e1e' : 'rgba(255,255,255,0.76)',
-                          boxShadow: isSelected ? 'inset 0 0 0 2px rgba(24,160,34,0.16)' : 'none',
-                          padding: 10,
-                          opacity: isCurrentMonth ? 1 : 0.42,
-                          overflow: 'hidden',
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                        }}
-                      >
+                  return (
+                    <button
+                      key={dateStr}
+                      type="button"
+                      onClick={() => setSelectedDate(date)}
+                      style={{
+                        position: 'relative',
+                        minHeight: 120,
+                        border: 'none',
+                        borderRight: col < 6 ? `1px solid ${lineColor}` : 'none',
+                        borderBottom: row < 5 ? `1px solid ${lineColor}` : 'none',
+                        background: isSelected
+                          ? (isDark ? 'rgba(24,160,34,0.13)' : 'rgba(24,160,34,0.07)')
+                          : isToday
+                          ? (isDark ? 'rgba(24,160,34,0.07)' : 'rgba(200,255,200,0.35)')
+                          : 'transparent',
+                        padding: '8px 6px 6px',
+                        opacity: isCurrentMonth ? 1 : 0.35,
+                        overflow: 'hidden',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {/* 날짜 숫자 */}
+                      <div style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 9,
+                        display: 'grid',
+                        placeItems: 'center',
+                        background: isToday ? '#80D180' : 'transparent',
+                        color: isHoliday || isWeekend ? '#D62828' : isDark ? '#fff' : '#263628',
+                        fontSize: 14,
+                        fontWeight: isToday ? 800 : 500,
+                        marginBottom: 4,
+                      }}>
+                        {date.getDate()}
+                      </div>
+
+                      {/* 공휴일 이름 */}
+                      {holidayName && (
                         <div style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: 9,
-                          display: 'grid',
-                          placeItems: 'center',
-                          background: isToday ? '#80D180' : 'transparent',
-                          color: isHoliday || isWeekend ? '#D62828' : isDark ? '#fff' : '#263628',
-                          fontSize: 16,
-                          fontWeight: 800,
+                          fontSize: 9,
+                          color: '#E58989',
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          marginBottom: 3,
                         }}>
-                          {date.getDate()}
+                          {holidayName}
                         </div>
+                      )}
 
-                        {holidayName && (
-                          <div style={{
-                            position: 'absolute',
-                            top: 13,
-                            left: 46,
-                            right: 10,
-                            color: '#E58989',
-                            fontSize: 11,
+                      {/* 근무 pill */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {dayShifts.slice(0, 2).map((shift) => {
+                          const isConfirmed = shift.status === 'confirmed';
+                          const isPending = shift.status === 'pending';
+                          return (
+                            <div key={shift.id} style={{
+                              fontSize: 12,
+                              fontWeight: 700,
+                              borderRadius: 5,
+                              padding: '3px 6px',
+                              background: isConfirmed
+                                ? 'rgba(24,160,34,0.1)'
+                                : isPending
+                                ? 'rgba(243,200,0,0.15)'
+                                : 'rgba(162,0,0,0.08)',
+                              color: isConfirmed ? '#07790F' : isPending ? '#856B00' : '#A20000',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}>
+                              {formatTime(shift.start_at)}-{formatTime(shift.end_at)}
+                            </div>
+                          );
+                        })}
+                        {daySubs.slice(0, 1).map((app) => (
+                          <div key={app.application_id} style={{
+                            fontSize: 12,
                             fontWeight: 700,
+                            borderRadius: 5,
+                            padding: '3px 6px',
+                            background: 'rgba(243,200,0,0.12)',
+                            color: '#856B00',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                           }}>
-                            {holidayName}
+                            대타지원
+                          </div>
+                        ))}
+                        {(dayShifts.length + daySubs.length) > 2 && (
+                          <div style={{ fontSize: 10, color: textSub, fontWeight: 700, paddingLeft: 2 }}>
+                            +{dayShifts.length + daySubs.length - 2}
                           </div>
                         )}
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
-                          {dayShifts.slice(0, 2).map((shift) => {
-                            const hours = calcHours(shift.start_at, shift.end_at);
-                            const isPending = shift.status === 'pending';
-                            const isConfirmed = shift.status === 'confirmed';
-                            return (
-                              <div
-                                key={shift.id}
-                                style={{
-                                  padding: '8px 9px',
-                                  borderRadius: 10,
-                                  background: isConfirmed
-                                    ? 'rgba(24,160,34,0.09)'
-                                    : isPending
-                                    ? 'rgba(243,200,0,0.12)'
-                                    : 'rgba(162,0,0,0.08)',
-                                  borderLeft: `4px solid ${isConfirmed ? '#18A022' : isPending ? '#F3C800' : '#A20000'}`,
-                                  color: isConfirmed ? textMain : isPending ? '#856B00' : '#A20000',
-                                  fontSize: 13,
-                                  lineHeight: 1.25,
-                                  fontWeight: 800,
-                                }}
-                              >
-                                {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
-                                <div style={{
-                                  marginTop: 3,
-                                  color: textSub,
-                                  fontSize: 11,
-                                  fontWeight: 650,
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                }}>
-                                  {storeName} · {hours}h
-                                </div>
-                              </div>
-                            );
-                          })}
-                          {dayShifts.length > 2 && (
-                            <div style={{ color: textSub, fontSize: 12, fontWeight: 800, paddingLeft: 4 }}>
-                              +{dayShifts.length - 2}
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* 今月のシフト一覧 버튼 - SectionPill 스타일 */}
+            {/* 이번 달 근무 목록 헤더 */}
             <div style={{ marginBottom: 16 }}>
               <div style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
