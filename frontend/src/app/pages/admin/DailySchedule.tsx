@@ -205,11 +205,13 @@ const DailySchedule: React.FC = () => {
           } catch (error) {
             console.warn("고정 근무 저장 실패 또는 이미 존재:", error);
           }
+          const today = new Date().toISOString().slice(0, 10);
+          const fixedStart = selectedDate >= today ? selectedDate : today;
           await axiosInstance.post("/shift/fixed", null, {
             params: {
               store_id: selectedBranchId,
-              start_date: selectedDate,
-              end_date: addMonthsDateStr(selectedDate, 12),
+              start_date: fixedStart,
+              end_date: addMonthsDateStr(fixedStart, 12),
             },
           });
         } else {
