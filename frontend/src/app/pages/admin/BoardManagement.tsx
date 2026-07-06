@@ -1,23 +1,12 @@
 import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
 import { API_BASE } from "../../../lib/axiosInstance";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL as string,
-  import.meta.env.VITE_SUPABASE_KEY as string,
-);
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Plus, Search, Edit, Trash2, Pin, Eye, MessageSquare,
-<<<<<<< HEAD
   Calendar, User, AlertCircle, CheckCircle, Bell,
   FileText, ClipboardCheck, UserPlus, Users, Wallet, BarChart3,
-=======
-  Calendar, User, AlertCircle, CheckCircle,
-  FileText, Paperclip, ClipboardCheck, UserPlus, Users, Wallet, BarChart3,
->>>>>>> c3b2e86ec5f51eff8b7a290c03d54155b72e547e
   Video, X, Send, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
@@ -27,39 +16,6 @@ const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 
-const parseContent = (raw: string) => {
-  const sep = '\n\n---\n📎 첨부파일\n';
-  const idx = raw.indexOf(sep);
-  if (idx === -1) return { body: raw, attachments: [] };
-  const body = raw.slice(0, idx);
-  const attachLines = raw.slice(idx + sep.length).split('\n').filter(l => l.startsWith('- '));
-  const attachments = attachLines.map(line => {
-    const m = line.match(/^- \[(.+?)\]\((.+?)\)$/);
-    return m ? { name: m[1], url: m[2] } : null;
-  }).filter(Boolean) as { name: string; url: string }[];
-  return { body, attachments };
-};
-
-function AttachmentLink({ name, url, color }: { name: string; url: string; color: string }) {
-  const [href, setHref] = React.useState<string | null>(null);
-  React.useEffect(() => {
-    if (url.startsWith('SUPABASE:')) {
-      const path = url.slice('SUPABASE:'.length);
-      supabase.storage.from('documents').createSignedUrl(path, 3600)
-        .then(({ data }) => { if (data?.signedUrl) setHref(data.signedUrl); });
-    } else {
-      setHref(url);
-    }
-  }, [url]);
-  if (!href) return <span style={{ fontSize: 14, color: '#999' }}>📄 {name} (로딩중...)</span>;
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" download={name}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, color, textDecoration: 'none', fontWeight: 600 }}
-    >
-      📄 {name}
-    </a>
-  );
-}
 const LIGHT_GREEN = '#E6F5C8';
 
 interface BoardVO {
@@ -360,58 +316,26 @@ const BoardManagement: React.FC = () => {
   const [showPostModal, setShowPostModal] = useState(false);
   const [editingPost, setEditingPost] = useState<BoardPostVO | null>(null);
   const [form, setForm] = useState({ title: '', content: '', is_pinned: 'N', status: 'PUBLISHED' });
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const openCreateModal = () => {
     setEditingPost(null);
     setForm({ title: '', content: '', is_pinned: 'N', status: 'PUBLISHED' });
-    setAttachedFiles([]);
     setShowPostModal(true);
   };
 
   const openEditModal = (post: BoardPostVO) => {
     setEditingPost(post);
     setForm({ title: post.title, content: post.content, is_pinned: post.is_pinned, status: post.status });
-    setAttachedFiles([]);
     setShowPostModal(true);
   };
 
-<<<<<<< HEAD
   const handleSubmitPost = async () => {
     if (!form.title.trim()) { alert(t.titleRequired); return; }
     const status = 'PUBLISHED';
-=======
-  const uploadFiles = async (): Promise<string> => {
-    if (attachedFiles.length === 0) return form.content;
-    const fileLinks: string[] = [];
-    for (const file of attachedFiles) {
-      try {
-        const ext = file.name.includes('.') ? `.${file.name.split('.').pop()}` : '';
-        const safeName = `${Date.now()}${ext}`;
-        const path = `board/${currentUser.id || 'unknown'}/${safeName}`;
-        const { error } = await supabase.storage.from('documents').upload(path, file, { upsert: true });
-        if (error) throw error;
-        // URL 대신 경로를 저장 → 렌더링 시 signed URL 생성
-        fileLinks.push(`[${file.name}](SUPABASE:${path})`);
-      } catch (e: any) {
-        fileLinks.push(`[${file.name}](업로드 실패: ${e?.message ?? '알 수 없는 오류'})`);
-      }
-    }
-    const attachSection = '\n\n---\n📎 첨부파일\n' + fileLinks.map(l => `- ${l}`).join('\n');
-    return form.content + attachSection;
-  };
-
-  const handleSubmitPost = async (asDraft = false) => {
-    if (!form.title.trim()) { alert(t.titleRequired); return; }
-    const status = asDraft ? 'DRAFT' : 'PUBLISHED';
-    const contentWithFiles = await uploadFiles();
->>>>>>> c3b2e86ec5f51eff8b7a290c03d54155b72e547e
     if (editingPost) {
       await fetch(`${API_BASE}/board/post`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...editingPost, ...form, content: contentWithFiles, status }),
+        body: JSON.stringify({ ...editingPost, ...form, status }),
       });
     } else {
       const id = 'POST_' + Date.now();
@@ -422,7 +346,7 @@ const BoardManagement: React.FC = () => {
           id, board_id: selectedBoardId, store_id: selectedBranchId,
           writer_id: currentUser.id || '',
           writer_role: currentUser.role || 'ADMIN',
-          title: form.title, content: contentWithFiles,
+          title: form.title, content: form.content,
           is_pinned: form.is_pinned, status,
         }),
       });
@@ -603,24 +527,9 @@ const BoardManagement: React.FC = () => {
                       <button onClick={() => { handleDelete(selectedPost.id); setSelectedPost(null); }} style={{ background: 'none', border: '1px solid #EF4444', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', color: '#EF4444' }}><Trash2 size={14} /></button>
                     </div>
                   </div>
-                  {(() => {
-                    const { body, attachments } = parseContent(selectedPost.content);
-                    return (
-                      <div style={{ borderTop: `1px solid ${LIGHT_GREEN}`, paddingTop: 18, minHeight: 80 }}>
-                        <p style={{ fontSize: 15, color: textColor, lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{body}</p>
-                        {attachments.length > 0 && (
-                          <div style={{ marginTop: 16, padding: '12px 16px', background: isDark ? 'rgba(0,162,0,0.08)' : '#f0faf0', borderRadius: 12, border: `1px solid ${BORDER_GREEN}` }}>
-                            <p style={{ fontSize: 13, fontWeight: 700, color: DARK_GREEN, marginBottom: 8 }}>📎 첨부파일</p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                              {attachments.map((a, i) => (
-                                <AttachmentLink key={i} name={a.name} url={a.url} color={GREEN} />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
+                  <div style={{ borderTop: `1px solid ${LIGHT_GREEN}`, paddingTop: 18, minHeight: 80 }}>
+                    <p style={{ fontSize: 15, color: textColor, lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{selectedPost.content}</p>
+                  </div>
                 </div>
 
                 {/* 댓글 */}
@@ -773,57 +682,6 @@ const BoardManagement: React.FC = () => {
                 <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.contentLabel}</label>
                 <textarea rows={10} placeholder={t.contentPlaceholder} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} />
               </div>
-<<<<<<< HEAD
-=======
-              <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.attachmentLabel}</label>
-                <div
-                  style={{ position: 'relative', border: `2px dashed ${BORDER_GREEN}`, borderRadius: 12, padding: 18, textAlign: 'center' }}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={e => {
-                    e.preventDefault();
-                    const files = Array.from(e.dataTransfer.files);
-                    if (files.length > 0) setAttachedFiles(prev => [...prev, ...files]);
-                  }}
-                >
-                  <input
-                    type="file"
-                    multiple
-                    style={{
-                      position: 'absolute', inset: 0,
-                      width: '100%', height: '100%',
-                      opacity: 0, cursor: 'pointer',
-                    }}
-                    onChange={e => {
-                      const filesArray = Array.from(e.target.files || []);
-                      e.target.value = '';
-                      if (filesArray.length > 0) setAttachedFiles(prev => [...prev, ...filesArray]);
-                    }}
-                  />
-                  <Paperclip size={24} color={DARK_GREEN} style={{ margin: '0 auto 6px' }} />
-                  <p style={{ fontSize: 13, color: subText }}>{t.attachDragHint}</p>
-                  <span style={{ display: 'inline-block', background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '7px 16px', fontSize: 13, fontWeight: 700, marginTop: 8 }}>
-                    {t.selectFile}
-                  </span>
-                </div>
-                {attachedFiles.length > 0 && (
-                  <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {attachedFiles.map((f, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: isDark ? '#2a2a2a' : LIGHT_GREEN, borderRadius: 8, fontSize: 13 }}>
-                        <span style={{ color: textColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>
-                          📎 {f.name} <span style={{ color: subText }}>({(f.size / 1024).toFixed(1)} KB)</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0 4px', fontSize: 16, lineHeight: 1 }}
-                        >×</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
->>>>>>> c3b2e86ec5f51eff8b7a290c03d54155b72e547e
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input type="checkbox" id="pinPost" checked={form.is_pinned === 'Y'} onChange={e => setForm(f => ({ ...f, is_pinned: e.target.checked ? 'Y' : 'N' }))} style={{ width: 16, height: 16, accentColor: GREEN }} />
                 <label htmlFor="pinPost" style={{ fontSize: 14, fontWeight: 600, color: textColor }}>{t.pinPost}</label>
