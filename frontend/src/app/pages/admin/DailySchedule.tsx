@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -278,28 +278,69 @@ const DailySchedule: React.FC = () => {
     else alert(t.noPhone);
   };
 
+  // 선민 수정 (2026-07-06): 휴가 신청 최종 승인 시(VACANT) 및 휴가 대기(LEAVE_PENDING) 상태일 때 일별 근무표에서 상태 뱃지를 올바르게 표출하기 위해 매핑 추가
   const getStatusBadge = (status: string) => {
-    const styles: Record<string, { bg: string; icon: React.ReactNode }> = {
-      confirmed: { bg: GREEN, icon: <CheckCircle size={11} /> },
-      pending: { bg: '#f59e0b', icon: <AlertCircle size={11} /> },
-      cancelled: { bg: '#ef4444', icon: <XCircle size={11} /> },
+    const lower = (status || '').toLowerCase();
+    
+    const labels: Record<string, Record<string, string>> = {
+      vacant: {
+        ko: '휴가(취소)',
+        en: 'Leave (Cancelled)',
+        ja: '休暇(キャンセル)'
+      },
+      leave_pending: {
+        ko: '휴가 신청',
+        en: 'Leave Pending',
+        ja: '休暇申請'
+      },
+      substitute_req: {
+        ko: '대타 요청',
+        en: 'Sub Requested',
+        ja: '代替要請'
+      }
     };
-    const s = styles[status];
+
+    const styles: Record<string, { bg: string; icon: React.ReactNode; label: string }> = {
+      confirmed: { bg: GREEN, icon: <CheckCircle size={11} />, label: t.statusConfirmed },
+      scheduled: { bg: GREEN, icon: <CheckCircle size={11} />, label: t.statusConfirmed },
+      substituted: { bg: GREEN, icon: <CheckCircle size={11} />, label: t.statusConfirmed },
+      pending: { bg: '#f59e0b', icon: <AlertCircle size={11} />, label: t.statusPending },
+      substitute_open: { bg: '#f59e0b', icon: <AlertCircle size={11} />, label: t.statusPending },
+      cancelled: { bg: '#ef4444', icon: <XCircle size={11} />, label: t.statusCancelled },
+      vacant: { bg: '#ef4444', icon: <XCircle size={11} />, label: labels.vacant[language] || '휴가(취소)' },
+      leave_pending: { bg: '#f59e0b', icon: <AlertCircle size={11} />, label: labels.leave_pending[language] || '휴가 신청' },
+      substitute_req: { bg: '#3b82f6', icon: <AlertCircle size={11} />, label: labels.substitute_req[language] || '대타 요청' }
+    };
+    
+    const s = styles[lower];
     if (!s) return null;
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 10px', borderRadius: 20, background: s.bg, color: '#fff', fontSize: 11, fontWeight: 600 }}>
-        {s.icon}{status === 'confirmed' ? t.statusConfirmed : status === 'pending' ? t.statusPending : t.statusCancelled}
+        {s.icon}{s.label}
       </span>
     );
   };
 
+  // 선민 수정 (2026-07-06): 승인된 휴가(vacant)를 취소 카운팅에 포함하고 대기/확정 상태 카운팅을 정확하게 하기 위해 통계 집계 로직 보완
   const stats = {
     total: shifts.length,
-    confirmed: shifts.filter((s) => s.status === "confirmed").length,
-    pending: shifts.filter((s) => s.status === "pending").length,
-    cancelled: shifts.filter((s) => s.status === "cancelled").length,
+    confirmed: shifts.filter((s) => {
+      const st = (s.status || '').toLowerCase();
+      return st === "confirmed" || st === "substituted";
+    }).length,
+    pending: shifts.filter((s) => {
+      const st = (s.status || '').toLowerCase();
+      return st === "pending" || st === "leave_pending" || st === "substitute_open";
+    }).length,
+    cancelled: shifts.filter((s) => {
+      const st = (s.status || '').toLowerCase();
+      return st === "cancelled" || st === "vacant";
+    }).length,
     totalHours: shifts
-      .filter((s) => s.status !== "cancelled")
+      .filter((s) => {
+        const st = (s.status || '').toLowerCase();
+        return st !== "cancelled" && st !== "vacant";
+      })
       .reduce((sum, s) => {
         const [sh, sm] = formatTime(s.start_at).split(":").map(Number);
         const [eh, em] = formatTime(s.end_at).split(":").map(Number);

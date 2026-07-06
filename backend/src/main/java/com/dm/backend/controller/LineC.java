@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -40,5 +41,56 @@ public class LineC {
         }
         lineService.sendMessage(lineUserId, message);
         return ResponseEntity.ok("sent");
+    }
+
+    @GetMapping("/admin-targets")
+    public Map<String, Object> adminTargets(
+            @RequestParam(required = false) String store_id,
+            @RequestParam(required = false) String shift_id
+    ) {
+        List<String> targets = resolveAdminTargets(store_id, shift_id);
+        return Map.of(
+                "store_id", store_id == null ? "" : store_id,
+                "shift_id", shift_id == null ? "" : shift_id,
+                "count", targets.size(),
+                "targets", targets.stream().map(this::maskLineUserId).toList()
+        );
+    }
+
+    @PostMapping("/test/admin")
+    public Map<String, Object> testAdmin(
+            @RequestParam(required = false) String store_id,
+            @RequestParam(required = false) String shift_id
+    ) {
+        List<String> targets = resolveAdminTargets(store_id, shift_id);
+        for (String target : targets) {
+            lineService.sendMessage(
+                    target,
+                    "[LINE 테스트]\n관리자 알림 대상 조회와 발송이 정상 동작합니다."
+            );
+        }
+        return Map.of(
+                "sent", targets.size(),
+                "targets", targets.stream().map(this::maskLineUserId).toList()
+        );
+    }
+
+    private List<String> resolveAdminTargets(String storeId, String shiftId) {
+        if (shiftId != null && !shiftId.isBlank()) {
+            return userLineService.getOwnerLineUserIdsByShiftId(shiftId);
+        }
+        if (storeId != null && !storeId.isBlank()) {
+            return userLineService.getAdminLineUserIdsByStoreId(storeId);
+        }
+        throw new IllegalArgumentException("store_id 또는 shift_id가 필요합니다.");
+    }
+
+    private String maskLineUserId(String lineUserId) {
+        if (lineUserId == null || lineUserId.length() <= 10) {
+            return "";
+        }
+        return lineUserId.substring(0, 6)
+                + "..."
+                + lineUserId.substring(lineUserId.length() - 4);
     }
 }

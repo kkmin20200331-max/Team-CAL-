@@ -21,6 +21,7 @@ interface AppContextType {
   logout: () => void;
   setHasSelectedBranch: (hasBranch: boolean) => void;
   setActiveBranch: (branchId: string) => void;
+  updateUserInfo: (data: Partial<User & { branches?: Branch[]; activeBranchId?: string }>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -65,6 +66,10 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     );
   };
 
+  const updateUserInfo = (data: Partial<User & { branches?: Branch[]; activeBranchId?: string }>) => {
+    setUserInfo(prev => prev ? { ...prev, ...data } : null);
+  };
+
   const value = {
     userInfo,
     userStatus,
@@ -73,6 +78,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     logout,
     setHasSelectedBranch,
     setActiveBranch,
+    updateUserInfo,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -71,11 +71,14 @@ void registerStore(StoreVo storeVo);
     @Select("SELECT s.* FROM store s JOIN store_member sm ON s.id = sm.store_id WHERE sm.user_id = #{user_id} AND sm.approval_status = 'APPROVED'")
     StoreVo getStoreByUserId(String user_id);
 
+    // 시급 정보 동기화를 위해 sm.pay_amount, sm.pay_type 조회 추가
     @Select("""
         SELECT
             s.*,
             sm.approval_status AS approval_status,
-            sm.member_role AS member_role
+            sm.member_role AS member_role,
+            sm.pay_amount AS pay_amount,
+            sm.pay_type AS pay_type
         FROM store s
         JOIN store_member sm
             ON s.id = sm.store_id

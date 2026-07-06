@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Alert, Ref
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useIsFocused } from '@react-navigation/native';
 import { NotificationContext } from '../../contexts/NotificationContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -20,7 +21,7 @@ import SubstituteAlertCard from '../../components/dashboard/SubstituteAlertCard'
 import NoticeSection from '../../components/dashboard/NoticeSection';
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext'; // 1. useBoard 훅 임포트
-import { getMonthlyAttendanceAPI, getMyScheduleAPI, getPayrollAPI } from '../../../api/auth';
+import { getMonthlyAttendanceAPI, getMyScheduleAPI, getPayrollAPI, getMyStoreMembershipsAPI } from '../../../api/auth';
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
@@ -46,7 +47,32 @@ const normalizeShiftStatus = (status?: string): Shift['status'] => {
   if (upper === 'COMPLETED') return 'COMPLETED';
   if (upper === 'WORKING' || upper === 'CHECKED_IN' || upper === 'IN_PROGRESS') return 'IN_PROGRESS';
   if (upper === 'SUBSTITUTE_REQ') return 'SUBSTITUTE_REQ';
+  if (upper === 'LEAVE_PENDING') return 'LEAVE_PENDING' as any;
+  if (upper === 'VACANT') return 'OFF';
   return 'SCHEDULED';
+};
+
+const getRealTimeItem = (item: Shift): Shift => {
+  if (item.status === 'OFF' || item.status === 'SUBSTITUTE_REQ' || !item.time || !item.time.includes(' - ')) {
+    return item;
+  }
+  const now = new Date();
+  const todayStr = toDateStr(now);
+  if (item.fullDate < todayStr) return { ...item, status: 'COMPLETED' };
+  if (item.fullDate > todayStr) return { ...item, status: 'SCHEDULED' };
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const [startStr, endStr] = item.time.split(' - ');
+  const [startH, startM] = startStr.split(':').map(Number);
+  const [endH, endM] = endStr.split(':').map(Number);
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+
+  let newStatus: Shift['status'] = 'COMPLETED';
+  if (currentMinutes < startMinutes) newStatus = 'SCHEDULED';
+  else if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) newStatus = 'IN_PROGRESS';
+  
+  return { ...item, status: newStatus };
 };
 
 const mapShift = (raw: any, storeName: string): Shift => {
@@ -54,7 +80,7 @@ const mapShift = (raw: any, storeName: string): Shift => {
   const start = getTimePart(raw.start_at);
   const end = getTimePart(raw.end_at);
 
-  return {
+  return getRealTimeItem({
     id: raw.id,
     fullDate,
     date: fullDate.slice(8, 10),
@@ -64,11 +90,12 @@ const mapShift = (raw: any, storeName: string): Shift => {
     status: normalizeShiftStatus(raw.status),
     checkInTime: raw.check_in_at ? getTimePart(raw.check_in_at) : null,
     checkOutTime: raw.check_out_at ? getTimePart(raw.check_out_at) : null,
-  };
+  });
 };
 
 const DashboardScreen = ({ navigation }: Props) => {
-  const { userInfo } = useApp();
+  const isFocused = useIsFocused();
+  const { userInfo, updateUserInfo } = useApp();
   const { posts, loadPosts } = useBoard(); // 2. BoardContext에서 posts 및 loadPosts 가져오기
   const { t, language } = useLanguage();
   const { colors, isDarkMode } = useTheme();
@@ -155,21 +182,38 @@ const DashboardScreen = ({ navigation }: Props) => {
     setRefreshing(true);
     fetchData();
     setTimeout(() => setRefreshing(false), 1000);
-  }, [userInfo]);
+  }, [userInfo?.id, userInfo?.store_id]);
 
   useEffect(() => {
-    if (userInfo) {
+    if (isFocused && userInfo) {
       fetchData();
     }
-  }, [userInfo]);
+  }, [isFocused, userInfo?.id, userInfo?.store_id]);
 
   // 5. fetchData에서 게시글 관련 로직 제거
   const fetchData = async () => {
     if (!userInfo?.id || !userInfo.store_id) return;
     
     setLoading(true);
+    let payRate = userInfo?.payRate || 9860;
 
     try {
+      // [선민 수정] 대시보드 로드 시 직원의 소속 매장 승인 시급 정보(payRate) 조회하여 연동
+      try {
+        const membershipRes = await getMyStoreMembershipsAPI(userInfo.id);
+        const activeMembership = Array.isArray(membershipRes.data)
+          ? membershipRes.data.find((m: any) => m.id === userInfo.store_id)
+          : null;
+        if (activeMembership && activeMembership.pay_amount) {
+          payRate = activeMembership.pay_amount;
+          if (userInfo.payRate !== activeMembership.pay_amount) {
+            updateUserInfo({ payRate: activeMembership.pay_amount });
+          }
+        }
+      } catch (err) {
+        console.error('시급 정보 동기화 실패:', err);
+      }
+
       const now = new Date();
       
       // ✅ [추가] 대시보드 로드 시 게시판 목록도 함께 새로고침하여 첫 렌더링에 노출 보장
@@ -193,7 +237,7 @@ const DashboardScreen = ({ navigation }: Props) => {
         ? shiftRes.value.data
         : [];
       const schedule = rawShifts
-        .filter((item: any) => item.status !== 'VACANT' && item.status !== 'CANCELLED')
+        .filter((item: any) => item.status !== 'CANCELLED')
         .map((item: any) => mapShift(item, storeName));
 
       const attendanceList = attendanceRes.status === 'fulfilled' && Array.isArray(attendanceRes.value.data)
@@ -217,8 +261,11 @@ const DashboardScreen = ({ navigation }: Props) => {
 
       setFullSchedule(mergedSchedule);
 
-      const payroll = payrollRes.status === 'fulfilled' ? payrollRes.value.data : null;
       const scheduledMinutes = mergedSchedule.reduce((sum, item) => {
+        // [선민 수정] 휴무(OFF), 휴무 대기중(LEAVE_PENDING), 대타 요청(SUBSTITUTE_REQ) 상태인 근무는 이번 주 근무 시간에서 제외
+        if (item.status === 'OFF' || (item.status as any) === 'LEAVE_PENDING' || item.status === 'SUBSTITUTE_REQ') {
+          return sum;
+        }
         if (!item.time.includes(' - ')) return sum;
         const [start, end] = item.time.split(' - ');
         const [sH, sM] = start.split(':').map(Number);
@@ -228,9 +275,19 @@ const DashboardScreen = ({ navigation }: Props) => {
         return sum + diff;
       }, 0);
 
+      const weeklyHours = scheduledMinutes / 60;
+      const basePay = weeklyHours * payRate;
+      let totalPay = basePay;
+      
+      // 주휴수당 계산: 주 15시간 이상 근무 시 (근무시간/40)*8*시급
+      if (weeklyHours >= 15) {
+        const holidayHours = (Math.min(weeklyHours, 40) / 40) * 8;
+        totalPay += holidayHours * payRate;
+      }
+
       setWeeklyStats({
-        totalHours: scheduledMinutes / 60,
-        expectedSalary: Number(payroll?.totalPay || 0),
+        totalHours: weeklyHours,
+        expectedSalary: Math.round(totalPay),
       });
 
       setTodayShift(mergedSchedule.find((item) => item.fullDate === todayString) || null);

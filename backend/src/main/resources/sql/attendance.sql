@@ -34,3 +34,4 @@ CREATE TABLE ATTENDANCE_QR (
                                IS_ACTIVE CHAR(1) DEFAULT 'Y'
 
 );
+

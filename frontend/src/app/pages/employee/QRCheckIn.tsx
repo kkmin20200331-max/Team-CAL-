@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { useState, useEffect, useMemo, useRef } from 'react';
 import EmployeeHeader from './EmployeeHeader';
 import { useLocation, useNavigate } from 'react-router';
@@ -52,7 +52,9 @@ const calcHours = (start: string, end: string) => {
     const [h, m] = t.split(":").map(Number);
     return h * 60 + (m || 0);
   };
-  return Math.max(0, (getMin(end) - getMin(start)) / 60);
+  let diff = getMin(end) - getMin(start);
+  if (diff < 0) diff += 24 * 60;
+  return diff / 60;
 };
 
 const DAY_NAMES: Record<string, string[]> = {

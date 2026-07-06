@@ -12,15 +12,28 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 const colorPalette = ['#4A90E2', '#50E3C2', '#F5A623', '#BD10E0', '#9013FE', '#FF7A00', '#00C4FF'];
 
+const getTimePart = (value?: string) => {
+  if (!value) return '';
+  let time = value;
+  if (value.includes('T')) {
+    time = value.split('T')[1];
+  } else if (value.includes(' ')) {
+    time = value.split(' ')[1];
+  }
+  return time ? time.slice(0, 5) : '';
+};
+
 const normalizeShift = (shift: any) => {
-  const start = shift.start_time || shift.startTime || '';
-  const end = shift.end_time || shift.endTime || '';
+  const startRaw = shift.start_time || shift.startTime || shift.start_at || '';
+  const endRaw = shift.end_time || shift.endTime || shift.end_at || '';
+  const start = getTimePart(startRaw);
+  const end = getTimePart(endRaw);
   return {
     ...shift,
     id: shift.id,
     userId: shift.user_id || shift.userId,
     date: shift.work_date || shift.date,
-    time: shift.time || (start && end ? `${start.slice(0, 5)}-${end.slice(0, 5)}` : ''),
+    time: shift.time || (start && end ? `${start}-${end}` : ''),
     status: shift.status || 'CONFIRMED',
     reason: shift.reason || '',
   };

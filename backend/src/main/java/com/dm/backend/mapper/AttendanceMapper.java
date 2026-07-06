@@ -104,4 +104,11 @@ public interface AttendanceMapper {
     void checkOut(
             AttendanceVO vo
     );
+
+    // 선민 수정 (2026-07-06): 근무 삭제 시 해당 근무의 출퇴근(QR) 기록도 함께 삭제하기 위해 추가
+    @Delete("""
+            DELETE FROM ATTENDANCE
+            WHERE SHIFT_ID = #{shiftId}
+            """)
+    void deleteByShiftId(@Param("shiftId") String shiftId);
 }

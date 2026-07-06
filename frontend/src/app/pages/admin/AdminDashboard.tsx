@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router";
@@ -60,7 +60,9 @@ const fmt = (s: string) => {
 const calcHours = (startAt: string, endAt: string): number => {
   const t1 = (startAt?.split(" ")[1] || "00:00:00").split(":").map(Number);
   const t2 = (endAt?.split(" ")[1] || "00:00:00").split(":").map(Number);
-  return Math.max(0, (t2[0] * 60 + t2[1] - t1[0] * 60 - t1[1]) / 60);
+  let diff = (t2[0] * 60 + t2[1]) - (t1[0] * 60 + t1[1]);
+  if (diff < 0) diff += 24 * 60;
+  return diff / 60;
 };
 
 // ── 인터페이스 ──

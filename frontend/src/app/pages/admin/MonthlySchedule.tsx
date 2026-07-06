@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -356,16 +356,16 @@ export default function MonthlySchedule() {
                 const dateStr = format(date, "yyyy-MM-dd");
                 const dayShifts = getShiftsForDate(date);
                 const confirmedCount = dayShifts.filter(s => {
-                  const st = (s.status || '').toUpperCase();
-                  return st === 'CONFIRMED' || st === 'SCHEDULED' || st === 'confirmed';
+                  const st = (s.status || '').toLowerCase();
+                  return st === "confirmed" || st === "scheduled" || st === "substituted";
                 }).length;
                 const pendingCount = dayShifts.filter(s => {
-                  const st = (s.status || '').toUpperCase();
-                  return st === 'PENDING' || st === 'pending';
+                  const st = (s.status || '').toLowerCase();
+                  return st === "pending" || st === "leave_pending" || st === "substitute_open";
                 }).length;
                 const cancelledCount = dayShifts.filter(s => {
-                  const st = (s.status || '').toUpperCase();
-                  return st === 'CANCELLED' || st === 'VACANT' || st === 'cancelled';
+                  const st = (s.status || '').toLowerCase();
+                  return st === "cancelled" || st === "vacant";
                 }).length;
                 const isCurrentMonth = isSameMonth(date, currentMonth);
                 const isToday = isSameDay(date, today);
