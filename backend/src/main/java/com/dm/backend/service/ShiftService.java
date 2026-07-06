@@ -87,7 +87,8 @@ public class ShiftService {
             shiftVO.setWork_date(shiftVO.getStart_at());
         }
 
-        int conflict = shiftMapper.checkShiftConflict(
+        // 선민 수정 (2026-07-06): 수동 등록 시 이미 취소된(cancelled) 근무와는 중복되지 않도록 변경
+        int conflict = shiftMapper.checkShiftConflictActive(
                 shiftVO.getUser_id(),
                 shiftVO.getWork_date(),
                 shiftVO.getStart_at(),
@@ -126,7 +127,8 @@ public class ShiftService {
             shiftVO.setWork_date(shiftVO.getStart_at());
         }
 
-        int conflict = shiftMapper.checkShiftConflictForUpdate(
+        // 선민 수정 (2026-07-06): 수동 수정 시 이미 취소된(cancelled) 근무와는 중복되지 않도록 변경
+        int conflict = shiftMapper.checkShiftConflictForUpdateActive(
                 shiftVO.getId(),
                 shiftVO.getUser_id(),
                 shiftVO.getWork_date(),
