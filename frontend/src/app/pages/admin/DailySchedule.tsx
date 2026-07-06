@@ -281,7 +281,10 @@ const DailySchedule: React.FC = () => {
 
     const styles: Record<string, { bg: string; icon: React.ReactNode; label: string }> = {
       confirmed: { bg: GREEN, icon: <CheckCircle size={11} />, label: t.statusConfirmed },
+      scheduled: { bg: GREEN, icon: <CheckCircle size={11} />, label: t.statusConfirmed },
+      substituted: { bg: GREEN, icon: <CheckCircle size={11} />, label: t.statusConfirmed },
       pending: { bg: '#f59e0b', icon: <AlertCircle size={11} />, label: t.statusPending },
+      substitute_open: { bg: '#f59e0b', icon: <AlertCircle size={11} />, label: t.statusPending },
       cancelled: { bg: '#ef4444', icon: <XCircle size={11} />, label: t.statusCancelled },
       vacant: { bg: '#ef4444', icon: <XCircle size={11} />, label: labels.vacant[language] || '휴가(취소)' },
       leave_pending: { bg: '#f59e0b', icon: <AlertCircle size={11} />, label: labels.leave_pending[language] || '휴가 신청' },

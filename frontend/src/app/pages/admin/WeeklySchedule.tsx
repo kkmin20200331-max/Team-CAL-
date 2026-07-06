@@ -1,4 +1,4 @@
-﻿import axiosInstance from "../../../lib/axiosInstance";
+import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router';
@@ -86,11 +86,21 @@ const formatTime = (isoStr: string) => {
   return isoStr.substring(0, 5);
 };
 
+// 선민 수정 (2026-07-06): 승인된 휴가(vacant), 대기상태(leave_pending 등), 확정상태(scheduled 등)를 지원하도록 상태별 스타일 매핑 보완
 const getStatusStyle = (status: string, isDark: boolean) => {
-  switch (status) {
-    case "confirmed": return { background: isDark ? 'rgba(24,160,34,0.2)' : '#E6F5C8', border: '2px solid #18A022', color: isDark ? '#4cd964' : '#07790F' };
-    case "pending": return { background: isDark ? 'rgba(245,158,11,0.2)' : '#fef9c3', border: '2px solid #f59e0b', color: '#92400e' };
-    case "cancelled": return { background: isDark ? 'rgba(239,68,68,0.2)' : '#fee2e2', border: '2px dashed #ef4444', color: '#7f1d1d' };
+  const lower = (status || '').toLowerCase();
+  switch (lower) {
+    case "confirmed":
+    case "scheduled":
+    case "substituted":
+      return { background: isDark ? 'rgba(24,160,34,0.2)' : '#E6F5C8', border: '2px solid #18A022', color: isDark ? '#4cd964' : '#07790F' };
+    case "pending":
+    case "leave_pending":
+    case "substitute_open":
+      return { background: isDark ? 'rgba(245,158,11,0.2)' : '#fef9c3', border: '2px solid #f59e0b', color: '#92400e' };
+    case "cancelled":
+    case "vacant":
+      return { background: isDark ? 'rgba(239,68,68,0.2)' : '#fee2e2', border: '2px dashed #ef4444', color: '#7f1d1d' };
     default: return { background: isDark ? '#1a1a1a' : '#f3f4f6', border: '2px solid #d1d5db', color: '#111' };
   }
 };
@@ -360,13 +370,16 @@ export default function WeeklySchedule() {
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                 {dayShifts.map((shift) => {
                                   const ss = getStatusStyle(shift.status, isDark);
+                                  const lowerStatus = (shift.status || '').toLowerCase();
+                                  const isConfirmed = lowerStatus === 'confirmed' || lowerStatus === 'scheduled' || lowerStatus === 'substituted';
+                                  const isPending = lowerStatus === 'pending' || lowerStatus === 'leave_pending' || lowerStatus === 'substitute_open';
                                   return (
                                     <div key={shift.id} onClick={() => selectedBranchId && navigate(`/admin/schedule/daily/${selectedBranchId}/${dateStr}`)}
                                       style={{ ...ss, borderRadius: 8, padding: '6px 4px', fontSize: 11, cursor: 'pointer' }}>
                                       <div style={{ fontWeight: 700 }}>{formatTime(shift.start_at)}</div>
                                       <div style={{ fontWeight: 700 }}>{formatTime(shift.end_at)}</div>
-                                      {shift.status !== 'confirmed' && (
-                                        <div style={{ fontSize: 10, marginTop: 2 }}>{shift.status === 'pending' ? t.statusPending : t.statusCancelled}</div>
+                                      {!isConfirmed && (
+                                        <div style={{ fontSize: 10, marginTop: 2 }}>{isPending ? t.statusPending : t.statusCancelled}</div>
                                       )}
                                     </div>
                                   );
