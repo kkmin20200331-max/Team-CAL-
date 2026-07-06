@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { ko } from 'date-fns/locale';
 import { format } from 'date-fns';
 import { useSchedule } from '../../contexts/ScheduleContext';
+import { deleteShiftAPI } from '../../../api/auth';
 
 const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigation: any }) => {
   const { date, shifts: paramShifts, employees: paramEmployees } = route.params;
@@ -46,7 +47,20 @@ const AdminDailyScheduleScreen = ({ route, navigation }: { route: any, navigatio
       `${item.user.name} (${item.time}) 근무를 삭제하시겠습니까?`,
       [
         { text: "취소", style: "cancel" },
-        { text: "삭제", style: "destructive", onPress: () => deleteShift(item.id) }
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // 선민 수정 (2026-07-06): 로컬 상태 삭제뿐만 아니라 백엔드 API를 호출해 실제 DB 데이터도 삭제하도록 반영
+              await deleteShiftAPI(item.id);
+              deleteShift(item.id);
+            } catch (error) {
+              console.error("근무 삭제 실패:", error);
+              Alert.alert("에러", "근무 삭제에 실패했습니다.");
+            }
+          }
+        }
       ]
     );
   };
