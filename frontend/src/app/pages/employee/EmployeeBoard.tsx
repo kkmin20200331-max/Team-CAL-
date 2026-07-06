@@ -1,7 +1,7 @@
 import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useTheme } from 'next-themes';
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import EmployeeHeader from './EmployeeHeader';
 import { useNavigate } from 'react-router';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -39,7 +39,7 @@ function AdminBadge({ size = 'md' }: { size?: 'sm' | 'md' }) {
       boxShadow: '0 1px 3px rgba(7,121,15,0.35)',
     }}>
       <ShieldCheck size={isSm ? 9 : 10} strokeWidth={2.5} />
-      관리자
+      ???援온??잙갭큔???
     </span>
   );
 }
@@ -105,7 +105,7 @@ const checkIsNew = (s: string) => {
 };
 
 const parseContent = (raw: string) => {
-  const sep = '\n\n---\n📎 첨부파일\n';
+  const sep = '\n\n---\n????轅붽틓????낅마???????n';
   const idx = raw.indexOf(sep);
   if (idx === -1) return { body: raw, attachments: [] };
   const body = raw.slice(0, idx);
@@ -129,12 +129,12 @@ function AttachmentLink({ name, url, color }: { name: string; url: string; color
       setHref(url);
     }
   }, [url]);
-  if (!href) return <span style={{ fontSize: 14, color: '#999' }}>📄 {name} (로딩중...)</span>;
+  if (!href) return <span style={{ fontSize: 14, color: '#999' }}>???{name} (?黎??筌??裕ㅒ??類ｌ땝??..)</span>;
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" download={name}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, color, textDecoration: 'none', fontWeight: 600 }}
     >
-      📄 {name}
+      ???{name}
     </a>
   );
 }
@@ -179,7 +179,7 @@ function CommentItem({ comment: c, isDark, currentUserId, currentUserRole, isAdm
       border: `1px solid ${cIsAdmin ? 'rgba(0,162,0,0.3)' : 'rgba(0,162,0,0.1)'}`,
       borderRadius: 12,
     }}>
-      {/* 작성자 행 */}
+      {/* ?????????*/}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {cIsAdmin && <AdminBadge size="sm" />}
@@ -208,7 +208,7 @@ function CommentItem({ comment: c, isDark, currentUserId, currentUserRole, isAdm
         </div>
       </div>
 
-      {/* 본문 or 편집창 */}
+      {/* ???ㅼ뒧?戮レ땡???먮쇀?or ??꿔꺂????諛명돯??戮?만?*/}
       {editing ? (
         <div style={{ display: 'flex', gap: 6 }}>
           <input
@@ -223,8 +223,8 @@ function CommentItem({ comment: c, isDark, currentUserId, currentUserRole, isAdm
               color: isDark ? '#fff' : '#333', outline: 'none',
             }}
           />
-          <button onClick={save} style={{ padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, background: GREEN, color: '#fff', border: 'none', cursor: 'pointer' }}>저장</button>
-          <button onClick={() => setEditing(false)} style={{ padding: '6px 10px', borderRadius: 8, fontSize: 13, background: 'none', border: `1px solid #ccc`, color: '#888', cursor: 'pointer' }}>취소</button>
+          <button onClick={save} style={{ padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600, background: GREEN, color: '#fff', border: 'none', cursor: 'pointer' }}>Save</button>
+          <button onClick={() => setEditing(false)} style={{ padding: '6px 10px', borderRadius: 8, fontSize: 13, background: 'none', border: '1px solid #ccc', color: '#888', cursor: 'pointer' }}>Cancel</button>
         </div>
       ) : (
         <p style={{ fontSize: 14, color: isDark ? '#ddd' : '#333', margin: 0, lineHeight: 1.5 }}>
@@ -235,7 +235,7 @@ function CommentItem({ comment: c, isDark, currentUserId, currentUserRole, isAdm
   );
 }
 
-// 글쓰기/수정 모달
+// ?????맜??????곕츥??????蹂κ텥???轅붽틓??熬곥끇釉???
 interface PostModalProps {
   isDark: boolean;
   boards: BoardVO[];
@@ -281,16 +281,16 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: isDark ? '#fff' : '#111', margin: 0 }}>
-            {isEdit ? '게시글 수정' : '글쓰기'}
+            {isEdit ? 'Edit Post' : 'Write Post'}
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', padding: 4 }}>
             <X size={22} />
           </button>
         </div>
 
-        {/* 게시판 선택 (수정 시 비활성화) */}
+        {/* Board select */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#aaa' : '#555', display: 'block', marginBottom: 6 }}>게시판</label>
+          <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#aaa' : '#555', display: 'block', marginBottom: 6 }}>Board</label>
           <select value={boardId} onChange={e => setBoardId(e.target.value)} disabled={isEdit}
             style={{
               width: '100%', padding: '10px 14px', borderRadius: 12, fontSize: 15,
@@ -304,10 +304,10 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
           </select>
         </div>
 
-        {/* 제목 */}
+        {/* Title */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#aaa' : '#555', display: 'block', marginBottom: 6 }}>제목</label>
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="제목을 입력하세요"
+          <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#aaa' : '#555', display: 'block', marginBottom: 6 }}>Title</label>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Enter title"
             style={{
               width: '100%', padding: '10px 14px', borderRadius: 12, fontSize: 15,
               border: `1.5px solid ${BORDER_GREEN}`,
@@ -317,10 +317,10 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
           />
         </div>
 
-        {/* 내용 */}
+        {/* Content */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#aaa' : '#555', display: 'block', marginBottom: 6 }}>내용</label>
-          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="내용을 입력하세요" rows={6}
+          <label style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#aaa' : '#555', display: 'block', marginBottom: 6 }}>Content</label>
+          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Enter content" rows={6}
             style={{
               width: '100%', padding: '10px 14px', borderRadius: 12, fontSize: 15,
               border: `1.5px solid ${BORDER_GREEN}`,
@@ -331,9 +331,9 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
           />
         </div>
 
-        {/* 파일 첨부 */}
+        {/* Attachments */}
         <div style={{ marginBottom: 20 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#aaa' : '#555', display: 'block', marginBottom: 6 }}>첨부파일</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#aaa' : '#555', display: 'block', marginBottom: 6 }}>Attachments</span>
           <div
             onDragOver={e => e.preventDefault()}
             onDrop={e => {
@@ -365,7 +365,7 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
                 if (filesArray.length > 0) setFiles(prev => [...prev, ...filesArray]);
               }}
             />
-            <Paperclip size={16} /> 파일 선택 또는 드래그
+            <Paperclip size={16} /> Select or drag files
           </div>
           {files.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
@@ -374,7 +374,7 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   padding: '6px 12px', background: isDark ? '#3a3a3c' : '#f0faf0', borderRadius: 8, fontSize: 14,
                 }}>
-                  <span style={{ color: isDark ? '#fff' : '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📄 {f.name}</span>
+                  <span style={{ color: isDark ? '#fff' : '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
                   <button onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999', flexShrink: 0, padding: '0 0 0 8px' }}>
                     <X size={14} />
@@ -392,14 +392,14 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
               background: 'none', border: `1px solid ${BORDER_GREEN}`,
               color: DARK_GREEN, cursor: 'pointer',
             }}
-          >취소</button>
+          >Cancel</button>
           <button onClick={handleSubmit} disabled={saving || !title.trim() || !boardId}
             style={{
               padding: '10px 24px', borderRadius: 12, fontSize: 15, fontWeight: 600,
               background: saving ? '#aaa' : GREEN, color: '#fff', border: 'none',
               cursor: saving ? 'not-allowed' : 'pointer',
             }}
-          >{saving ? '처리 중...' : isEdit ? '저장' : '등록'}</button>
+          >{saving ? 'Saving...' : isEdit ? 'Save' : 'Post'}</button>
         </div>
       </div>
     </div>
@@ -421,15 +421,15 @@ export default function EmployeeBoard() {
   const [loading, setLoading] = useState(true);
   const [selectedBoardId, setSelectedBoardId] = useState<string>('');
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
-  // writer_id → role 매핑 (기존 게시글 관리자 뱃지용)
+  // writer_id ??role ?轅붽틓?????紐??(??????????β뼯援?????猷몄?? ????댁삩????숆강??????????
   const [userRoleMap, setUserRoleMap] = useState<Record<string, string>>({});
 
-  // 댓글
+  // ???
   const [comments, setComments] = useState<BoardCommentVO[]>([]);
   const [commentText, setCommentText] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
 
-  // 모달 상태
+  // ?轅붽틓??熬곥끇釉???????釉먮빱??
   const [modal, setModal] = useState<{
     open: boolean;
     isEdit: boolean;
@@ -442,7 +442,7 @@ export default function EmployeeBoard() {
     return map;
   }, [boards]);
 
-  // 스토어 사용자 역할 매핑 (writer_id → role)
+  // ???????????????????轅붽틓?????紐??(writer_id ??role)
   useEffect(() => {
     if (!storeId) return;
     axiosInstance.get('/users', { params: { store_id: storeId } })
@@ -496,7 +496,7 @@ export default function EmployeeBoard() {
 
   const canEdit = (post: BoardPostVO) => isAdmin || post.writer_id === currentUser.id;
 
-  // 게시판 생성자 ID 집합 (어드민 판별 fallback)
+  // ??β뼯援????????袁⑸즴????ID ?轅붽틓???寃멸섶??쒖뒧?? (????????대읁??????fallback)
   const boardCreatorIds = useMemo(() => new Set(boards.map(b => b.created_by)), [boards]);
 
   const isAdminPost = (post: BoardPostVO) => {
@@ -507,7 +507,7 @@ export default function EmployeeBoard() {
 
   const uploadFiles = async (files: File[]): Promise<string[]> => {
     if (!supabase) {
-      throw new Error('Supabase 업로드 설정이 없습니다.');
+      throw new Error('Supabase ????野?????濚밸Ŧ?????????욱룏???????낆젵.');
     }
     const links: string[] = [];
     for (const file of files) {
@@ -525,7 +525,7 @@ export default function EmployeeBoard() {
     if (files.length === 0) return { content: baseContent };
     try {
       const fileLinks = await uploadFiles(files);
-      return { content: baseContent + '\n\n---\n📎 첨부파일\n' + fileLinks.map(l => `- ${l}`).join('\n') };
+      return { content: baseContent + '\n\n---\n????轅붽틓????낅마???????n' + fileLinks.map(l => `- ${l}`).join('\n') };
     } catch (e: any) {
       return { content: baseContent, uploadError: e.message };
     }
@@ -543,7 +543,7 @@ export default function EmployeeBoard() {
     });
     setModal({ open: false, isEdit: false });
     fetchPosts();
-    if (uploadError) alert(`게시글은 등록됐지만 파일 업로드 실패:\n${uploadError}`);
+    if (uploadError) alert(`??β뼯援?????猷몄???? ??μ떜媛?걫??곸돥???????????????野???????怨뚯댅:\n${uploadError}`);
   };
 
   const handleEdit = async (boardId: string, title: string, baseContent: string, files: File[]) => {
@@ -557,11 +557,11 @@ export default function EmployeeBoard() {
     setModal({ open: false, isEdit: false });
     setSelectedPostId(null);
     fetchPosts();
-    if (uploadError) alert(`수정됐지만 파일 업로드 실패:\n${uploadError}`);
+    if (uploadError) alert(`????蹂κ텥???????????????野???????怨뚯댅:\n${uploadError}`);
   };
 
   const handleDelete = async (post: PostItem) => {
-    if (!confirm(`"${post.title}" 게시글을 삭제하시겠습니까?`)) return;
+    if (!confirm(`"${post.title}" ??β뼯援?????猷몄?????????癲ル슢???숈춿??β뼯援?臾뚰겫????????`)) return;
     setPosts(prev => prev.filter(p => p.id !== post.id));
     setSelectedPostId(null);
     await fetch(`${API_BASE}/board/post?id=${post.id}`, { method: 'DELETE' });
@@ -598,7 +598,7 @@ export default function EmployeeBoard() {
   };
 
   const handleDeleteComment = async (comment: BoardCommentVO) => {
-    if (!confirm('댓글을 삭제하시겠습니까?')) return;
+    if (!confirm('??????????癲ル슢???숈춿??β뼯援?臾뚰겫????????')) return;
     setComments(prev => prev.filter(c => c.id !== comment.id));
     await fetch(`${API_BASE}/board/comment?id=${comment.id}&post_id=${comment.post_id}&user_id=${currentUser.id || ''}`, { method: 'DELETE' });
   };
@@ -613,7 +613,7 @@ export default function EmployeeBoard() {
     });
   };
 
-  // 상세 진입 시 댓글 로드
+  // ?????몃뱥???轅붽틓?????????? ?黎??筌??醫됲뀭?
   React.useEffect(() => {
     if (selectedPostId) {
       setComments([]);
@@ -624,7 +624,7 @@ export default function EmployeeBoard() {
   const cardBg = isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)';
   const textColor = isDark ? '#fff' : '#333';
 
-  // 모달 열기 시 기본 board_id: 수정일 때 해당 게시글 board, 작성일 때 선택된 탭 or 첫 번째
+  // ?轅붽틓??熬곥끇釉???????繹먮굟爰???????????board_id: ????蹂κ텥????????????β뼯援?????猷몄?? board, ?????????????節떷?????or ???嶺?????
   const modalInitialBoardId = modal.isEdit
     ? (modal.post?.board_id ?? '')
     : (selectedBoardId || (boards[0]?.id ?? ''));
@@ -648,7 +648,7 @@ export default function EmployeeBoard() {
         </div>
       </EmployeeHeader>
 
-      {/* 카테고리 칩 */}
+      {/* ???ㅳ늾???雅?퍔瑗?????숈?????*/}
       <div style={{ padding: '12px 40px' }}>
         <div style={{
           display: 'grid', gap: 6,
@@ -672,7 +672,7 @@ export default function EmployeeBoard() {
         </div>
       </div>
 
-      {/* 목록 뷰 */}
+      {/* ?轅붽틓??熬곥끇釉띄춯誘좊?????*/}
       {!isDetail && (
         <>
           <div style={{ padding: '0 40px 12px', display: 'flex', justifyContent: 'flex-end' }}>
@@ -684,7 +684,7 @@ export default function EmployeeBoard() {
                 boxShadow: '0 2px 8px rgba(24,160,34,0.3)',
               }}
             >
-              <Plus size={16} /> 글쓰기
+              <Plus size={16} /> ?????맜??????곕츥??
             </button>
           </div>
 
@@ -738,7 +738,7 @@ export default function EmployeeBoard() {
         </>
       )}
 
-      {/* 상세 뷰 */}
+      {/* ?????몃뱥????*/}
       {isDetail && selectedPost && (
         <div>
           <button onClick={() => setSelectedPostId(null)}
@@ -758,7 +758,7 @@ export default function EmployeeBoard() {
               borderRadius: 26, padding: '20px 20px',
               boxShadow: '0px 4px 12px rgba(0,162,0,0.08)',
             }}>
-              {/* 헤더 행: 뱃지 + 수정/삭제 */}
+              {/* ????獄쏅챷? ?? ???? + ????蹂κ텥??????*/}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {(() => {
@@ -780,7 +780,7 @@ export default function EmployeeBoard() {
                     }}>NEW</span>
                   )}
                 </div>
-                {/* 수정/삭제 버튼 (본인 글 or 어드민) */}
+                {/* ????蹂κ텥???????嶺?????(???ㅼ뒧?戮レ땡???????맜? or ????????대읁? */}
                 {canEdit(selectedPost) && (
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button
@@ -791,7 +791,7 @@ export default function EmployeeBoard() {
                         display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600,
                       }}
                     >
-                      <Edit size={13} /> 수정
+                      <Edit size={13} /> ????蹂κ텥??
                     </button>
                     <button
                       onClick={() => handleDelete(selectedPost)}
@@ -801,7 +801,7 @@ export default function EmployeeBoard() {
                         display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600,
                       }}
                     >
-                      <Trash2 size={13} /> 삭제
+                      <Trash2 size={13} /> ????
                     </button>
                   </div>
                 )}
@@ -830,7 +830,7 @@ export default function EmployeeBoard() {
                     </p>
                     {attachments.length > 0 && (
                       <div style={{ marginTop: 16, padding: '12px 16px', background: isDark ? 'rgba(0,162,0,0.08)' : '#f0faf0', borderRadius: 12, border: `1px solid ${BORDER_GREEN}` }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: DARK_GREEN, marginBottom: 8 }}>📎 첨부파일</p>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: DARK_GREEN, marginBottom: 8 }}>Attachments</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {attachments.map((a, i) => (
                             <AttachmentLink key={i} name={a.name} url={a.url} color={GREEN} />
@@ -843,7 +843,7 @@ export default function EmployeeBoard() {
               })()}
             </div>
 
-            {/* 댓글 섹션 */}
+            {/* ??? ??????*/}
             <div style={{
               marginTop: 12,
               background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.7)',
@@ -854,11 +854,11 @@ export default function EmployeeBoard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
                 <MessageSquare size={15} color={DARK_GREEN} />
                 <span style={{ fontSize: 14, fontWeight: 700, color: DARK_GREEN }}>
-                  댓글 {comments.length}
+                  Comments {comments.length}
                 </span>
               </div>
 
-              {/* 댓글 입력 */}
+              {/* Comment input */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
                 <div style={{
                   flex: 1, display: 'flex', alignItems: 'center',
@@ -873,7 +873,7 @@ export default function EmployeeBoard() {
                     value={commentText}
                     onChange={e => setCommentText(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }}
-                    placeholder="댓글을 입력하세요..."
+                    placeholder="Enter a comment..."
                     style={{
                       flex: 1, border: 'none', background: 'transparent',
                       fontSize: 14, color: isDark ? '#fff' : '#333',
@@ -896,11 +896,11 @@ export default function EmployeeBoard() {
                 </button>
               </div>
 
-              {/* 댓글 목록 */}
+              {/* ??? ?轅붽틓??熬곥끇釉띄춯誘좊???*/}
               {loadingComments ? (
-                <p style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: '8px 0' }}>불러오는 중...</p>
+                <p style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: '8px 0' }}>Loading...</p>
               ) : comments.length === 0 ? (
-                <p style={{ fontSize: 13, color: '#aaa', textAlign: 'center', padding: '8px 0' }}>첫 댓글을 남겨보세요</p>
+                <p style={{ fontSize: 13, color: '#aaa', textAlign: 'center', padding: '8px 0' }}>No comments yet.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {comments.map(c => (
@@ -921,7 +921,7 @@ export default function EmployeeBoard() {
               )}
             </div>
 
-            {/* 이전글 / 다음글 */}
+            {/* ?????쇨덫??????맜? / ???濚밸Ŧ援??????맜? */}
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {prevPost && (
                 <button onClick={() => setSelectedPostId(prevPost.id)}
@@ -958,7 +958,7 @@ export default function EmployeeBoard() {
         </div>
       )}
 
-      {/* 글쓰기 / 수정 모달 */}
+      {/* ?????맜??????곕츥??/ ????蹂κ텥???轅붽틓??熬곥끇釉???*/}
       {modal.open && (
         <PostModal
           isDark={isDark}
