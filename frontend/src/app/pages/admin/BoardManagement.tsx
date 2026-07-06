@@ -6,7 +6,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Plus, Search, Edit, Trash2, Pin, Eye, MessageSquare,
   Calendar, User, AlertCircle, CheckCircle, Bell,
-  FileText, Paperclip, ClipboardCheck, UserPlus, Users, Wallet, BarChart3,
+  FileText, ClipboardCheck, UserPlus, Users, Wallet, BarChart3,
   Video, X, Send, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
@@ -368,9 +368,9 @@ const BoardManagement: React.FC = () => {
     setShowPostModal(true);
   };
 
-  const handleSubmitPost = async (asDraft = false) => {
+  const handleSubmitPost = async () => {
     if (!form.title.trim()) { alert(t.titleRequired); return; }
-    const status = asDraft ? 'DRAFT' : 'PUBLISHED';
+    const status = 'PUBLISHED';
     if (editingPost) {
       await fetch(`${API_BASE}/board/post`, {
         method: 'PUT',
@@ -643,7 +643,6 @@ const BoardManagement: React.FC = () => {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                         {post.is_pinned === 'Y' && <Pin size={14} color={DARK_GREEN} />}
-                        {post.status === 'DRAFT' && <span style={{ fontSize: 11, background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{t.draftBadge}</span>}
                       </div>
                       <h3 style={{ fontSize: 15, fontWeight: 700, color: textColor, margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
                       <p style={{ fontSize: 13, color: subText, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{post.content}</p>
@@ -751,24 +750,13 @@ const BoardManagement: React.FC = () => {
                 <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.contentLabel}</label>
                 <textarea rows={10} placeholder={t.contentPlaceholder} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} />
               </div>
-              <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.attachmentLabel}</label>
-                <div style={{ border: `2px dashed ${BORDER_GREEN}`, borderRadius: 12, padding: 18, textAlign: 'center' }}>
-                  <Paperclip size={24} color={DARK_GREEN} style={{ margin: '0 auto 6px' }} />
-                  <p style={{ fontSize: 13, color: subText }}>{t.attachDragHint}</p>
-                  <button style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', marginTop: 8 }}>{t.selectFile}</button>
-                </div>
-              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input type="checkbox" id="pinPost" checked={form.is_pinned === 'Y'} onChange={e => setForm(f => ({ ...f, is_pinned: e.target.checked ? 'Y' : 'N' }))} style={{ width: 16, height: 16, accentColor: GREEN }} />
                 <label htmlFor="pinPost" style={{ fontSize: 14, fontWeight: 600, color: textColor }}>{t.pinPost}</label>
               </div>
               <div style={{ display: 'flex', gap: 10, paddingTop: 8, borderTop: `1px solid ${LIGHT_GREEN}` }}>
-                <button onClick={() => handleSubmitPost(false)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <button onClick={handleSubmitPost} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                   <CheckCircle size={16} />{t.publishBtn}
-                </button>
-                <button onClick={() => handleSubmitPost(true)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                  <Edit size={16} />{t.saveDraft}
                 </button>
                 <button onClick={() => setShowPostModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{t.cancelBtn}</button>
               </div>
