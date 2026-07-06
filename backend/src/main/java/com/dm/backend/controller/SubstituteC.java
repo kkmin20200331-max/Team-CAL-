@@ -2,6 +2,7 @@ package com.dm.backend.controller;
 
 import com.dm.backend.service.SubstituteService;
 import com.dm.backend.vo.SubstituteApplicationVO;
+import com.dm.backend.vo.SubstituteCalendarVO;
 import com.dm.backend.vo.SubstituteHistoryVO;
 import com.dm.backend.vo.SubstitutePostVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,6 +111,14 @@ public class SubstituteC {
             @RequestParam String id
     ) {
         substituteService.cancelApplication(id);
+    }
+
+    // 내 지원 내역 + shift 정보 (달력용)
+    @GetMapping("/staff/calendar")
+    public List<SubstituteCalendarVO> getMyApplicationsWithShiftInfo(
+            @RequestParam String user_id
+    ) {
+        return substituteService.getMyApplicationsWithShiftInfo(user_id);
     }
 
     // 내 지원 내역 조회

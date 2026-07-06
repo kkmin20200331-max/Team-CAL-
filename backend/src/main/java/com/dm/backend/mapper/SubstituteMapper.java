@@ -1,6 +1,7 @@
 package com.dm.backend.mapper;
 
 import com.dm.backend.vo.SubstituteApplicationVO;
+import com.dm.backend.vo.SubstituteCalendarVO;
 import com.dm.backend.vo.SubstituteHistoryVO;
 import com.dm.backend.vo.SubstitutePostVO;
 import org.apache.ibatis.annotations.*;
@@ -72,7 +73,7 @@ public interface SubstituteMapper {
     );
 
     @Update("""
-            UPDATE substitute_application
+            UPDATE /*+ NO_PARALLEL(substitute_application) */ substitute_application
             SET status = 'REJECTED'
             WHERE substitute_post_id = #{post_id}
             AND id != #{approved_application_id}
@@ -248,6 +249,28 @@ public interface SubstituteMapper {
             @Param("status") String status
     );
 
+
+    // 내 지원 내역 + shift 정보 (달력 표시용)
+    @Select("""
+            SELECT
+              sa.id            AS application_id,
+              sa.status        AS application_status,
+              sa.substitute_post_id,
+              sp.shift_id,
+              COALESCE(s.store_id, sp.store_id) AS store_id,
+              sp.reason,
+              s.work_date,
+              s.start_at,
+              s.end_at
+            FROM substitute_application sa
+            JOIN substitute_post sp ON sa.substitute_post_id = sp.id
+            LEFT JOIN shift s ON sp.shift_id = s.id
+            WHERE sa.applicant_user_id = #{user_id}
+            ORDER BY sa.applied_at DESC
+            """)
+    List<SubstituteCalendarVO> getMyApplicationsWithShiftInfo(
+            @Param("user_id") String user_id
+    );
 
     //대타모집글 조회
     @Select("""

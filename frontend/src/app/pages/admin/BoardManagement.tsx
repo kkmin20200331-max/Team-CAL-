@@ -290,7 +290,7 @@ const BoardManagement: React.FC = () => {
   const handleCreateBoard = async () => {
     const name = boardNameInput.trim();
     if (!name) {
-      alert('탭 이름을 입력해주세요.');
+      alert(t.tabNameRequired);
       return;
     }
 
@@ -312,7 +312,7 @@ const BoardManagement: React.FC = () => {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        alert(data?.message || '탭 추가에 실패했습니다.');
+        alert(data?.message || t.tabAddFailed);
         return;
       }
 
@@ -515,7 +515,7 @@ const BoardManagement: React.FC = () => {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowBoardModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                <Plus size={16} />탭 추가
+                <Plus size={16} />{t.addTab}
               </button>
 
               <button onClick={openCreateModal} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
@@ -526,7 +526,7 @@ const BoardManagement: React.FC = () => {
 
           {/* 게시판 탭 */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-            {[{ id: '__all__', name: '전체' }, ...boards].map(b => (
+            {[{ id: '__all__', name: t.allBoards }, ...boards].map(b => (
               <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
                 {b.name}
                 {b.id !== '__all__' && (
@@ -696,13 +696,13 @@ const BoardManagement: React.FC = () => {
           <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 420 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Plus size={18} />탭 추가
+                <Plus size={18} />{t.addTab}
               </h2>
               <button onClick={() => setShowBoardModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>탭 이름</label>
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.tabNameLabel}</label>
                 <input
                   type="text"
                   placeholder="예: 업무 지시"

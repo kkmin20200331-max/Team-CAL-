@@ -272,10 +272,19 @@ const DailySchedule: React.FC = () => {
     }
   };
 
-  const handleContact = (user_id: string) => {
-    const phone = getEmployeePhone(user_id);
-    if (phone) window.location.href = `tel:${phone}`;
-    else alert(t.noPhone);
+  const handleContact = async (user_id: string, name: string) => {
+    if (!user_id) return;
+    const message = `안녕하세요 ${name}님, 근무 관련하여 연락드립니다.`;
+    try {
+      const res = await axiosInstance.post('/line/send', { user_id, message });
+      if (res.status === 200) alert(`${name}님에게 라인 메시지를 전송했습니다.`);
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        alert(`${name}님은 라인 계정이 연동되어 있지 않습니다.`);
+      } else {
+        alert('메시지 전송에 실패했습니다.');
+      }
+    }
   };
 
   // 선민 수정 (2026-07-06): 휴가 신청 최종 승인 시(VACANT) 및 휴가 대기(LEAVE_PENDING) 상태일 때 일별 근무표에서 상태 뱃지를 올바르게 표출하기 위해 매핑 추가
@@ -565,7 +574,7 @@ const DailySchedule: React.FC = () => {
                       </div>
                       <button onClick={(e) => { e.stopPropagation(); openEditModal(shift); }} style={{ width: '100%', marginTop: 8, padding: '6px 0', background: GREEN, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>{t.editBtn}</button>
                       <div style={{ position: 'absolute', left: 10, right: 10, bottom: 8, display: 'flex', gap: 6 }}>
-                        <button onClick={(e) => { e.stopPropagation(); handleContact(shift.user_id); }} style={{ flex: 1, padding: '5px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, fontSize: 13, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.contactBtn}</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleContact(shift.user_id, getEmployeeName(shift.user_id)); }} style={{ flex: 1, padding: '5px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, fontSize: 13, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.contactBtn}</button>
                         <button onClick={(e) => { e.stopPropagation(); setDeleteModalShift(shift); }} style={{ padding: '5px 9px', background: 'none', border: '1px solid #fca5a5', borderRadius: 8, color: '#ef4444', cursor: 'pointer' }}><Trash2 size={13} /></button>
                       </div>
                     </div>

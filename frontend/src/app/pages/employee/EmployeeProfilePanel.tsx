@@ -142,7 +142,7 @@ export default function EmployeeProfilePanel() {
       const response = await axiosInstance.post(
         `/users/${currentUser.id}/profile-image`,
         formData,
-        { headers: { "Content-Type": "multipart/form-data" } },
+        { headers: { "Content-Type": "multipart/form-data" }, timeout: 60000 },
       );
       const url = response.data?.profile_image;
       setProfileImage(url);
