@@ -356,7 +356,7 @@ export default function SubstituteApplicationsPreview() {
                           {extractRequestDate(post.reason)}
                         </h3>
                         <p style={{ margin: "4px 0 0", color: subTextColor, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          모집글 ID {post.id}
+                          요청자: {users[post.requester_user_id]?.name || "관리자"} ({users[post.requester_user_id]?.username || "admin"})
                         </p>
                       </div>
                     </div>
