@@ -87,6 +87,7 @@ const DailySchedule: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [editingShift, setEditingShift] = useState<ShiftVO | null>(null);
+  const [deleteModalShift, setDeleteModalShift] = useState<ShiftVO | null>(null);
   const [form, setForm] = useState({
     user_id: "",
     start_time: "09:00",
@@ -243,10 +244,30 @@ const DailySchedule: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t.confirmDelete)) return;
+  const handleDeleteOnly = async (id: string) => {
     try {
       await axiosInstance.delete("/shift", { params: { id } });
+      setDeleteModalShift(null);
+      fetchShifts();
+    } catch {
+      alert(t.errDelete);
+    }
+  };
+
+  const handleDeleteFuture = async (shift: ShiftVO) => {
+    try {
+      const workDate = typeof shift.work_date === 'string'
+        ? shift.work_date.slice(0, 10)
+        : new Date(shift.work_date).toISOString().slice(0, 10);
+      await axiosInstance.delete("/shift/future", {
+        params: {
+          user_id: shift.user_id,
+          store_id: shift.store_id,
+          weekday: getWeekdayCode(workDate),
+          from_date: workDate,
+        },
+      });
+      setDeleteModalShift(null);
       fetchShifts();
     } catch {
       alert(t.errDelete);
@@ -505,7 +526,7 @@ const DailySchedule: React.FC = () => {
                       <button onClick={(e) => { e.stopPropagation(); openEditModal(shift); }} style={{ width: '100%', marginTop: 8, padding: '6px 0', background: GREEN, border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>{t.editBtn}</button>
                       <div style={{ position: 'absolute', left: 10, right: 10, bottom: 8, display: 'flex', gap: 6 }}>
                         <button onClick={(e) => { e.stopPropagation(); handleContact(shift.user_id); }} style={{ flex: 1, padding: '5px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 8, fontSize: 13, fontWeight: 600, color: DARK_GREEN, cursor: 'pointer' }}>{t.contactBtn}</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDelete(shift.id); }} style={{ padding: '5px 9px', background: 'none', border: '1px solid #fca5a5', borderRadius: 8, color: '#ef4444', cursor: 'pointer' }}><Trash2 size={13} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); setDeleteModalShift(shift); }} style={{ padding: '5px 9px', background: 'none', border: '1px solid #fca5a5', borderRadius: 8, color: '#ef4444', cursor: 'pointer' }}><Trash2 size={13} /></button>
                       </div>
                     </div>
                   );
@@ -571,13 +592,50 @@ const DailySchedule: React.FC = () => {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               {modalMode === 'edit' && (
-                <button onClick={() => { handleDelete(editingShift!.id); setModalOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 16px', background: 'none', border: '1px solid #fca5a5', borderRadius: 10, color: '#ef4444', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={() => { setModalOpen(false); setDeleteModalShift(editingShift); }} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '10px 16px', background: 'none', border: '1px solid #fca5a5', borderRadius: 10, color: '#ef4444', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                   <Trash2 size={13} />{t.deleteBtn}
                 </button>
               )}
               <button onClick={() => setModalOpen(false)} style={{ flex: 1, padding: '12px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>{t.cancelBtn}</button>
               <button onClick={handleSubmit} style={{ flex: 1, padding: '12px 0', background: `linear-gradient(to right, ${GREEN}, ${DARK_GREEN})`, border: 'none', borderRadius: 54, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
                 {modalMode === 'add' ? t.addBtn : t.saveBtn}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 삭제 선택 모달 */}
+      {deleteModalShift && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setDeleteModalShift(null)}>
+          <div style={{ background: isDark ? '#1e1e1e' : '#fff', borderRadius: 20, padding: '28px 24px', width: 340, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <Trash2 size={20} color="#ef4444" />
+              <span style={{ fontSize: 18, fontWeight: 700, color: isDark ? '#fff' : '#111' }}>근무 삭제</span>
+            </div>
+            <p style={{ fontSize: 14, color: isDark ? '#aaa' : '#666', marginBottom: 24, lineHeight: 1.5 }}>
+              이 근무만 삭제하거나, 같은 요일의 이후 모든 근무를 삭제할 수 있습니다.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => handleDeleteOnly(deleteModalShift.id)}
+                style={{ padding: '12px 0', borderRadius: 12, border: '1px solid #fca5a5', background: 'none', color: '#ef4444', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+              >
+                이 근무만 삭제
+              </button>
+              <button
+                onClick={() => handleDeleteFuture(deleteModalShift)}
+                style={{ padding: '12px 0', borderRadius: 12, border: 'none', background: '#ef4444', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+              >
+                이후 같은 요일 근무 모두 삭제
+              </button>
+              <button
+                onClick={() => setDeleteModalShift(null)}
+                style={{ padding: '10px 0', borderRadius: 12, border: `1px solid ${isDark ? '#2a2a2a' : '#e0e0e0'}`, background: 'none', color: isDark ? '#aaa' : '#666', fontSize: 14, cursor: 'pointer' }}
+              >
+                취소
               </button>
             </div>
           </div>

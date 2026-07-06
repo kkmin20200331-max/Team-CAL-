@@ -88,6 +88,20 @@ public interface FixedscheduleMapper {
             String id
     );
 
+    // 고정 스케줄 비활성화 (user_id + store_id + weekday 기준)
+    @Update("""
+            UPDATE fixed_schedule
+            SET active = 'N'
+            WHERE user_id = #{user_id}
+            AND store_id = #{store_id}
+            AND weekday = #{weekday}
+            """)
+    void deactivateFixedSchedule(
+            @Param("user_id") String user_id,
+            @Param("store_id") String store_id,
+            @Param("weekday") String weekday
+    );
+
     // 동일 데이터 존재 여부
     @Select("""
             SELECT COUNT(*)

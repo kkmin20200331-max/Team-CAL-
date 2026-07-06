@@ -133,6 +133,17 @@ public class ShiftService {
     }
 
     @Transactional
+    public void delFutureShifts(
+            String user_id,
+            String store_id,
+            String weekday,
+            String from_date
+    ) {
+        shiftMapper.delFutureShiftsByWeekday(user_id, store_id, weekday, from_date);
+        fixedscheduleMapper.deactivateFixedSchedule(user_id, store_id, weekday);
+    }
+
+    @Transactional
     public void generateAutomatedShifts(
             String store_id,
             String start_date,
