@@ -170,6 +170,20 @@ public class LeaveRequestService {
         }
     }
 
+    private void sendLeaveRequestSubmittedToRequester(LeaveRequestVO vo) {
+        try {
+            String lineUserId = userLineService.getLineUserIdByUserId(vo.getUser_id());
+
+            if (lineUserId == null) {
+                return;
+            }
+
+            lineService.sendMessage(lineUserId, "휴무 신청이 접수되었습니다.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Transactional
     public void cancelLeaveRequest(String id) {
 
