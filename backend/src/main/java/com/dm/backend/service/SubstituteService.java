@@ -9,6 +9,7 @@ import com.dm.backend.vo.StoreMemberVo;
 import com.dm.backend.vo.SubstituteApplicationVO;
 import com.dm.backend.vo.SubstituteHistoryVO;
 import com.dm.backend.vo.SubstitutePostVO;
+import com.dm.backend.vo.UserLineVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 @Service
 public class SubstituteService {
@@ -32,6 +34,12 @@ public class SubstituteService {
 
     @Autowired
     private UserLineService userLineService;
+
+    @Autowired
+    private UserLanguageService userLanguageService;
+
+    @Autowired
+    private LineMessageTemplateService lineMessageTemplateService;
 
     @Autowired
     private StoreMemberMapper storeMemberMapper;
@@ -50,17 +58,16 @@ public class SubstituteService {
         return substituteMapper.getApplicationList(post_id);
     }
 
-    // application_id 하나로 대타 승인 처리 (shift 없는 경우 포함)
     @Transactional
     public void approveByApplicationId(String applicationId, String approvedBy) {
         SubstituteApplicationVO application = substituteMapper.getApplication(applicationId);
         if (application == null) {
-            throw new IllegalArgumentException("존재하지 않는 대타 지원입니다.");
+            throw new IllegalArgumentException("Substitute application not found.");
         }
 
         SubstitutePostVO post = substituteMapper.getPost(application.getSubstitute_post_id());
         if (post == null) {
-            throw new IllegalArgumentException("대타 모집글을 찾을 수 없습니다.");
+            throw new IllegalArgumentException("Substitute post not found.");
         }
 
         String shiftId = post.getShift_id();
@@ -71,11 +78,9 @@ public class SubstituteService {
 
         SubstituteHistoryVO history = new SubstituteHistoryVO();
         history.setApproved_by(approvedBy);
-
         approveSubstitute(shiftId, application.getApplicant_user_id(), history);
     }
 
-    // 대타 승인
     @Transactional
     public void approveSubstitute(
             String shift_id,
@@ -85,15 +90,14 @@ public class SubstituteService {
 
         if (shift_id == null || shift_id.isBlank()
                 || selectedUserId == null || selectedUserId.isBlank()) {
-            throw new IllegalArgumentException("대타 승인에 필요한 근무 ID 또는 직원 ID가 없습니다.");
+            throw new IllegalArgumentException("Shift ID and selected user ID are required.");
         }
 
         if (historyVO == null) {
             historyVO = new SubstituteHistoryVO();
         }
 
-        SubstitutePostVO post =
-                substituteMapper.getOpenPostByShiftId(shift_id);
+        SubstitutePostVO post = substituteMapper.getOpenPostByShiftId(shift_id);
 
         if (post != null) {
             fillHistoryFromPost(historyVO, post, shift_id, selectedUserId);
@@ -108,14 +112,14 @@ public class SubstituteService {
 
         sendLineToUser(
                 selectedUserId,
-                "[대타 승인]\n신청하신 대타 근무가 승인되었습니다.\n앱에서 근무 일정을 확인해주세요."
+                lineMessageTemplateService::substituteApprovedForApplicant
         );
 
         if (historyVO.getOriginal_user_id() != null
                 && !historyVO.getOriginal_user_id().equals(selectedUserId)) {
             sendLineToUser(
                     historyVO.getOriginal_user_id(),
-                    "[대타 승인]\n요청하신 대타 근무자가 확정되었습니다.\n앱에서 내용을 확인해주세요."
+                    lineMessageTemplateService::substituteApprovedForRequester
             );
         }
     }
@@ -127,11 +131,9 @@ public class SubstituteService {
             SubstituteHistoryVO historyVO
     ) {
 
-        SubstituteApplicationVO application =
-                substituteMapper.getApplication(applicationId);
-
+        SubstituteApplicationVO application = substituteMapper.getApplication(applicationId);
         if (application == null) {
-            throw new IllegalArgumentException("존재하지 않는 대타 지원입니다.");
+            throw new IllegalArgumentException("Substitute application not found.");
         }
 
         String nextStatus = status == null || status.isBlank()
@@ -144,18 +146,16 @@ public class SubstituteService {
         }
 
         if (!"APPROVED".equals(nextStatus)) {
-            throw new IllegalArgumentException("지원 처리 상태가 올바르지 않습니다.");
+            throw new IllegalArgumentException("Unsupported substitute application status.");
         }
 
-        SubstitutePostVO post =
-                substituteMapper.getPost(application.getSubstitute_post_id());
-
+        SubstitutePostVO post = substituteMapper.getPost(application.getSubstitute_post_id());
         if (post == null) {
-            throw new IllegalArgumentException("대타 모집글을 찾을 수 없습니다.");
+            throw new IllegalArgumentException("Substitute post not found.");
         }
 
         if (post.getShift_id() == null || post.getShift_id().isBlank()) {
-            throw new IllegalStateException("근무가 연결되지 않은 긴급 대타 요청은 근무표를 자동 변경할 수 없습니다.");
+            throw new IllegalStateException("Emergency substitute requests are approved by application ID only.");
         }
 
         if (historyVO == null) {
@@ -179,16 +179,11 @@ public class SubstituteService {
     @Transactional
     public void cancelPost(String post_id) {
 
-        String shift_id =
-                substituteMapper.getShiftIdByPostId(post_id);
-
+        String shift_id = substituteMapper.getShiftIdByPostId(post_id);
         substituteMapper.cancelPost(post_id);
 
         if (shift_id != null && !shift_id.isEmpty()) {
-            substituteMapper.updateShiftStatus(
-                    shift_id,
-                    "SCHEDULED"
-            );
+            substituteMapper.updateShiftStatus(shift_id, "SCHEDULED");
         }
     }
 
@@ -216,11 +211,7 @@ public class SubstituteService {
         notifyAdminsForSubstitutePost(postVO);
 
         if (postVO.getShift_id() != null) {
-            substituteMapper.updateShiftStatus(
-                    postVO.getShift_id(),
-                    "SUBSTITUTE_OPEN"
-            );
-
+            substituteMapper.updateShiftStatus(postVO.getShift_id(), "SUBSTITUTE_OPEN");
             notifyAvailableStaffForShiftPost(postVO);
             return;
         }
@@ -230,23 +221,17 @@ public class SubstituteService {
 
     private void notifyAdminsForSubstitutePost(SubstitutePostVO postVO) {
 
-        String reason =
-                postVO.getReason() == null || postVO.getReason().isBlank()
-                        ? "미입력"
-                        : postVO.getReason();
+        String reason = defaultText(postVO.getReason(), "N/A");
 
         sendLineToAdmins(
                 postVO.getStore_id(),
-                "[대타 신청]\n새로운 대타 요청이 등록되었습니다.\n사유: "
-                        + reason
-                        + "\n앱에서 대타 요청을 확인해주세요."
+                language -> lineMessageTemplateService.substituteRequest(language, reason)
         );
     }
 
     private void notifyAvailableStaffForShiftPost(SubstitutePostVO postVO) {
 
         ShiftVO shift = shiftMapper.getShift(postVO.getShift_id());
-
         if (shift == null || shift.getWork_date() == null) {
             return;
         }
@@ -256,11 +241,9 @@ public class SubstituteService {
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
 
-        String day = workDate.getDayOfWeek().name();
-
         List<StoreMemberVo> members = storeMemberMapper.getAvailableMembersByDay(
                 postVO.getStore_id(),
-                day
+                workDate.getDayOfWeek().name()
         );
 
         if (members == null) {
@@ -275,7 +258,7 @@ public class SubstituteService {
 
             sendLineToUser(
                     member.getUser_id(),
-                    "[대타 모집]\n새로운 대타 모집글이 등록되었습니다.\n앱에서 확인해주세요."
+                    lineMessageTemplateService::substituteRecruitment
             );
         }
     }
@@ -283,13 +266,11 @@ public class SubstituteService {
     private void notifyAvailableStaffForEmergencyPost(SubstitutePostVO postVO) {
 
         String dateStr = extractDateFromReason(postVO.getReason());
-
         if (dateStr == null) {
             return;
         }
 
-        List<ShiftVO> activeShifts =
-                shiftMapper.getShiftList(postVO.getStore_id(), dateStr, dateStr);
+        List<ShiftVO> activeShifts = shiftMapper.getShiftList(postVO.getStore_id(), dateStr, dateStr);
 
         Set<String> workingUserIds = new HashSet<>();
         if (activeShifts != null) {
@@ -300,9 +281,7 @@ public class SubstituteService {
             }
         }
 
-        List<StoreMemberVo> allMembers =
-                storeMemberMapper.getStoreMembers(postVO.getStore_id());
-
+        List<StoreMemberVo> allMembers = storeMemberMapper.getStoreMembers(postVO.getStore_id());
         if (allMembers == null) {
             return;
         }
@@ -320,25 +299,17 @@ public class SubstituteService {
             createSubstituteNotification(userId, postVO, dateStr);
             sendLineToUser(
                     userId,
-                    "[긴급 대타 요청]\n" + dateStr + " 대타 근무가 가능한지 확인해주세요.\n앱에서 내용을 확인할 수 있습니다."
+                    language -> lineMessageTemplateService.emergencySubstituteRecruitment(language, dateStr)
             );
         }
     }
 
     @Transactional
-    public void apply(
-            SubstituteApplicationVO applicationVO
-    ) {
-        if (applicationVO.getId() == null || applicationVO.getId().trim().isEmpty()) {
-            String uniquePart = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 6);
-            applicationVO.setId("SA_" + (System.currentTimeMillis() / 1000) + uniquePart);
-        }
-        if (applicationVO.getApplied_at() == null) {
-            applicationVO.setApplied_at(LocalDateTime.now());
-        }
+    public void apply(SubstituteApplicationVO applicationVO) {
 
-        if (applicationVO.getId() == null || applicationVO.getId().isBlank()) {
-            applicationVO.setId("SA_" + UUID.randomUUID().toString().replace("-", "").substring(0, 15));
+        if (applicationVO.getId() == null || applicationVO.getId().trim().isEmpty()) {
+            String uniquePart = UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+            applicationVO.setId("SA_" + (System.currentTimeMillis() / 1000) + uniquePart);
         }
 
         if (applicationVO.getStatus() == null || applicationVO.getStatus().isBlank()) {
@@ -351,93 +322,71 @@ public class SubstituteService {
 
         substituteMapper.apply(applicationVO);
 
-        SubstitutePostVO post =
-                substituteMapper.getPost(
-                        applicationVO.getSubstitute_post_id()
-                );
-
+        SubstitutePostVO post = substituteMapper.getPost(applicationVO.getSubstitute_post_id());
         if (post == null) {
             return;
         }
 
         sendLineToAdmins(
                 post.getStore_id(),
-                "[대타 지원]\n새로운 대타 지원자가 등록되었습니다.\n앱에서 지원자 목록을 확인해주세요."
+                lineMessageTemplateService::substituteApplication
         );
     }
 
     @Transactional
     public void cancelApplication(String id) {
 
-        SubstituteApplicationVO application =
-                substituteMapper.getApplication(id);
-
+        SubstituteApplicationVO application = substituteMapper.getApplication(id);
         if (application == null) {
-            throw new IllegalArgumentException("존재하지 않는 신청입니다.");
+            throw new IllegalArgumentException("Substitute application not found.");
         }
 
         if (!"PENDING".equals(application.getStatus())) {
-            throw new IllegalStateException("대기 중인 신청만 취소할 수 있습니다.");
+            throw new IllegalStateException("Only pending substitute applications can be cancelled.");
         }
 
         substituteMapper.cancelApplication(id);
 
-        SubstitutePostVO post =
-                substituteMapper.getPost(
-                        application.getSubstitute_post_id()
-                );
-
+        SubstitutePostVO post = substituteMapper.getPost(application.getSubstitute_post_id());
         if (post == null) {
             return;
         }
 
         sendLineToAdmins(
                 post.getStore_id(),
-                "[대타 지원 취소]\n대타 지원자 1명이 신청을 취소했습니다.\n앱에서 확인해주세요."
+                lineMessageTemplateService::substituteApplicationCancelled
         );
     }
 
-    public List<SubstituteApplicationVO> getMyApplications(
-            String user_id,
-            String status
-    ) {
+    public List<SubstituteApplicationVO> getMyApplications(String user_id, String status) {
 
         if (status == null || status.isBlank()) {
             return substituteMapper.getMyApplications(user_id);
         }
 
-        return substituteMapper.getMyApplicationsByStatus(
-                user_id,
-                status
-        );
+        return substituteMapper.getMyApplicationsByStatus(user_id, status);
     }
 
-    public List<SubstitutePostVO> getMyPosts(
-            String user_id,
-            String status
-    ) {
+    public List<SubstitutePostVO> getMyPosts(String user_id, String status) {
 
         if (status == null || status.isBlank()) {
             return substituteMapper.getMyPosts(user_id);
         }
 
-        return substituteMapper.getMyPostsByStatus(
-                user_id,
-                status
-        );
+        return substituteMapper.getMyPostsByStatus(user_id, status);
     }
 
-    private void sendLineToUser(String userId, String message) {
+    private void sendLineToUser(String userId, Function<String, String> messageFactory) {
 
         try {
-            String lineUserId =
-                    userLineService.getLineUserIdByUserId(userId);
+            String lineUserId = userLineService.getLineUserIdByUserId(userId);
 
             if (lineUserId == null) {
                 return;
             }
 
-            lineService.sendMessage(lineUserId, message);
+            String language = userLanguageService.getLanguage(userId);
+            lineService.sendMessage(lineUserId, messageFactory.apply(language));
         } catch (Exception e) {
             System.err.println("LINE send failed for user_id " + userId + ": " + e.getMessage());
         }
@@ -498,10 +447,7 @@ public class SubstituteService {
         }
     }
 
-    private void closePostAfterApproval(
-            SubstitutePostVO post,
-            String selectedUserId
-    ) {
+    private void closePostAfterApproval(SubstitutePostVO post, String selectedUserId) {
 
         if (post == null) {
             return;
@@ -532,34 +478,37 @@ public class SubstituteService {
 
         sendLineToUser(
                 application.getApplicant_user_id(),
-                "[대타 승인]\n신청하신 긴급 대타 요청이 승인되었습니다.\n앱에서 내용을 확인해주세요."
+                lineMessageTemplateService::substituteApprovedForApplicant
         );
 
         if (post.getRequester_user_id() != null
                 && !post.getRequester_user_id().equals(application.getApplicant_user_id())) {
             sendLineToUser(
                     post.getRequester_user_id(),
-                    "[대타 승인]\n요청하신 긴급 대타 근무자가 확정되었습니다.\n앱에서 내용을 확인해주세요."
+                    lineMessageTemplateService::substituteApprovedForRequester
             );
         }
     }
 
-    private void sendLineToAdmins(String storeId, String message) {
+    private void sendLineToAdmins(String storeId, Function<String, String> messageFactory) {
 
         try {
-            List<String> adminLineIds =
-                    userLineService.getAdminLineUserIdsByStoreId(storeId);
+            List<UserLineVO> adminTargets = userLineService.getAdminLineTargetsByStoreId(storeId);
 
-            System.out.println("Admin LINE target count for store_id " + storeId + ": " + adminLineIds.size());
+            System.out.println("Admin LINE target count for store_id " + storeId + ": " + adminTargets.size());
 
-            if (adminLineIds.isEmpty()) {
+            if (adminTargets.isEmpty()) {
                 System.out.println("No admin LINE user found for store_id: " + storeId);
                 return;
             }
 
-            for (String adminLineId : adminLineIds) {
+            for (UserLineVO adminTarget : adminTargets) {
                 try {
-                    lineService.sendMessage(adminLineId, message);
+                    String language = userLanguageService.normalize(adminTarget.getLanguage());
+                    lineService.sendMessage(
+                            adminTarget.getLine_user_id(),
+                            messageFactory.apply(language)
+                    );
                 } catch (Exception e) {
                     System.err.println("LINE send failed for admin line user: " + e.getMessage());
                 }
@@ -569,11 +518,7 @@ public class SubstituteService {
         }
     }
 
-    private void createSubstituteNotification(
-            String userId,
-            SubstitutePostVO postVO,
-            String dateStr
-    ) {
+    private void createSubstituteNotification(String userId, SubstitutePostVO postVO, String dateStr) {
 
         NotificationVO notification = new NotificationVO();
         notification.setId("NOTI_" + UUID.randomUUID().toString().replace("-", ""));
@@ -616,5 +561,9 @@ public class SubstituteService {
 
         String dateStr = reason.substring(start, end).trim();
         return dateStr.matches("\\d{4}-\\d{2}-\\d{2}") ? dateStr : null;
+    }
+
+    private String defaultText(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 }

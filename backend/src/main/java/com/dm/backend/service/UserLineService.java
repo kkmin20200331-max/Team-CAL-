@@ -189,4 +189,38 @@ public class UserLineService {
             return List.of();
         }
     }
+
+    public List<UserLineVO> getOwnerLineTargetsByShiftId(String shift_id) {
+
+        try {
+            return userLineMapper.getOwnerLineTargetsByShiftId(shift_id);
+        } catch (Exception e) {
+            System.err.println("Admin LINE target lookup by shift_id failed: " + shift_id + " / " + e.getMessage());
+            return getOwnerLineUserIdsByShiftId(shift_id).stream()
+                    .map(this::toDefaultLanguageTarget)
+                    .toList();
+        }
+    }
+
+    public List<UserLineVO> getAdminLineTargetsByStoreId(String store_id) {
+
+        try {
+            return userLineMapper.getAdminLineTargetsByStoreId(store_id);
+        } catch (Exception e) {
+            System.err.println("Admin LINE target lookup by store_id failed: " + store_id + " / " + e.getMessage());
+            return getAdminLineUserIdsByStoreId(store_id).stream()
+                    .map(this::toDefaultLanguageTarget)
+                    .toList();
+        }
+    }
+
+    private UserLineVO toDefaultLanguageTarget(String lineUserId) {
+
+        UserLineVO target = new UserLineVO();
+        target.setLine_user_id(lineUserId);
+        target.setFollow_yn("Y");
+        target.setLanguage("ko");
+
+        return target;
+    }
 }

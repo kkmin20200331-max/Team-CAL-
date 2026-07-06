@@ -195,6 +195,31 @@ public interface UserLineMapper {
     List<String> getOwnerLineUserIdsByShiftId(String shift_id);
 
     @Select("""
+        SELECT DISTINCT
+            sm.USER_ID AS user_id,
+            ul.LINE_USER_ID AS line_user_id,
+            ul.FOLLOW_YN AS follow_yn,
+            lang.LANGUAGE AS language
+        FROM SHIFT s
+        JOIN STORE_MEMBER sm
+            ON sm.STORE_ID = s.STORE_ID
+        LEFT JOIN USERS u
+            ON u.ID = sm.USER_ID
+        JOIN USER_LINE ul
+            ON TRIM(ul.USER_ID) = TRIM(sm.USER_ID)
+        LEFT JOIN USER_LANGUAGE lang
+            ON TRIM(lang.USER_ID) = TRIM(sm.USER_ID)
+        WHERE TRIM(s.ID) = TRIM(#{shift_id})
+        AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
+        AND (
+            UPPER(TRIM(sm.MEMBER_ROLE)) IN ('ADMIN', 'OWNER', 'MANAGER')
+            OR UPPER(TRIM(u.ROLE)) IN ('ADMIN', 'MASTER')
+        )
+        AND UPPER(TRIM(ul.FOLLOW_YN)) = 'Y'
+    """)
+    List<UserLineVO> getOwnerLineTargetsByShiftId(String shift_id);
+
+    @Select("""
         SELECT DISTINCT ul.LINE_USER_ID
         FROM STORE_MEMBER sm
         LEFT JOIN USERS u
@@ -210,6 +235,29 @@ public interface UserLineMapper {
         AND UPPER(TRIM(ul.FOLLOW_YN)) = 'Y'
     """)
     List<String> getAdminLineUserIdsByStoreId(String store_id);
+
+    @Select("""
+        SELECT DISTINCT
+            sm.USER_ID AS user_id,
+            ul.LINE_USER_ID AS line_user_id,
+            ul.FOLLOW_YN AS follow_yn,
+            lang.LANGUAGE AS language
+        FROM STORE_MEMBER sm
+        LEFT JOIN USERS u
+            ON u.ID = sm.USER_ID
+        JOIN USER_LINE ul
+            ON TRIM(ul.USER_ID) = TRIM(sm.USER_ID)
+        LEFT JOIN USER_LANGUAGE lang
+            ON TRIM(lang.USER_ID) = TRIM(sm.USER_ID)
+        WHERE TRIM(sm.STORE_ID) = TRIM(#{store_id})
+        AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
+        AND (
+            UPPER(TRIM(sm.MEMBER_ROLE)) IN ('ADMIN', 'OWNER', 'MANAGER')
+            OR UPPER(TRIM(u.ROLE)) IN ('ADMIN', 'MASTER')
+        )
+        AND UPPER(TRIM(ul.FOLLOW_YN)) = 'Y'
+    """)
+    List<UserLineVO> getAdminLineTargetsByStoreId(String store_id);
 
 
 }
