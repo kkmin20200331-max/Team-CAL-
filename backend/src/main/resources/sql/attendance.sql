@@ -35,11 +35,3 @@ CREATE TABLE ATTENDANCE_QR (
 
 );
 
-select * from ATTENDANCE;
-
-commit;
-
-delete from ATTENDANCE where store_id = 'V1StGXR8_Z5jdHi6B-myT';
-
-
-
