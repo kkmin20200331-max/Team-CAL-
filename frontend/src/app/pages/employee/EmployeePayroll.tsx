@@ -98,7 +98,6 @@ export default function EmployeePayroll() {
   const [historyView, setHistoryView] = useState<
     "monthly" | "weekly" | "daily"
   >("monthly");
-  const [requesting, setRequesting] = useState(false);
   const [activeTab, setActiveTab] = useState<'history' | 'trends'>('history');
 
   useEffect(() => {
@@ -202,35 +201,6 @@ export default function EmployeePayroll() {
     );
   }, [selectedMonth]);
   const isCurrentYear = historyYear >= new Date().getFullYear();
-
-  const thisWeekPay = useMemo(() => {
-    if (!memberInfo?.pay_amount || memberInfo.pay_type !== "HOURLY") return 0;
-    if (!isCurrentMonth) return 0;
-    const now = new Date();
-    const dayNum = now.getDay();
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - (dayNum === 0 ? 6 : dayNum - 1));
-    mon.setHours(0, 0, 0, 0);
-    const monStr = toDateStr(mon);
-    const sunStr = toDateStr(new Date(mon.getTime() + 6 * 86400000));
-    return assignedShifts
-      .filter((s) => {
-        const d = getDatePart(s.work_date);
-        return d >= monStr && d <= sunStr;
-      })
-      .reduce(
-        (sum, s) =>
-          sum + calcHours(s.start_at, s.end_at) * memberInfo.pay_amount!,
-        0,
-      );
-  }, [assignedShifts, memberInfo, isCurrentMonth]);
-
-  const handleWeeklyRequest = async () => {
-    setRequesting(true);
-    await new Promise(r => setTimeout(r, 600));
-    alert(`${t.weeklyAdvanceRequest}\n${t.fmtCurrency(thisWeekPay)}`);
-    setRequesting(false);
-  };
 
   const dailyHistory = useMemo(() =>
     history.flatMap(item =>
@@ -443,33 +413,6 @@ export default function EmployeePayroll() {
           )}
         </div>
 
-        {/* ── 주급 선지급 카드 (시급제 + 이번달) ── */}
-        {isCurrentMonth && memberInfo?.pay_type === 'HOURLY' && (
-          <div style={{
-            background: isDark ? '#141414' : 'rgba(255,255,255,0.5)', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`,
-            borderRadius: 26, padding: '16px 20px',
-            boxShadow: '0px 4px 12px rgba(0,162,0,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <div style={{ marginLeft: 15 }}>
-              <p style={{ fontSize: 20, color: txtGreen, marginBottom: 4 }}>{t.thisWeekExpected}</p>
-              <p style={{ fontSize: 25, fontWeight: 800, color: txtGreen }}>{t.fmtCurrency(thisWeekPay)}</p>
-              <p style={{ fontSize: 15, color: '#aaa', marginTop: 4 }}>{t.weeklyNote}</p>
-            </div>
-            <button
-              onClick={handleWeeklyRequest}
-              disabled={requesting || thisWeekPay === 0}
-              style={{
-                background: thisWeekPay === 0 ? '#ccc' : DARK_GREEN,
-                color: '#fff', border: 'none', borderRadius: 54,
-                padding: '12px 20px', fontSize: 15, fontWeight: 600, cursor: thisWeekPay === 0 ? 'default' : 'pointer',
-                marginRight: 15,
-              }}
-            >
-              {requesting ? t.requesting : t.weeklyAdvanceRequest}
-            </button>
-          </div>
-        )}
 
         {/* ── 탭 ── */}
         <div style={{
