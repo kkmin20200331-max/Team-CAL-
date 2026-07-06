@@ -1,5 +1,6 @@
 package com.dm.backend.service;
 
+import com.dm.backend.mapper.AttendanceMapper;
 import com.dm.backend.mapper.FixedscheduleMapper;
 import com.dm.backend.mapper.LeaveRequestMapper;
 import com.dm.backend.mapper.PeopleLogMapper;
@@ -46,6 +47,9 @@ public class ShiftService {
     private ShiftMapper shiftMapper;
 
     @Autowired
+    private AttendanceMapper attendanceMapper;
+
+    @Autowired
     private FixedscheduleMapper fixedscheduleMapper;
 
     @Autowired
@@ -87,7 +91,8 @@ public class ShiftService {
             shiftVO.setWork_date(shiftVO.getStart_at());
         }
 
-        int conflict = shiftMapper.checkShiftConflict(
+        // 선민 수정 (2026-07-06): 수동 등록 시 이미 취소된(cancelled) 근무와는 중복되지 않도록 변경
+        int conflict = shiftMapper.checkShiftConflictActive(
                 shiftVO.getUser_id(),
                 shiftVO.getWork_date(),
                 shiftVO.getStart_at(),
@@ -126,7 +131,8 @@ public class ShiftService {
             shiftVO.setWork_date(shiftVO.getStart_at());
         }
 
-        int conflict = shiftMapper.checkShiftConflictForUpdate(
+        // 선민 수정 (2026-07-06): 수동 수정 시 이미 취소된(cancelled) 근무와는 중복되지 않도록 변경
+        int conflict = shiftMapper.checkShiftConflictForUpdateActive(
                 shiftVO.getId(),
                 shiftVO.getUser_id(),
                 shiftVO.getWork_date(),
@@ -141,7 +147,7 @@ public class ShiftService {
         shiftMapper.updateShift(shiftVO);
     }
 
-    // 선민 수정 (2026-07-06): 고정 스케줄 자동 생성 재생성 버그 및 물리 삭제 방지를 위해 Soft Delete (status = 'cancelled') 로 변경
+    // 선민 수정 (2026-07-06): 고정 스케줄 자동 생성 재생성 버그 및 물리 삭제 방지를 위해 Soft Delete (status = 'cancelled') 로 변경 및 연동된 출퇴근(QR) 기록 삭제
     public void delShift(
             String id
     ) {
@@ -149,6 +155,9 @@ public class ShiftService {
         if (shift != null) {
             shift.setStatus("cancelled");
             shiftMapper.updateShift(shift);
+            
+            // 선민 수정 (2026-07-06): 근무 삭제 시 연동된 출퇴근(QR) 기록도 같이 삭제
+            attendanceMapper.deleteByShiftId(id);
         }
     }
 

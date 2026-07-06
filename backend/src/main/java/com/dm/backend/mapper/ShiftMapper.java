@@ -125,6 +125,42 @@ public interface ShiftMapper {
             @Param("end_at") Date end_at
     );
 
+    // 선민 수정 (2026-07-06): 수동 등록 시 취소된(cancelled) 근무는 중복 검사에서 제외
+    @Select("""
+            SELECT COUNT(*)
+            FROM shift
+            WHERE user_id = #{user_id}
+            AND TRUNC(work_date) = TRUNC(#{work_date})
+            AND start_at < #{end_at}
+            AND end_at > #{start_at}
+            AND status != 'cancelled'
+            """)
+    int checkShiftConflictActive(
+            @Param("user_id") String user_id,
+            @Param("work_date") Date work_date,
+            @Param("start_at") Date start_at,
+            @Param("end_at") Date end_at
+    );
+
+    // 선민 수정 (2026-07-06): 수동 수정 시 취소된(cancelled) 근무는 중복 검사에서 제외
+    @Select("""
+            SELECT COUNT(*)
+            FROM shift
+            WHERE id != #{id}
+            AND user_id = #{user_id}
+            AND TRUNC(work_date) = TRUNC(#{work_date})
+            AND start_at < #{end_at}
+            AND end_at > #{start_at}
+            AND status != 'cancelled'
+            """)
+    int checkShiftConflictForUpdateActive(
+            @Param("id") String id,
+            @Param("user_id") String user_id,
+            @Param("work_date") Date work_date,
+            @Param("start_at") Date start_at,
+            @Param("end_at") Date end_at
+    );
+
 
     // =========================
     // [직원]
