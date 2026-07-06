@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
-  Download,
   LineChart as LineChartIcon,
   RefreshCw,
   Sparkles,
@@ -747,9 +746,6 @@ export default function CustomerAnalytics() {
               >
                 <RefreshCw size={16} style={{ animation: aiLoading ? 'spin 1s linear infinite' : 'none' }} />
                 {aiLoading ? translateAiText('AI 분석 중') : t.refresh}
-              </button>
-              <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                <Download size={16} />{t.report}
               </button>
             </div>
           </div>

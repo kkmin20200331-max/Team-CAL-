@@ -1,7 +1,7 @@
 import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { useTheme } from 'next-themes';
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import EmployeeHeader from './EmployeeHeader';
 import { useNavigate } from 'react-router';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -116,6 +116,7 @@ function AttachmentLink({ name, url, color }: { name: string; url: string; color
   const [href, setHref] = React.useState<string | null>(null);
   React.useEffect(() => {
     if (url.startsWith('SUPABASE:')) {
+      if (!supabase) return;
       const path = url.slice('SUPABASE:'.length);
       supabase.storage.from('documents').createSignedUrl(path, 3600)
         .then(({ data }) => { if (data?.signedUrl) setHref(data.signedUrl); });
@@ -525,6 +526,10 @@ export default function EmployeeBoard() {
   };
 
   const uploadFiles = async (files: File[]): Promise<string[]> => {
+    if (!supabase) {
+      throw new Error('Supabase storage is not configured.');
+    }
+
     const links: string[] = [];
     for (const file of files) {
       const ext = file.name.includes('.') ? `.${file.name.split('.').pop()}` : '';

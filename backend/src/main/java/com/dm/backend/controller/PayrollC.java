@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payroll")
@@ -50,6 +51,28 @@ public class PayrollC {
         return payrollService.calculateStorePayroll(
                 store_id,
                 year_month
+        );
+    }
+
+    @PostMapping("/weekly-request")
+    public Map<String, Object> requestWeeklyPay(
+            @RequestParam String user_id,
+            @RequestParam String store_id,
+            @RequestParam String week_start,
+            @RequestParam String week_end,
+            @RequestParam double amount
+    ) {
+        int notifiedCount = payrollService.requestWeeklyPay(
+                user_id,
+                store_id,
+                week_start,
+                week_end,
+                amount
+        );
+
+        return Map.of(
+                "ok", notifiedCount > 0,
+                "notified_count", notifiedCount
         );
     }
 }
