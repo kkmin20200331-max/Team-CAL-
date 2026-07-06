@@ -102,6 +102,7 @@ export default function EmployeePayroll() {
     "monthly" | "weekly" | "daily"
   >("monthly");
   const [activeTab, setActiveTab] = useState<'history' | 'trends'>('history');
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     if (storeId || !user.id) return;
