@@ -292,10 +292,8 @@ export default function ProfilePanel() {
     return () => { window.clearInterval(timer); window.removeEventListener("focus", fetchUnreadNotifications); };
   }, [currentUser.id]);
 
-  useEffect(() => {
-    if (!open || !currentUser.id) return;
-    setNotifLoading(true);
-    fetchUnreadNotifications();
+  const fetchLeaveData = () => {
+    if (!currentUser.id) return;
     axiosInstance.get("/store", { params: { user_id: currentUser.id } })
       .then(async (res) => {
         const stores: StoreVO[] = Array.isArray(res.data) ? res.data : [];
@@ -411,9 +409,28 @@ export default function ProfilePanel() {
             .catch(() => {});
         }
       })
-      .catch((err) => console.error("[ProfilePanel] 알림 조회 실패:", err))
-      .finally(() => setNotifLoading(false));
+      .catch((err) => console.error("[ProfilePanel] 알림 조회 실패:", err));
+  };
+
+  // 초기 로드 시 + 패널 열릴 때 leave 데이터 fetch
+  useEffect(() => {
+    if (!currentUser.id) return;
+    fetchLeaveData();
+  }, [currentUser.id]);
+
+  useEffect(() => {
+    if (!open || !currentUser.id) return;
+    setNotifLoading(true);
+    fetchLeaveData();
+    setTimeout(() => setNotifLoading(false), 800);
   }, [open]);
+
+  // leave badge 30초마다 백그라운드 갱신
+  useEffect(() => {
+    if (!currentUser.id) return;
+    const timer = window.setInterval(fetchLeaveData, 30000);
+    return () => window.clearInterval(timer);
+  }, [currentUser.id]);
 
   const handleApproveLeave = async (leave: LeaveRequestVO) => {
     try {

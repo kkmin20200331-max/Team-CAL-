@@ -355,9 +355,18 @@ export default function MonthlySchedule() {
               {calendarDates.map((date, index) => {
                 const dateStr = format(date, "yyyy-MM-dd");
                 const dayShifts = getShiftsForDate(date);
-                const confirmedCount = dayShifts.filter(s => s.status === "confirmed").length;
-                const pendingCount = dayShifts.filter(s => s.status === "pending").length;
-                const cancelledCount = dayShifts.filter(s => s.status === "cancelled").length;
+                const confirmedCount = dayShifts.filter(s => {
+                  const st = (s.status || '').toUpperCase();
+                  return st === 'CONFIRMED' || st === 'SCHEDULED' || st === 'confirmed';
+                }).length;
+                const pendingCount = dayShifts.filter(s => {
+                  const st = (s.status || '').toUpperCase();
+                  return st === 'PENDING' || st === 'pending';
+                }).length;
+                const cancelledCount = dayShifts.filter(s => {
+                  const st = (s.status || '').toUpperCase();
+                  return st === 'CANCELLED' || st === 'VACANT' || st === 'cancelled';
+                }).length;
                 const isCurrentMonth = isSameMonth(date, currentMonth);
                 const isToday = isSameDay(date, today);
                 const isHoliday = !!HOLIDAYS[dateStr];

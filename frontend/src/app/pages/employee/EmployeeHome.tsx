@@ -10,7 +10,7 @@ import {
   HomeNavIcon, CalendarNavIcon, QrNavIcon, PayrollNavIcon, BoardNavIcon,
   QrCardIcon, CalendarCardIcon, LeaveCardIcon, SubCardIcon, PayrollCardIcon, BoardCardIcon,
 } from './figma/FigmaIcons';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, FolderOpen } from 'lucide-react';
 
 
 const GREEN = '#18A022';
@@ -381,8 +381,8 @@ export default function EmployeeHome() {
               icon={<SubCardIcon size={38} />} label={t.substituteFind} />
             <QuickCard style={cardGreen} onClick={() => navigate('/employee/payroll')}
               icon={<PayrollCardIcon size={38} />} label={t.payrollCheck} />
-            <QuickCard style={cardLight} onClick={() => navigate('/employee/board')}
-              icon={<BoardCardIcon size={38} />} label={t.boardLabel} />
+            <QuickCard style={cardLight} onClick={() => navigate('/employee/documents')}
+              icon={<FolderOpen size={38} color={GREEN} strokeWidth={1.5} />} label={t.myDocsLabel} />
           </div>
         </div>
 
