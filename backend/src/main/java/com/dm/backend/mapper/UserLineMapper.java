@@ -180,11 +180,11 @@ public interface UserLineMapper {
         FROM SHIFT s
         JOIN STORE_MEMBER sm
             ON sm.STORE_ID = s.STORE_ID
-        JOIN USERS u
+        LEFT JOIN USERS u
             ON u.ID = sm.USER_ID
         JOIN USER_LINE ul
             ON TRIM(ul.USER_ID) = TRIM(sm.USER_ID)
-        WHERE s.ID = #{shift_id}
+        WHERE TRIM(s.ID) = TRIM(#{shift_id})
         AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
         AND (
             UPPER(TRIM(sm.MEMBER_ROLE)) IN ('ADMIN', 'OWNER', 'MANAGER')
@@ -197,11 +197,11 @@ public interface UserLineMapper {
     @Select("""
         SELECT DISTINCT ul.LINE_USER_ID
         FROM STORE_MEMBER sm
-        JOIN USERS u
+        LEFT JOIN USERS u
             ON u.ID = sm.USER_ID
         JOIN USER_LINE ul
             ON TRIM(ul.USER_ID) = TRIM(sm.USER_ID)
-        WHERE sm.STORE_ID = #{store_id}
+        WHERE TRIM(sm.STORE_ID) = TRIM(#{store_id})
         AND UPPER(TRIM(sm.APPROVAL_STATUS)) = 'APPROVED'
         AND (
             UPPER(TRIM(sm.MEMBER_ROLE)) IN ('ADMIN', 'OWNER', 'MANAGER')
