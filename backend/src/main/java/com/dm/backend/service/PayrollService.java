@@ -33,6 +33,43 @@ public class PayrollService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private NotificationService notificationService;
+
+    public int requestWeeklyPay(
+            String user_id,
+            String store_id,
+            String week_start,
+            String week_end,
+            double amount
+    ) {
+        List<StoreMemberVo> admins = storeMemberMapper.getAdmins(store_id);
+        if (admins == null || admins.isEmpty()) {
+            return 0;
+        }
+
+        int sentCount = 0;
+        for (StoreMemberVo admin : admins) {
+            if (admin.getUser_id() == null || admin.getUser_id().equals(user_id)) {
+                continue;
+            }
+
+            NotificationVO notification = new NotificationVO();
+            notification.setId("NOTI_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
+            notification.setUser_id(admin.getUser_id());
+            notification.setStore_id(store_id);
+            notification.setType("WEEKLY_PAY_REQUEST");
+            notification.setTitle("주급 신청 요청");
+            notification.setContent(user_id + "님이 " + week_start + " ~ " + week_end + " 주급 "
+                    + Math.round(amount) + "원을 신청했습니다.");
+            notification.setRef_id(user_id + ":" + week_start);
+            notificationService.createNotification(notification);
+            sentCount++;
+        }
+
+        return sentCount;
+    }
+
     public List<PayrollEntryVO> calculateStorePayroll(
             String store_id,
             String year_month

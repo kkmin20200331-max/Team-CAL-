@@ -562,9 +562,6 @@ const DocumentManagement: React.FC = () => {
               <p style={{ fontSize: 13, color: isDark ? '#6b9e6b' : '#8BA68D', margin: 0 }}>{t.subtitle}</p>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-              <button style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: isDark ? GREEN : DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                <Scan size={16} />{t.bulkOcr}
-              </button>
               <button onClick={() => setUploadModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 <Upload size={16} />{t.uploadDoc}
               </button>
