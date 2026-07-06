@@ -7,6 +7,7 @@ import com.dm.backend.vo.NotificationVO;
 import com.dm.backend.vo.ShiftVO;
 import com.dm.backend.vo.StoreMemberVo;
 import com.dm.backend.vo.SubstituteApplicationVO;
+import com.dm.backend.vo.SubstituteCalendarVO;
 import com.dm.backend.vo.SubstituteHistoryVO;
 import com.dm.backend.vo.SubstitutePostVO;
 import com.dm.backend.vo.UserLineVO;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -367,6 +369,10 @@ public class SubstituteService {
         return substituteMapper.getMyApplicationsByStatus(user_id, status);
     }
 
+    public List<SubstituteCalendarVO> getMyApplicationsWithShiftInfo(String user_id) {
+        return substituteMapper.getMyApplicationsWithShiftInfo(user_id);
+    }
+
     public List<SubstitutePostVO> getMyPosts(String user_id, String status) {
 
         if (status == null || status.isBlank()) {
@@ -475,6 +481,25 @@ public class SubstituteService {
         substituteMapper.updateApplicationStatus(application.getId(), "APPROVED");
         substituteMapper.rejectOtherApplications(post.getId(), application.getId());
         substituteMapper.closePost(post.getId());
+
+        // 긴급 대타 승인 시 해당 직원에게 근무(shift) 생성
+        String dateStr = extractDateFromReason(post.getReason());
+        if (dateStr != null && post.getStore_id() != null) {
+            try {
+                Date workDate = java.sql.Date.valueOf(dateStr);
+                ShiftVO newShift = new ShiftVO();
+                newShift.setId("SH_SUB_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12));
+                newShift.setStore_id(post.getStore_id());
+                newShift.setUser_id(application.getApplicant_user_id());
+                newShift.setWork_date(workDate);
+                newShift.setStart_at(workDate);
+                newShift.setEnd_at(workDate);
+                newShift.setStatus("confirmed");
+                shiftMapper.registerShift(newShift);
+            } catch (Exception e) {
+                System.err.println("긴급 대타 shift 생성 실패: " + e.getMessage());
+            }
+        }
 
         sendLineToUser(
                 application.getApplicant_user_id(),

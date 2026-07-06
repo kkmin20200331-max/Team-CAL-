@@ -178,6 +178,7 @@ const mySchedule = {
     statusPending: '대기',
     statusCancelled: '취소',
     statusSub: '대타',
+    subApply: '대타 지원',
     休務: '휴무',
     dayLabels: ['월', '화', '수', '목', '금', '토', '일'],
     thisMonthSummary: '이번 달 요약',
@@ -217,6 +218,7 @@ const mySchedule = {
     statusPending: 'Pending',
     statusCancelled: 'Cancelled',
     statusSub: 'Sub',
+    subApply: 'Sub Applied',
     休務: 'Day Off',
     dayLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     thisMonthSummary: 'Monthly Summary',
@@ -256,6 +258,7 @@ const mySchedule = {
     statusPending: '保留',
     statusCancelled: 'キャンセル',
     statusSub: '代替',
+    subApply: '代替応募',
     休務: '休み',
     dayLabels: ['月', '火', '水', '木', '金', '土', '日'],
     thisMonthSummary: '今月のサマリー',
@@ -560,6 +563,9 @@ const substituteList = {
     ownPost: '내 요청',
     pendingApproval: '승인 대기',
     myPostsSection: '내가 올린 요청',
+    noShiftOnDate: '해당 날짜에 등록된 근무가 없습니다.',
+    requestNotice: '📋 요청을 올리면 같은 지점 직원들이 확인하고 지원할 수 있으며, 최종 승인은 관리자가 처리합니다.',
+    requestReasonPlaceholder: '예: 개인 사정, 병원 방문...',
   },
   en: {
     title: 'Find Substitute',
@@ -612,6 +618,9 @@ const substituteList = {
     ownPost: 'My Post',
     pendingApproval: 'Pending',
     myPostsSection: 'My Requests',
+    noShiftOnDate: 'No shift registered for this date.',
+    requestNotice: '📋 Once posted, other employees at the same branch can view and apply. Final approval is handled by the manager.',
+    requestReasonPlaceholder: 'e.g. Personal reason, doctor visit...',
   },
   ja: {
     title: '代替者を探す',
@@ -664,6 +673,9 @@ const substituteList = {
     ownPost: '自分の投稿',
     pendingApproval: '承認待ち',
     myPostsSection: '自分の依頼',
+    noShiftOnDate: 'この日付に登録された勤務はありません。',
+    requestNotice: '📋 投稿すると同じ店舗の従業員が確認・応募でき、最終承認は管理者が行います。',
+    requestReasonPlaceholder: '例：個人の事情、病院受診...',
   },
 };
 
