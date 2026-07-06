@@ -149,8 +149,9 @@ function AdminTabNavigator() {
           backgroundColor: colors.card,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 84 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          // 선민 수정 (2026-07-06): 안드로이드 소프트키(네비게이션바) 오동작 방지를 위해 하단 탭바 여백 및 높이 조정
+          height: Platform.OS === 'ios' ? 84 : 76,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 18,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
@@ -203,8 +204,9 @@ function StaffTabNavigator() {
           backgroundColor: colors.card,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 84 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          // 선민 수정 (2026-07-06): 안드로이드 소프트키(네비게이션바) 오동작 방지를 위해 하단 탭바 여백 및 높이 조정
+          height: Platform.OS === 'ios' ? 84 : 76,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 18,
           paddingTop: 8,
         },
         tabBarLabelStyle: {

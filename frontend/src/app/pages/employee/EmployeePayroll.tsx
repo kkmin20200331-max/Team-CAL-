@@ -11,7 +11,7 @@ import {
   LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from 'date-fns';
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
@@ -92,6 +92,7 @@ export default function EmployeePayroll() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [memberInfo, setMemberInfo] = useState<MemberInfo | null>(null);
   const [payroll, setPayroll] = useState<PayrollResult | null>(null);
+  const [weeklyPayroll, setWeeklyPayroll] = useState<PayrollResult | null>(null);
   const [shifts, setShifts] = useState<ShiftVO[]>([]);
   const [loadingPayroll, setLoadingPayroll] = useState(true);
   const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
@@ -220,6 +221,64 @@ export default function EmployeePayroll() {
   const displayPayroll = isCurrentMonth ? (estimatedPayroll ?? payroll) : payroll;
   const isCurrentYear = historyYear >= new Date().getFullYear();
 
+  const currentWeekRange = useMemo(() => {
+    const now = new Date();
+    const start = startOfWeek(now, { weekStartsOn: 1 });
+    const end = endOfWeek(now, { weekStartsOn: 1 });
+    return {
+      start: toDateStr(start),
+      end: toDateStr(end),
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user.id || !storeId || !isCurrentMonth || memberInfo?.pay_type !== "HOURLY") {
+      setWeeklyPayroll(null);
+      return;
+    }
+
+    axiosInstance.get("/payroll", {
+      params: {
+        user_id: user.id,
+        store_id: storeId,
+        start_date: currentWeekRange.start,
+        end_date: currentWeekRange.end,
+      },
+    })
+      .then((res) => setWeeklyPayroll(res.data))
+      .catch(() => setWeeklyPayroll(null));
+  }, [storeId, isCurrentMonth, memberInfo?.pay_type, currentWeekRange.start, currentWeekRange.end]);
+
+  const thisWeekPay = useMemo(() => {
+    if (memberInfo?.pay_type !== "HOURLY") return 0;
+    if (!isCurrentMonth) return 0;
+    return weeklyPayroll?.totalPay || 0;
+  }, [weeklyPayroll, memberInfo, isCurrentMonth]);
+
+  const handleWeeklyRequest = async () => {
+    if (!user.id || !storeId || thisWeekPay <= 0) return;
+    setRequesting(true);
+    try {
+      const res = await axiosInstance.post("/payroll/weekly-request", null, {
+        params: {
+          user_id: user.id,
+          store_id: storeId,
+          week_start: currentWeekRange.start,
+          week_end: currentWeekRange.end,
+          amount: Math.round(thisWeekPay),
+        },
+      });
+      if (res.data?.ok) {
+        alert(`주급 신청이 점주에게 전달되었습니다.\n${t.fmtCurrency(thisWeekPay)}`);
+      } else {
+        alert("주급 신청을 전달할 점주/관리자를 찾지 못했습니다.");
+      }
+    } catch {
+      alert("주급 신청에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setRequesting(false);
+    }
+  };
   const dailyHistory = useMemo(() =>
     history.flatMap(item =>
       item.shifts

@@ -7,7 +7,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Plus, Search, Edit, Trash2, Pin, Eye, MessageSquare,
   Calendar, User, AlertCircle, CheckCircle,
-  FileText, Paperclip, ClipboardCheck, UserPlus, Users, Wallet, BarChart3,
+  FileText, ClipboardCheck, UserPlus, Users, Wallet, BarChart3,
   Video, X, Send, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import AdminHeader from './AdminHeader';
@@ -290,7 +290,7 @@ const BoardManagement: React.FC = () => {
   const handleCreateBoard = async () => {
     const name = boardNameInput.trim();
     if (!name) {
-      alert('탭 이름을 입력해주세요.');
+      alert(t.tabNameRequired);
       return;
     }
 
@@ -312,7 +312,7 @@ const BoardManagement: React.FC = () => {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        alert(data?.message || '탭 추가에 실패했습니다.');
+        alert(data?.message || t.tabAddFailed);
         return;
       }
 
@@ -363,52 +363,28 @@ const BoardManagement: React.FC = () => {
   const [showPostModal, setShowPostModal] = useState(false);
   const [editingPost, setEditingPost] = useState<BoardPostVO | null>(null);
   const [form, setForm] = useState({ title: '', content: '', is_pinned: 'N', status: 'PUBLISHED' });
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openCreateModal = () => {
     setEditingPost(null);
     setForm({ title: '', content: '', is_pinned: 'N', status: 'PUBLISHED' });
-    setAttachedFiles([]);
     setShowPostModal(true);
   };
 
   const openEditModal = (post: BoardPostVO) => {
     setEditingPost(post);
     setForm({ title: post.title, content: post.content, is_pinned: post.is_pinned, status: post.status });
-    setAttachedFiles([]);
     setShowPostModal(true);
   };
 
-  const uploadFiles = async (): Promise<string> => {
-    if (attachedFiles.length === 0) return form.content;
-    const fileLinks: string[] = [];
-    for (const file of attachedFiles) {
-      try {
-        const ext = file.name.includes('.') ? `.${file.name.split('.').pop()}` : '';
-        const safeName = `${Date.now()}${ext}`;
-        const path = `board/${currentUser.id || 'unknown'}/${safeName}`;
-        const { error } = await supabase.storage.from('documents').upload(path, file, { upsert: true });
-        if (error) throw error;
-        // URL 대신 경로를 저장 → 렌더링 시 signed URL 생성
-        fileLinks.push(`[${file.name}](SUPABASE:${path})`);
-      } catch (e: any) {
-        fileLinks.push(`[${file.name}](업로드 실패: ${e?.message ?? '알 수 없는 오류'})`);
-      }
-    }
-    const attachSection = '\n\n---\n📎 첨부파일\n' + fileLinks.map(l => `- ${l}`).join('\n');
-    return form.content + attachSection;
-  };
 
-  const handleSubmitPost = async (asDraft = false) => {
+  const handleSubmitPost = async () => {
     if (!form.title.trim()) { alert(t.titleRequired); return; }
-    const status = asDraft ? 'DRAFT' : 'PUBLISHED';
-    const contentWithFiles = await uploadFiles();
+    const status = 'PUBLISHED';
     if (editingPost) {
       await fetch(`${API_BASE}/board/post`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...editingPost, ...form, content: contentWithFiles, status }),
+        body: JSON.stringify({ ...editingPost, ...form, status }),
       });
     } else {
       const id = 'POST_' + Date.now();
@@ -419,7 +395,7 @@ const BoardManagement: React.FC = () => {
           id, board_id: selectedBoardId, store_id: selectedBranchId,
           writer_id: currentUser.id || '',
           writer_role: currentUser.role || 'ADMIN',
-          title: form.title, content: contentWithFiles,
+          title: form.title, content: form.content,
           is_pinned: form.is_pinned, status,
         }),
       });
@@ -539,7 +515,7 @@ const BoardManagement: React.FC = () => {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowBoardModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                <Plus size={16} />탭 추가
+                <Plus size={16} />{t.addTab}
               </button>
 
               <button onClick={openCreateModal} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
@@ -550,7 +526,7 @@ const BoardManagement: React.FC = () => {
 
           {/* 게시판 탭 */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-            {[{ id: '__all__', name: '전체' }, ...boards].map(b => (
+            {[{ id: '__all__', name: t.allBoards }, ...boards].map(b => (
               <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
                 {b.name}
                 {b.id !== '__all__' && (
@@ -692,7 +668,6 @@ const BoardManagement: React.FC = () => {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                         {post.is_pinned === 'Y' && <Pin size={14} color={DARK_GREEN} />}
-                        {post.status === 'DRAFT' && <span style={{ fontSize: 11, background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: 20, fontWeight: 700 }}>{t.draftBadge}</span>}
                       </div>
                       <h3 style={{ fontSize: 15, fontWeight: 700, color: textColor, margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
                       <p style={{ fontSize: 13, color: subText, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{post.content}</p>
@@ -721,13 +696,13 @@ const BoardManagement: React.FC = () => {
           <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 420 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Plus size={18} />탭 추가
+                <Plus size={18} />{t.addTab}
               </h2>
               <button onClick={() => setShowBoardModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>탭 이름</label>
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.tabNameLabel}</label>
                 <input
                   type="text"
                   placeholder="예: 업무 지시"
@@ -771,64 +746,13 @@ const BoardManagement: React.FC = () => {
                 <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.contentLabel}</label>
                 <textarea rows={10} placeholder={t.contentPlaceholder} value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} style={{ ...inputStyle, resize: 'vertical' }} />
               </div>
-              <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.attachmentLabel}</label>
-                <div
-                  style={{ position: 'relative', border: `2px dashed ${BORDER_GREEN}`, borderRadius: 12, padding: 18, textAlign: 'center' }}
-                  onDragOver={e => e.preventDefault()}
-                  onDrop={e => {
-                    e.preventDefault();
-                    const files = Array.from(e.dataTransfer.files);
-                    if (files.length > 0) setAttachedFiles(prev => [...prev, ...files]);
-                  }}
-                >
-                  <input
-                    type="file"
-                    multiple
-                    style={{
-                      position: 'absolute', inset: 0,
-                      width: '100%', height: '100%',
-                      opacity: 0, cursor: 'pointer',
-                    }}
-                    onChange={e => {
-                      const filesArray = Array.from(e.target.files || []);
-                      e.target.value = '';
-                      if (filesArray.length > 0) setAttachedFiles(prev => [...prev, ...filesArray]);
-                    }}
-                  />
-                  <Paperclip size={24} color={DARK_GREEN} style={{ margin: '0 auto 6px' }} />
-                  <p style={{ fontSize: 13, color: subText }}>{t.attachDragHint}</p>
-                  <span style={{ display: 'inline-block', background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '7px 16px', fontSize: 13, fontWeight: 700, marginTop: 8 }}>
-                    {t.selectFile}
-                  </span>
-                </div>
-                {attachedFiles.length > 0 && (
-                  <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {attachedFiles.map((f, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px', background: isDark ? '#2a2a2a' : LIGHT_GREEN, borderRadius: 8, fontSize: 13 }}>
-                        <span style={{ color: textColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80%' }}>
-                          📎 {f.name} <span style={{ color: subText }}>({(f.size / 1024).toFixed(1)} KB)</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setAttachedFiles(prev => prev.filter((_, idx) => idx !== i))}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0 4px', fontSize: 16, lineHeight: 1 }}
-                        >×</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input type="checkbox" id="pinPost" checked={form.is_pinned === 'Y'} onChange={e => setForm(f => ({ ...f, is_pinned: e.target.checked ? 'Y' : 'N' }))} style={{ width: 16, height: 16, accentColor: GREEN }} />
                 <label htmlFor="pinPost" style={{ fontSize: 14, fontWeight: 600, color: textColor }}>{t.pinPost}</label>
               </div>
               <div style={{ display: 'flex', gap: 10, paddingTop: 8, borderTop: `1px solid ${LIGHT_GREEN}` }}>
-                <button onClick={() => handleSubmitPost(false)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <button onClick={handleSubmitPost} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                   <CheckCircle size={16} />{t.publishBtn}
-                </button>
-                <button onClick={() => handleSubmitPost(true)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 24px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                  <Edit size={16} />{t.saveDraft}
                 </button>
                 <button onClick={() => setShowPostModal(false)} style={{ background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>{t.cancelBtn}</button>
               </div>
@@ -841,3 +765,5 @@ const BoardManagement: React.FC = () => {
 };
 
 export default BoardManagement;
+
+

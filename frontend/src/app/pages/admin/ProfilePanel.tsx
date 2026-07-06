@@ -462,7 +462,10 @@ export default function ProfilePanel() {
     const name = userNameMap[app.applicant_user_id] || "직원";
     if (!confirm(t.confirmRejectSubstitute(name))) return;
     try {
-      await axiosInstance.delete("/substitute/staff", { params: { id: app.app_id } });
+      // 선민 수정 (2026-07-06): 대타 지원 거절 시 단순히 지원정보 삭제가 아니라 거절 상태처리를 통해 시프트 상태 복원을 병행하기 위해 PUT 메서드 호출로 교체
+      await axiosInstance.put("/substitute/manager", {}, {
+        params: { application_id: app.app_id, status: "REJECTED" },
+      });
       setSubstituteApps((prev) => prev.filter((a) => a.app_id !== app.app_id));
     } catch {
       alert(t.errProcess);
