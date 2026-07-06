@@ -149,11 +149,15 @@ public class StoreMemberService {
         );
     }
 
+    // 선민 수정 (2026-07-06): 알림 발송 시 USR_... 대신 유저 실명(name)을 노출하도록 개선
     private void notifyAdminsForStaffRequest(StoreMemberVo storeMemberVo) {
         List<StoreMemberVo> admins =
                 storeMemberMapper.getAdmins(
                         storeMemberVo.getStore_id()
                 );
+
+        com.dm.backend.vo.UserVo applicant = userMapper.getUserById(storeMemberVo.getUser_id());
+        String applicantName = applicant != null ? applicant.getName() : storeMemberVo.getUser_id();
 
         for (StoreMemberVo admin : admins) {
             createNotification(
@@ -161,7 +165,7 @@ public class StoreMemberService {
                     storeMemberVo.getStore_id(),
                     "STAFF_APPROVAL_REQUEST",
                     "직원 근무 요청",
-                    storeMemberVo.getUser_id() + "님이 매장 근무를 요청했습니다.",
+                    applicantName + "님이 매장 근무를 요청했습니다.",
                     storeMemberVo.getId()
             );
         }
