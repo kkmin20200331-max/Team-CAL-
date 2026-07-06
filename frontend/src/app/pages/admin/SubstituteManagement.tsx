@@ -95,6 +95,9 @@ const SubstituteManagement: React.FC = () => {
     branchId && branchId !== "undefined"
       ? branchId
       : sessionStorage.getItem("store_id") || "";
+  const selectedPostFromList = location.state?.post as SubstitutePostVO | undefined;
+  const selectedPostId =
+    new URLSearchParams(location.search).get("postId") || selectedPostFromList?.id || "";
 
   const menuItems = [
     { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
@@ -321,6 +324,45 @@ const SubstituteManagement: React.FC = () => {
               <Plus size={16} />{t.createRequest}
             </button>
           </div>
+          {selectedPostId && (
+            <div style={{
+              border: `1px solid ${BORDER_GREEN}`,
+              borderRadius: 18,
+              background: isDark ? '#102410' : 'rgba(230,245,200,0.55)',
+              padding: '14px 18px',
+              marginBottom: 18,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 14,
+            }}>
+              <div>
+                <p style={{ margin: '0 0 4px', color: isDark ? '#8fe18f' : DARK_GREEN, fontSize: 13, fontWeight: 800 }}>
+                  선택한 대타 모집글
+                </p>
+                <p style={{ margin: 0, color: textColor, fontSize: 15, fontWeight: 800 }}>
+                  {selectedPostFromList?.reason || `모집글 ID ${selectedPostId}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate(selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection')}
+                style={{
+                  flexShrink: 0,
+                  border: `1px solid ${BORDER_GREEN}`,
+                  borderRadius: 999,
+                  background: 'transparent',
+                  color: DARK_GREEN,
+                  padding: '9px 14px',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                목록으로
+              </button>
+            </div>
+          )}
         {/* 통계 */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
           {[
