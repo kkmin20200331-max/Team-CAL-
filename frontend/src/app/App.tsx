@@ -23,6 +23,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import WeeklySchedule from "./pages/admin/WeeklySchedule";
 import DailySchedule from "./pages/admin/DailySchedule";
 import SubstituteManagement from "./pages/admin/SubstituteManagement";
+import SubstituteApplicationsPreview from "./pages/admin/SubstituteApplicationsPreview";
 import EmployeeManagement from "./pages/admin/EmployeeManagement";
 import PayrollManagement from "./pages/admin/PayrollManagement";
 import AttendanceManagement from "./pages/admin/AttendanceManagement";
@@ -140,6 +141,15 @@ export default function App() {
 
           <Route
             path="/admin/substitute/:branchId"
+            element={
+              <ProtectedRoute>
+                <SubstituteApplicationsPreview />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/substitute-contact/:branchId"
             element={
               <ProtectedRoute>
                 <SubstituteManagement />
