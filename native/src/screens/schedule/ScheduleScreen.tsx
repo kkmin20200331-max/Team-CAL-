@@ -311,7 +311,7 @@ const ScheduleScreen = () => {
         <View style={styles.sectionHeader}>
           <Ionicons name="people-outline" size={18} color={colors.primary} />
           <Text style={styles.sectionTitle}>
-            {language === 'English' ? "Today's Co-workers" : language === '日本語' ? '今日の同僚勤務者' : '오늘 함께 일하는 동료'}
+            {language === 'English' ? "Today's Workers" : language === '日本語' ? '今日の勤務者' : '오늘 일하는 동료'}
           </Text>
         </View>
         
