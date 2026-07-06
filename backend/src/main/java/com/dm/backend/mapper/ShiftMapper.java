@@ -92,6 +92,21 @@ public interface ShiftMapper {
             """)
     void delShift(String id);
 
+    // 이후 모든 고정 근무 삭제 (특정 날짜 이후, 같은 요일)
+    @Delete("""
+            DELETE FROM shift
+            WHERE user_id = #{user_id}
+            AND store_id = #{store_id}
+            AND TRIM(TO_CHAR(work_date, 'DY', 'NLS_DATE_LANGUAGE=AMERICAN')) = #{weekday}
+            AND work_date >= TO_DATE(#{from_date}, 'YYYY-MM-DD')
+            """)
+    void delFutureShiftsByWeekday(
+            @Param("user_id") String user_id,
+            @Param("store_id") String store_id,
+            @Param("weekday") String weekday,
+            @Param("from_date") String from_date
+    );
+
     // 등록 시 중복 검사
     @Select("""
             SELECT COUNT(*)

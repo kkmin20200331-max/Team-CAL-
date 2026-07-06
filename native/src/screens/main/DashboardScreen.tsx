@@ -46,14 +46,14 @@ const normalizeShiftStatus = (status?: string): Shift['status'] => {
   const upper = (status || '').toUpperCase();
   if (upper === 'COMPLETED') return 'COMPLETED';
   if (upper === 'WORKING' || upper === 'CHECKED_IN' || upper === 'IN_PROGRESS') return 'IN_PROGRESS';
-  if (upper === 'SUBSTITUTE_REQ') return 'SUBSTITUTE_REQ';
+  if (upper === 'SUBSTITUTE_REQ' || upper === 'SUBSTITUTE_OPEN') return 'SUBSTITUTE_REQ';
   if (upper === 'LEAVE_PENDING') return 'LEAVE_PENDING' as any;
   if (upper === 'VACANT') return 'OFF';
   return 'SCHEDULED';
 };
 
 const getRealTimeItem = (item: Shift): Shift => {
-  if (item.status === 'OFF' || item.status === 'SUBSTITUTE_REQ' || !item.time || !item.time.includes(' - ')) {
+  if (item.status === 'OFF' || item.status === 'SUBSTITUTE_REQ' || item.status === 'LEAVE_PENDING' || !item.time || !item.time.includes(' - ')) {
     return item;
   }
   const now = new Date();

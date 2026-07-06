@@ -72,6 +72,16 @@ public class ShiftC {
         shiftService.delShift(id);
     }
 
+    @DeleteMapping("/future")
+    public void delFutureShifts(
+            @RequestParam String user_id,
+            @RequestParam String store_id,
+            @RequestParam String weekday,
+            @RequestParam String from_date
+    ) {
+        shiftService.delFutureShifts(user_id, store_id, weekday, from_date);
+    }
+
     // 고정 스케줄 기반 자동 생성
     @PostMapping("/fixed")
     public void applyFixedShifts(

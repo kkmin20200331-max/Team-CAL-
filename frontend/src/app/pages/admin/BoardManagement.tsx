@@ -1,7 +1,8 @@
 import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
 import { API_BASE } from "../../../lib/axiosInstance";
-import React, { useState, useEffect } from "react";
+import { supabase } from '../../../utils/supabase';
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Plus, Search, Edit, Trash2, Pin, Eye, MessageSquare,
@@ -16,6 +17,52 @@ const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 
+const parseContent = (raw: string) => {
+  const sep = '\n\n---\n📎 첨부파일\n';
+  const idx = raw.indexOf(sep);
+  if (idx === -1) return { body: raw, attachments: [] };
+  const body = raw.slice(0, idx);
+  const attachLines = raw.slice(idx + sep.length).split('\n').filter(l => l.startsWith('- '));
+  const attachments = attachLines.map(line => {
+    const m = line.match(/^- \[(.+?)\]\((.+?)\)$/);
+    return m ? { name: m[1], url: m[2] } : null;
+  }).filter(Boolean) as { name: string; url: string }[];
+  return { body, attachments };
+};
+
+const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|svg|bmp)$/i;
+const isImageFile = (name: string) => IMAGE_EXTS.test(name);
+
+function AttachmentLink({ name, url, color }: { name: string; url: string; color: string }) {
+  const [href, setHref] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (url.startsWith('SUPABASE:')) {
+      const path = url.slice('SUPABASE:'.length);
+      supabase.storage.from('documents').createSignedUrl(path, 3600)
+        .then(({ data }) => { if (data?.signedUrl) setHref(data.signedUrl); });
+    } else {
+      setHref(url);
+    }
+  }, [url]);
+  if (!href) return <span style={{ fontSize: 14, color: '#999' }}>📄 {name} (로딩중...)</span>;
+  if (isImageFile(name)) {
+    return (
+      <div style={{ marginTop: 8 }}>
+        <a href={href} target="_blank" rel="noopener noreferrer">
+          <img src={href} alt={name} style={{ maxWidth: '100%', maxHeight: 400, borderRadius: 12, display: 'block', cursor: 'pointer' }} />
+        </a>
+        <span style={{ fontSize: 12, color: '#999', marginTop: 4, display: 'block' }}>{name}</span>
+      </div>
+    );
+  }
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" download={name}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 14, color, textDecoration: 'none', fontWeight: 600 }}
+    >
+      📄 {name}
+    </a>
+  );
+}
 const LIGHT_GREEN = '#E6F5C8';
 
 interface BoardVO {

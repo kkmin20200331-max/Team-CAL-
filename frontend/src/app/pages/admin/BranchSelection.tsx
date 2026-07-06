@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Clock, MapPin, LayoutGrid } from 'lucide-react';
+import { Clock, MapPin, Users, CalendarCheck, UserCheck, AlertCircle } from 'lucide-react';
 
 const STORE_SVG = (
   <svg width="22" height="22" viewBox="1004 49 30 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -45,6 +45,9 @@ export default function BranchSelection() {
   const isDark = theme === 'dark';
   const [stores, setStores] = useState<StoreVo[]>([]);
   const [storesLoading, setStoresLoading] = useState(true);
+  const [totalEmployees, setTotalEmployees] = useState(0);
+  const [totalPending, setTotalPending] = useState(0);
+  const [todayShifts, setTodayShifts] = useState(0);
 
   // 페이지 로드 시 매장 목록 + 가입 대기 직원 sessionStorage에 적재
   useEffect(() => {
@@ -57,24 +60,36 @@ export default function BranchSelection() {
 
         // 각 매장의 가입 대기 직원 조회 → sessionStorage 저장 (ProfilePanel이 읽어감)
         const pending: PendingEmployee[] = [];
+        let empCount = 0;
+        let shiftCount = 0;
+        const today = new Date().toISOString().slice(0, 10);
+
         for (const store of storeList) {
           try {
-            const pendingRes = await axiosInstance.get("/users/pending", {
-              params: { store_id: store.id, role: "ADMIN" },
-            });
-            const pendingStaff = Array.isArray(pendingRes.data) ? pendingRes.data : [];
-            pendingStaff.forEach((g: any) => {
-              pending.push({
-                id: g.id,
-                name: g.name,
-                phone: g.phone,
-                username: g.username,
-                store_id: store.id,
-                store_name: store.name,
+            const [pendingRes, empRes, shiftRes] = await Promise.allSettled([
+              axiosInstance.get("/users/pending", { params: { store_id: store.id, role: "ADMIN" } }),
+              axiosInstance.get("/users", { params: { store_id: store.id } }),
+              axiosInstance.get("/shift", { params: { store_id: store.id } }),
+            ]);
+
+            if (pendingRes.status === 'fulfilled') {
+              const pendingStaff = Array.isArray(pendingRes.value.data) ? pendingRes.value.data : [];
+              pendingStaff.forEach((g: any) => {
+                pending.push({ id: g.id, name: g.name, phone: g.phone, username: g.username, store_id: store.id, store_name: store.name });
               });
-            });
+            }
+            if (empRes.status === 'fulfilled') {
+              empCount += Array.isArray(empRes.value.data) ? empRes.value.data.length : 0;
+            }
+            if (shiftRes.status === 'fulfilled') {
+              const shifts = Array.isArray(shiftRes.value.data) ? shiftRes.value.data : [];
+              shiftCount += shifts.filter((s: any) => s.work_date === today).length;
+            }
           } catch {}
         }
+        setTotalEmployees(empCount);
+        setTotalPending(pending.length);
+        setTodayShifts(shiftCount);
         sessionStorage.setItem("pendingList", JSON.stringify(pending));
       } catch (err) {
         console.error("매장 조회 실패:", err);
@@ -107,22 +122,31 @@ export default function BranchSelection() {
         </div>
       </AdminHeader>
 
-      {/* Store Cards */}
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '28px 32px' }}>
-        <button
-          onClick={() => navigate("/admin/multibranch")}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            width: '100%', marginBottom: 20, padding: '12px 0',
-            background: isDark ? '#1a1a1a' : LIGHT_GREEN,
-            border: `1px solid ${BORDER_GREEN}`, borderRadius: 54,
-            color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-          }}
-        >
-          <LayoutGrid size={16} />
-          {t.viewAllBranches}
-        </button>
+      {/* 지점 목록 요약 카드 */}
+      {!storesLoading && stores.length > 0 && (
+        <div style={{ maxWidth: 1000, margin: '0 auto', padding: '28px 32px 16px' }}>
+          <div style={{
+            background: cardBg,
+            border: `1px solid ${BORDER_GREEN}`,
+            borderRadius: 20,
+            boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)',
+            padding: '18px 28px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {STORE_SVG}
+              <span style={{ fontSize: 15, fontWeight: 700, color: textColor }}>지점 목록</span>
+              <span style={{
+                marginLeft: 4, fontSize: 12, fontWeight: 600,
+                color: GREEN, background: isDark ? 'rgba(24,160,34,0.15)' : '#e6f5e6',
+                borderRadius: 20, padding: '2px 10px',
+              }}>{stores.length}개</span>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Store Cards */}
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 32px 40px' }}>
         {storesLoading ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: subTextColor, fontSize: 14 }}>{t.loading}</div>
         ) : stores.length === 0 ? (

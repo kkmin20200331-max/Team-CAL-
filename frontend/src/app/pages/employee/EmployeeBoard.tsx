@@ -8,15 +8,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
 import { ChevronLeft, ChevronRight, Plus, X, Paperclip, Edit, Trash2, Send, MessageSquare, ShieldCheck } from 'lucide-react';
 import EmployeeBottomNav from './EmployeeBottomNav';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseKey = (
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.VITE_SUPABASE_KEY ||
-  import.meta.env.VITE_SUPABASE_PROJECT_KEY
-) as string | undefined;
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+import { supabase } from '../../../utils/supabase';
 
 const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
