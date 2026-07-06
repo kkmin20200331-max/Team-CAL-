@@ -55,13 +55,14 @@ public interface ShiftMapper {
             """)
     void registerShift(ShiftVO shiftVO);
 
+    // 선민 수정 (2026-07-06): work_date가 시간 정보를 가질 때 범위 조회(특히 단일일자 조회)에서 배제되는 현상을 막기 위해 TRUNC 추가
     // 매장별 기간 조회
     @Select("""
             SELECT *
             FROM shift
             WHERE store_id = #{store_id}
-            AND work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
-            AND work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
             AND status != 'cancelled'
             ORDER BY work_date, start_at
             """)
@@ -166,13 +167,14 @@ public interface ShiftMapper {
     // [직원]
     // =========================
 
+    // 선민 수정 (2026-07-06): work_date가 시간 정보를 가질 때 범위 조회(특히 단일일자 조회)에서 배제되는 현상을 막기 위해 TRUNC 추가
     // 내 근무표 조회
     @Select("""
             SELECT *
             FROM shift
             WHERE user_id = #{user_id}
-            AND work_date >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
-            AND work_date <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) >= TO_DATE(#{start_date}, 'YYYY-MM-DD')
+            AND TRUNC(work_date) <= TO_DATE(#{end_date}, 'YYYY-MM-DD')
             AND status != 'cancelled'
             ORDER BY work_date, start_at
             """)
