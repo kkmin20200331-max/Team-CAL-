@@ -111,20 +111,14 @@ public class LeaveRequestService {
     public void registerLeaveRequest(LeaveRequestVO leaveRequestVO) {
 
         leaveRequestVO.setId(
-                "LR_" + UUID.randomUUID().toString().replace("-", "").substring(0, 15)
-        );
+                "LR_" + UUID.randomUUID().toString().replace("-", "").substring(0, 15));
 
         leaveRequestMapper.registerLeaveRequest(leaveRequestVO);
 
-<<<<<<< HEAD
         // 선민 수정 - 휴무 신청 시 shift 상태를 LEAVE_PENDING으로 변경
         leaveRequestMapper.updateShiftStatusLeavePending(leaveRequestVO.getShift_id());
-
         sendLeaveRequestSubmittedToRequester(leaveRequestVO);
-        sendLeaveRequestToOwner(leaveRequestVO);
-=======
         sendLeaveRequestToAdmins(leaveRequestVO);
->>>>>>> 594f28c69725719f25a4ea8af4093a12b6199c80
     }
 
     private void sendLeaveResultToStaff(LeaveRequestVO leave, String status) {
