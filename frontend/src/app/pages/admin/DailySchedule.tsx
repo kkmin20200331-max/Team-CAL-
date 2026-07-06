@@ -226,7 +226,6 @@ const DailySchedule: React.FC = () => {
             status: form.status,
           });
         }
-        alert(t.shiftAdded);
       } else if (editingShift) {
         await axiosInstance.put("/shift", {
           ...editingShift,
@@ -235,7 +234,6 @@ const DailySchedule: React.FC = () => {
           end_at: `${selectedDate} ${form.end_time}:00`,
           status: form.status,
         });
-        alert(t.shiftUpdated);
       }
       setModalOpen(false);
       fetchShifts();
