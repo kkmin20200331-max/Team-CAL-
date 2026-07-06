@@ -173,6 +173,14 @@ export const getPayrollAPI = (
     },
   });
 
+export const getStorePayrollAPI = (storeId: string, yearMonth: string) =>
+  API.get(`/payroll/store`, {
+    params: {
+      store_id: storeId,
+      year_month: yearMonth,
+    },
+  });
+
 export const getMonthlyAttendanceAPI = (
   userId: string,
   storeId: string,

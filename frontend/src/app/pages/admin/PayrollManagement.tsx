@@ -1,4 +1,4 @@
-﻿import { API_BASE } from "../../../lib/axiosInstance";
+import { API_BASE } from "../../../lib/axiosInstance";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
@@ -446,13 +446,12 @@ const PayrollManagement: React.FC = () => {
           </div>
 
           {/* Statistics Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
             {[
               { label: t.totalPay, value: fmt(stats.totalPayroll) },
               { label: t.employeeCount, value: String(stats.employeeCount) },
               { label: t.totalHours, value: `${stats.regularHours.toFixed(1)}h` },
               { label: t.overtimeLabel, value: `${stats.overtimeHours.toFixed(1)}h` },
-              { label: t.weeklyRequest, value: String(stats.weeklyPending) },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#9dc49d' : '#8BA68D', marginBottom: 8 }}>{label}</p>
@@ -465,7 +464,6 @@ const PayrollManagement: React.FC = () => {
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
             {[
               { key: 'payroll', label: t.tabPayroll, icon: <DollarSign size={16} /> },
-              { key: 'weekly', label: t.tabWeekly, icon: <CreditCard size={16} /> },
               { key: 'analytics', label: t.tabAnalytics, icon: <TrendingUp size={16} /> },
             ].map(({ key, label, icon }) => (
               <button

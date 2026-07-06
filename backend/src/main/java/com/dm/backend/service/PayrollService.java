@@ -5,6 +5,7 @@ import com.dm.backend.mapper.FixedscheduleMapper;
 import com.dm.backend.mapper.StoreMemberMapper;
 import com.dm.backend.mapper.SubstituteMapper;
 import com.dm.backend.mapper.UserMapper;
+import com.dm.backend.mapper.ShiftMapper;
 import com.dm.backend.vo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,9 @@ public class PayrollService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private ShiftMapper shiftMapper;
 
     @Autowired
     private NotificationService notificationService;
@@ -118,7 +122,7 @@ public class PayrollService {
                     );
 
             List<AttendanceVO> attendances =
-                    attendanceMapper.getCompletedAttendanceList(
+                    getCombinedAttendances(
                             staff.getId(),
                             store_id,
                             startDate,
@@ -193,7 +197,7 @@ public class PayrollService {
         }
 
         List<AttendanceVO> attendances =
-                attendanceMapper.getCompletedAttendanceList(
+                getCombinedAttendances(
                         user_id,
                         store_id,
                         start_date,
@@ -696,5 +700,97 @@ public class PayrollService {
                 (nightMinutes / 60.0)
                         * hourlyRate
                         * 0.5;
+     }
+
+    private List<AttendanceVO> getCombinedAttendances(
+            String user_id,
+            String store_id,
+            Date start_date,
+            Date end_date
+    ) {
+        List<AttendanceVO> actual =
+                attendanceMapper.getCompletedAttendanceList(
+                        user_id,
+                        store_id,
+                        start_date,
+                        end_date
+                );
+        if (actual == null) {
+            actual = new ArrayList<>();
+        }
+
+        List<ShiftVO> shifts =
+                shiftMapper.getMonthlyShift(
+                        user_id,
+                        start_date,
+                        end_date
+                );
+
+        if (shifts == null || shifts.isEmpty()) {
+            return actual;
+        }
+
+        List<AttendanceVO> combined = new ArrayList<>(actual);
+
+        Set<String> attendedShiftIds = actual.stream()
+                .map(AttendanceVO::getShift_id)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<String> attendedDates = actual.stream()
+                .map(a -> {
+                    if (a.getWork_date() == null) return null;
+                    return a.getWork_date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().toString();
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        for (ShiftVO shift : shifts) {
+            String status = shift.getStatus();
+            if (status != null && (status.equalsIgnoreCase("VACANT") || status.equalsIgnoreCase("CANCELLED"))) {
+                continue;
+            }
+
+            if (attendedShiftIds.contains(shift.getId())) {
+                continue;
+            }
+
+            LocalDate localDate = shift.getWork_date().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            if (attendedDates.contains(localDate.toString())) {
+                continue;
+            }
+
+            try {
+                AttendanceVO sim = new AttendanceVO();
+                sim.setId("SIM-" + shift.getId());
+                sim.setStore_id(shift.getStore_id());
+                sim.setUser_id(shift.getUser_id());
+                sim.setShift_id(shift.getId());
+                sim.setWork_date(shift.getWork_date());
+
+                Date startAt = shift.getStart_at();
+                Date endAt = shift.getEnd_at();
+
+                if (startAt != null && endAt != null) {
+                    sim.setCheck_in_at(startAt);
+                    sim.setCheck_out_at(endAt);
+
+                    LocalDateTime startDateTime = startAt.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+                    LocalDateTime endDateTime = endAt.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+                    long diffMinutes = Duration.between(startDateTime, endDateTime).toMinutes();
+                    sim.setWork_minutes((int) diffMinutes);
+                } else {
+                    sim.setCheck_in_at(shift.getWork_date());
+                    sim.setCheck_out_at(shift.getWork_date());
+                    sim.setWork_minutes(0);
+                }
+
+                combined.add(sim);
+            } catch (Exception e) {
+                // Ignore parsing errors for this shift
+            }
+        }
+
+        return combined;
     }
 }
