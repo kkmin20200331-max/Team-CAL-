@@ -219,12 +219,22 @@ const SubstituteManagement: React.FC = () => {
       .finally(() => setModalSubmitting(false));
   };
 
-  /* ── SMS 연락 ───────────────────────────────────────── */
-  const handleContact = (phone: string, name: string) => {
-    if (!phone) return;
-    // TODO: SMS API 연동 시 이 부분을 교체
-    const msg = encodeURIComponent(t.smsMessage(name));
-    window.open(`sms:${phone}?body=${msg}`);
+  /* ── LINE 연락 ───────────────────────────────────────── */
+  const handleContact = async (userId: string, name: string) => {
+    if (!userId) return;
+    const message = t.smsMessage(name);
+    try {
+      const res = await axiosInstance.post('/line/send', { user_id: userId, message });
+      if (res.status === 200) {
+        alert(`${name}님에게 라인 메시지를 전송했습니다.`);
+      }
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        alert(`${name}님은 라인 계정이 연동되어 있지 않습니다.`);
+      } else {
+        alert('메시지 전송에 실패했습니다.');
+      }
+    }
   };
 
   /* ── 필터 ───────────────────────────────────────────── */
@@ -359,12 +369,12 @@ const SubstituteManagement: React.FC = () => {
                 <div style={{ marginBottom: 16 }}>
                   {availabilityMap[emp.id] ? (() => {
                     const av = availabilityMap[emp.id];
-                    const DAY_KEYS = ['mon','tue','wed','thu','fri'];
+                    const ENG_DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
                     return (
                       <>
                         <p style={{ fontSize: 11, color: subTextColor, marginBottom: 6 }}>{t.availableSchedule} <span style={{ color: DARK_GREEN, fontWeight: 600 }}>{av.start} ~ {av.end}</span></p>
                         <div style={{ display: 'flex', gap: 4 }}>
-                          {DAY_KEYS.map((key, i) => {
+                          {ENG_DAYS.map((key, i) => {
                             const active = av.days.includes(key);
                             return (
                               <div key={key} style={{ flex: 1, textAlign: 'center', padding: '4px 0', borderRadius: 6, background: active ? DARK_GREEN : (isDark ? '#1a1a1a' : LIGHT_GREEN), color: active ? '#fff' : subTextColor, fontSize: 12, fontWeight: active ? 700 : 400 }}>{t.dayLabels[i]}</div>
@@ -384,7 +394,7 @@ const SubstituteManagement: React.FC = () => {
                     </>
                   )}
                 </div>
-                <button disabled={!emp.phone} onClick={() => handleContact(emp.phone, emp.name)} style={{ width: '100%', padding: '10px 0', background: emp.phone ? 'none' : 'transparent', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: emp.phone ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: emp.phone ? 1 : 0.5 }}>
+                <button onClick={() => handleContact(emp.id, emp.name)} style={{ width: '100%', padding: '10px 0', background: 'none', border: `1px solid ${BORDER_GREEN}`, borderRadius: 54, color: DARK_GREEN, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   <Phone size={14} />{t.contactBtn}
                 </button>
               </div>

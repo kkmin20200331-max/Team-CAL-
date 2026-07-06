@@ -10,7 +10,7 @@ import {
   HomeNavIcon, CalendarNavIcon, QrNavIcon, PayrollNavIcon, BoardNavIcon,
   QrCardIcon, CalendarCardIcon, LeaveCardIcon, SubCardIcon, PayrollCardIcon, BoardCardIcon,
 } from './figma/FigmaIcons';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, FolderOpen } from 'lucide-react';
 
 
 const GREEN = '#18A022';
@@ -130,9 +130,9 @@ export default function EmployeeHome() {
   const isDark = theme === 'dark';
 
   // 다크모드 색상 팔레트 (Login.tsx 기준)
-  const pageBg    = isDark ? '#1c1c1e' : '#fff';
-  const cardBg    = isDark ? '#2c2c2e' : 'rgba(255,255,255,0.5)';
-  const cardBorder= isDark ? '#3a3a3c' : BORDER_GREEN;
+  const pageBg    = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : '#fff';
+  const cardBg    = isDark ? '#141414' : 'rgba(255,255,255,0.5)';
+  const cardBorder= isDark ? '#2a2a2a' : BORDER_GREEN;
   const textMain  = isDark ? '#fff'    : GREEN;
   const textSub   = isDark ? '#aaa'    : 'rgba(24,160,34,0.7)';
   const mainGrad  = isDark
@@ -241,7 +241,7 @@ export default function EmployeeHome() {
 
       {/* ── HEADER ─────────────────────────────────────────────────────────── */}
       <header style={{
-        height: 120, background: isDark ? '#2c2c2e' : '#fff', position: 'sticky', top: 0, zIndex: 100,
+        height: 120, background: isDark ? '#141414' : '#fff', position: 'sticky', top: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 40px',
         boxShadow: isDark ? '0 1px 0 rgba(255,255,255,0.06)' : '0 1px 0 rgba(0,162,0,0.12)',
@@ -391,8 +391,8 @@ export default function EmployeeHome() {
               icon={<SubCardIcon size={38} />} label={t.substituteFind} />
             <QuickCard style={cardGreen} onClick={() => navigate('/employee/payroll')}
               icon={<PayrollCardIcon size={38} />} label={t.payrollCheck} />
-            <QuickCard style={cardLight} onClick={() => navigate('/employee/board')}
-              icon={<BoardCardIcon size={38} />} label={t.boardLabel} />
+            <QuickCard style={cardLight} onClick={() => navigate('/employee/documents')}
+              icon={<FolderOpen size={38} color={GREEN} strokeWidth={1.5} />} label={t.myDocsLabel} />
           </div>
         </div>
 
@@ -403,11 +403,11 @@ export default function EmployeeHome() {
             <button
               onClick={() => navigate('/employee/schedule')}
               style={{
-                background: 'rgba(245,253,232,0.5)', border: `1px solid ${BORDER_GREEN}`,
-                borderRadius: 54, padding: '3px 25px', color: GREEN, fontFamily: font,
+                background: isDark ? 'rgba(24,160,34,0.15)' : 'rgba(245,253,232,0.5)', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`,
+                borderRadius: 54, padding: '3px 25px', color: isDark ? '#4cd964' : GREEN, fontFamily: font,
                 fontSize: 15, fontWeight: 500, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6,
-                boxShadow: '3px 4px 12.6px rgba(255,255,255,0.25)',
+                boxShadow: isDark ? 'none' : '3px 4px 12.6px rgba(255,255,255,0.25)',
               }}
             >
               {t.viewAll} →
@@ -427,7 +427,7 @@ export default function EmployeeHome() {
                   const hours = Math.round(calcHours(shift.start_at, shift.end_at) * 10) / 10;
                   const statusColor = shift.status === 'confirmed' ? GREEN : shift.status === 'cancelled' ? '#dc2626' : '#d97706';
                   const statusBg = shift.status === 'confirmed' ? 'rgba(24,160,34,0.12)' : shift.status === 'cancelled' ? 'rgba(220,38,38,0.1)' : 'rgba(217,119,6,0.1)';
-                  const shiftRowBg = isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)';
+                  const shiftRowBg = isDark ? '#1e1e1e' : 'rgba(255,255,255,0.8)';
                   const shiftRowBorder = isDark ? '#4a4a4c' : 'rgba(0,162,0,0.12)';
                   const timeColor = isDark ? '#4cd964' : DARK_GREEN;
                   const metaColor = isDark ? '#aaa' : '#8BA68D';

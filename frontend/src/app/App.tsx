@@ -29,7 +29,6 @@ import AttendanceManagement from "./pages/admin/AttendanceManagement";
 import DocumentManagement from "./pages/admin/DocumentManagement";
 import BoardManagement from "./pages/admin/BoardManagement";
 import CustomerAnalytics from "./pages/admin/CustomerAnalytics";
-import MultibranchDashboard from "./pages/admin/MultibranchDashboard";
 import MonthlySchedule from "./pages/admin/MonthlySchedule";
 import CctvAnalysis from "./pages/admin/CctvAnalysis";
 import MasterApplications from "./pages/master/MasterApplications";
@@ -43,6 +42,7 @@ import SubstituteList from "./pages/employee/SubstituteList";
 import EmployeePayroll from "./pages/employee/EmployeePayroll";
 import MyAttendance from "./pages/employee/MyAttendance";
 import EmployeeBoard from "./pages/employee/EmployeeBoard";
+import EmployeeDocuments from "./pages/employee/EmployeeDocuments";
 import EditProfile from "./pages/employee/EditProfile";
 import LineError from "./pages/auth/LineError";
 import LineSuccess from "./pages/auth/LineSuccess";
@@ -107,15 +107,6 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin/multibranch"
-            element={
-              <ProtectedRoute>
-                <MultibranchDashboard />
               </ProtectedRoute>
             }
           />
@@ -258,6 +249,7 @@ export default function App() {
           <Route path="/employee/payroll" element={<ProtectedRoute><EmployeePayroll /></ProtectedRoute>} />
           <Route path="/employee/attendance" element={<ProtectedRoute><MyAttendance /></ProtectedRoute>} />
           <Route path="/employee/board" element={<ProtectedRoute><EmployeeBoard /></ProtectedRoute>} />
+          <Route path="/employee/documents" element={<ProtectedRoute><EmployeeDocuments /></ProtectedRoute>} />
           <Route path="/employee/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route
             path="/admin/edit-profile"

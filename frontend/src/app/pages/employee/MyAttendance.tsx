@@ -116,7 +116,7 @@ export default function MyAttendance() {
   const pageBg = isDark
     ? "linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)"
     : "linear-gradient(180deg, #D2FF79 -12.05%, #EEFAD6 17.27%, #F2F5EB 87.95%)";
-  const cardBg = isDark ? "rgba(44,44,46,0.95)" : "rgba(255,255,255,0.72)";
+  const cardBg = isDark ? "#141414" : "rgba(255,255,255,0.72)";
   const textColor = isDark ? "#fff" : "#111";
   const subText = isDark ? "#aaa" : "#6B8068";
   const rowDivider = isDark ? "#3a3a3c" : "rgba(0,162,0,0.12)";

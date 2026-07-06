@@ -85,8 +85,20 @@ export default function SubstituteList() {
   const t = translations.substituteList[language];
 
   const user = useMemo(() => { try { return JSON.parse(sessionStorage.getItem('user') || '{}'); } catch { return {}; } }, []);
-  const storeId   = sessionStorage.getItem('store_id')   || '';
+  const [storeId, setStoreId] = useState(sessionStorage.getItem('store_id') || '');
   const storeName = sessionStorage.getItem('store_name') || '';
+
+  useEffect(() => {
+    if (storeId || !user.id) return;
+    axiosInstance.get('/store/my', { params: { user_id: user.id } })
+      .then(res => {
+        if (res.data?.id) {
+          sessionStorage.setItem('store_id', res.data.id);
+          setStoreId(res.data.id);
+        } else { setLoadingPosts(false); }
+      })
+      .catch(() => setLoadingPosts(false));
+  }, [user.id]);
 
   const [searchQuery, setSearchQuery]   = useState('');
   const [selectedPost, setSelectedPost] = useState<EnrichedPost | null>(null);
@@ -297,7 +309,7 @@ export default function SubstituteList() {
 
         {/* ── 가능 시간 설정 카드 ── */}
         <div style={{
-          background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
+          background: isDark ? '#141414' : 'rgba(255,255,255,0.8)',
           border: `1px solid rgba(0,162,0,0.12)`,
           borderRadius: 20,
           padding: '20px',
@@ -318,8 +330,8 @@ export default function SubstituteList() {
                   style={{
                     flex: 1, padding: '10px 0', borderRadius: 12,
                     fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer',
-                    background: active ? DARK_GREEN : LIGHT_GREEN,
-                    color: active ? '#fff' : DARK_GREEN,
+                    background: active ? DARK_GREEN : (isDark ? '#1e1e1e' : LIGHT_GREEN),
+                    color: active ? '#fff' : (isDark ? '#4cd964' : DARK_GREEN),
                     transition: 'all 0.15s',
                   }}
                 >
@@ -339,7 +351,7 @@ export default function SubstituteList() {
                 style={{
                   flex: 1, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12,
                   padding: '10px 12px', fontSize: 16, textAlign: 'center',
-                  background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.9)', color: isDark ? '#4cd964' : DARK_GREEN, outline: 'none',
+                  background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.9)', color: isDark ? '#4cd964' : DARK_GREEN, outline: 'none',
                 }}
               />
             ) : (() => {
@@ -354,7 +366,7 @@ export default function SubstituteList() {
                 <div style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `1px solid ${BORDER_GREEN}`, borderRadius: 12,
-                  background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.9)', padding: '0 8px',
+                  background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.9)', padding: '0 8px',
                 }}>
                   <input type="text" inputMode="numeric" maxLength={2}
                     key={`s-hh-${availability.start}`}
@@ -390,7 +402,7 @@ export default function SubstituteList() {
                 style={{
                   flex: 1, border: `1px solid ${BORDER_GREEN}`, borderRadius: 12,
                   padding: '10px 12px', fontSize: 16, textAlign: 'center',
-                  background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.9)', color: isDark ? '#4cd964' : DARK_GREEN, outline: 'none',
+                  background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.9)', color: isDark ? '#4cd964' : DARK_GREEN, outline: 'none',
                 }}
               />
             ) : (() => {
@@ -405,7 +417,7 @@ export default function SubstituteList() {
                 <div style={{
                   flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   border: `1px solid ${BORDER_GREEN}`, borderRadius: 12,
-                  background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.9)', padding: '0 8px',
+                  background: isDark ? '#1e1e1e' : 'rgba(255,255,255,0.9)', padding: '0 8px',
                 }}>
                   <input type="text" inputMode="numeric" maxLength={2}
                     key={`e-hh-${availability.end}`}
@@ -478,7 +490,7 @@ export default function SubstituteList() {
               style={{
                 width: '100%', padding: '12px 16px 12px 42px',
                 border: `1px solid ${BORDER_GREEN}`, borderRadius: 12,
-                fontSize: 15, background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
+                fontSize: 15, background: isDark ? '#141414' : 'rgba(255,255,255,0.8)',
                 color: isDark ? '#fff' : '#333', outline: 'none', boxSizing: 'border-box',
               }}
             />
@@ -517,7 +529,7 @@ export default function SubstituteList() {
                   <div
                     key={post.id}
                     style={{
-                      background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
+                      background: isDark ? '#141414' : 'rgba(255,255,255,0.8)',
                       border: isOwnPost ? `1.5px solid ${DARK_GREEN}` : '1px solid rgba(0,162,0,0.12)',
                       borderRadius: 20,
                       padding: '18px 20px',
@@ -686,7 +698,7 @@ export default function SubstituteList() {
                   style={{
                     width: '100%', padding: '12px 14px', borderRadius: 12,
                     border: `1px solid ${BORDER_GREEN}`, fontSize: 16,
-                    background: isDark ? '#3a3a3c' : '#f8fdf4',
+                    background: isDark ? '#1e1e1e' : '#f8fdf4',
                     color: isDark ? '#fff' : '#222', outline: 'none', boxSizing: 'border-box',
                   }}
                 />
@@ -711,12 +723,12 @@ export default function SubstituteList() {
                   style={{
                     width: '100%', padding: '12px 14px', borderRadius: 12,
                     border: `1px solid ${BORDER_GREEN}`, fontSize: 15,
-                    background: isDark ? '#3a3a3c' : '#f8fdf4',
+                    background: isDark ? '#1e1e1e' : '#f8fdf4',
                     color: isDark ? '#fff' : '#222', outline: 'none', boxSizing: 'border-box',
                   }}
                 />
               </div>
-              <div style={{ background: LIGHT_GREEN, borderRadius: 12, padding: '12px 16px', fontSize: 13, color: '#5a8a5c' }}>
+              <div style={{ background: isDark ? 'rgba(24,160,34,0.12)' : LIGHT_GREEN, borderRadius: 12, padding: '12px 16px', fontSize: 13, color: isDark ? '#4cd964' : '#5a8a5c' }}>
                 📋 요청을 올리면 같은 지점 직원들이 확인하고 지원할 수 있으며, 최종 승인은 관리자가 처리합니다.
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>

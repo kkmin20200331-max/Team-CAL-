@@ -265,8 +265,8 @@ export default function Signup() {
   }, [isDark]);
 
   // 다크/라이트 색상 팔레트
-  const pageBg   = isDark ? '#1c1c1e' : BG;
-  const cardBg   = isDark ? '#2c2c2e' : '#FFFFFF';
+  const pageBg   = isDark ? 'linear-gradient(180deg, #0d2010 -12.05%, #1a2e1a 17.27%, #1c1c1e 87.95%)' : BG;
+  const cardBg   = isDark ? '#141414' : '#FFFFFF';
   const inputBg  = isDark ? '#3a3a3c' : INPUT_BG;
   const inputTxt = isDark ? '#fff'    : '#333';
   const labelClr = isDark ? '#aaa'    : LABEL_COLOR;
@@ -585,11 +585,11 @@ export default function Signup() {
                   <SelectTrigger
                     style={{
                       height: 37.53,
-                      background: INPUT_BG,
+                      background: inputBg,
                       border: "none",
                       borderRadius: 9,
                       fontSize: 15,
-                      color: "#606060",
+                      color: inputTxt,
                       boxShadow: INPUT_SHADOW,
                     }}
                   >
@@ -896,9 +896,8 @@ export default function Signup() {
                       }
                       style={{
                         ...inputStyle,
-                        background: isFranchise ? INPUT_BG : "#e8ebe0",
                         cursor: isFranchise ? "auto" : "not-allowed",
-                        color: isFranchise ? "#333" : PLACEHOLDER_COLOR,
+                        opacity: isFranchise ? 1 : 0.5,
                       }}
                     />
                   </Field>

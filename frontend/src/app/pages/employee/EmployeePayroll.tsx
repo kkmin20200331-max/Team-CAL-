@@ -100,7 +100,6 @@ export default function EmployeePayroll() {
   const [historyView, setHistoryView] = useState<
     "monthly" | "weekly" | "daily"
   >("monthly");
-  const [requesting, setRequesting] = useState(false);
   const [activeTab, setActiveTab] = useState<'history' | 'trends'>('history');
 
   useEffect(() => {
@@ -206,36 +205,20 @@ export default function EmployeePayroll() {
       selectedMonth.getMonth() === now.getMonth()
     );
   }, [selectedMonth]);
+
+  // 이번 달은 shift 기반 예상 급여 계산
+  const estimatedPayroll = useMemo<PayrollResult | null>(() => {
+    if (!isCurrentMonth || !memberInfo?.pay_amount) return null;
+    const rate = memberInfo.pay_amount;
+    if (memberInfo.pay_type === 'MONTHLY') {
+      return { basePay: rate, overtimePay: 0, nightPay: 0, weeklyPay: 0, totalPay: rate };
+    }
+    const basePay = assignedShifts.reduce((sum, s) => sum + calcHours(s.start_at, s.end_at) * rate, 0);
+    return { basePay, overtimePay: 0, nightPay: 0, weeklyPay: 0, totalPay: basePay };
+  }, [isCurrentMonth, memberInfo, assignedShifts]);
+
+  const displayPayroll = isCurrentMonth ? (estimatedPayroll ?? payroll) : payroll;
   const isCurrentYear = historyYear >= new Date().getFullYear();
-
-  const thisWeekPay = useMemo(() => {
-    if (!memberInfo?.pay_amount || memberInfo.pay_type !== "HOURLY") return 0;
-    if (!isCurrentMonth) return 0;
-    const now = new Date();
-    const dayNum = now.getDay();
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - (dayNum === 0 ? 6 : dayNum - 1));
-    mon.setHours(0, 0, 0, 0);
-    const monStr = toDateStr(mon);
-    const sunStr = toDateStr(new Date(mon.getTime() + 6 * 86400000));
-    return assignedShifts
-      .filter((s) => {
-        const d = getDatePart(s.work_date);
-        return d >= monStr && d <= sunStr;
-      })
-      .reduce(
-        (sum, s) =>
-          sum + calcHours(s.start_at, s.end_at) * memberInfo.pay_amount!,
-        0,
-      );
-  }, [assignedShifts, memberInfo, isCurrentMonth]);
-
-  const handleWeeklyRequest = async () => {
-    setRequesting(true);
-    await new Promise(r => setTimeout(r, 600));
-    alert(`${t.weeklyAdvanceRequest}\n${t.fmtCurrency(thisWeekPay)}`);
-    setRequesting(false);
-  };
 
   const dailyHistory = useMemo(() =>
     history.flatMap(item =>
@@ -286,6 +269,10 @@ export default function EmployeePayroll() {
     ? t.payTypeHourly(memberInfo.pay_amount)
     : null;
 
+  const txtGreen = isDark ? '#4cd964' : DARK_GREEN;
+  const subTxt   = isDark ? '#8ba68d' : '#8BA68D';
+  const divider  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,162,0,0.2)';
+
   const renderShiftRows = (list: ShiftVO[]) => {
     const valid = list.filter(s => s.status !== 'VACANT' && s.status !== 'CANCELLED');
     if (!valid.length) return <p style={{ fontSize: 20, color: '#aaa', padding: '8px 0', marginLeft: 15, marginRight: 15 }}>{t.noShifts}</p>;
@@ -296,15 +283,17 @@ export default function EmployeePayroll() {
         <div key={i} style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           padding: '12px 14px',
-          background: i % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(24,160,34,0.04)',
-          border: '1px solid rgba(0,162,0,0.12)',
+          background: i % 2 === 0
+            ? (isDark ? '#1e1e1e' : 'rgba(255,255,255,0.8)')
+            : (isDark ? 'transparent' : 'rgba(24,160,34,0.04)'),
+          border: `1px solid ${isDark ? '#2a2a2a' : 'rgba(0,162,0,0.12)'}`,
           borderRadius: 16,
           opacity: done ? 1 : 0.6,
         }}>
-          <span style={{ fontSize: 15, color: DARK_GREEN }}>
+          <span style={{ fontSize: 15, color: txtGreen }}>
             {d.slice(5).replace('-','/')} ({getDayName(d, translations.employeeHome[language].days)})&nbsp;{getTimePart(s.start_at)}~{getTimePart(s.end_at)}
           </span>
-          <span style={{ fontSize: 15, fontWeight: 600, color: DARK_GREEN, fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: txtGreen, fontVariantNumeric: 'tabular-nums' }}>
             {calcHours(s.start_at, s.end_at).toFixed(1)}h
           </span>
         </div>
@@ -315,40 +304,40 @@ export default function EmployeePayroll() {
   const PayDetail = ({ data, shiftList }: { data: PayrollResult; shiftList: ShiftVO[] }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {payLabel && (
-        <div style={{ fontSize: 20, fontWeight: 600, color: DARK_GREEN, display: 'flex', alignItems: 'center', gap: 10, marginLeft: 15 }}>
+        <div style={{ fontSize: 20, fontWeight: 600, color: txtGreen, display: 'flex', alignItems: 'center', gap: 10, marginLeft: 15 }}>
            {payLabel}
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {renderShiftRows(shiftList)}
       </div>
-      <div style={{ borderTop: `1px solid rgba(0,162,0,0.2)`, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ borderTop: `1px solid ${divider}`, paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 20, marginRight: 15 }}>
-          <span style={{ color: DARK_GREEN, marginLeft: 15 }}>{t.basePay}</span>
-          <span style={{ fontWeight: 600, color: DARK_GREEN }}>{t.fmtCurrency(data.basePay)}</span>
+          <span style={{ color: txtGreen, marginLeft: 15 }}>{t.basePay}</span>
+          <span style={{ fontWeight: 600, color: txtGreen }}>{t.fmtCurrency(data.basePay)}</span>
         </div>
         {data.overtimePay > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 20, marginRight: 15 }}>
-            <span style={{ color: GREEN, marginLeft: 15 }}>{t.overtimePay}</span>
-            <span style={{ fontWeight: 600, color: GREEN }}>+{t.fmtCurrency(data.overtimePay)}</span>
+            <span style={{ color: isDark ? '#4cd964' : GREEN, marginLeft: 15 }}>{t.overtimePay}</span>
+            <span style={{ fontWeight: 600, color: isDark ? '#4cd964' : GREEN }}>+{t.fmtCurrency(data.overtimePay)}</span>
           </div>
         )}
         {data.nightPay > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 20, marginRight: 15 }}>
-            <span style={{ color: GREEN, marginLeft: 15 }}>{t.nightPay}</span>
-            <span style={{ fontWeight: 600, color: GREEN, marginRight: 15 }}>+{t.fmtCurrency(data.nightPay)}</span>
+            <span style={{ color: isDark ? '#4cd964' : GREEN, marginLeft: 15 }}>{t.nightPay}</span>
+            <span style={{ fontWeight: 600, color: isDark ? '#4cd964' : GREEN, marginRight: 15 }}>+{t.fmtCurrency(data.nightPay)}</span>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 20, marginRight: 15 }}>
-          <span style={{ color: GREEN, marginLeft: 15 }}>{t.weeklyPay}</span>
-          <span style={{ fontWeight: 600, color: data.weeklyPay > 0 ? GREEN : '#aaa' }}>
+          <span style={{ color: isDark ? '#4cd964' : GREEN, marginLeft: 15 }}>{t.weeklyPay}</span>
+          <span style={{ fontWeight: 600, color: data.weeklyPay > 0 ? (isDark ? '#4cd964' : GREEN) : '#aaa' }}>
             {data.weeklyPay > 0 ? `+${t.fmtCurrency(data.weeklyPay)}` : '-'}
           </span>
         </div>
       </div>
-      <div style={{ borderTop: `1px solid rgba(0,162,0,0.2)`, paddingTop: 12, textAlign: 'center' }}>
-        <p style={{ fontSize: 20, color: DARK_GREEN, marginBottom: 4 }}>{t.totalPay}</p>
-        <p style={{ fontSize: 30, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(data.totalPay)}</p>
+      <div style={{ borderTop: `1px solid ${divider}`, paddingTop: 12, textAlign: 'center' }}>
+        <p style={{ fontSize: 20, color: txtGreen, marginBottom: 4 }}>{t.totalPay}</p>
+        <p style={{ fontSize: 30, fontWeight: 800, color: txtGreen }}>{t.fmtCurrency(data.totalPay)}</p>
       </div>
     </div>
   );
@@ -413,11 +402,11 @@ export default function EmployeePayroll() {
             <div style={{ textAlign: 'center' }}>
               {loadingPayroll ? (
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>{t.calculating}</p>
-              ) : !payroll ? (
+              ) : !displayPayroll ? (
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16 }}>{t.cannotLoad}</p>
               ) : (
                 <p style={{ fontSize: 36, fontWeight: 800, color: '#fff' }}>
-                  {t.fmtCurrency(payroll.totalPay)}
+                  {t.fmtCurrency(displayPayroll.totalPay)}
                 </p>
               )}
             </div>
@@ -429,46 +418,19 @@ export default function EmployeePayroll() {
 
         {/* ── 이번 달 급여 상세 ── */}
         <div style={{
-          background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
+          background: isDark ? '#141414' : 'rgba(255,255,255,0.5)', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`,
           borderRadius: 26, padding: '20px 20px',
           boxShadow: '0px 4px 12px rgba(0,162,0,0.08)',
         }}>
           {loadingPayroll ? (
             <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 20 }}>{t.calculating}</p>
-          ) : !payroll ? (
+          ) : !displayPayroll ? (
             <p style={{ textAlign: 'center', padding: '32px 0', color: '#888', fontSize: 20 }}>{t.cannotLoad}</p>
           ) : (
-            <PayDetail data={payroll} shiftList={assignedShifts} />
+            <PayDetail data={displayPayroll} shiftList={assignedShifts} />
           )}
         </div>
 
-        {/* ── 주급 선지급 카드 (시급제 + 이번달) ── */}
-        {isCurrentMonth && memberInfo?.pay_type === 'HOURLY' && (
-          <div style={{
-            background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
-            borderRadius: 26, padding: '16px 20px',
-            boxShadow: '0px 4px 12px rgba(0,162,0,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <div style={{ marginLeft: 15 }}>
-              <p style={{ fontSize: 20, color: DARK_GREEN, marginBottom: 4 }}>{t.thisWeekExpected}</p>
-              <p style={{ fontSize: 25, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(thisWeekPay)}</p>
-              <p style={{ fontSize: 15, color: '#aaa', marginTop: 4 }}>{t.weeklyNote}</p>
-            </div>
-            <button
-              onClick={handleWeeklyRequest}
-              disabled={requesting || thisWeekPay === 0}
-              style={{
-                background: thisWeekPay === 0 ? '#ccc' : DARK_GREEN,
-                color: '#fff', border: 'none', borderRadius: 54,
-                padding: '12px 20px', fontSize: 15, fontWeight: 600, cursor: thisWeekPay === 0 ? 'default' : 'pointer',
-                marginRight: 15,
-              }}
-            >
-              {requesting ? t.requesting : t.weeklyAdvanceRequest}
-            </button>
-          </div>
-        )}
 
         {/* ── 탭 ── */}
         <div style={{
@@ -505,14 +467,14 @@ export default function EmployeePayroll() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* 년도 네비 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 10, marginBottom: 10 }}>
-              <button onClick={() => setHistoryYear(p => p - 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: DARK_GREEN }}>
+              <button onClick={() => setHistoryYear(p => p - 1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: txtGreen }}>
                 <ChevronLeft size={20} />
               </button>
-              <span style={{ fontSize: 25, fontWeight: 800, color: DARK_GREEN }}>{t.yearLabel(historyYear)}</span>
+              <span style={{ fontSize: 25, fontWeight: 800, color: txtGreen }}>{t.yearLabel(historyYear)}</span>
               <button
                 onClick={() => setHistoryYear(p => p + 1)}
                 disabled={isCurrentYear}
-                style={{ background: 'none', border: 'none', cursor: isCurrentYear ? 'default' : 'pointer', color: isCurrentYear ? '#ccc' : DARK_GREEN }}
+                style={{ background: 'none', border: 'none', cursor: isCurrentYear ? 'default' : 'pointer', color: isCurrentYear ? '#555' : txtGreen }}
               >
                 <ChevronRight size={20} />
               </button>
@@ -526,9 +488,9 @@ export default function EmployeePayroll() {
                   onClick={() => setHistoryView(v)}
                   style={{
                     flex: 1, padding: '10px 0', borderRadius: 54, fontSize: 16, fontWeight: 600,
-                    border: historyView === v ? 'none' : `1px solid ${BORDER_GREEN}`,
-                    background: historyView === v ? DARK_GREEN : 'transparent',
-                    color: historyView === v ? '#fff' : DARK_GREEN,
+                    border: historyView === v ? 'none' : `1px solid ${isDark ? '#4cd964' : BORDER_GREEN}`,
+                    background: historyView === v ? (isDark ? '#2a4a2a' : DARK_GREEN) : 'transparent',
+                    color: historyView === v ? (isDark ? '#4cd964' : '#fff') : txtGreen,
                     cursor: 'pointer',
                   }}
                 >
@@ -548,14 +510,15 @@ export default function EmployeePayroll() {
                     : <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {history.map((item, idx) => (
                           <div key={idx} style={{
-                            background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
+                            background: isDark ? '#141414' : 'rgba(255,255,255,0.5)', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`,
                             borderRadius: 26, padding: '16px 20px',
                             boxShadow: '0px 4px 12px rgba(0,162,0,0.08)',
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, marginRight: 15 }}>
-                              <span style={{ fontSize: 22, fontWeight: 800, color: DARK_GREEN, borderLeft: `4px solid ${GREEN}`, paddingLeft: 10 }}>{item.label}</span>
+                              <span style={{ fontSize: 22, fontWeight: 800, color: txtGreen, borderLeft: `4px solid ${isDark ? '#4cd964' : GREEN}`, paddingLeft: 10 }}>{item.label}</span>
                               <span style={{
-                                background: LIGHT_GREEN, color: DARK_GREEN, borderRadius: 20,
+                                background: isDark ? 'rgba(76,217,100,0.12)' : LIGHT_GREEN,
+                                color: isDark ? '#4cd964' : DARK_GREEN, borderRadius: 20,
                                 padding: '3px 10px', fontSize: 13, fontWeight: 600,
                               }}>{t.calcDone}</span>
                             </div>
@@ -574,24 +537,24 @@ export default function EmployeePayroll() {
                           <div key={idx} style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             padding: '14px 18px',
-                            background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
+                            background: isDark ? '#141414' : 'rgba(255,255,255,0.8)',
                             border: '1px solid rgba(0,162,0,0.12)', borderRadius: 16,
                             boxShadow: '0px 2px 6px rgba(0,0,0,0.04)',
                           }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                               {/* 주차 번호 */}
                               <div style={{ textAlign: 'center', minWidth: 48 }}>
-                                <p style={{ fontSize: 13, color: '#8BA68D' }}>Week</p>
-                                <p style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>{idx + 1}</p>
+                                <p style={{ fontSize: 13, color: subTxt }}>Week</p>
+                                <p style={{ fontSize: 28, fontWeight: 800, color: txtGreen }}>{idx + 1}</p>
                               </div>
                               <div>
-                                <p style={{ fontSize: 15, fontWeight: 700, color: DARK_GREEN }}>{w.weekLabel}</p>
-                                <p style={{ fontSize: 13, color: '#8BA68D', marginTop: 2 }}>
+                                <p style={{ fontSize: 15, fontWeight: 700, color: txtGreen }}>{w.weekLabel}</p>
+                                <p style={{ fontSize: 13, color: subTxt, marginTop: 2 }}>
                                   {t.weekSummary(w.count, w.hours)}
                                 </p>
                               </div>
                             </div>
-                            <p style={{ fontSize: 18, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(w.total)}</p>
+                            <p style={{ fontSize: 18, fontWeight: 800, color: txtGreen }}>{t.fmtCurrency(w.total)}</p>
                           </div>
                         ))}
                       </div>
@@ -609,25 +572,25 @@ export default function EmployeePayroll() {
                             <div key={idx} style={{
                               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                               padding: '14px 18px',
-                              background: isDark ? '#3a3a3c' : 'rgba(255,255,255,0.8)',
+                              background: isDark ? '#141414' : 'rgba(255,255,255,0.8)',
                               border: '1px solid rgba(0,162,0,0.12)',
                               borderRadius: 16,
                               boxShadow: '0px 2px 6px rgba(0,0,0,0.04)',
                             }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                                 <div style={{ textAlign: 'center', minWidth: 48 }}>
-                                  <p style={{ fontSize: 13, color: '#8BA68D' }}>{getDayName(d, translations.employeeHome[language].days)}</p>
-                                  <p style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>{d.slice(8)}</p>
-                                  <p style={{ fontSize: 12, color: '#8BA68D' }}>{d.slice(0,7).replace('-','.')}</p>
+                                  <p style={{ fontSize: 13, color: subTxt }}>{getDayName(d, translations.employeeHome[language].days)}</p>
+                                  <p style={{ fontSize: 28, fontWeight: 800, color: txtGreen }}>{d.slice(8)}</p>
+                                  <p style={{ fontSize: 12, color: subTxt }}>{d.slice(0,7).replace('-','.')}</p>
                                 </div>
                                 <div>
-                                  <p style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN }}>
+                                  <p style={{ fontSize: 18, fontWeight: 700, color: txtGreen }}>
                                     {getTimePart(s.start_at)} ~ {getTimePart(s.end_at)}
-                                    <span style={{ fontSize: 13, fontWeight: 400, color: '#8BA68D', marginLeft: 8 }}>{hours.toFixed(1)}h</span>
+                                    <span style={{ fontSize: 13, fontWeight: 400, color: subTxt, marginLeft: 8 }}>{hours.toFixed(1)}h</span>
                                   </p>
                                 </div>
                               </div>
-                              <p style={{ fontSize: 18, fontWeight: 800, color: DARK_GREEN }}>{t.fmtCurrency(s.pay)}</p>
+                              <p style={{ fontSize: 18, fontWeight: 800, color: txtGreen }}>{t.fmtCurrency(s.pay)}</p>
                             </div>
                           );
                         })}
@@ -642,7 +605,7 @@ export default function EmployeePayroll() {
         {activeTab === 'trends' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{
-              background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
+              background: isDark ? '#141414' : 'rgba(255,255,255,0.5)', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`,
               borderRadius: 26, padding: '16px 20px',
             }}>
               <SectionPill>{t.monthlyTrend}</SectionPill>
@@ -663,27 +626,27 @@ export default function EmployeePayroll() {
 
             {!loadingHistory && history.length > 0 && (
               <div style={{
-                background: 'rgba(255,255,255,0.5)', border: `1px solid ${BORDER_GREEN}`,
+                background: isDark ? '#141414' : 'rgba(255,255,255,0.5)', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}`,
                 borderRadius: 26, padding: '16px 20px',
               }}>
                 <SectionPill>{t.payStats(history.length)}</SectionPill>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                   <div>
-                    <p style={{ fontSize: 13, color: '#5a8a5c' }}>{t.avgMonthlyPay}</p>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: DARK_GREEN }}>
+                    <p style={{ fontSize: 13, color: subTxt }}>{t.avgMonthlyPay}</p>
+                    <p style={{ fontSize: 24, fontWeight: 800, color: txtGreen }}>
                       {t.fmtCurrencyM(history.reduce((s,h) => s+h.data.totalPay, 0) / history.length)}
                     </p>
                   </div>
                   <div>
-                    <p style={{ fontSize: 13, color: '#5a8a5c' }}>{t.maxPay}</p>
-                    <p style={{ fontSize: 24, fontWeight: 800, color: GREEN }}>
+                    <p style={{ fontSize: 13, color: subTxt }}>{t.maxPay}</p>
+                    <p style={{ fontSize: 24, fontWeight: 800, color: isDark ? '#4cd964' : GREEN }}>
                       {t.fmtCurrencyM(Math.max(...history.map(h => h.data.totalPay)))}
                     </p>
                   </div>
                 </div>
-                <div style={{ borderTop: '1px solid rgba(0,162,0,0.2)', paddingTop: 12 }}>
-                  <p style={{ fontSize: 12, color: '#5a8a5c', marginBottom: 4 }}>{t.totalIncome(history.length)}</p>
-                  <p style={{ fontSize: 28, fontWeight: 800, color: DARK_GREEN }}>
+                <div style={{ borderTop: `1px solid ${divider}`, paddingTop: 12 }}>
+                  <p style={{ fontSize: 12, color: subTxt, marginBottom: 4 }}>{t.totalIncome(history.length)}</p>
+                  <p style={{ fontSize: 28, fontWeight: 800, color: txtGreen }}>
                     {t.fmtCurrencyM(history.reduce((s,h) => s+h.data.totalPay, 0))}
                   </p>
                 </div>

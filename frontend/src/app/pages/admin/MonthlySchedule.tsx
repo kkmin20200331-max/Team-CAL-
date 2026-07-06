@@ -355,7 +355,6 @@ export default function MonthlySchedule() {
               {calendarDates.map((date, index) => {
                 const dateStr = format(date, "yyyy-MM-dd");
                 const dayShifts = getShiftsForDate(date);
-                // 선민 수정 (2026-07-06): 승인된 휴가(vacant)를 취소(빨강 점)에 포함하고 대기/확정 상태를 정확하게 카운팅
                 const confirmedCount = dayShifts.filter(s => {
                   const st = (s.status || '').toLowerCase();
                   return st === "confirmed" || st === "scheduled" || st === "substituted";

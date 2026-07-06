@@ -32,15 +32,26 @@ public class FixedscheduleService {
                 fixedscheduleVO.getEnd_time()
         );
 
-        int exists =
-                fixedscheduleMapper.existsFixedSchedule(
-                        fixedscheduleVO.getStore_id(),
-                        fixedscheduleVO.getUser_id(),
-                        fixedscheduleVO.getWeekday(),
-                        fixedscheduleVO.getStart_time(),
-                        fixedscheduleVO.getEnd_time()
-                );
+        // 비활성화된 동일 요일 스케줄이 있으면 재활성화
+        int reactivated = fixedscheduleMapper.reactivateFixedSchedule(
+                fixedscheduleVO.getStore_id(),
+                fixedscheduleVO.getUser_id(),
+                fixedscheduleVO.getWeekday(),
+                fixedscheduleVO.getStart_time(),
+                fixedscheduleVO.getEnd_time()
+        );
+        if (reactivated > 0) {
+            return;
+        }
 
+        // 이미 활성화된 동일 스케줄이면 스킵
+        int exists = fixedscheduleMapper.existsFixedSchedule(
+                fixedscheduleVO.getStore_id(),
+                fixedscheduleVO.getUser_id(),
+                fixedscheduleVO.getWeekday(),
+                fixedscheduleVO.getStart_time(),
+                fixedscheduleVO.getEnd_time()
+        );
         if (exists > 0) {
             return;
         }
