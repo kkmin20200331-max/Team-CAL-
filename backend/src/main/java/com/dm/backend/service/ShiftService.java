@@ -90,17 +90,11 @@ public class ShiftService {
         shiftMapper.registerShift(shiftVO);
     }
 
-    @Transactional
     public List<ShiftVO> getShiftList(
             String store_id,
             String start_date,
             String end_date
     ) {
-        String today = LocalDate.now().format(DATE_FORMATTER);
-        String effectiveStart = start_date.compareTo(today) >= 0 ? start_date : today;
-        if (effectiveStart.compareTo(end_date) <= 0) {
-            materializeFixedShifts(store_id, effectiveStart, end_date);
-        }
         return shiftMapper.getShiftList(
                 store_id,
                 start_date,
