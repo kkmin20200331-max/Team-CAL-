@@ -46,8 +46,10 @@ export default function EditProfile() {
   }, [isDark]);
 
   const [profileImage, setProfileImage] = useState<string>(
-    () => sessionStorage.getItem('profile_image') || ''
+    () => sessionStorage.getItem('profile_image') || currentUser?.profile_image || ''
   );
+  // 새로 선택한 이미지 파일 (백엔드 업로드용)
+  const newImageFileRef = useRef<File | null>(null);
 
   const [formName,       setFormName]       = useState(currentUser?.name     || '');
   const [formUsername,   setFormUsername]   = useState(currentUser?.username || '');
@@ -89,6 +91,7 @@ export default function EditProfile() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    newImageFileRef.current = file;
     const reader = new FileReader();
     reader.onload = (ev) => {
       const base64 = ev.target?.result as string;
@@ -166,8 +169,29 @@ export default function EditProfile() {
 
       await axiosInstance.put('/users', body);
 
-      const savedProfileImage = sessionStorage.getItem('profile_image') || currentUser.profile_image || '';
-      const updated = { ...currentUser, name: formName, phone: formPhone, username: formUsername || currentUser.username, profile_image: savedProfileImage };
+      // 새 이미지가 있으면 백엔드에 업로드 → URL 받아서 저장
+      let finalProfileImage = currentUser.profile_image || '';
+      if (newImageFileRef.current) {
+        try {
+          const formData = new FormData();
+          formData.append('file', newImageFileRef.current);
+          const imgRes = await axiosInstance.post(
+            `/users/${currentUser.id}/profile-image`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+          );
+          finalProfileImage = imgRes.data?.profile_image || finalProfileImage;
+          sessionStorage.setItem('profile_image', finalProfileImage);
+          if (finalProfileImage) localStorage.setItem(`profile_image_${currentUser.id}`, finalProfileImage);
+        } catch {
+          // 이미지 업로드 실패 시 base64 유지
+          finalProfileImage = sessionStorage.getItem('profile_image') || finalProfileImage;
+        }
+      } else {
+        finalProfileImage = sessionStorage.getItem('profile_image') || finalProfileImage;
+      }
+
+      const updated = { ...currentUser, name: formName, phone: formPhone, username: formUsername || currentUser.username, profile_image: finalProfileImage };
       sessionStorage.setItem('user', JSON.stringify(updated));
 
       setSavedFlash(true);

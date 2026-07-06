@@ -15,4 +15,6 @@ public class UserLineVO {
 
     private String follow_yn;
 
+    private String language;
+
 }

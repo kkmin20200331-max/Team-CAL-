@@ -109,3 +109,5 @@ WHEN NOT MATCHED THEN
     VALUES (source.id, source.store_id, source.user_id, source.work_date, source.start_at, source.end_at, source.status);
 
 COMMIT;
+
+select * from shift;

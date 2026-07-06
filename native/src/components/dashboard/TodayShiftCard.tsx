@@ -1,6 +1,7 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useApp } from '../../contexts/AppContext';
 
 // Props 타입 정의
 type Props = {
@@ -19,6 +20,7 @@ const getStatusText = (status: string, t: (key: string) => string) => {
     case 'IN_PROGRESS': return t('inProgress');
     case 'COMPLETED': return t('completed');
     case 'SUBSTITUTE_REQ': return t('substituteReq');
+    case 'LEAVE_PENDING': return '휴무 대기중';
     case 'OFF': return t('offDay');
     default: return '';
   }
@@ -31,15 +33,33 @@ const getStatusColor = (status: string, isDarkMode: boolean) => {
     case 'IN_PROGRESS': return { bg: isDarkMode ? '#004D00' : '#D6F2C5', text: isDarkMode ? '#00A200' : '#008200' };
     case 'COMPLETED': return { bg: isDarkMode ? '#1F293D' : '#F3F4F6', text: isDarkMode ? '#94A3B8' : '#4B5563' };
     case 'SUBSTITUTE_REQ': return { bg: isDarkMode ? '#78350F' : '#FEF3C7', text: isDarkMode ? '#FDE68A' : '#D97706' };
+    case 'LEAVE_PENDING': return { bg: isDarkMode ? '#78350F' : '#FEF3C7', text: isDarkMode ? '#FDE68A' : '#D97706' };
     case 'OFF': return { bg: isDarkMode ? '#7F1D1D' : '#FEE2E2', text: isDarkMode ? '#FECACA' : '#DC2626' };
     default: return { bg: isDarkMode ? '#1F293D' : '#F3F4F6', text: isDarkMode ? '#94A3B8' : '#4B5563' };
   }
 };
 
+const calculateDailyWage = (time: string, payRate: number) => {
+  if (!time || !time.includes(' - ')) return 0;
+  const [start, end] = time.split(' - ');
+  const [sH, sM] = start.split(':').map(Number);
+  const [eH, eM] = end.split(':').map(Number);
+  
+  let diff = (eH * 60 + eM) - (sH * 60 + sM);
+  if (diff < 0) diff += 24 * 60;
+  
+  const dailyHours = diff / 60;
+  return Math.round(dailyHours * payRate);
+};
+
 const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }: Props) => {
+  const { userInfo } = useApp();
   const styles = getThemedStyles(colors, isDarkMode);
   const statusColor = todayShift ? getStatusColor(todayShift.status, isDarkMode) : getStatusColor('', isDarkMode);
   const statusText = todayShift ? getStatusText(todayShift.status, t) : '';
+
+  const payRate = userInfo?.payRate || 9860;
+  const dailyWage = todayShift ? calculateDailyWage(todayShift.time, payRate) : 0;
 
   return (
     <View style={styles.card}>
@@ -102,7 +122,7 @@ const TodayShiftCard = ({ loading, todayShift, fadeAnim, colors, isDarkMode, t }
           {/* 급여 정보 */}
           <View style={styles.salaryRow}>
             <Text style={styles.salaryLabel}>{t('expectedDailyWage')}</Text>
-            <Text style={styles.salaryValue}>72,000{t('currency')}</Text>
+            <Text style={styles.salaryValue}>{dailyWage.toLocaleString()}{t('currency')}</Text>
           </View>
         </>
       ) : (

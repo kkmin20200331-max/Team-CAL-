@@ -11,6 +11,7 @@ import {
 import { Switch } from "../../components/ui/switch";
 import { useTheme } from "next-themes";
 import { loginAPI } from "../../components/api/auth";
+import { API_BASE } from "../../../lib/axiosInstance";
 
 function SunIcon({ color }: { color: string }) {
   return (
@@ -149,9 +150,21 @@ export default function Login() {
         phone: res.data.phone || '',
         profile_image: res.data.profile_image || '',
       };
+      // 백엔드가 profile_image를 안 줄 경우 localStorage에서 복원
+      if (!loginUser.profile_image) {
+        const stored = localStorage.getItem(`profile_image_${loginUser.id}`);
+        if (stored) loginUser.profile_image = stored;
+      } else {
+        localStorage.setItem(`profile_image_${loginUser.id}`, loginUser.profile_image);
+      }
       sessionStorage.setItem("user", JSON.stringify(loginUser));
-      if (res.data.profile_image) {
-        sessionStorage.setItem("profile_image", res.data.profile_image);
+      fetch(`${API_BASE}/users/${encodeURIComponent(loginUser.id)}/language`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language }),
+      }).catch(() => {});
+      if (loginUser.profile_image) {
+        sessionStorage.setItem("profile_image", loginUser.profile_image);
       } else {
         sessionStorage.removeItem("profile_image");
       }
