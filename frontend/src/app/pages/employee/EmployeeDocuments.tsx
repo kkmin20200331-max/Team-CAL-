@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { useLanguage } from '../../i18n/useLanguage';
+import { translations } from '../../i18n/translations';
 import { FolderOpen, Upload, FileCheck, FileText, Clock, CheckCircle2, XCircle, AlertCircle, Trash2 } from 'lucide-react';
 import EmployeeHeader from './EmployeeHeader';
 import EmployeeBottomNav from './EmployeeBottomNav';
@@ -36,6 +37,7 @@ export default function EmployeeDocuments() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const language = useLanguage();
+  const t = translations.employeeDocuments[language];
   const user = useMemo(() => JSON.parse(sessionStorage.getItem('user') || '{}'), []);
   const storeId = sessionStorage.getItem('store_id') || '';
 
@@ -112,7 +114,7 @@ export default function EmployeeDocuments() {
   const handleUpload = async () => {
     if (!selectedFile) return;
     if (selectedFile.size > 10 * 1024 * 1024) {
-      setUploadMsg({ type: 'error', text: '파일 크기는 10MB 이하여야 합니다.' });
+      setUploadMsg({ type: 'error', text: t.fileSizeError });
       return;
     }
     setUploading(true);
@@ -125,12 +127,12 @@ export default function EmployeeDocuments() {
       formData.append('file', selectedFile);
       const res = await fetch(`${API_BASE}/file/upload`, { method: 'POST', body: formData });
       if (!res.ok) throw new Error(await res.text());
-      setUploadMsg({ type: 'success', text: '업로드가 완료됐습니다. 관리자 검토 후 승인됩니다.' });
+      setUploadMsg({ type: 'success', text: t.uploadSuccess });
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       await fetchMyFilesFiltered();
     } catch (e: any) {
-      setUploadMsg({ type: 'error', text: `업로드에 실패했습니다. ${e?.message || ''}` });
+      setUploadMsg({ type: 'error', text: `${t.uploadFail} ${e?.message || ''}` });
     } finally {
       setUploading(false);
     }
@@ -169,9 +171,9 @@ export default function EmployeeDocuments() {
         <div>
           <h1 style={{ fontSize: 40, fontWeight: 800, color: '#F2F5EB', margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
             <FolderOpen size={34} color="#F2F5EB" />
-            내 서류
+            {t.pageTitle}
           </h1>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 4 }}>근로계약서 · 보건증을 업로드하세요</p>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.85)', marginTop: 4 }}>{t.pageSubtitle}</p>
         </div>
       </EmployeeHeader>
 
@@ -180,12 +182,12 @@ export default function EmployeeDocuments() {
         {/* ── 서류 업로드 ── */}
         <div style={cardStyle}>
           <div style={{ padding: '18px 20px 14px' }}>
-            <span style={pillStyle}><Upload size={15} />서류 업로드</span>
+            <span style={pillStyle}><Upload size={15} />{t.uploadSection}</span>
           </div>
           <div style={{ padding: '0 20px 20px' }}>
 
             {/* 서류 종류 선택 */}
-            <p style={{ fontSize: 14, fontWeight: 600, color: txtSub, marginBottom: 10 }}>서류 종류</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: txtSub, marginBottom: 10 }}>{t.docTypeLabel}</p>
             <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
               {(['health_certificate', 'contract'] as DocType[]).map(type => {
                 const active = selectedType === type;
@@ -220,7 +222,6 @@ export default function EmployeeDocuments() {
                 marginBottom: 14, transition: 'background 0.15s',
               }}
             >
-              <Upload size={32} color={txtGreen} style={{ marginBottom: 8 }} />
               {selectedFile ? (
                 <>
                   <p style={{ fontSize: 15, fontWeight: 700, color: txtGreen, margin: '0 0 4px' }}>{selectedFile.name}</p>
@@ -228,8 +229,8 @@ export default function EmployeeDocuments() {
                 </>
               ) : (
                 <>
-                  <p style={{ fontSize: 15, fontWeight: 600, color: txtGreen, margin: '0 0 4px' }}>파일을 선택하세요</p>
-                  <p style={{ fontSize: 13, color: txtSub, margin: 0 }}>JPG, PNG, PDF · 최대 10MB</p>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: txtGreen, margin: '0 0 4px' }}>{t.selectFile}</p>
+                  <p style={{ fontSize: 13, color: txtSub, margin: 0 }}>{t.fileHint}</p>
                 </>
               )}
             </div>
@@ -261,7 +262,7 @@ export default function EmployeeDocuments() {
               }}
             >
               <Upload size={18} />
-              {uploading ? '업로드 중...' : '업로드'}
+              {uploading ? t.uploading : t.uploadBtn}
             </button>
           </div>
         </div>
@@ -269,15 +270,15 @@ export default function EmployeeDocuments() {
         {/* ── 제출 내역 ── */}
         <div style={cardStyle}>
           <div style={{ padding: '18px 20px 14px' }}>
-            <span style={pillStyle}><FileText size={15} />제출 내역</span>
+            <span style={pillStyle}><FileText size={15} />{t.historySection}</span>
           </div>
           <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {loading ? (
-              <p style={{ textAlign: 'center', padding: '24px 0', color: txtSub, fontSize: 15 }}>불러오는 중...</p>
+              <p style={{ textAlign: 'center', padding: '24px 0', color: txtSub, fontSize: 15 }}>{t.loading}</p>
             ) : myFiles.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '28px 0', color: txtSub }}>
                 <FolderOpen size={40} color={isDark ? '#2a2a2a' : '#ccc'} style={{ marginBottom: 8 }} />
-                <p style={{ fontSize: 15, margin: 0 }}>아직 제출한 서류가 없습니다</p>
+                <p style={{ fontSize: 15, margin: 0 }}>{t.noFiles}</p>
               </div>
             ) : (
               myFiles.map(file => {
@@ -298,7 +299,7 @@ export default function EmployeeDocuments() {
                           {file.original_name}
                         </p>
                         <p style={{ fontSize: 12, color: st.color, opacity: 0.7, margin: 0 }}>
-                          제출일: {file.created_at?.slice(0, 10)}
+                          {t.submittedAt} {file.created_at?.slice(0, 10)}
                         </p>
                         {file.notes && (
                           <p style={{ fontSize: 12, color: st.color, marginTop: 6, padding: '6px 10px', background: 'rgba(0,0,0,0.06)', borderRadius: 8 }}>
@@ -318,16 +319,11 @@ export default function EmployeeDocuments() {
         <div style={cardStyle}>
           <div style={{ padding: '18px 20px 14px' }}>
             <span style={{ ...pillStyle, background: isDark ? '#1a2e1a' : 'rgba(7,121,15,0.08)', color: txtGreen, border: `1px solid ${isDark ? '#2a2a2a' : 'rgba(0,162,0,0.25)'}` }}>
-              <AlertCircle size={14} />안내
+              <AlertCircle size={14} />{t.infoSection}
             </span>
           </div>
           <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              '보건증은 유효기간 내 최신본을 제출해 주세요.',
-              '근로계약서는 서명된 파일을 업로드해 주세요.',
-              '제출 후 관리자 검토를 거쳐 승인 처리됩니다.',
-              '파일 형식: JPG, PNG, PDF / 최대 10MB',
-            ].map((g, i) => (
+            {t.infoItems.map((g, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, fontSize: 13, color: txtSub }}>
                 <span style={{ color: txtGreen, fontWeight: 700, flexShrink: 0 }}>•</span>
                 <span>{g}</span>
