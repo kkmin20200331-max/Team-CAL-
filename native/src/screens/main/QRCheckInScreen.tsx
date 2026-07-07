@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -24,6 +24,7 @@ const QRCheckInScreen = ({ navigation }: Props) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const isProcessingRef = useRef(false);
 
   const extractQrToken = (data: string) => {
     const trimmed = data.trim();
@@ -50,8 +51,9 @@ const QRCheckInScreen = ({ navigation }: Props) => {
   }
 
   const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
-    if (scanned || processing) return;
+    if (scanned || processing || isProcessingRef.current) return;
 
+    isProcessingRef.current = true;
     setScanned(true);
     setProcessing(true);
 
@@ -88,6 +90,7 @@ const QRCheckInScreen = ({ navigation }: Props) => {
         text2: error.response?.data?.message || error.message || t('scanQrAgain'),
       });
       setScanned(false);
+      isProcessingRef.current = false;
     } finally {
       setProcessing(false);
     }

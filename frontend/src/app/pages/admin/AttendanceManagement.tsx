@@ -173,6 +173,12 @@ export default function AttendanceManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<RowStatus | "all">("all");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, month]);
 
   const currentBranch = sessionStorage.getItem("store_name") || "지점 선택";
   const currentUser = JSON.parse(sessionStorage.getItem("user") || "{}");
@@ -325,6 +331,26 @@ export default function AttendanceManagement() {
     return matchesSearch && matchesStatus;
   });
 
+  const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+  const paginatedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredRows.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredRows, currentPage, rowsPerPage]);
+
+  const pageRange = useMemo(() => {
+    const range = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    return range;
+  }, [currentPage, totalPages]);
+
   const stats = {
     scheduled: rows.filter((row) => row.status !== "cancelled").length,
     normal: rows.filter((row) => row.status === "normal").length,
@@ -460,10 +486,10 @@ export default function AttendanceManagement() {
                 <tbody>
                   {loading ? (
                     <tr><td colSpan={8} style={{ padding: 36, textAlign: 'center', color: subText }}>{t.loading}</td></tr>
-                  ) : filteredRows.length === 0 ? (
+                  ) : paginatedRows.length === 0 ? (
                     <tr><td colSpan={8} style={{ padding: 36, textAlign: 'center', color: subText }}>{t.noData}</td></tr>
                   ) : (
-                    filteredRows.map((row) => {
+                    paginatedRows.map((row) => {
                       const meta = localizedStatusMeta[row.status];
                       return (
                         <tr key={row.key} style={{ borderBottom: `1px solid ${isDark ? '#1a1a1a' : 'rgba(0,162,0,0.2)'}` }}>
@@ -488,6 +514,102 @@ export default function AttendanceManagement() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 24 }}>
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(1)}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 10,
+                    border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                    background: isDark ? "#1a1a1a" : "#fff",
+                    color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 10,
+                    border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                    background: isDark ? "#1a1a1a" : "#fff",
+                    color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  &lt;
+                </button>
+                {pageRange.map((pageNum) => {
+                  const isCurrent = pageNum === currentPage;
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: 10,
+                        border: `1px solid ${BORDER_GREEN}`,
+                        background: isCurrent ? GREEN : (isDark ? "#1a1a1a" : "#fff"),
+                        color: isCurrent ? "#fff" : (isDark ? "#fff" : DARK_GREEN),
+                        cursor: "pointer",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 10,
+                    border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                    background: isDark ? "#1a1a1a" : "#fff",
+                    color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                    cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  &gt;
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 10,
+                    border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                    background: isDark ? "#1a1a1a" : "#fff",
+                    color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                    cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            )}
         </main>
       </div>
     </div>
