@@ -179,7 +179,7 @@ const PayrollScreen = ({ route, navigation }: any) => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>급여 정산 현황</Text>
+          <Text style={styles.headerTitle}>{t('급여 정산 현황')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -197,32 +197,32 @@ const PayrollScreen = ({ route, navigation }: any) => {
         {loadingStorePayroll ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>급여 내역을 조회 중입니다...</Text>
+            <Text style={styles.loadingText}>{t('급여 내역을 조회 중입니다...')}</Text>
           </View>
         ) : storePayrollEntries.length === 0 ? (
           <View style={styles.loadingContainer}>
             <Ionicons name="cash-outline" size={48} color={colors.subText} style={{ opacity: 0.5, marginBottom: 12 }} />
-            <Text style={styles.emptyText}>선택한 달의 급여 정산 기록이 없습니다.</Text>
+            <Text style={styles.emptyText}>{t('선택한 달의 급여 정산 기록이 없습니다.')}</Text>
           </View>
         ) : (
           <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
             {/* 총계 요약 카드 */}
             <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>총 급여 지급액 (세후 예상)</Text>
+              <Text style={styles.summaryTitle}>{t('총 급여 지급액 (세후 예상)')}</Text>
               <Text style={styles.summaryAmount}>
                 {totalStorePayroll.toLocaleString()}
-                <Text style={styles.summaryCurrency}>원</Text>
+                <Text style={styles.summaryCurrency}>{t('원')}</Text>
               </Text>
               <View style={styles.divider} />
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>총 직원 수</Text>
-                <Text style={styles.detailValue}>{totalEmployeeCount}명</Text>
+                <Text style={styles.detailLabel}>{t('총 직원 수')}</Text>
+                <Text style={styles.detailValue}>{totalEmployeeCount}{t('명')}</Text>
               </View>
             </View>
 
             {/* 직원별 리스트 */}
             <View style={styles.listSection}>
-              <Text style={styles.sectionTitle}>직원별 정산 내역 ({totalEmployeeCount}건)</Text>
+              <Text style={styles.sectionTitle}>{t('직원별 정산 내역')} ({totalEmployeeCount}{t('건')})</Text>
               <View style={{ gap: 12 }}>
                 {storePayrollEntries.map((entry) => {
                   const deductions = (entry.tax || 0) + (entry.insurance || 0) + (entry.pension || 0);
@@ -240,11 +240,11 @@ const PayrollScreen = ({ route, navigation }: any) => {
                       <View style={styles.employeeCardHeader}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                           <View style={styles.avatarMini}>
-                            <Text style={styles.avatarMiniText}>{entry.employeeName?.[0] || '직'}</Text>
+                            <Text style={styles.avatarMiniText}>{entry.employeeName?.[0] || t('직')}</Text>
                           </View>
                           <View>
                             <Text style={styles.employeeNameText}>{entry.employeeName}</Text>
-                            <Text style={styles.employeePositionText}>{entry.position || '직원'}</Text>
+                            <Text style={styles.employeePositionText}>{entry.position || t('직원')}</Text>
                           </View>
                         </View>
                         <Ionicons name="chevron-forward" size={16} color={colors.subText} />
@@ -254,20 +254,20 @@ const PayrollScreen = ({ route, navigation }: any) => {
                       
                       <View style={styles.employeeCardDetails}>
                         <View style={styles.detailColumn}>
-                          <Text style={styles.cardDetailLabel}>근무시간</Text>
+                          <Text style={styles.cardDetailLabel}>{t('근무시간')}</Text>
                           <Text style={styles.cardDetailValue}>{displayHours}h</Text>
                         </View>
                         <View style={styles.detailColumn}>
-                          <Text style={styles.cardDetailLabel}>기본급</Text>
-                          <Text style={styles.cardDetailValue}>{Math.round(entry.basePay || 0).toLocaleString()}원</Text>
+                          <Text style={styles.cardDetailLabel}>{t('기본급')}</Text>
+                          <Text style={styles.cardDetailValue}>{Math.round(entry.basePay || 0).toLocaleString()}{t('원')}</Text>
                         </View>
                         <View style={styles.detailColumn}>
-                          <Text style={styles.cardDetailLabel}>공제액</Text>
-                          <Text style={[styles.cardDetailValue, { color: '#ef4444' }]}>{Math.round(deductions).toLocaleString()}원</Text>
+                          <Text style={styles.cardDetailLabel}>{t('공제액')}</Text>
+                          <Text style={[styles.cardDetailValue, { color: '#ef4444' }]}>{Math.round(deductions).toLocaleString()}{t('원')}</Text>
                         </View>
                         <View style={styles.detailColumn}>
-                          <Text style={styles.cardDetailLabel}>실수령액</Text>
-                          <Text style={[styles.cardDetailValue, { color: colors.primary, fontWeight: '800' }]}>{Math.round(entry.totalPay || 0).toLocaleString()}원</Text>
+                          <Text style={styles.cardDetailLabel}>{t('실수령액')}</Text>
+                          <Text style={[styles.cardDetailValue, { color: colors.primary, fontWeight: '800' }]}>{Math.round(entry.totalPay || 0).toLocaleString()}{t('원')}</Text>
                         </View>
                       </View>
                     </TouchableOpacity>

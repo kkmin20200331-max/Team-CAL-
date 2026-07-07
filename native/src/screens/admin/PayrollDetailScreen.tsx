@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSchedule } from '../../contexts/ScheduleContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -12,14 +13,15 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
   const { employees, shifts } = useSchedule();
+  const { t } = useLanguage();
 
   // employee 정보가 ScheduleContext에 없을 수도 있으므로 (빈 배열이거나 로드 지연 등)
   // payrollEntry에 있는 데이터를 최우선으로 사용합니다.
   const employee = useMemo(() => employees?.find(e => e.id === employeeId), [employees, employeeId]);
   
-  const displayEmployeeName = payrollEntry?.employeeName || employee?.name || '이름 없음';
-  const displayPosition = payrollEntry?.position || '직원';
-  const displayEmail = employee?.email || '이메일 정보 없음';
+  const displayEmployeeName = payrollEntry?.employeeName || employee?.name || t('이름 없음');
+  const displayPosition = payrollEntry?.position || t('직원');
+  const displayEmail = employee?.email || t('이메일 정보 없음');
   
   // 시급/월급 확인
   const payType = employee?.payType || 'HOURLY';
@@ -59,11 +61,11 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
              <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>급여 명세서</Text>
+          <Text style={styles.headerTitle}>{t('급여 명세서')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: colors.subText }}>급여 데이터를 불러올 수 없습니다.</Text>
+          <Text style={{ color: colors.subText }}>{t('급여 데이터를 불러올 수 없습니다.')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -87,10 +89,10 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
         <View style={styles.dailyRow}>
           <View>
             <Text style={styles.dailyDate}>{format(new Date(item.date), 'M월 d일 (eee)', { locale: ko })}</Text>
-            <Text style={styles.dailyHours}>{item.time || '시간 미지정'} ({dailyHours.toFixed(1)}시간)</Text>
+            <Text style={styles.dailyHours}>{item.time || t('시간 미지정')} ({dailyHours.toFixed(1)}{t('시간')})</Text>
           </View>
           <Text style={styles.dailyAmount}>
-             {payType === 'HOURLY' ? Math.round(dailyHours * payRate).toLocaleString() : '-'}원
+             {payType === 'HOURLY' ? Math.round(dailyHours * payRate).toLocaleString() : '-'}{t('원')}
           </Text>
         </View>
         {index < workHistory.length - 1 && <View style={styles.listDivider} />}
@@ -104,7 +106,7 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
            <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{month ? format(new Date(month), 'yyyy년 M월', { locale: ko }) : ''} 명세서</Text>
+        <Text style={styles.headerTitle}>{month ? format(new Date(month), 'yyyy년 M월', { locale: ko }) : ''} {t('명세서')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -112,54 +114,54 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
         {/* 1. 직원 프로필 카드 */}
         <View style={styles.profileCard}>
            <View style={styles.avatar}>
-             <Text style={styles.avatarText}>{displayEmployeeName[0] || '직'}</Text>
+             <Text style={styles.avatarText}>{displayEmployeeName[0] || t('직')}</Text>
            </View>
            <View style={styles.profileInfo}>
              <Text style={styles.profileName}>{displayEmployeeName} <Text style={styles.profilePosition}>{displayPosition}</Text></Text>
              <Text style={styles.profileEmail}>{displayEmail}</Text>
              <Text style={styles.profilePayType}>
-               {payType === 'HOURLY' ? '시급' : '월급'} {payRate.toLocaleString()}원
+               {payType === 'HOURLY' ? t('시급') : t('월급')} {payRate.toLocaleString()}{t('원')}
              </Text>
            </View>
         </View>
 
         {/* 2. 이번 달 급여 요약 */}
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>총 실수령액</Text>
-          <Text style={styles.summaryAmount}>{totalPay.toLocaleString()}<Text style={styles.summaryCurrency}>원</Text></Text>
+          <Text style={styles.summaryTitle}>{t('총 실수령액')}</Text>
+          <Text style={styles.summaryAmount}>{totalPay.toLocaleString()}<Text style={styles.summaryCurrency}>{t('원')}</Text></Text>
           
           <View style={styles.divider} />
           
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>기본급</Text>
-            <Text style={styles.detailValue}>{Math.round(basePay).toLocaleString()}원</Text>
+            <Text style={styles.detailLabel}>{t('기본급')}</Text>
+            <Text style={styles.detailValue}>{Math.round(basePay).toLocaleString()}{t('원')}</Text>
           </View>
           {overtimePay > 0 && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>연장/야간수당</Text>
-              <Text style={styles.detailValue}>{Math.round(overtimePay).toLocaleString()}원</Text>
+              <Text style={styles.detailLabel}>{t('연장/야간수당')}</Text>
+              <Text style={styles.detailValue}>{Math.round(overtimePay).toLocaleString()}{t('원')}</Text>
             </View>
           )}
           {holidayPay > 0 && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>주휴/기타수당</Text>
-              <Text style={styles.detailValue}>{Math.round(holidayPay).toLocaleString()}원</Text>
+              <Text style={styles.detailLabel}>{t('주휴/기타수당')}</Text>
+              <Text style={styles.detailValue}>{Math.round(holidayPay).toLocaleString()}{t('원')}</Text>
             </View>
           )}
           {deductions > 0 && (
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>공제액</Text>
-              <Text style={[styles.detailValue, { color: '#ef4444' }]}>-{Math.round(deductions).toLocaleString()}원</Text>
+              <Text style={styles.detailLabel}>{t('공제액')}</Text>
+              <Text style={[styles.detailValue, { color: '#ef4444' }]}>-{Math.round(deductions).toLocaleString()}{t('원')}</Text>
             </View>
           )}
         </View>
 
         {/* 3. 일자별 근무 내역 */}
         <View style={styles.listSection}>
-          <Text style={styles.sectionTitle}>상세 근무 내역</Text>
+          <Text style={styles.sectionTitle}>{t('상세 근무 내역')}</Text>
           <View style={styles.listCard}>
             {workHistory.length === 0 ? (
-              <Text style={styles.emptyText}>해당 월의 근무 기록이 없습니다.</Text>
+              <Text style={styles.emptyText}>{t('해당 월의 근무 기록이 없습니다.')}</Text>
             ) : (
               workHistory.map((item, index) => renderDailyWage(item, index))
             )}
