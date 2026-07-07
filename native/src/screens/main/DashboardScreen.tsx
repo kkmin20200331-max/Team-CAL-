@@ -259,7 +259,23 @@ const DashboardScreen = ({ navigation }: Props) => {
       const attendanceList = attendanceRes.status === 'fulfilled' && Array.isArray(attendanceRes.value.data)
         ? attendanceRes.value.data
         : [];
-      const todayAttendance = attendanceList.find((item: any) => getDatePart(item.work_date) === todayString);
+      const todayAttendanceList = attendanceList.filter((item: any) => getDatePart(item.work_date) === todayString);
+      let todayAttendance = null;
+      if (todayAttendanceList.length > 0) {
+        todayAttendance = todayAttendanceList.reduce((latest: any, current: any) => {
+          if (!latest) return current;
+          
+          // 1. check_in_at 비교
+          const currentIn = current.check_in_at || '';
+          const latestIn = latest.check_in_at || '';
+          if (currentIn > latestIn) return current;
+          if (currentIn < latestIn) return latest;
+          
+          // 2. check_in_at이 완벽히 같다면(예: 초단위까지 중복 생성), check_out_at이 있는 쪽을 우선순위로 선택
+          if (current.check_out_at && !latest.check_out_at) return current;
+          return latest;
+        }, null);
+      }
 
       const mergedSchedule = schedule.map((item) => {
         if (item.fullDate !== todayString || !todayAttendance) return item;
