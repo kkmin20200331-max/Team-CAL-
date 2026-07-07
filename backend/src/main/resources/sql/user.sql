@@ -77,6 +77,7 @@ insert into users (
            'GUEST',
            'PENDING' );
 
+
 select * from users;
 
 DELETE FROM users WHERE name = 'adminsm';

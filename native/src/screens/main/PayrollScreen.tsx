@@ -233,7 +233,8 @@ const PayrollScreen = ({ route, navigation }: any) => {
                       style={styles.adminEmployeeCard}
                       onPress={() => navigation.navigate('PayrollDetail', {
                         employeeId: entry.employeeId,
-                        month: format(currentMonth, 'yyyy-MM-dd')
+                        month: format(currentMonth, 'yyyy-MM-dd'),
+                        payrollEntry: entry
                       })}
                     >
                       <View style={styles.employeeCardHeader}>
