@@ -21,7 +21,7 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
   
   const displayEmployeeName = payrollEntry?.employeeName || employee?.name || t('이름 없음');
   const displayPosition = payrollEntry?.position || t('직원');
-  const displayEmail = employee?.email || t('이메일 정보 없음');
+  const displayEmail = (employee as any)?.email || t('이메일 정보 없음');
   
   // 시급/월급 확인
   const payType = employee?.payType || 'HOURLY';
@@ -38,7 +38,7 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
     const employeeShiftsInMonth = shifts.filter(shift => 
       shift.userId === employeeId &&
       isWithinInterval(new Date(shift.date), { start: monthStart, end: monthEnd }) &&
-      (shift.status === 'CONFIRMED' || shift.status === 'COMPLETED' || shift.status === 'ATTENDED')
+      (shift.status === 'CONFIRMED' || shift.status === 'COMPLETED')
     );
     
     // Sort by date ascending
