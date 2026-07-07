@@ -281,6 +281,8 @@ public class PayrollService {
         // 기본급 / 연장 / 야간
         // =========================
 
+        double hourlyRate = "MONTHLY".equalsIgnoreCase(pay_type) ? (pay_amount / 209.0) : pay_amount;
+
         for (AttendanceVO attendance : attendances) {
 
             LocalDateTime startTime =
@@ -312,14 +314,14 @@ public class PayrollService {
 
             overtimePay +=
                     overtimeHours
-                            * pay_amount
+                            * hourlyRate
                             * 0.5;
 
             nightPay +=
                     calculateNightPay(
                             startTime,
                             endTime,
-                            pay_amount
+                            hourlyRate
                     );
         }
 
