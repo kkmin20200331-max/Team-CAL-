@@ -23,6 +23,90 @@ import {
 } from "lucide-react";
 import AdminHeader from "./AdminHeader";
 import { useLanguage } from '../../i18n/useLanguage';
+
+const previewTranslations = {
+  ko: {
+    selectBranch: '지점 선택',
+    selectedBranch: '선택 지점',
+    errorNoBranch: '지점 정보가 없습니다. 관리자 대시보드에서 지점을 먼저 선택해주세요.',
+    errorFetchFailed: '대타 신청 목록을 불러오지 못했습니다.',
+    breadcrumbSubRecruitment: '대타 모집',
+    pageTitle: '대타 모집 현황',
+    pageSubtitle: '모집글을 먼저 확인하고, 필요한 글을 선택해서 기존 직원 연락 화면으로 이동합니다.',
+    refresh: '새로고침',
+    staffContactScreen: '직원 연락 화면',
+    labelPosts: '모집글',
+    labelPendingApps: '대기 신청',
+    labelApplicants: '지원 직원',
+    loadingText: '대타 모집글을 불러오는 중입니다.',
+    noActivePostsTitle: '현재 모집 중인 대타 글이 없습니다.',
+    noActivePostsDesc: '대타 모집글이 생성되면 이 영역에 먼저 표시됩니다.',
+    requesterPrefix: '요청자: ',
+    createdAtText: (date: string) => `생성 ${date}`,
+    pendingAppsCount: (count: number) => `대기 신청 ${count}건`,
+    noReasonText: '대타 요청',
+    employeeFallback: '직원',
+    noApplicantsText: '아직 지원자가 없습니다. 클릭하면 직원 연락 화면으로 이동합니다.',
+    otherCountText: (count: number) => ` 외 ${count}명`,
+    chooseContactTarget: '연락 대상 선택',
+    adminFallback: '관리자',
+    avatarLetter: '대',
+  },
+  en: {
+    selectBranch: 'Select Store',
+    selectedBranch: 'Selected Store',
+    errorNoBranch: 'No store information found. Please select a store on the admin dashboard first.',
+    errorFetchFailed: 'Failed to fetch substitute applications list.',
+    breadcrumbSubRecruitment: 'Substitute Recruitment',
+    pageTitle: 'Substitute Posting Status',
+    pageSubtitle: 'Check active postings first, then select one to go to the staff contact page.',
+    refresh: 'Refresh',
+    staffContactScreen: 'Staff Contact Screen',
+    labelPosts: 'Recruiting Posts',
+    labelPendingApps: 'Pending Applications',
+    labelApplicants: 'Applicants',
+    loadingText: 'Loading substitute posts...',
+    noActivePostsTitle: 'No active substitute postings.',
+    noActivePostsDesc: 'Created substitute posts will be displayed in this area.',
+    requesterPrefix: 'Requester: ',
+    createdAtText: (date: string) => `Created: ${date}`,
+    pendingAppsCount: (count: number) => `${count} Pending Applications`,
+    noReasonText: 'Substitute Request',
+    employeeFallback: 'Employee',
+    noApplicantsText: 'No applicants yet. Click to go to the staff contact page.',
+    otherCountText: (count: number) => ` and ${count} others`,
+    chooseContactTarget: 'Select Contact Target',
+    adminFallback: 'Admin',
+    avatarLetter: 'S',
+  },
+  ja: {
+    selectBranch: '店舗選択',
+    selectedBranch: '選択店舗',
+    errorNoBranch: '店舗情報がありません。管理ダッシュボードで店舗を先に選択してください。',
+    errorFetchFailed: '代替申請リストを取得できませんでした。',
+    breadcrumbSubRecruitment: '代替募集',
+    pageTitle: '代替募集状況',
+    pageSubtitle: '募集中の案件を先に確認し、必要な案件を選択して既存スタッフへの連絡画面へ移動します。',
+    refresh: '更新',
+    staffContactScreen: 'スタッフ連絡画面',
+    labelPosts: '募集中の案件',
+    labelPendingApps: '待機申請',
+    labelApplicants: '応募スタッフ',
+    loadingText: '代替募集中の案件を読み込んでいます。',
+    noActivePostsTitle: '現在募集中の代替依頼はありません。',
+    noActivePostsDesc: '代替募集が作成されると、このエリアに表示されます。',
+    requesterPrefix: '依頼者: ',
+    createdAtText: (date: string) => `作成日時: ${date}`,
+    pendingAppsCount: (count: number) => `待機申請 ${count}件`,
+    noReasonText: '代替リクエスト',
+    employeeFallback: 'スタッフ',
+    noApplicantsText: 'まだ応募者がいません。クリックするとスタッフ連絡画面へ移動します。',
+    otherCountText: (count: number) => ` 外 ${count}名`,
+    chooseContactTarget: '連絡対象を選択',
+    adminFallback: '管理者',
+    avatarLetter: '代',
+  }
+};
 import { translations } from '../../i18n/translations';
 
 const GREEN = "#18A022";
@@ -92,6 +176,32 @@ const extractRequestDate = (reason?: string) => {
   return match?.[1] ?? "-";
 };
 
+const translateReason = (reason: string, localT: any) => {
+  if (!reason) return localT.noReasonText;
+  
+  // Match format: [2026-07-06] 인원 1명 필요
+  const match = reason.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(?:인원|인원수)?\s*(\d+)명\s*(?:필요)?$/);
+  if (match) {
+    const date = match[1];
+    const count = parseInt(match[2], 10);
+    return localT.reasonText(date, count);
+  }
+  
+  // If it doesn't match the exact pattern, check if it starts with date
+  const matchDate = reason.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)$/);
+  if (matchDate) {
+    const date = matchDate[1];
+    const rest = matchDate[2];
+    const matchCount = rest.match(/(\d+)명/);
+    if (matchCount) {
+      const count = parseInt(matchCount[1], 10);
+      return localT.reasonText(date, count);
+    }
+  }
+
+  return reason;
+};
+
 export default function SubstituteApplicationsPreview() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,10 +209,11 @@ export default function SubstituteApplicationsPreview() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const language = useLanguage();
+  const localT = previewTranslations[language] || previewTranslations.ko;
 
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
-  const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
+  const currentBranch = sessionStorage.getItem('store_name') || localT.selectBranch;
   const currentUser = useMemo(() => {
     try {
       return JSON.parse(sessionStorage.getItem("user") || "{}");
@@ -115,7 +226,7 @@ export default function SubstituteApplicationsPreview() {
     branchId && branchId !== "undefined"
       ? branchId
       : sessionStorage.getItem("store_id") || "";
-  const storeName = sessionStorage.getItem("store_name") || "선택 지점";
+  const storeName = sessionStorage.getItem("store_name") || localT.selectedBranch;
 
   const [posts, setPosts] = useState<PostWithApplications[]>([]);
   const [users, setUsers] = useState<Record<string, UserVo>>({});
@@ -165,7 +276,7 @@ export default function SubstituteApplicationsPreview() {
 
   const fetchApplications = async () => {
     if (!selectedBranchId) {
-      setError("지점 정보가 없습니다. 관리자 대시보드에서 지점을 먼저 선택해주세요.");
+      setError(localT.errorNoBranch);
       setLoading(false);
       return;
     }
@@ -221,7 +332,7 @@ export default function SubstituteApplicationsPreview() {
       setPosts(nextPosts);
     } catch (err) {
       console.error("[SubstituteApplicationsPreview] load failed", err);
-      setError("대타 신청 목록을 불러오지 못했습니다.");
+      setError(localT.errorFetchFailed);
     } finally {
       setLoading(false);
     }
@@ -282,14 +393,14 @@ export default function SubstituteApplicationsPreview() {
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, marginBottom: 24 }}>
             <div>
               <div style={{ fontSize: 13, color: isDark ? "#6b9e6b" : "#8BA68D", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
-                {storeName} <ChevronRight size={12} /> 대타 모집
+                {storeName} <ChevronRight size={12} /> {localT.breadcrumbSubRecruitment}
               </div>
               <h1 style={{ fontSize: 28, fontWeight: 900, color: isDark ? GREEN : DARK_GREEN, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 10 }}>
                 <UserCheck size={28} />
-                대타 모집 현황
+                {localT.pageTitle}
               </h1>
               <p style={{ fontSize: 13, color: isDark ? "#6b9e6b" : "#8BA68D", margin: 0 }}>
-                모집글을 먼저 확인하고, 필요한 글을 선택해서 기존 직원 연락 화면으로 이동합니다.
+                {localT.pageSubtitle}
               </p>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
@@ -310,7 +421,7 @@ export default function SubstituteApplicationsPreview() {
                 }}
               >
                 <RefreshCw size={15} />
-                새로고침
+                {localT.refresh}
               </button>
               <button
                 type="button"
@@ -325,16 +436,16 @@ export default function SubstituteApplicationsPreview() {
                   cursor: "pointer",
                 }}
               >
-                직원 연락 화면
+                {localT.staffContactScreen}
               </button>
             </div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14, marginBottom: 22 }}>
             {[
-              { label: "모집글", value: stats.posts, icon: <CalendarDays size={24} color={GREEN} /> },
-              { label: "대기 신청", value: stats.applications, icon: <MessageSquare size={24} color={GREEN} /> },
-              { label: "지원 직원", value: stats.applicants, icon: <Users size={24} color={GREEN} /> },
+              { label: localT.labelPosts, value: stats.posts, icon: <CalendarDays size={24} color={GREEN} /> },
+              { label: localT.labelPendingApps, value: stats.applications, icon: <MessageSquare size={24} color={GREEN} /> },
+              { label: localT.labelApplicants, value: stats.applicants, icon: <Users size={24} color={GREEN} /> },
             ].map((item) => (
               <div
                 key={item.label}
@@ -365,7 +476,7 @@ export default function SubstituteApplicationsPreview() {
           )}
 
           {loading ? (
-            <div style={{ padding: "80px 0", textAlign: "center", color: subTextColor, fontWeight: 800 }}>대타 모집글을 불러오는 중입니다.</div>
+            <div style={{ padding: "80px 0", textAlign: "center", color: subTextColor, fontWeight: 800 }}>{localT.loadingText}</div>
           ) : posts.length === 0 ? (
             <div
               style={{
@@ -381,8 +492,8 @@ export default function SubstituteApplicationsPreview() {
             >
               <div>
                 <CheckCircle2 size={44} color={GREEN} style={{ marginBottom: 12 }} />
-                <p style={{ margin: 0, color: textColor, fontSize: 20, fontWeight: 900 }}>현재 모집 중인 대타 글이 없습니다.</p>
-                <p style={{ margin: "8px 0 0", fontSize: 14 }}>대타 모집글이 생성되면 이 영역에 먼저 표시됩니다.</p>
+                <p style={{ margin: 0, color: textColor, fontSize: 20, fontWeight: 900 }}>{localT.noActivePostsTitle}</p>
+                <p style={{ margin: "8px 0 0", fontSize: 14 }}>{localT.noActivePostsDesc}</p>
               </div>
             </div>
           ) : (
@@ -426,14 +537,14 @@ export default function SubstituteApplicationsPreview() {
                           flexShrink: 0,
                         }}
                       >
-                        대
+                        {localT.avatarLetter}
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <h3 style={{ margin: 0, color: textColor, fontSize: 18, fontWeight: 900 }}>
                           {extractRequestDate(post.reason)}
                         </h3>
                         <p style={{ margin: "4px 0 0", color: subTextColor, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          요청자: {users[post.requester_user_id]?.name || "관리자"} ({users[post.requester_user_id]?.username || "admin"})
+                          {localT.requesterPrefix}{users[post.requester_user_id]?.name || localT.adminFallback} ({users[post.requester_user_id]?.username || "admin"})
                         </p>
                       </div>
                     </div>
@@ -442,25 +553,25 @@ export default function SubstituteApplicationsPreview() {
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: LIGHT_GREEN, color: DARK_GREEN, borderRadius: 999, padding: "5px 10px", fontSize: 12, fontWeight: 900 }}>
                           <Clock size={13} />
-                          생성 {formatDateTime(post.created_at)}
+                          {localT.createdAtText(formatDateTime(post.created_at))}
                         </span>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(24,160,34,0.1)", color: DARK_GREEN, borderRadius: 999, padding: "5px 10px", fontSize: 12, fontWeight: 900 }}>
                           <MessageSquare size={13} />
-                          대기 신청 {apps.length}건
+                          {localT.pendingAppsCount(apps.length)}
                         </span>
                       </div>
                       <p style={{ margin: 0, color: textColor, fontSize: 15, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {post.reason || "대타 요청"}
+                        {translateReason(post.reason, localT)}
                       </p>
                       <p style={{ margin: "6px 0 0", color: subTextColor, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {previewApps.length > 0
                           ? previewApps
                               .map((app) => {
                                 const applicant = users[app.applicant_user_id];
-                                return applicant?.name || applicant?.username || "직원";
+                                return applicant?.name || applicant?.username || localT.employeeFallback;
                               })
-                              .join(", ") + (apps.length > previewApps.length ? ` 외 ${apps.length - previewApps.length}명` : "")
-                          : "아직 지원자가 없습니다. 클릭하면 직원 연락 화면으로 이동합니다."}
+                              .join(", ") + (apps.length > previewApps.length ? localT.otherCountText(apps.length - previewApps.length) : "")
+                          : localT.noApplicantsText}
                       </p>
                     </div>
 
@@ -491,7 +602,7 @@ export default function SubstituteApplicationsPreview() {
                         }}
                       >
                         <UserCheck size={15} />
-                        연락 대상 선택
+                        {localT.chooseContactTarget}
                       </button>
                     </div>
                   </article>

@@ -90,7 +90,45 @@ const SubstituteManagement: React.FC = () => {
   const isDark = theme === 'dark';
 
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
-  const currentBranch = sessionStorage.getItem('store_name') || '지점 선택';
+  
+  const selectBranch = language === 'ja' ? '店舗選択' : language === 'en' ? 'Select Store' : '지점 선택';
+  
+  const alertLineSent = (name: string) => 
+    language === 'ja' ? `${name}さんにLINEメッセージを送信しました。` :
+    language === 'en' ? `Sent LINE message to ${name}.` :
+    `${name}님에게 라인 메시지를 전송했습니다.`;
+    
+  const alertLineNotLinked = (name: string) => 
+    language === 'ja' ? `${name}さんはLINEアカウントが連携されていません。` :
+    language === 'en' ? `${name} has not linked their LINE account.` :
+    `${name}님은 라인 계정이 연동되어 있지 않습니다.`;
+    
+  const alertMessageFailed = 
+    language === 'ja' ? 'メッセージの送信に失敗しました。' :
+    language === 'en' ? 'Failed to send message.' :
+    '메시지 전송에 실패했습니다.';
+    
+  const selectedPostTitle = 
+    language === 'ja' ? '選択された代替募集' :
+    language === 'en' ? 'Selected Substitute Request' :
+    '선택한 대타 모집글';
+    
+  const postIdLabel = (id: string) => 
+    language === 'ja' ? `募集ID ${id}` :
+    language === 'en' ? `Request ID ${id}` :
+    `모집글 ID ${id}`;
+    
+  const backToList = 
+    language === 'ja' ? '一覧に戻る' :
+    language === 'en' ? 'Back to List' :
+    '목록으로';
+    
+  const reasonText = (date: string, count: number) => 
+    language === 'ja' ? `[${date}] 人数 ${count}名必要` :
+    language === 'en' ? `[${date}] Needs ${count} staff` :
+    `[${date}] 인원 ${count}명 필요`;
+
+  const currentBranch = sessionStorage.getItem('store_name') || selectBranch;
   const selectedBranchId =
     branchId && branchId !== "undefined"
       ? branchId
@@ -218,7 +256,7 @@ const SubstituteManagement: React.FC = () => {
       shift_id: "",
       store_id: modalStoreId,
       requester_user_id: user.id,
-      reason: `[${modalDate}] 인원 ${modalCount}명 필요`,
+      reason: reasonText(modalDate, modalCount),
       status: "open",
     };
 
@@ -235,13 +273,13 @@ const SubstituteManagement: React.FC = () => {
     try {
       const res = await axiosInstance.post('/line/send', { user_id: userId, message });
       if (res.status === 200) {
-        alert(`${name}님에게 라인 메시지를 전송했습니다.`);
+        alert(alertLineSent(name));
       }
     } catch (err: any) {
       if (err?.response?.status === 404) {
-        alert(`${name}님은 라인 계정이 연동되어 있지 않습니다.`);
+        alert(alertLineNotLinked(name));
       } else {
-        alert('메시지 전송에 실패했습니다.');
+        alert(alertMessageFailed);
       }
     }
   };
@@ -364,10 +402,10 @@ const SubstituteManagement: React.FC = () => {
             }}>
               <div>
                 <p style={{ margin: '0 0 4px', color: isDark ? '#8fe18f' : DARK_GREEN, fontSize: 13, fontWeight: 800 }}>
-                  선택한 대타 모집글
+                  {selectedPostTitle}
                 </p>
                 <p style={{ margin: 0, color: textColor, fontSize: 15, fontWeight: 800 }}>
-                  {selectedPostFromList?.reason || `모집글 ID ${selectedPostId}`}
+                  {selectedPostFromList?.reason || postIdLabel(selectedPostId)}
                 </p>
               </div>
               <button
@@ -385,7 +423,7 @@ const SubstituteManagement: React.FC = () => {
                   cursor: 'pointer',
                 }}
               >
-                목록으로
+                {backToList}
               </button>
             </div>
           )}

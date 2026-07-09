@@ -566,6 +566,11 @@ const substituteList = {
     noShiftOnDate: '해당 날짜에 등록된 근무가 없습니다.',
     requestNotice: '📋 요청을 올리면 같은 지점 직원들이 확인하고 지원할 수 있으며, 최종 승인은 관리자가 처리합니다.',
     requestReasonPlaceholder: '예: 개인 사정, 병원 방문...',
+    deleteConfirm: '대타 요청을 삭제하시겠습니까?',
+    deleteErr: '삭제 중 오류가 발생했습니다.',
+    deleteBtn: '삭제',
+    workConfirmed: '근무 확인됨',
+    searchingWork: '근무 조회 중...',
   },
   en: {
     title: 'Find Substitute',
@@ -621,6 +626,11 @@ const substituteList = {
     noShiftOnDate: 'No shift registered for this date.',
     requestNotice: '📋 Once posted, other employees at the same branch can view and apply. Final approval is handled by the manager.',
     requestReasonPlaceholder: 'e.g. Personal reason, doctor visit...',
+    deleteConfirm: 'Are you sure you want to delete this substitute request?',
+    deleteErr: 'An error occurred while deleting.',
+    deleteBtn: 'Delete',
+    workConfirmed: 'Shift Confirmed',
+    searchingWork: 'Checking shift...',
   },
   ja: {
     title: '代替者を探す',

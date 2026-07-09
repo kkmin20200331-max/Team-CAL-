@@ -6,12 +6,130 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllStoresAPI, getMyStoreMembershipsAPI, getStoresAPI, requestStoreJoinAPI } from '../../../api/auth';
+import { useLanguage } from '../../contexts/LanguageContext';
+
+const selectScreenTranslations = {
+  ko: {
+    error: '오류',
+    fetchStoreFailed: '근무 지점 정보를 불러오지 못했습니다.',
+    defaultStoreTitle: '근무 매장',
+    notice: '알림',
+    selectStoreAlert: '근무할 지점을 선택해주세요.',
+    storeSelectError: '지점 선택 중 문제가 발생했습니다.',
+    noLoginInfo: '로그인 정보가 없습니다.',
+    requestCompleted: '요청 완료',
+    requestSentMsg: '관리자에게 근무 요청 알림을 보냈습니다.',
+    requestFailed: '요청 실패',
+    requestFailedMsg: '이미 신청했거나 요청을 처리하지 못했습니다.',
+    confirmRequestTitle: '근무 요청',
+    confirmRequestMsg: (title: string) => `${title}에 근무 요청을 보내시겠습니까?`,
+    cancel: '취소',
+    request: '요청',
+    connected: '연결됨',
+    pending: '승인 대기',
+    requesting: '요청 중',
+    adminTitle: '관리 지점 선택',
+    employeeTitle: '근무 지점 확인',
+    adminSubtitle: '운영할 매장을 선택해주세요.',
+    employeeSubtitle: '승인된 지점은 입장하고, 미승인 지점은 요청 상태를 확인하세요.',
+    searchResult: '검색 결과',
+    approved: '승인',
+    pendingShort: '대기',
+    searchTitle: '매장 검색',
+    searchGuide: '근무할 매장을 검색해서 관리자에게 요청을 보내세요.',
+    searchPlaceholder: '매장명 또는 주소 검색',
+    noRegisteredStoreTitle: '등록된 매장이 없습니다.',
+    noRegisteredStoreDesc: '먼저 웹 관리자 화면에서 매장을 등록해주세요.',
+    noSearchResultsTitle: '검색된 매장이 없습니다.',
+    noSearchResultsDesc: '매장명 또는 주소를 다시 확인해주세요.',
+    selectCompleted: '선택 완료',
+    refresh: '새로고침',
+    logout: '로그아웃',
+  },
+  en: {
+    error: 'Error',
+    fetchStoreFailed: 'Failed to load branch information.',
+    defaultStoreTitle: 'Workplace',
+    notice: 'Notice',
+    selectStoreAlert: 'Please select a branch to work at.',
+    storeSelectError: 'A problem occurred while selecting the branch.',
+    noLoginInfo: 'No login information found.',
+    requestCompleted: 'Request Completed',
+    requestSentMsg: 'Sent work request notification to manager.',
+    requestFailed: 'Request Failed',
+    requestFailedMsg: 'Already applied or failed to process the request.',
+    confirmRequestTitle: 'Work Request',
+    confirmRequestMsg: (title: string) => `Send work request to ${title}?`,
+    cancel: 'Cancel',
+    request: 'Request',
+    connected: 'Connected',
+    pending: 'Pending',
+    requesting: 'Requesting',
+    adminTitle: 'Select Manage Branch',
+    employeeTitle: 'Confirm Work Branch',
+    adminSubtitle: 'Please select a branch to operate.',
+    employeeSubtitle: 'Enter approved branches, or check request status for unapproved ones.',
+    searchResult: 'Results',
+    approved: 'Approved',
+    pendingShort: 'Pending',
+    searchTitle: 'Store Search',
+    searchGuide: 'Search for a store to work at and send a request to the manager.',
+    searchPlaceholder: 'Search store name or address',
+    noRegisteredStoreTitle: 'No stores registered.',
+    noRegisteredStoreDesc: 'Please register the store on the web admin page first.',
+    noSearchResultsTitle: 'No stores found.',
+    noSearchResultsDesc: 'Please check the store name or address again.',
+    selectCompleted: 'Select Done',
+    refresh: 'Refresh',
+    logout: 'Logout',
+  },
+  ja: {
+    error: 'エラー',
+    fetchStoreFailed: '勤務店舗情報を取得できませんでした。',
+    defaultStoreTitle: '勤務店舗',
+    notice: 'お知らせ',
+    selectStoreAlert: '勤務する店舗を選択してください。',
+    storeSelectError: '店舗選択中に問題が発生しました。',
+    noLoginInfo: 'ログイン情報がありません。',
+    requestCompleted: 'リクエスト完了',
+    requestSentMsg: '管理者に勤務リクエスト通知を送信しました。',
+    requestFailed: 'リクエスト失敗',
+    requestFailedMsg: '既に申請済みか、リクエストを処理できませんでした。',
+    confirmRequestTitle: '勤務リクエスト',
+    confirmRequestMsg: (title: string) => `${title}に勤務リクエストを送信しますか？`,
+    cancel: 'キャンセル',
+    request: '申請',
+    connected: '接続済み',
+    pending: '承認待ち',
+    requesting: '申請中',
+    adminTitle: '管理店舗選択',
+    employeeTitle: '勤務店舗確認',
+    adminSubtitle: '運営する店舗を選択してください。',
+    employeeSubtitle: '承認された店舗は入場し、未承認店舗は申請状況を確認してください。',
+    searchResult: '検索結果',
+    approved: '承認',
+    pendingShort: '待機',
+    searchTitle: '店舗検索',
+    searchGuide: '勤務する店舗を検索して、管理者に申請を送信してください。',
+    searchPlaceholder: '店舗名または住所で検索',
+    noRegisteredStoreTitle: '登録された店舗がありません。',
+    noRegisteredStoreDesc: '先にWeb管理者画面から店舗を登録してください。',
+    noSearchResultsTitle: '検索された店舗がありません。',
+    noSearchResultsDesc: '店舗名または住所を再度ご確認ください。',
+    selectCompleted: '選択完了',
+    refresh: '更新',
+    logout: 'ログアウト',
+  }
+};
 
 const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
   const { colors } = useTheme();
   const styles = getThemedStyles(colors);
 
   const { userInfo, login, logout } = useApp();
+  const { language } = useLanguage();
+  const lang = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
+  const localT = selectScreenTranslations[lang];
 
   // 화면 상태: 선택 지점, 매장 목록, 검색어, 요청 진행 상태를 관리합니다.
   const [selectedStore, setSelectedStore] = useState<any>(null);
@@ -71,7 +189,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
       } catch (error) {
         console.error('지점 조회 오류:', error);
         if (alive) {
-          Alert.alert('오류', '근무 지점 정보를 불러오지 못했습니다.');
+          Alert.alert(localT.error, localT.fetchStoreFailed);
           setStores([]);
           setAllStores([]);
         }
@@ -88,7 +206,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
   }, [userInfo?.id, userInfo?.role, reloadKey]);
 
   // 매장 표시용 헬퍼: API 응답 필드명이 조금 달라도 화면에서 같은 형태로 보여줍니다.
-  const getStoreTitle = (store: any) => store.name || store.brandName || '근무 매장';
+  const getStoreTitle = (store: any) => store.name || store.brandName || localT.defaultStoreTitle;
   const getStoreSubtitle = (store: any) => store.address || store.branchName || store.id;
   const getApprovalStatus = (store: any) =>
     String(store.approval_status || 'NONE').toUpperCase();
@@ -107,7 +225,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
   // 매장 입장 처리: 선택한 매장을 로컬 저장소와 앱 전역 사용자 정보에 반영합니다.
   const enterStore = async (store: any) => {
     if (!store) {
-      Alert.alert("알림", "근무할 지점을 선택해주세요.");
+      Alert.alert(localT.notice, localT.selectStoreAlert);
       return;
     }
 
@@ -118,7 +236,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
         const updatedUserInfo = {
           ...userInfo,
           store_id: store.id,
-          brandName: store.name || store.brandName || '근무 매장',
+          brandName: store.name || store.brandName || localT.defaultStoreTitle,
           branchName: store.name || store.branchName || store.id,
         };
         login(updatedUserInfo, true);
@@ -126,7 +244,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
 
     } catch (error) {
       console.error("지점 선택 저장 오류:", error);
-      Alert.alert("오류", "지점 선택 중 문제가 발생했습니다.");
+      Alert.alert(localT.error, localT.storeSelectError);
     }
   };
 
@@ -174,7 +292,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
   // 직원 근무 요청: 미승인 매장에 가입 요청을 보내고 화면 상태를 갱신합니다.
   const handleRequestStoreJoin = async (store: any) => {
     if (!userInfo?.id) {
-      Alert.alert('오류', '로그인 정보가 없습니다.');
+      Alert.alert(localT.error, localT.noLoginInfo);
       return;
     }
 
@@ -182,7 +300,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
       setRequestingStoreId(store.id);
       try {
         await requestStoreJoinAPI(userInfo.id, store.id);
-        Alert.alert('요청 완료', '관리자에게 근무 요청 알림을 보냈습니다.');
+        Alert.alert(localT.requestCompleted, localT.requestSentMsg);
         setAllStores(prev =>
           prev.map(item =>
             item.id === store.id
@@ -193,8 +311,8 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
         setReloadKey(prev => prev + 1);
       } catch (error: any) {
         Alert.alert(
-          '요청 실패',
-          error.response?.data?.message || error.response?.data || '이미 신청했거나 요청을 처리하지 못했습니다.',
+          localT.requestFailed,
+          error.response?.data?.message || error.response?.data || localT.requestFailedMsg,
         );
       } finally {
         setRequestingStoreId(null);
@@ -202,7 +320,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
     };
 
     if (Platform.OS === 'web') {
-      const ok = window.confirm(`${getStoreTitle(store)}에 근무 요청을 보내시겠습니까?`);
+      const ok = window.confirm(localT.confirmRequestMsg(getStoreTitle(store)));
       if (ok) {
         await submitRequest();
       }
@@ -210,12 +328,12 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
     }
 
     Alert.alert(
-      '근무 요청',
-      `${getStoreTitle(store)}에 근무 요청을 보내시겠습니까?`,
+      localT.confirmRequestTitle,
+      localT.confirmRequestMsg(getStoreTitle(store)),
       [
-        { text: '취소', style: 'cancel' },
+        { text: localT.cancel, style: 'cancel' },
         {
-          text: '요청',
+          text: localT.request,
           onPress: submitRequest,
         },
       ],
@@ -240,7 +358,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
           <Text style={styles.requestStoreName}>{getStoreTitle(item)}</Text>
           {approvalStatus === 'APPROVED' && (
             <View style={styles.approvedPill}>
-              <Text style={styles.approvedPillText}>연결됨</Text>
+              <Text style={styles.approvedPillText}>{localT.connected}</Text>
             </View>
           )}
         </View>
@@ -252,7 +370,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
         </TouchableOpacity>
       ) : approvalStatus === 'PENDING' ? (
         <View style={styles.pendingButton}>
-          <Text style={styles.pendingButtonText}>승인 대기</Text>
+          <Text style={styles.pendingButtonText}>{localT.pending}</Text>
         </View>
       ) : (
         <TouchableOpacity
@@ -261,7 +379,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
           disabled={requestingStoreId === item.id}
         >
           <Text style={styles.requestButtonText}>
-            {requestingStoreId === item.id ? '요청 중' : '요청'}
+            {requestingStoreId === item.id ? localT.requesting : localT.request}
           </Text>
         </TouchableOpacity>
       )}
@@ -283,24 +401,24 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
             <Ionicons name="scan-outline" size={20} color={colors.primary} />
           </View>
         </View>
-        <Text style={styles.title}>{userInfo?.role === 'ADMIN' ? '관리 지점 선택' : '근무 지점 확인'}</Text>
+        <Text style={styles.title}>{userInfo?.role === 'ADMIN' ? localT.adminTitle : localT.employeeTitle}</Text>
         <Text style={styles.subtitle}>
           {userInfo?.role === 'ADMIN'
-            ? '운영할 매장을 선택해주세요.'
-            : '승인된 지점은 입장하고, 미승인 지점은 요청 상태를 확인하세요.'}
+            ? localT.adminSubtitle
+            : localT.employeeSubtitle}
         </Text>
         <View style={styles.metricsRow}>
           <View style={styles.metricPill}>
             <Text style={styles.metricValue}>{visibleStores.length}</Text>
-            <Text style={styles.metricLabel}>검색 결과</Text>
+            <Text style={styles.metricLabel}>{localT.searchResult}</Text>
           </View>
           <View style={styles.metricPill}>
             <Text style={styles.metricValue}>{approvedCount}</Text>
-            <Text style={styles.metricLabel}>승인</Text>
+            <Text style={styles.metricLabel}>{localT.approved}</Text>
           </View>
           <View style={styles.metricPill}>
             <Text style={styles.metricValue}>{pendingCount}</Text>
-            <Text style={styles.metricLabel}>대기</Text>
+            <Text style={styles.metricLabel}>{localT.pendingShort}</Text>
           </View>
         </View>
       </View>
@@ -312,8 +430,8 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
           userInfo?.role !== 'ADMIN' && !loading ? (
             <View style={styles.searchSection}>
               <View>
-                <Text style={styles.searchTitle}>매장 검색</Text>
-                <Text style={styles.searchGuide}>근무할 매장을 검색해서 관리자에게 요청을 보내세요.</Text>
+                <Text style={styles.searchTitle}>{localT.searchTitle}</Text>
+                <Text style={styles.searchGuide}>{localT.searchGuide}</Text>
               </View>
               <View style={styles.searchInputWrap}>
                 <Ionicons name="search-outline" size={18} color={colors.primary} />
@@ -321,7 +439,7 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
                   style={styles.searchInput}
                   value={storeSearchTerm}
                   onChangeText={setStoreSearchTerm}
-                  placeholder="매장명 또는 주소 검색"
+                  placeholder={localT.searchPlaceholder}
                   placeholderTextColor={colors.subText}
                 />
               </View>
@@ -338,13 +456,13 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
             <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
           ) : userInfo?.role === 'ADMIN' ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>등록된 매장이 없습니다.</Text>
-              <Text style={styles.emptyText}>먼저 웹 관리자 화면에서 매장을 등록해주세요.</Text>
+              <Text style={styles.emptyTitle}>{localT.noRegisteredStoreTitle}</Text>
+              <Text style={styles.emptyText}>{localT.noRegisteredStoreDesc}</Text>
             </View>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>검색된 매장이 없습니다.</Text>
-              <Text style={styles.emptyText}>매장명 또는 주소를 다시 확인해주세요.</Text>
+              <Text style={styles.emptyTitle}>{localT.noSearchResultsTitle}</Text>
+              <Text style={styles.emptyText}>{localT.noSearchResultsDesc}</Text>
             </View>
           )
         }
@@ -356,14 +474,14 @@ const BranchSelectScreen = ({ navigation }: { navigation?: any }) => {
             onPress={handleConfirm}
             disabled={!selectedStore}
           >
-            <Text style={styles.confirmButtonText}>선택 완료</Text>
+            <Text style={styles.confirmButtonText}>{localT.selectCompleted}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity style={styles.secondaryButton} onPress={() => setReloadKey(prev => prev + 1)}>
-          <Text style={styles.secondaryButtonText}>새로고침</Text>
+          <Text style={styles.secondaryButtonText}>{localT.refresh}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-          <Text style={styles.logoutButtonText}>로그아웃</Text>
+          <Text style={styles.logoutButtonText}>{localT.logout}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

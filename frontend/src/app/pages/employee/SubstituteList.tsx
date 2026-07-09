@@ -78,11 +78,51 @@ const isRequestableShift = (shift: ShiftVO, date: string, storeId: string, userI
     && !['VACANT', 'CANCELLED', 'OFF'].includes(status);
 };
 
+const formatCurrency = (amount: number, language: string) => {
+  const rounded = Math.round(amount);
+  if (language === 'ja') {
+    return `${rounded.toLocaleString()}円`;
+  } else if (language === 'en') {
+    return `${rounded.toLocaleString()} won`;
+  }
+  return `${rounded.toLocaleString()}원`;
+};
+
 export default function SubstituteList() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const language = useLanguage();
   const t = translations.substituteList[language];
+
+  const deleteConfirm = (t as any).deleteConfirm || (
+    language === 'ja' ? '代替依頼を削除しますか？' :
+    language === 'en' ? 'Are you sure you want to delete this substitute request?' :
+    '대타 요청을 삭제하시겠습니까?'
+  );
+  
+  const deleteErr = (t as any).deleteErr || (
+    language === 'ja' ? '削除中にエラーが発生しました。' :
+    language === 'en' ? 'An error occurred while deleting.' :
+    '삭제 중 오류가 발생했습니다.'
+  );
+
+  const deleteBtn = (t as any).deleteBtn || (
+    language === 'ja' ? '削除' :
+    language === 'en' ? 'Delete' :
+    '삭제'
+  );
+
+  const workConfirmed = (t as any).workConfirmed || (
+    language === 'ja' ? '勤務確認済み' :
+    language === 'en' ? 'Shift Confirmed' :
+    '근무 확인됨'
+  );
+
+  const searchingWork = (t as any).searchingWork || (
+    language === 'ja' ? '勤務照会中...' :
+    language === 'en' ? 'Checking shift...' :
+    '근무 조회 중...'
+  );
 
   const user = useMemo(() => { try { return JSON.parse(sessionStorage.getItem('user') || '{}'); } catch { return {}; } }, []);
   const [storeId, setStoreId] = useState(sessionStorage.getItem('store_id') || '');
@@ -597,14 +637,14 @@ export default function SubstituteList() {
                       <div>
                         <p style={{ fontSize: 13, color: '#5a8a5c', marginBottom: 2 }}>{t.pay}</p>
                         <p style={{ fontSize: 18, fontWeight: 800, color: DARK_GREEN }}>
-                          {totalPay != null ? `${Math.round(totalPay).toLocaleString()}원` : '-'}
+                          {totalPay != null ? formatCurrency(totalPay, language) : '-'}
                         </p>
                       </div>
                       {memberInfo?.pay_amount && (
                         <div style={{ textAlign: 'right' }}>
                           <p style={{ fontSize: 13, color: '#5a8a5c', marginBottom: 2 }}>{t.hourlyRate}</p>
                           <p style={{ fontSize: 15, fontWeight: 600, color: DARK_GREEN }}>
-                            {memberInfo.pay_amount.toLocaleString()}원
+                            {formatCurrency(memberInfo.pay_amount, language)}
                           </p>
                         </div>
                       )}
@@ -631,10 +671,10 @@ export default function SubstituteList() {
                           </span>
                           <button
                             onClick={() => {
-                              if (!confirm('대타 요청을 삭제하시겠습니까?')) return;
+                              if (!confirm(deleteConfirm)) return;
                               axiosInstance.delete('/substitute/manager', { params: { post_id: post.id } })
                                 .then(() => setPosts((prev) => prev.filter((p) => p.id !== post.id)))
-                                .catch(() => alert('삭제 중 오류가 발생했습니다.'));
+                                .catch(() => alert(deleteErr));
                             }}
                             style={{
                               display: 'flex', alignItems: 'center', gap: 4,
@@ -643,7 +683,7 @@ export default function SubstituteList() {
                               fontSize: 14, fontWeight: 600, cursor: 'pointer',
                             }}
                           >
-                            <X style={{ width: 13, height: 13 }} />삭제
+                            <X style={{ width: 13, height: 13 }} />{deleteBtn}
                           </button>
                         </div>
                       ) : (
@@ -702,11 +742,11 @@ export default function SubstituteList() {
                     color: isDark ? '#fff' : '#222', outline: 'none', boxSizing: 'border-box',
                   }}
                 />
-                {fetchingShift && <p style={{ fontSize: 13, color: '#5a8a5c', marginTop: 6 }}>근무 조회 중...</p>}
+                {fetchingShift && <p style={{ fontSize: 13, color: '#5a8a5c', marginTop: 6 }}>{searchingWork}</p>}
                 {!fetchingShift && requestDate && (
                   requestShift ? (
                     <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 10, background: LIGHT_GREEN, fontSize: 13, color: DARK_GREEN, fontWeight: 600 }}>
-                      🕐 {getTimePart(requestShift.start_at)} - {getTimePart(requestShift.end_at)} 근무 확인됨
+                      🕐 {getTimePart(requestShift.start_at)} - {getTimePart(requestShift.end_at)} {workConfirmed}
                     </div>
                   ) : (
                     <p style={{ fontSize: 13, color: '#999', marginTop: 6 }}>{t.noShiftOnDate}</p>
@@ -807,7 +847,7 @@ export default function SubstituteList() {
                 }}>
                   <span style={{ fontSize: 12, color: '#5a8a5c', fontWeight: 600 }}>{t.expectedPay}</span>
                   <span style={{ fontSize: 16, fontWeight: 800, color: DARK_GREEN }}>
-                    {(calcHours(selectedPost.shift.start_at, selectedPost.shift.end_at) * memberInfo.pay_amount).toLocaleString()}원
+                    {formatCurrency(calcHours(selectedPost.shift.start_at, selectedPost.shift.end_at) * memberInfo.pay_amount, language)}
                   </span>
                 </div>
               )}
