@@ -1,9 +1,12 @@
+import logging
+
 from fastapi import APIRouter, Body, HTTPException
 
 from app.schemas.ai_insight import AiInsightAnalyzeRequest, AiInsightResponse
 from app.services.ai_insight_service import ai_insight_service
 
 router = APIRouter(prefix="/ai-insights", tags=["ai-insights"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/rule-based", response_model=AiInsightResponse)
@@ -50,6 +53,9 @@ def analyze_insight(request: AiInsightAnalyzeRequest | None = Body(default=None)
         return ai_insight_service.analyze(request)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("AI insight analyze failed")
+        raise HTTPException(status_code=500, detail=f"AI insight analyze failed: {exc}") from exc
 
 
 @router.post("/analyze/llm", response_model=AiInsightResponse)
@@ -60,6 +66,9 @@ def analyze_llm_insight(request: AiInsightAnalyzeRequest | None = Body(default=N
         return ai_insight_service.analyze_with_llm(request)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("AI insight LLM analyze failed")
+        raise HTTPException(status_code=500, detail=f"AI insight LLM analyze failed: {exc}") from exc
 
 
 def _empty_request() -> AiInsightAnalyzeRequest:

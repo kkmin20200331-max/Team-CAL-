@@ -260,6 +260,13 @@ const DocumentManagement: React.FC = () => {
   const handleDownload = async (doc: Document) => {
     const response = await fetch(`${API_BASE}/file/${doc.id}/signed-url`);
     if (!response.ok) {
+      if (response.status === 404) {
+        await fetchDocuments();
+        if (selectedDocument?.id === doc.id) {
+          setShowDetailModal(false);
+          setSelectedDocument(null);
+        }
+      }
       alert(t.downloadUrlError);
       return;
     }
@@ -274,7 +281,14 @@ const DocumentManagement: React.FC = () => {
     setIsPreviewLoading(true);
     try {
       const response = await fetch(`${API_BASE}/file/${doc.id}/signed-url`);
-      if (!response.ok) throw new Error(await response.text());
+      if (!response.ok) {
+        if (response.status === 404) {
+          await fetchDocuments();
+          setShowDetailModal(false);
+          setSelectedDocument(null);
+        }
+        throw new Error(await response.text());
+      }
       const data = await response.json();
       setPreviewUrl(data.url || "");
     } catch (error) {

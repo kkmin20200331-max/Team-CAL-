@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -33,7 +34,7 @@ public class AiInsightProxyC {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestClient restClient =
             RestClient.builder()
-                    .requestFactory(new SimpleClientHttpRequestFactory())
+                    .requestFactory(requestFactory())
                     .build();
     private final AiInsightPayloadService aiInsightPayloadService;
 
@@ -60,34 +61,11 @@ public class AiInsightProxyC {
             AiInsightAnalyzeRequestVO request,
             String aiInsightUrl
     ) {
+        Map<String, Object> payload;
         try {
-            Map<String, Object> payload = aiInsightPayloadService.buildPayload(request);
+            payload = aiInsightPayloadService.buildPayload(request);
             String jsonBody = objectMapper.writeValueAsString(payload);
-
             System.out.println("[AI_INSIGHT] request to FastAPI: " + jsonBody);
-
-            return restClient
-                    .post()
-                    .uri(aiInsightUrl)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(payload)
-                    .exchange((clientRequest, clientResponse) -> {
-                        String responseBody =
-                                StreamUtils.copyToString(
-                                        clientResponse.getBody(),
-                                        StandardCharsets.UTF_8
-                                );
-
-                        System.out.println("[AI_INSIGHT] FastAPI response status: "
-                                + clientResponse.getStatusCode());
-                        System.out.println("[AI_INSIGHT] FastAPI response body: "
-                                + responseBody);
-
-                        return ResponseEntity
-                                .status(clientResponse.getStatusCode())
-                                .body(responseBody);
-                    });
         } catch (JsonProcessingException e) {
             return ResponseEntity
                     .internalServerError()
@@ -99,6 +77,51 @@ public class AiInsightProxyC {
                             + escapeJson(e.getMessage())
                             + "\"}");
         }
+
+        try {
+            return postToFastApi(aiInsightUrl, payload);
+        } catch (RestClientException e) {
+            System.out.println("[AI_INSIGHT] FastAPI request failed. retrying once: " + e.getMessage());
+            try {
+                return postToFastApi(aiInsightUrl, payload);
+            } catch (RestClientException retryException) {
+                System.out.println("[AI_INSIGHT] FastAPI retry failed: " + retryException.getMessage());
+                return ResponseEntity
+                        .status(502)
+                        .body("{\"message\":\"AI insight upstream request failed\",\"detail\":\""
+                                + escapeJson(retryException.getMessage())
+                                + "\"}");
+            }
+        }
+    }
+
+    private ResponseEntity<String> postToFastApi(
+            String aiInsightUrl,
+            Map<String, Object> payload
+    ) {
+        return restClient
+                .post()
+                .uri(aiInsightUrl)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Connection", "close")
+                .body(payload)
+                .exchange((clientRequest, clientResponse) -> {
+                    String responseBody =
+                            StreamUtils.copyToString(
+                                    clientResponse.getBody(),
+                                    StandardCharsets.UTF_8
+                            );
+
+                    System.out.println("[AI_INSIGHT] FastAPI response status: "
+                            + clientResponse.getStatusCode());
+                    System.out.println("[AI_INSIGHT] FastAPI response body: "
+                            + responseBody);
+
+                    return ResponseEntity
+                            .status(clientResponse.getStatusCode())
+                            .body(responseBody);
+                });
     }
 
     // =========================
@@ -120,5 +143,12 @@ public class AiInsightProxyC {
                 ? fastApiBaseUrl.substring(0, fastApiBaseUrl.length() - 1)
                 : fastApiBaseUrl;
         return baseUrl + path;
+    }
+
+    private SimpleClientHttpRequestFactory requestFactory() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(10000);
+        return factory;
     }
 }

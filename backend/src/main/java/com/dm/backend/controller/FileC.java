@@ -3,6 +3,7 @@ package com.dm.backend.controller;
 import com.dm.backend.service.FileService;
 import com.dm.backend.vo.FileVO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -53,11 +54,15 @@ public class FileC {
     }
 
     @GetMapping("/{id}/signed-url")
-    public Map<String, String> createSignedUrl(
+    public ResponseEntity<Map<String, String>> createSignedUrl(
             @PathVariable String id
     ) {
-        String url = fileService.createSignedUrl(id);
-        return Map.of("url", url == null ? "" : url);
+        try {
+            String url = fileService.createSignedUrl(id);
+            return ResponseEntity.ok(Map.of("url", url == null ? "" : url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}/status")
