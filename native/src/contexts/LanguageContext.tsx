@@ -981,7 +981,7 @@ const ja: TranslationData = {
   checkIn: '出勤',
   checkOut: '退勤',
   expectedDailyWage: '予想日給',
-  currency: ' 円',
+  currency: ' ウォン',
   noScheduleToday: '本日の予定シフトはありません。',
   notifListTitle: '通知一覧',
   markAllRead: 'すべて既読にする',
