@@ -536,7 +536,7 @@ export default function AdminDashboard() {
     : "";
 
   useEffect(() => {
-    if (!selectedBranchId || customerTrendData.length === 0) return;
+    if (!selectedBranchId) return;
 
     let cancelled = false;
 
@@ -574,20 +574,13 @@ export default function AdminDashboard() {
     };
 
     loadAiInsight();
+    const intervalId = window.setInterval(loadAiInsight, 60000);
 
     return () => {
       cancelled = true;
+      window.clearInterval(intervalId);
     };
-  }, [
-    selectedBranchId,
-    currentBranch,
-    customerTrendData,
-    todayShifts,
-    totalEmployees,
-    checkedIn,
-    substituteCount,
-    estimatedPay,
-  ]);
+  }, [selectedBranchId]);
 
   const fallbackRecommendations =
     buildFallbackRecommendations(operationContext);
