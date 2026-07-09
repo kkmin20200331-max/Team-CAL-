@@ -17,6 +17,19 @@ const GREEN = '#18A022';
 const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 
+const displayMultilingualText = (rawStr: string, language: string) => {
+  if (!rawStr) return '';
+  try {
+    if (rawStr.startsWith('{') && rawStr.endsWith('}')) {
+      const obj = JSON.parse(rawStr);
+      if (obj.ko !== undefined || obj.en !== undefined || obj.ja !== undefined) {
+        return obj[language] || obj.ko || rawStr;
+      }
+    }
+  } catch {}
+  return rawStr;
+};
+
 const parseContent = (raw: string) => {
   const sep = '\n\n---\n📎 첨부파일\n';
   const idx = raw.indexOf(sep);
@@ -335,7 +348,7 @@ const BoardManagement: React.FC = () => {
   };
 
   const handleDeleteBoard = async (board: BoardVO) => {
-    if (!confirm(`'${board.name}' 탭을 삭제하시겠습니까?`)) return;
+    if (!confirm(`'${translateBoardName(board.name)}' 탭을 삭제하시겠습니까?`)) return;
 
     const res = await fetch(`${API_BASE}/board?id=${encodeURIComponent(board.id)}`, {
       method: 'DELETE',
@@ -398,7 +411,12 @@ const BoardManagement: React.FC = () => {
 
   const openEditModal = (post: BoardPostVO) => {
     setEditingPost(post);
-    setForm({ title: post.title, content: post.content, is_pinned: post.is_pinned, status: post.status });
+    setForm({ 
+      title: displayMultilingualText(post.title, language), 
+      content: displayMultilingualText(post.content, language), 
+      is_pinned: post.is_pinned, 
+      status: post.status 
+    });
     setShowPostModal(true);
   };
 
@@ -406,11 +424,39 @@ const BoardManagement: React.FC = () => {
   const handleSubmitPost = async () => {
     if (!form.title.trim()) { alert(t.titleRequired); return; }
     const status = 'PUBLISHED';
+    
+    let titleObj = { ko: form.title.trim(), en: form.title.trim(), ja: form.title.trim() };
+    let contentObj = { ko: form.content.trim(), en: form.content.trim(), ja: form.content.trim() };
+    
+    if (editingPost) {
+      try {
+        if (editingPost.title.startsWith('{') && editingPost.title.endsWith('}')) {
+          const originalTitle = JSON.parse(editingPost.title);
+          titleObj = { ...titleObj, ...originalTitle, [language]: form.title.trim() };
+        }
+      } catch {}
+      try {
+        if (editingPost.content.startsWith('{') && editingPost.content.endsWith('}')) {
+          const originalContent = JSON.parse(editingPost.content);
+          contentObj = { ...contentObj, ...originalContent, [language]: form.content.trim() };
+        }
+      } catch {}
+    }
+    
+    const serializedTitle = JSON.stringify(titleObj);
+    const serializedContent = JSON.stringify(contentObj);
+    
     if (editingPost) {
       await fetch(`${API_BASE}/board/post`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...editingPost, ...form, status }),
+        body: JSON.stringify({
+          ...editingPost,
+          title: serializedTitle,
+          content: serializedContent,
+          is_pinned: form.is_pinned,
+          status,
+        }),
       });
     } else {
       const id = 'POST_' + Date.now();
@@ -421,7 +467,7 @@ const BoardManagement: React.FC = () => {
           id, board_id: selectedBoardId, store_id: selectedBranchId,
           writer_id: currentUser.id || '',
           writer_role: currentUser.role || 'ADMIN',
-          title: form.title, content: form.content,
+          title: serializedTitle, content: serializedContent,
           is_pinned: form.is_pinned, status,
         }),
       });
@@ -554,7 +600,7 @@ const BoardManagement: React.FC = () => {
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
             {[{ id: '__all__', name: t.allBoards }, ...boards].map(b => (
               <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
-                {b.name}
+                {translateBoardName(b.name)}
                 {b.id !== '__all__' && (
                   <span
                     onClick={(e) => { e.stopPropagation(); handleDeleteBoard(b as BoardVO); }}
@@ -589,7 +635,7 @@ const BoardManagement: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div style={{ flex: 1 }}>
                       {selectedPost.is_pinned === 'Y' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: isDark ? 'rgba(24,160,34,0.15)' : LIGHT_GREEN, color: isDark ? '#4cd964' : DARK_GREEN, fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, marginBottom: 8 }}><Pin size={11} />{t.pinnedBadge}</span>}
-                      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>{selectedPost.title}</h2>
+                      <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: '0 0 8px' }}>{displayMultilingualText(selectedPost.title, language)}</h2>
                       <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#888' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={13} />{displayName(selectedPost.writer_id, selectedPost.writer_name)}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={13} />{formatDate(selectedPost.created_at)}</span>
@@ -603,7 +649,7 @@ const BoardManagement: React.FC = () => {
                     </div>
                   </div>
                   {(() => {
-                    const { body, attachments } = parseContent(selectedPost.content);
+                    const { body, attachments } = parseContent(displayMultilingualText(selectedPost.content, language));
                     return (
                       <div style={{ borderTop: `1px solid ${LIGHT_GREEN}`, paddingTop: 18, minHeight: 80 }}>
                         <p style={{ fontSize: 15, color: textColor, lineHeight: 1.8, whiteSpace: 'pre-wrap', margin: 0 }}>{body}</p>
@@ -695,8 +741,8 @@ const BoardManagement: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                         {post.is_pinned === 'Y' && <Pin size={14} color={DARK_GREEN} />}
                       </div>
-                      <h3 style={{ fontSize: 15, fontWeight: 700, color: textColor, margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</h3>
-                      <p style={{ fontSize: 13, color: subText, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{post.content}</p>
+                      <h3 style={{ fontSize: 15, fontWeight: 700, color: textColor, margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayMultilingualText(post.title, language)}</h3>
+                      <p style={{ fontSize: 13, color: subText, margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{displayMultilingualText(post.content, language)}</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 13, color: subText }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={13} />{displayName(post.writer_id, post.writer_name)}</span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={13} />{formatDate(post.created_at)}</span>
