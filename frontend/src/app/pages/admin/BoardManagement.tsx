@@ -2,7 +2,7 @@ import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
 import { API_BASE } from "../../../lib/axiosInstance";
 import { supabase } from '../../../utils/supabase';
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Plus, Search, Edit, Trash2, Pin, Eye, MessageSquare,
@@ -184,6 +184,12 @@ const BoardManagement: React.FC = () => {
   const [posts, setPosts] = useState<BoardPostVO[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loadingPosts, setLoadingPosts] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 7;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedBoardId, searchTerm]);
   const [showBoardModal, setShowBoardModal] = useState(false);
   const [boardNameInput, setBoardNameInput] = useState('');
   const [savingBoard, setSavingBoard] = useState(false);
@@ -290,7 +296,7 @@ const BoardManagement: React.FC = () => {
   const handleCreateBoard = async () => {
     const name = boardNameInput.trim();
     if (!name) {
-      alert('탭 이름을 입력해주세요.');
+      alert(t.tabNameRequired);
       return;
     }
 
@@ -312,7 +318,7 @@ const BoardManagement: React.FC = () => {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        alert(data?.message || '탭 추가에 실패했습니다.');
+        alert(data?.message || t.tabAddFailed);
         return;
       }
 
@@ -357,6 +363,26 @@ const BoardManagement: React.FC = () => {
     totalViews: posts.reduce((s, p) => s + (p.view_count || 0), 0),
     totalComments: posts.reduce((s, p) => s + (p.comment_count || 0), 0),
   };
+
+  const totalPages = Math.ceil(posts.length / rowsPerPage);
+  const paginatedPosts = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return posts.slice(startIndex, startIndex + rowsPerPage);
+  }, [posts, currentPage, rowsPerPage]);
+
+  const pageRange = useMemo(() => {
+    const range = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    return range;
+  }, [currentPage, totalPages]);
 
   // ---------- 푸시 알림 모달 ----------
   // ---------- 게시글 작성/수정 모달 ----------
@@ -515,7 +541,7 @@ const BoardManagement: React.FC = () => {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setShowBoardModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: `1px solid ${BORDER_GREEN}`, color: DARK_GREEN, borderRadius: 50, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-                <Plus size={16} />탭 추가
+                <Plus size={16} />{t.addTab}
               </button>
 
               <button onClick={openCreateModal} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GREEN, color: '#fff', borderRadius: 50, padding: '10px 20px', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
@@ -526,7 +552,7 @@ const BoardManagement: React.FC = () => {
 
           {/* 게시판 탭 */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-            {[{ id: '__all__', name: '전체' }, ...boards].map(b => (
+            {[{ id: '__all__', name: t.allBoards }, ...boards].map(b => (
               <button key={b.id} onClick={() => { setSelectedBoardId(b.id); setSelectedPost(null); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 50, fontSize: 14, fontWeight: 700, border: selectedBoardId === b.id ? 'none' : `1px solid ${BORDER_GREEN}`, background: selectedBoardId === b.id ? GREEN : 'transparent', color: selectedBoardId === b.id ? '#fff' : DARK_GREEN, cursor: 'pointer', transition: 'all 0.15s' }}>
                 {b.name}
                 {b.id !== '__all__' && (
@@ -659,7 +685,7 @@ const BoardManagement: React.FC = () => {
                     <Plus size={14} style={{ display: 'inline', marginRight: 4 }} />{t.writeFirstPost}
                   </button>
                 </div>
-              ) : posts.map(post => (
+              ) : paginatedPosts.map(post => (
                 <div key={post.id} onClick={() => openPostDetail(post)} style={{ background: post.is_pinned === 'Y' ? (isDark ? 'rgba(230,245,200,0.08)' : '#F4FBE8') : (isDark ? 'rgba(20,20,20,0.7)' : '#fff'), borderRadius: 16, padding: '16px 18px', border: post.is_pinned === 'Y' ? `2px solid ${BORDER_GREEN}` : `1px solid ${BORDER_GREEN}`, cursor: 'pointer', transition: 'box-shadow 0.15s' }}
                   onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)'; }}
                   onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; }}
@@ -686,6 +712,102 @@ const BoardManagement: React.FC = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 24 }}>
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(1)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    &lt;&lt;
+                  </button>
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    &lt;
+                  </button>
+                  {pageRange.map((pageNum) => {
+                    const isCurrent = pageNum === currentPage;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 10,
+                          border: `1px solid ${BORDER_GREEN}`,
+                          background: isCurrent ? GREEN : (isDark ? "#1a1a1a" : "#fff"),
+                          color: isCurrent ? "#fff" : (isDark ? "#fff" : DARK_GREEN),
+                          cursor: "pointer",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    &gt;
+                  </button>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    &gt;&gt;
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -696,13 +818,13 @@ const BoardManagement: React.FC = () => {
           <div style={{ background: isDark ? '#3c3c46' : '#fff', borderRadius: 20, padding: 28, width: '100%', maxWidth: 420 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK_GREEN, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Plus size={18} />탭 추가
+                <Plus size={18} />{t.addTab}
               </h2>
               <button onClick={() => setShowBoardModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: subText }}><X size={20} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>탭 이름</label>
+                <label style={{ fontSize: 13, fontWeight: 600, color: DARK_GREEN, display: 'block', marginBottom: 6 }}>{t.tabNameLabel}</label>
                 <input
                   type="text"
                   placeholder="예: 업무 지시"

@@ -21,7 +21,7 @@ import SubstituteAlertCard from '../../components/dashboard/SubstituteAlertCard'
 import NoticeSection from '../../components/dashboard/NoticeSection';
 import { useApp } from '../../contexts/AppContext';
 import { useBoard } from '../../contexts/BoardContext'; // 1. useBoard 훅 임포트
-import { getMonthlyAttendanceAPI, getMyScheduleAPI, getPayrollAPI, getMyStoreMembershipsAPI } from '../../../api/auth';
+import { getMonthlyAttendanceAPI, getMyScheduleAPI, getPayrollAPI, getMyStoreMembershipsAPI, getSubstitutePostsAPI, getShiftAPI, getStoreStaffAPI, applySubstituteAPI } from '../../../api/auth';
 
 type DashboardScreenNavigationProp = StackNavigationProp<any, 'Dashboard'>;
 
@@ -122,7 +122,8 @@ const DashboardScreen = ({ navigation }: Props) => {
   const [loading, setLoading] = useState(false);
   const [weeklyStats, setWeeklyStats] = useState({ totalHours: 0, expectedSalary: 0 });
   const [fullSchedule, setFullSchedule] = useState<Shift[]>([]);
-  const [isAlertVisible, setIsAlertVisible] = useState(true);
+  const [isAlertVisible, setIsAlertVisible] = useState(false);
+  const [activeSubPost, setActiveSubPost] = useState<any | null>(null);
 
   const fadeAnim = useRef(new Animated.Value(0.4)).current;
   
@@ -161,6 +162,8 @@ const DashboardScreen = ({ navigation }: Props) => {
   };
 
   const handleAcceptSubstitute = () => {
+    if (!activeSubPost) return;
+
     Alert.alert(
       t('subReqConfirmTitle'),
       t('subReqConfirmMsg'),
@@ -168,9 +171,22 @@ const DashboardScreen = ({ navigation }: Props) => {
         { text: t('cancel'), style: "cancel" },
         { 
           text: t('applyBtn'), 
-          onPress: () => {
-            setIsAlertVisible(false);
-            Toast.show({ type: 'success', text1: t('subApplySuccessTitle'), text2: t('subApplySuccessMsg') });
+          onPress: async () => {
+            try {
+              const appId = `SA_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+              await applySubstituteAPI({
+                id: appId,
+                substitute_post_id: activeSubPost.id,
+                applicant_user_id: userInfo?.id || '',
+                message: '대타 지원합니다.',
+                status: 'PENDING',
+              });
+              setIsAlertVisible(false);
+              Toast.show({ type: 'success', text1: t('subApplySuccessTitle'), text2: t('subApplySuccessMsg') });
+            } catch (err) {
+              console.error('대타 지원 오류:', err);
+              Toast.show({ type: 'error', text1: '지원 실패', text2: '대타 지원에 실패했습니다. 다시 시도해 주세요.' });
+            }
           } 
         }
       ]
@@ -243,7 +259,23 @@ const DashboardScreen = ({ navigation }: Props) => {
       const attendanceList = attendanceRes.status === 'fulfilled' && Array.isArray(attendanceRes.value.data)
         ? attendanceRes.value.data
         : [];
-      const todayAttendance = attendanceList.find((item: any) => getDatePart(item.work_date) === todayString);
+      const todayAttendanceList = attendanceList.filter((item: any) => getDatePart(item.work_date) === todayString);
+      let todayAttendance = null;
+      if (todayAttendanceList.length > 0) {
+        todayAttendance = todayAttendanceList.reduce((latest: any, current: any) => {
+          if (!latest) return current;
+          
+          // 1. check_in_at 비교
+          const currentIn = current.check_in_at || '';
+          const latestIn = latest.check_in_at || '';
+          if (currentIn > latestIn) return current;
+          if (currentIn < latestIn) return latest;
+          
+          // 2. check_in_at이 완벽히 같다면(예: 초단위까지 중복 생성), check_out_at이 있는 쪽을 우선순위로 선택
+          if (current.check_out_at && !latest.check_out_at) return current;
+          return latest;
+        }, null);
+      }
 
       const mergedSchedule = schedule.map((item) => {
         if (item.fullDate !== todayString || !todayAttendance) return item;
@@ -289,6 +321,71 @@ const DashboardScreen = ({ navigation }: Props) => {
         totalHours: weeklyHours,
         expectedSalary: Math.round(totalPay),
       });
+
+      // 선민 수정 (2026-07-06): 실제 접수된 대타 요청 글 중 가장 연관된 것을 찾아 알림 카드로 바인딩
+      try {
+        const postsRes = await getSubstitutePostsAPI(userInfo.store_id);
+        const posts = Array.isArray(postsRes.data) ? postsRes.data : [];
+        const pendingPosts = posts.filter(
+          (p: any) =>
+            ((p.status || '').toLowerCase() === 'pending' || (p.status || '').toLowerCase() === 'open') &&
+            p.requester_user_id !== userInfo.id
+        );
+
+        if (pendingPosts.length > 0) {
+          const staffRes = await getStoreStaffAPI(userInfo.store_id);
+          const staffList = Array.isArray(staffRes.data) ? staffRes.data : [];
+          
+          const postsWithShifts = await Promise.all(
+            pendingPosts.map(async (post: any) => {
+              try {
+                const shiftRes = await getShiftAPI(post.shift_id);
+                return { ...post, shift: shiftRes.data };
+              } catch {
+                return null;
+              }
+            })
+          );
+          
+          const validPosts = postsWithShifts.filter((p: any) => p !== null && p.shift);
+          
+          if (validPosts.length > 0) {
+            // 정렬 기준: 대타 근무 희망 날짜(work_date) 오름차순(가까운 미래 우선) > 대타 요청 생성 시간(created_at) 오름차순(오래된 순)
+            validPosts.sort((a: any, b: any) => {
+              const dateA = a.shift.work_date || '';
+              const dateB = b.shift.work_date || '';
+              if (dateA !== dateB) {
+                return dateA < dateB ? -1 : 1;
+              }
+              const timeA = new Date(a.created_at).getTime();
+              const timeB = new Date(b.created_at).getTime();
+              return timeA - timeB;
+            });
+            
+            const topPost = validPosts[0];
+            const requester = staffList.find((s: any) => s.id === topPost.requester_user_id);
+            
+            setActiveSubPost({
+              id: topPost.id,
+              requesterName: requester?.name || '동료 알바생',
+              workDate: topPost.shift.work_date ? topPost.shift.work_date.slice(0, 10) : '',
+              workTime: `${getTimePart(topPost.shift.start_at)} - ${getTimePart(topPost.shift.end_at)}`,
+              reason: topPost.reason || '개인 사정',
+            });
+            setIsAlertVisible(true);
+          } else {
+            setActiveSubPost(null);
+            setIsAlertVisible(false);
+          }
+        } else {
+          setActiveSubPost(null);
+          setIsAlertVisible(false);
+        }
+      } catch (err) {
+        console.error('대시보드 대타 요청 정보 조회 실패:', err);
+        setActiveSubPost(null);
+        setIsAlertVisible(false);
+      }
 
       setTodayShift(mergedSchedule.find((item) => item.fullDate === todayString) || null);
     } catch (error) {
@@ -376,6 +473,7 @@ const DashboardScreen = ({ navigation }: Props) => {
           colors={colors}
           isDarkMode={isDarkMode}
           t={t}
+          activeSubPost={activeSubPost}
         />
 
         <NoticeSection

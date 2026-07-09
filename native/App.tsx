@@ -149,9 +149,10 @@ function AdminTabNavigator() {
           backgroundColor: colors.card,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 84 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-          paddingTop: 8,
+          // 안드로이드 소프트키(네비게이션바) 오동작 방지 및 하단 버튼 중복 겹침 해결을 위해 높이/여백 추가 증가
+          height: Platform.OS === 'ios' ? 98 : 94,
+          paddingBottom: Platform.OS === 'ios' ? 38 : 34,
+          paddingTop: 10,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -203,9 +204,10 @@ function StaffTabNavigator() {
           backgroundColor: colors.card,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 84 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-          paddingTop: 8,
+          // 안드로이드 소프트키(네비게이션바) 오동작 방지 및 하단 버튼 중복 겹침 해결을 위해 높이/여백 추가 증가
+          height: Platform.OS === 'ios' ? 98 : 94,
+          paddingBottom: Platform.OS === 'ios' ? 38 : 34,
+          paddingTop: 10,
         },
         tabBarLabelStyle: {
           fontSize: 11,

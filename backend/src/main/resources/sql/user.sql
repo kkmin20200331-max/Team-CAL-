@@ -77,6 +77,7 @@ insert into users (
            'GUEST',
            'PENDING' );
 
+
 select * from users;
 
 DELETE FROM users WHERE name = 'adminsm';
@@ -88,3 +89,12 @@ DELETE FROM users WHERE username = 'gg';
 COMMIT;
 
 UPDATE users SET password = '123' WHERE username = 'admin01';
+
+
+select id, original_name, storage_path
+from files
+where id in (
+             'FILE_82c7f5854e274549',
+             'FILE_412f1757c0844024',
+             'FILE_9d3a8160af1b42cd'
+    );

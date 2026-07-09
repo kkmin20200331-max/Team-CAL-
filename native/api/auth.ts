@@ -14,6 +14,9 @@ export const API = axios.create({
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
   },
 });
 
@@ -173,13 +176,21 @@ export const getPayrollAPI = (
     },
   });
 
+export const getStorePayrollAPI = (storeId: string, yearMonth: string) =>
+  API.get(`/payroll/store`, {
+    params: {
+      store_id: storeId,
+      year_month: yearMonth,
+    },
+  });
+
 export const getMonthlyAttendanceAPI = (
   userId: string,
   storeId: string,
   yearMonth: string,
 ) =>
   API.get(`/attendance/monthly`, {
-    params: { user_id: userId, store_id: storeId, yearMonth },
+    params: { user_id: userId, store_id: storeId, yearMonth, _t: Date.now() },
   });
 
 export const getNotificationsAPI = (userId: string) =>

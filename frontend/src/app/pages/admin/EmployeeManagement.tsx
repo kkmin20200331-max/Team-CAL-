@@ -2,7 +2,7 @@ import { useLanguage } from "../../i18n/useLanguage";
 import { translations } from "../../i18n/translations";
 ﻿import axiosInstance from "../../../lib/axiosInstance";
 import { API_BASE } from "../../../lib/axiosInstance";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   DollarSign,
@@ -137,6 +137,12 @@ export default function EmployeeManagement() {
   const [memberMap, setMemberMap] = useState<Record<string, StoreMemberVo>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 7;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const [editTarget, setEditTarget] = useState<UserVo | null>(null);
   const [payType, setPayType] = useState<"HOURLY" | "MONTHLY">("HOURLY");
@@ -224,6 +230,26 @@ export default function EmployeeManagement() {
   const filtered = employees.filter(
     (e) => e.name.includes(searchTerm) || e.phone.includes(searchTerm),
   );
+
+  const totalPages = Math.ceil(filtered.length / rowsPerPage);
+  const paginatedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filtered.slice(startIndex, startIndex + rowsPerPage);
+  }, [filtered, currentPage, rowsPerPage]);
+
+  const pageRange = useMemo(() => {
+    const range = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    return range;
+  }, [currentPage, totalPages]);
 
   const approvedCount = employees.filter(
     (e) => memberMap[e.id]?.approval_status === "APPROVED",
@@ -371,7 +397,7 @@ export default function EmployeeManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((emp) => {
+                  {paginatedRows.map((emp) => {
                     const info = memberMap[emp.id];
                     return (
                       <tr key={emp.id} style={{ borderBottom: `1px solid ${isDark ? '#1e2e1e' : 'rgba(0,162,0,0.1)'}` }}>
@@ -412,6 +438,102 @@ export default function EmployeeManagement() {
             </div>
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 24 }}>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                background: isDark ? "#1a1a1a" : "#fff",
+                color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                transition: "all 0.2s"
+              }}
+            >
+              &lt;&lt;
+            </button>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                background: isDark ? "#1a1a1a" : "#fff",
+                color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                transition: "all 0.2s"
+              }}
+            >
+              &lt;
+            </button>
+            {pageRange.map((pageNum) => {
+              const isCurrent = pageNum === currentPage;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 10,
+                    border: `1px solid ${BORDER_GREEN}`,
+                    background: isCurrent ? GREEN : (isDark ? "#1a1a1a" : "#fff"),
+                    color: isCurrent ? "#fff" : (isDark ? "#fff" : DARK_GREEN),
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                background: isDark ? "#1a1a1a" : "#fff",
+                color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                transition: "all 0.2s"
+              }}
+            >
+              &gt;
+            </button>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                background: isDark ? "#1a1a1a" : "#fff",
+                color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                transition: "all 0.2s"
+              }}
+            >
+              &gt;&gt;
+            </button>
+          </div>
+        )}
         </div>
       </div>
 

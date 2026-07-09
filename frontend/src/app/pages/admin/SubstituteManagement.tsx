@@ -95,6 +95,9 @@ const SubstituteManagement: React.FC = () => {
     branchId && branchId !== "undefined"
       ? branchId
       : sessionStorage.getItem("store_id") || "";
+  const selectedPostFromList = location.state?.post as SubstitutePostVO | undefined;
+  const selectedPostId =
+    new URLSearchParams(location.search).get("postId") || selectedPostFromList?.id || "";
 
   const menuItems = [
     { icon: Calendar, label: translations.adminDashboard[language].menuItems.scheduleManagement, path: selectedBranchId ? `/admin/schedule/monthly/${selectedBranchId}` : '/admin/branch-selection' },
@@ -117,6 +120,12 @@ const SubstituteManagement: React.FC = () => {
   }, []);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 7;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   /* 직원 목록 + 최근 근무일 */
   const [employees, setEmployees] = useState<UserVo[]>([]);
@@ -244,6 +253,26 @@ const SubstituteManagement: React.FC = () => {
       emp.phone?.includes(searchTerm),
   );
 
+  const totalPages = Math.ceil(filteredEmployees.length / rowsPerPage);
+  const paginatedEmployees = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredEmployees.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredEmployees, currentPage, rowsPerPage]);
+
+  const pageRange = useMemo(() => {
+    const range = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    return range;
+  }, [currentPage, totalPages]);
+
   const getEmployeeStatusBadge = (status: string) => {
     const s = (status || "").toUpperCase();
     if (s === "ACTIVE" || s === "APPROVED") return (
@@ -321,6 +350,45 @@ const SubstituteManagement: React.FC = () => {
               <Plus size={16} />{t.createRequest}
             </button>
           </div>
+          {selectedPostId && (
+            <div style={{
+              border: `1px solid ${BORDER_GREEN}`,
+              borderRadius: 18,
+              background: isDark ? '#102410' : 'rgba(230,245,200,0.55)',
+              padding: '14px 18px',
+              marginBottom: 18,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 14,
+            }}>
+              <div>
+                <p style={{ margin: '0 0 4px', color: isDark ? '#8fe18f' : DARK_GREEN, fontSize: 13, fontWeight: 800 }}>
+                  선택한 대타 모집글
+                </p>
+                <p style={{ margin: 0, color: textColor, fontSize: 15, fontWeight: 800 }}>
+                  {selectedPostFromList?.reason || `모집글 ID ${selectedPostId}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate(selectedBranchId ? `/admin/substitute/${selectedBranchId}` : '/admin/branch-selection')}
+                style={{
+                  flexShrink: 0,
+                  border: `1px solid ${BORDER_GREEN}`,
+                  borderRadius: 999,
+                  background: 'transparent',
+                  color: DARK_GREEN,
+                  padding: '9px 14px',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                목록으로
+              </button>
+            </div>
+          )}
         {/* 통계 */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
           {[
@@ -350,7 +418,7 @@ const SubstituteManagement: React.FC = () => {
           <div style={{ textAlign: 'center', padding: '64px 0', color: subTextColor }}>{searchTerm ? t.noSearchResult : t.noEmployees}</div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-            {filteredEmployees.map((emp) => (
+            {paginatedEmployees.map((emp) => (
               <div key={emp.id} style={{ background: cardBg, border: `1px solid ${BORDER_GREEN}`, borderRadius: 26, padding: '20px', boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -399,6 +467,102 @@ const SubstituteManagement: React.FC = () => {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 24 }}>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(1)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                background: isDark ? "#1a1a1a" : "#fff",
+                color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                transition: "all 0.2s"
+              }}
+            >
+              &lt;&lt;
+            </button>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                background: isDark ? "#1a1a1a" : "#fff",
+                color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                transition: "all 0.2s"
+              }}
+            >
+              &lt;
+            </button>
+            {pageRange.map((pageNum) => {
+              const isCurrent = pageNum === currentPage;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 10,
+                    border: `1px solid ${BORDER_GREEN}`,
+                    background: isCurrent ? GREEN : (isDark ? "#1a1a1a" : "#fff"),
+                    color: isCurrent ? "#fff" : (isDark ? "#fff" : DARK_GREEN),
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                background: isDark ? "#1a1a1a" : "#fff",
+                color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                transition: "all 0.2s"
+              }}
+            >
+              &gt;
+            </button>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(totalPages)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                background: isDark ? "#1a1a1a" : "#fff",
+                color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                fontSize: 12,
+                fontWeight: 700,
+                transition: "all 0.2s"
+              }}
+            >
+              &gt;&gt;
+            </button>
           </div>
         )}
         </div>

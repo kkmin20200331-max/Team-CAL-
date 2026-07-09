@@ -5,8 +5,6 @@ import { useTheme } from 'next-themes';
 import Holidays from 'date-holidays';
 import { useLanguage } from '../../i18n/useLanguage';
 import { translations } from '../../i18n/translations';
-import { Badge } from '../../components/ui/badge';
-import { Calendar } from '../../components/ui/calendar';
 import {
   Clock,
   MapPin,
@@ -27,6 +25,7 @@ import {
   startOfWeek,
   addDays,
   isSameDay,
+  isSameMonth,
 } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -54,6 +53,18 @@ interface ShiftVO {
   start_at: string;
   end_at: string;
   status: string;
+}
+
+interface SubstituteCalendarVO {
+  application_id: string;
+  application_status: string;
+  substitute_post_id: string;
+  shift_id: string | null;
+  store_id: string;
+  reason: string | null;
+  work_date: string | null;
+  start_at: string | null;
+  end_at: string | null;
 }
 
 const formatTime = (isoStr: string) => {
@@ -105,11 +116,18 @@ export default function MySchedule() {
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   );
   const [shifts, setShifts] = useState<ShiftVO[]>([]);
+  const [subApplications, setSubApplications] = useState<SubstituteCalendarVO[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(),
   );
   const [viewMode, setViewMode] = useState<"month" | "week">("month");
+
+  // 대타 지원 내역 (마운트 시 1회)
+  useEffect(() => {
+    if (!user.id) return;
+    fetchSubApplications();
+  }, []);
 
   // 월간 조회
   useEffect(() => {
@@ -122,6 +140,17 @@ export default function MySchedule() {
     if (!user.id) return;
     if (viewMode === "week") fetchWeekShifts();
   }, [currentWeekStart, viewMode]);
+
+  const fetchSubApplications = async () => {
+    try {
+      const res = await axiosInstance.get("/substitute/staff/calendar", {
+        params: { user_id: user.id },
+      });
+      setSubApplications(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("대타 지원 내역 조회 실패:", err);
+    }
+  };
 
   const fetchMonthShifts = async () => {
     setLoading(true);
@@ -177,8 +206,23 @@ export default function MySchedule() {
       if (!map[date]) map[date] = new Set();
       map[date].add(s.status);
     });
+    // 대타 지원 내역 추가 (달력 dot 표시, APPROVED는 shift로 이미 표시됨)
+    subApplications.forEach((a) => {
+      const dateStr = a.work_date
+        ? a.work_date.substring(0, 10)
+        : a.reason?.match(/\[(\d{4}-\d{2}-\d{2})\]/)?.[1] ?? null;
+      if (!dateStr) return;
+      if (a.application_status?.toUpperCase() === 'APPROVED') return;
+      if (!map[dateStr]) map[dateStr] = new Set();
+      map[dateStr].add('sub_' + a.application_status?.toLowerCase());
+    });
     return map;
-  }, [shifts]);
+  }, [shifts, subApplications]);
+
+  const calendarDates = useMemo(() => {
+    const gridStart = startOfWeek(startOfMonth(currentMonth));
+    return Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
+  }, [currentMonth]);
 
   // 달력 커스텀 DayContent - 컬러 점 + 공휴일 표시
   const CustomDayContent = useCallback(({ date }: { date: Date }) => {
@@ -212,10 +256,12 @@ export default function MySchedule() {
           {statuses?.has('confirmed') && (
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#18A022', display: 'inline-block' }} />
           )}
-          {statuses?.has('pending') && (
+          {(statuses?.has('pending') || statuses?.has('sub_pending')) && (
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#FFE75D', display: 'inline-block' }} />
           )}
-          {statuses && [...statuses].some(s => s !== 'confirmed' && s !== 'pending') && (
+          {statuses && [...statuses].some(s =>
+            s !== 'confirmed' && s !== 'pending' && s !== 'sub_pending'
+          ) && (
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#A20000', display: 'inline-block' }} />
           )}
         </div>
@@ -244,6 +290,34 @@ export default function MySchedule() {
         return <span style={{ ...base, background: '#8B1A1A', color: '#fff' }}><XCircle style={{ width: 13, height: 13 }} />{t.statusSub}</span>;
     }
   };
+
+  const getSubAppBadge = (status: string) => {
+    const base: React.CSSProperties = {
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '4px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+    };
+    const s = status?.toUpperCase();
+    if (s === 'PENDING')
+      return <span style={{ ...base, background: 'transparent', border: '1.5px solid #C9A800', color: '#C9A800' }}><AlertCircle style={{ width: 13, height: 13 }} />{t.statusPending}</span>;
+    if (s === 'APPROVED')
+      return <span style={{ ...base, background: '#18A022', color: '#fff' }}><CheckCircle2 style={{ width: 13, height: 13 }} />{t.statusConfirmed}</span>;
+    return <span style={{ ...base, background: '#8B1A1A', color: '#fff' }}><XCircle style={{ width: 13, height: 13 }} />{t.statusCancelled}</span>;
+  };
+
+  // work_date가 null이면 reason 필드에서 [YYYY-MM-DD] 추출
+  const getSubAppDate = (a: SubstituteCalendarVO): string | null => {
+    if (a.work_date) return a.work_date.substring(0, 10);
+    const match = a.reason?.match(/\[(\d{4}-\d{2}-\d{2})\]/);
+    return match ? match[1] : null;
+  };
+
+  // 현재 월/주 범위에 해당하는 대타 지원 내역 필터
+  const getSubAppsForRange = (startDate: string, endDate: string) =>
+    subApplications.filter((a) => {
+      const d = getSubAppDate(a);
+      if (!d) return false;
+      return d >= startDate && d <= endDate;
+    });
 
   return (
     <div style={{ minHeight: '130vh', background: pageBg, paddingBottom: 120 }}>
@@ -385,22 +459,147 @@ export default function MySchedule() {
         {viewMode === 'month' && (
           <>
             {/* 달력 */}
-            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: '20px 20px 0 20px', marginBottom: 20 }}>
-              <div style={{ display: 'inline-block', transform: 'scale(1.2)', transformOrigin: 'top left', marginBottom: 80 }}>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  month={currentMonth}
-                  onMonthChange={setCurrentMonth}
-                  className="rounded-md"
-                  classNames={{ day_today: '' }}
-                  components={{ DayContent: CustomDayContent }}
-                />
+            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', marginBottom: 20, overflow: 'hidden' }}>
+              {/* 요일 헤더 */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,162,0,0.15)'}` }}>
+                {t.dayLabels.map((label, index) => (
+                  <div key={label} style={{
+                    textAlign: 'center',
+                    fontSize: 13,
+                    fontWeight: 800,
+                    color: index === 0 || index === 6 ? '#c42a2a' : textSub,
+                    padding: '12px 0',
+                  }}>
+                    {label}
+                  </div>
+                ))}
+              </div>
+
+              {/* 날짜 그리드 — 선으로만 구분 */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
+                {calendarDates.map((date, idx) => {
+                  const dateStr = format(date, 'yyyy-MM-dd');
+                  const dayShifts = shifts.filter((shift) => getWorkDate(shift) === dateStr);
+                  const daySubs = subApplications.filter(a =>
+                    getSubAppDate(a) === dateStr && a.application_status?.toUpperCase() !== 'APPROVED'
+                  );
+                  const holidayName = getHolidayName(dateStr);
+                  const isHoliday = !!holidayName;
+                  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                  const isCurrentMonth = isSameMonth(date, currentMonth);
+                  const isToday = isSameDay(date, new Date());
+                  const isSelected = selectedDate ? isSameDay(date, selectedDate) : false;
+                  const col = idx % 7;
+                  const row = Math.floor(idx / 7);
+                  const lineColor = isDark ? 'rgba(24,160,34,0.25)' : 'rgba(0,162,0,0.3)';
+
+                  return (
+                    <button
+                      key={dateStr}
+                      type="button"
+                      onClick={() => setSelectedDate(date)}
+                      style={{
+                        position: 'relative',
+                        minHeight: 120,
+                        border: 'none',
+                        borderRight: col < 6 ? `1px solid ${lineColor}` : 'none',
+                        borderBottom: row < 5 ? `1px solid ${lineColor}` : 'none',
+                        background: isSelected
+                          ? (isDark ? 'rgba(24,160,34,0.13)' : 'rgba(24,160,34,0.07)')
+                          : isToday
+                          ? (isDark ? 'rgba(24,160,34,0.07)' : 'rgba(200,255,200,0.35)')
+                          : 'transparent',
+                        padding: '8px 6px 6px',
+                        opacity: isCurrentMonth ? 1 : 0.35,
+                        overflow: 'hidden',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {/* 날짜 숫자 */}
+                      <div style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 9,
+                        display: 'grid',
+                        placeItems: 'center',
+                        background: isToday ? '#80D180' : 'transparent',
+                        color: isHoliday || isWeekend ? '#D62828' : isDark ? '#fff' : '#263628',
+                        fontSize: 14,
+                        fontWeight: isToday ? 800 : 500,
+                        marginBottom: 4,
+                      }}>
+                        {date.getDate()}
+                      </div>
+
+                      {/* 공휴일 이름 */}
+                      {holidayName && (
+                        <div style={{
+                          fontSize: 9,
+                          color: '#E58989',
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          marginBottom: 3,
+                        }}>
+                          {holidayName}
+                        </div>
+                      )}
+
+                      {/* 근무 pill */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {dayShifts.slice(0, 2).map((shift) => {
+                          const isConfirmed = shift.status === 'confirmed';
+                          const isPending = shift.status === 'pending';
+                          return (
+                            <div key={shift.id} style={{
+                              fontSize: 12,
+                              fontWeight: 700,
+                              borderRadius: 5,
+                              padding: '3px 6px',
+                              background: isConfirmed
+                                ? 'rgba(24,160,34,0.1)'
+                                : isPending
+                                ? 'rgba(243,200,0,0.15)'
+                                : 'rgba(162,0,0,0.08)',
+                              color: isConfirmed ? '#07790F' : isPending ? '#856B00' : '#A20000',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}>
+                              {formatTime(shift.start_at)}-{formatTime(shift.end_at)}
+                            </div>
+                          );
+                        })}
+                        {daySubs.slice(0, 1).map((app) => (
+                          <div key={app.application_id} style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            borderRadius: 5,
+                            padding: '3px 6px',
+                            background: 'rgba(243,200,0,0.12)',
+                            color: '#856B00',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            대타지원
+                          </div>
+                        ))}
+                        {(dayShifts.length + daySubs.length) > 2 && (
+                          <div style={{ fontSize: 10, color: textSub, fontWeight: 700, paddingLeft: 2 }}>
+                            +{dayShifts.length + daySubs.length - 2}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* 今月のシフト一覧 버튼 - SectionPill 스타일 */}
+            {/* 이번 달 근무 목록 헤더 */}
             <div style={{ marginBottom: 16 }}>
               <div style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -415,42 +614,80 @@ export default function MySchedule() {
 
             {/* 근무 목록 컨테이너 */}
             <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 26, boxShadow: '0px 4px 7.7px rgba(188,192,188,0.25)', padding: 20, marginBottom: 20 }}>
-              {loading ? (
-                <p style={{ textAlign: 'center', padding: '32px 0', color: textSub, fontSize: 18 }}>{t.loading}</p>
-              ) : shifts.length === 0 ? (
-                <p style={{ textAlign: 'center', padding: '32px 0', color: '#18A022', fontSize: 24, fontWeight: 800 }}>{t.noShifts}</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {shifts.map((shift) => {
-                    const dateStr = getWorkDate(shift);
-                    const hours = calcHours(shift.start_at, shift.end_at);
-                    return (
-                      <div key={shift.id} style={{ background: shiftRowBg, borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <div style={{ textAlign: 'center', minWidth: 48 }}>
-                            <p style={{ fontSize: 13, color: textSub }}>{getDayLabel(dateStr, t.dayLabels)}</p>
-                            <p style={{ fontSize: 28, fontWeight: 800, color: textMain }}>{dateStr.split('-')[2]}</p>
-                          </div>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                              <Clock size={16} color={textMain} />
-                              <span style={{ fontWeight: 700, fontSize: 18, color: textMain }}>
-                                {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
-                              </span>
-                              <span style={{ fontSize: 13, color: textSub }}>{hours}h</span>
+              {(() => {
+                const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+                const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+                const monthSubApps = getSubAppsForRange(monthStart, monthEnd)
+                  .filter(a => a.application_status?.toUpperCase() !== 'APPROVED');
+                const isEmpty = shifts.length === 0 && monthSubApps.length === 0;
+                if (loading) return <p style={{ textAlign: 'center', padding: '32px 0', color: textSub, fontSize: 18 }}>{t.loading}</p>;
+                if (isEmpty) return <p style={{ textAlign: 'center', padding: '32px 0', color: '#18A022', fontSize: 24, fontWeight: 800 }}>{t.noShifts}</p>;
+                const allItems = [
+                  ...shifts.map(s => ({ type: 'shift' as const, data: s, sortKey: getWorkDate(s) })),
+                  ...monthSubApps.map(a => ({ type: 'sub' as const, data: a, sortKey: getSubAppDate(a) ?? '' })),
+                ].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {allItems.map((item) => {
+                      if (item.type === 'shift') {
+                        const shift = item.data as ShiftVO;
+                        const dateStr = getWorkDate(shift);
+                        const hours = calcHours(shift.start_at, shift.end_at);
+                        return (
+                          <div key={shift.id} style={{ background: shiftRowBg, borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                              <div style={{ textAlign: 'center', minWidth: 48 }}>
+                                <p style={{ fontSize: 13, color: textSub }}>{getDayLabel(dateStr, t.dayLabels)}</p>
+                                <p style={{ fontSize: 28, fontWeight: 800, color: textMain }}>{dateStr.split('-')[2]}</p>
+                              </div>
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                  <Clock size={16} color={textMain} />
+                                  <span style={{ fontWeight: 700, fontSize: 18, color: textMain }}>
+                                    {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                                  </span>
+                                  <span style={{ fontSize: 13, color: textSub }}>{hours}h</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: textSub, fontSize: 13 }}>
+                                  <MapPin size={14} />
+                                  <span>{storeName}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: textSub, fontSize: 13 }}>
-                              <MapPin size={14} />
-                              <span>{storeName}</span>
+                            <div>{getStatusBadge(shift.status)}</div>
+                          </div>
+                        );
+                      }
+                      const app = item.data as SubstituteCalendarVO;
+                      const dateStr = getSubAppDate(app) ?? '';
+                      const hours = (app.start_at && app.end_at) ? calcHours(app.start_at, app.end_at) : null;
+                      return (
+                        <div key={app.application_id} style={{ background: shiftRowBg, borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)', border: '1.5px dashed #C9A800' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <div style={{ textAlign: 'center', minWidth: 48 }}>
+                              <p style={{ fontSize: 13, color: textSub }}>{dateStr ? getDayLabel(dateStr, t.dayLabels) : ''}</p>
+                              <p style={{ fontSize: 28, fontWeight: 800, color: textMain }}>{dateStr ? dateStr.split('-')[2] : '--'}</p>
+                            </div>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <Clock size={16} color={textMain} />
+                                <span style={{ fontWeight: 700, fontSize: 18, color: textMain }}>
+                                  {app.start_at ? `${formatTime(app.start_at)} - ${formatTime(app.end_at ?? '')}` : '--'}
+                                </span>
+                                {hours !== null && <span style={{ fontSize: 13, color: textSub }}>{hours}h</span>}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#C9A800', fontSize: 13 }}>
+                                <span>{t.subApply}</span>
+                              </div>
                             </div>
                           </div>
+                          <div>{getSubAppBadge(app.application_status)}</div>
                         </div>
-                        <div>{getStatusBadge(shift.status)}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </>
         )}
@@ -469,35 +706,68 @@ export default function MySchedule() {
                   const isSunday = date.getDay() === 0;
                   const dayColor = isHoliday || isSunday ? '#A20000' : textMain;
 
-                  if (dayShifts.length === 0) return [];
+                  const daySubApps = subApplications.filter(a =>
+                    getSubAppDate(a) === dateStr &&
+                    a.application_status?.toUpperCase() !== 'APPROVED'
+                  );
 
-                  return dayShifts.map((shift) => {
-                    const hours = calcHours(shift.start_at, shift.end_at);
-                    return (
-                      <div key={shift.id} style={{ background: shiftRowBg, borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <div style={{ textAlign: 'center', minWidth: 48 }}>
-                            <p style={{ fontSize: 13, color: dayColor === '#A20000' ? dayColor : textSub }}>{t.dayLabels[date.getDay()]}</p>
-                            <p style={{ fontSize: 28, fontWeight: 800, color: dayColor }}>{String(date.getDate()).padStart(2, '0')}</p>
-                          </div>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                              <Clock size={16} color={textMain} />
-                              <span style={{ fontWeight: 700, fontSize: 18, color: textMain }}>
-                                {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
-                              </span>
-                              <span style={{ fontSize: 13, color: textSub }}>{hours}h</span>
+                  if (dayShifts.length === 0 && daySubApps.length === 0) return [];
+
+                  return [
+                    ...dayShifts.map((shift) => {
+                      const hours = calcHours(shift.start_at, shift.end_at);
+                      return (
+                        <div key={shift.id} style={{ background: shiftRowBg, borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <div style={{ textAlign: 'center', minWidth: 48 }}>
+                              <p style={{ fontSize: 13, color: dayColor === '#A20000' ? dayColor : textSub }}>{t.dayLabels[date.getDay()]}</p>
+                              <p style={{ fontSize: 28, fontWeight: 800, color: dayColor }}>{String(date.getDate()).padStart(2, '0')}</p>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: textSub, fontSize: 13 }}>
-                              <MapPin size={14} />
-                              <span>{storeName}</span>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <Clock size={16} color={textMain} />
+                                <span style={{ fontWeight: 700, fontSize: 18, color: textMain }}>
+                                  {formatTime(shift.start_at)} - {formatTime(shift.end_at)}
+                                </span>
+                                <span style={{ fontSize: 13, color: textSub }}>{hours}h</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: textSub, fontSize: 13 }}>
+                                <MapPin size={14} />
+                                <span>{storeName}</span>
+                              </div>
                             </div>
                           </div>
+                          <div>{getStatusBadge(shift.status)}</div>
                         </div>
-                        <div>{getStatusBadge(shift.status)}</div>
-                      </div>
-                    );
-                  });
+                      );
+                    }),
+                    ...daySubApps.map((app) => {
+                      const hours = (app.start_at && app.end_at) ? calcHours(app.start_at, app.end_at) : null;
+                      return (
+                        <div key={app.application_id} style={{ background: shiftRowBg, borderRadius: 16, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0px 2px 6px rgba(0,0,0,0.06)', border: '1.5px dashed #C9A800' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <div style={{ textAlign: 'center', minWidth: 48 }}>
+                              <p style={{ fontSize: 13, color: dayColor === '#A20000' ? dayColor : textSub }}>{t.dayLabels[date.getDay()]}</p>
+                              <p style={{ fontSize: 28, fontWeight: 800, color: dayColor }}>{String(date.getDate()).padStart(2, '0')}</p>
+                            </div>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <Clock size={16} color={textMain} />
+                                <span style={{ fontWeight: 700, fontSize: 18, color: textMain }}>
+                                  {app.start_at ? `${formatTime(app.start_at)} - ${formatTime(app.end_at ?? '')}` : '--'}
+                                </span>
+                                {hours !== null && <span style={{ fontSize: 13, color: textSub }}>{hours}h</span>}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#C9A800', fontSize: 13 }}>
+                                <span>{t.subApply}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div>{getSubAppBadge(app.application_status)}</div>
+                        </div>
+                      );
+                    }),
+                  ];
                 })}
               </div>
             )}

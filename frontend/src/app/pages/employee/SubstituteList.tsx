@@ -214,7 +214,7 @@ export default function SubstituteList() {
       shift_id: requestShift?.id ?? '',
       store_id: storeId,
       requester_user_id: user.id,
-      reason: requestReason || `[${requestDate}] 대타 구합니다`,
+      reason: `[${requestDate}] ${requestReason || '대타 구합니다'}`,
       status: 'open',
     })
       .then(() => {
@@ -709,7 +709,7 @@ export default function SubstituteList() {
                       🕐 {getTimePart(requestShift.start_at)} - {getTimePart(requestShift.end_at)} 근무 확인됨
                     </div>
                   ) : (
-                    <p style={{ fontSize: 13, color: '#999', marginTop: 6 }}>해당 날짜에 등록된 근무가 없습니다.</p>
+                    <p style={{ fontSize: 13, color: '#999', marginTop: 6 }}>{t.noShiftOnDate}</p>
                   )
                 )}
               </div>
@@ -719,7 +719,7 @@ export default function SubstituteList() {
                   type="text"
                   value={requestReason}
                   onChange={(e) => setRequestReason(e.target.value)}
-                  placeholder="예: 개인 사정, 병원 방문..."
+                  placeholder={t.requestReasonPlaceholder}
                   style={{
                     width: '100%', padding: '12px 14px', borderRadius: 12,
                     border: `1px solid ${BORDER_GREEN}`, fontSize: 15,
@@ -729,7 +729,7 @@ export default function SubstituteList() {
                 />
               </div>
               <div style={{ background: isDark ? 'rgba(24,160,34,0.12)' : LIGHT_GREEN, borderRadius: 12, padding: '12px 16px', fontSize: 13, color: isDark ? '#4cd964' : '#5a8a5c' }}>
-                📋 요청을 올리면 같은 지점 직원들이 확인하고 지원할 수 있으며, 최종 승인은 관리자가 처리합니다.
+                {t.requestNotice}
               </div>
               <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                 <button

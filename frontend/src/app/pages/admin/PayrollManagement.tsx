@@ -1,5 +1,5 @@
-﻿import { API_BASE } from "../../../lib/axiosInstance";
-import React, { useState, useEffect, useRef } from "react";
+import { API_BASE } from "../../../lib/axiosInstance";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   DollarSign,
@@ -143,6 +143,12 @@ const PayrollManagement: React.FC = () => {
   const isDark = theme === 'dark';
   const [selectedPeriod, setSelectedPeriod] = useState(getCurrentPeriod());
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 7;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedPeriod, searchTerm]);
   const [activeTab, setActiveTab] = useState<'payroll' | 'weekly' | 'analytics'>('payroll');
   const [branchDropdownOpen, setBranchDropdownOpen] = useState(false);
   const monthInputRef = useRef<HTMLInputElement>(null);
@@ -309,6 +315,26 @@ const PayrollManagement: React.FC = () => {
     return matchesSearch && matchesPeriod;
   });
 
+  const totalPages = Math.ceil(filteredPayroll.length / rowsPerPage);
+  const paginatedPayroll = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    return filteredPayroll.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredPayroll, currentPage, rowsPerPage]);
+
+  const pageRange = useMemo(() => {
+    const range = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    return range;
+  }, [currentPage, totalPages]);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
@@ -446,13 +472,12 @@ const PayrollManagement: React.FC = () => {
           </div>
 
           {/* Statistics Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 20 }}>
             {[
               { label: t.totalPay, value: fmt(stats.totalPayroll) },
               { label: t.employeeCount, value: String(stats.employeeCount) },
               { label: t.totalHours, value: `${stats.regularHours.toFixed(1)}h` },
               { label: t.overtimeLabel, value: `${stats.overtimeHours.toFixed(1)}h` },
-              { label: t.weeklyRequest, value: String(stats.weeklyPending) },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: isDark ? cardBg : 'rgba(230,245,200,0.35)', borderRadius: 16, padding: '18px 20px', border: `1px solid ${isDark ? '#2a2a2a' : BORDER_GREEN}` }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: isDark ? '#9dc49d' : '#8BA68D', marginBottom: 8 }}>{label}</p>
@@ -465,7 +490,6 @@ const PayrollManagement: React.FC = () => {
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
             {[
               { key: 'payroll', label: t.tabPayroll, icon: <DollarSign size={16} /> },
-              { key: 'weekly', label: t.tabWeekly, icon: <CreditCard size={16} /> },
               { key: 'analytics', label: t.tabAnalytics, icon: <TrendingUp size={16} /> },
             ].map(({ key, label, icon }) => (
               <button
@@ -567,7 +591,7 @@ const PayrollManagement: React.FC = () => {
                           </td>
                         </tr>
                       )}
-                      {!payrollLoading && filteredPayroll.map((entry) => (
+                      {!payrollLoading && paginatedPayroll.map((entry) => (
                         <tr key={entry.id} style={{ borderBottom: `1px solid ${isDark ? '#1e2e1e' : 'rgba(0,162,0,0.1)'}`, background: isDark ? 'transparent' : 'rgba(230,245,200,0.35)' }}>
                           <td style={{ padding: '14px 16px 14px 32px', fontSize: 14, color: textColor }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -594,6 +618,102 @@ const PayrollManagement: React.FC = () => {
                   </table>
                 </div>
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 24 }}>
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(1)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    &lt;&lt;
+                  </button>
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${currentPage === 1 ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: currentPage === 1 ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    &lt;
+                  </button>
+                  {pageRange.map((pageNum) => {
+                    const isCurrent = pageNum === currentPage;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: 10,
+                          border: `1px solid ${BORDER_GREEN}`,
+                          background: isCurrent ? GREEN : (isDark ? "#1a1a1a" : "#fff"),
+                          color: isCurrent ? "#fff" : (isDark ? "#fff" : DARK_GREEN),
+                          cursor: "pointer",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          transition: "all 0.2s"
+                        }}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    &gt;
+                  </button>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(totalPages)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: `1px solid ${currentPage === totalPages ? (isDark ? "#2a2a2a" : "#e2e8f0") : BORDER_GREEN}`,
+                      background: isDark ? "#1a1a1a" : "#fff",
+                      color: currentPage === totalPages ? (isDark ? "#555" : "#cbd5e1") : (isDark ? "#fff" : DARK_GREEN),
+                      cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    &gt;&gt;
+                  </button>
+                </div>
+              )}
             </>
           )}
 
