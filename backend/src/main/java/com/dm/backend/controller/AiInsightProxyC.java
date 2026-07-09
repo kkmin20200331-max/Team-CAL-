@@ -79,36 +79,49 @@ public class AiInsightProxyC {
         }
 
         try {
-            return restClient
-                    .post()
-                    .uri(aiInsightUrl)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(payload)
-                    .exchange((clientRequest, clientResponse) -> {
-                        String responseBody =
-                                StreamUtils.copyToString(
-                                        clientResponse.getBody(),
-                                        StandardCharsets.UTF_8
-                                );
-
-                        System.out.println("[AI_INSIGHT] FastAPI response status: "
-                                + clientResponse.getStatusCode());
-                        System.out.println("[AI_INSIGHT] FastAPI response body: "
-                                + responseBody);
-
-                        return ResponseEntity
-                                .status(clientResponse.getStatusCode())
-                                .body(responseBody);
-                    });
+            return postToFastApi(aiInsightUrl, payload);
         } catch (RestClientException e) {
-            System.out.println("[AI_INSIGHT] FastAPI request failed: " + e.getMessage());
-            return ResponseEntity
-                    .status(502)
-                    .body("{\"message\":\"AI insight upstream request failed\",\"detail\":\""
-                            + escapeJson(e.getMessage())
-                            + "\"}");
+            System.out.println("[AI_INSIGHT] FastAPI request failed. retrying once: " + e.getMessage());
+            try {
+                return postToFastApi(aiInsightUrl, payload);
+            } catch (RestClientException retryException) {
+                System.out.println("[AI_INSIGHT] FastAPI retry failed: " + retryException.getMessage());
+                return ResponseEntity
+                        .status(502)
+                        .body("{\"message\":\"AI insight upstream request failed\",\"detail\":\""
+                                + escapeJson(retryException.getMessage())
+                                + "\"}");
+            }
         }
+    }
+
+    private ResponseEntity<String> postToFastApi(
+            String aiInsightUrl,
+            Map<String, Object> payload
+    ) {
+        return restClient
+                .post()
+                .uri(aiInsightUrl)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header("Connection", "close")
+                .body(payload)
+                .exchange((clientRequest, clientResponse) -> {
+                    String responseBody =
+                            StreamUtils.copyToString(
+                                    clientResponse.getBody(),
+                                    StandardCharsets.UTF_8
+                            );
+
+                    System.out.println("[AI_INSIGHT] FastAPI response status: "
+                            + clientResponse.getStatusCode());
+                    System.out.println("[AI_INSIGHT] FastAPI response body: "
+                            + responseBody);
+
+                    return ResponseEntity
+                            .status(clientResponse.getStatusCode())
+                            .body(responseBody);
+                });
     }
 
     // =========================
