@@ -2,95 +2,86 @@
 
 운영 중 자주 발생한 오류와 확인 명령을 정리합니다.
 
-## `bootRun`이 80%에서 멈춘 것처럼 보임
+## GitHub PR의 Merge 버튼이 안 눌림
 
-정상입니다. Spring Boot 서버가 실행 중이라 Gradle 작업이 계속 열려 있는
-상태입니다.
+증상:
 
-## 8080 포트가 이미 사용 중
+- `This branch has conflicts that must be resolved`
+- `Resolve conflicts` 버튼이 회색으로 비활성화됨
+- `These conflicts are too complex to resolve in the web editor`
 
-```bash
-sudo ss -tulpn | grep 8080
-sudo kill -9 <PID>
-cd /home/dongmin/Team-CAL-/backend
-./gradlew bootRun
-```
+원인:
 
-Docker Compose 운영 환경이라면:
+- GitHub 웹 에디터가 처리하기 어려운 충돌입니다.
+- 같은 파일을 양쪽 브랜치에서 크게 수정했거나, 빌드 산출물인 `frontend/dist/index.html`까지 충돌에 포함된 경우 자주 발생합니다.
 
-```bash
-docker compose up -d --force-recreate backend
-```
-
-## HTTPS는 열리지만 로그인에서 `Invalid CORS request`
-
-Spring CORS 설정에 운영 도메인이 포함되어야 합니다.
-
-`backend/src/main/java/com/dm/backend/config/WebConfig.java` 확인:
-
-```java
-"http://bitemate.kro.kr",
-"http://www.bitemate.kro.kr",
-"https://bitemate.kro.kr",
-"https://www.bitemate.kro.kr"
-```
-
-수정 후 백엔드를 재시작합니다.
-
-Origin 헤더를 넣어 테스트:
+해결:
 
 ```bash
-curl -i -X POST https://www.bitemate.kro.kr/api/users/login \
-  -H "Origin: https://www.bitemate.kro.kr" \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin01","password":"123"}'
+git fetch origin
+git checkout yuni
+git merge origin/dev
 ```
 
-정상 결과는 `HTTP/1.1 200`입니다.
-
-## HTTPS 접속이 안 됨
-
-Nginx와 443 포트를 확인합니다.
+충돌 마커를 확인합니다.
 
 ```bash
-sudo nginx -t
-sudo systemctl status nginx
-sudo ss -tulpn | grep nginx
+rg -n "<<<<<<<|=======|>>>>>>>" frontend
 ```
 
-Nginx가 내부에서 `:443`을 열고 있는데 외부 접속만 실패하면 Azure Network
-Security Group의 TCP 443 인바운드 규칙을 확인합니다.
+수정 후 검증합니다.
 
-## 프론트가 예전 IP 또는 localhost를 호출함
-
-운영 프론트는 아래 값으로 빌드되어야 합니다.
-
-```env
-VITE_API_BASE_URL=/api
+```bash
+cd frontend
+npm.cmd run build
 ```
 
-Docker 프론트 이미지를 다시 빌드/푸시하고 VM에서 새 태그로 pull합니다.
+정상 빌드 후 커밋/푸시합니다.
 
-## 관리자 로그인 403
-
-`401`은 아이디/비밀번호 불일치에 가깝고, `403`은 사용자를 찾았지만 상태가
-활성 상태가 아닐 때 발생할 수 있습니다.
-
-```sql
-SELECT username, password, role, '[' || status || ']' AS status_text, LENGTH(status)
-FROM users
-WHERE username = 'admin01';
+```bash
+git add .
+git commit -m "resolve frontend merge conflicts"
+git push origin yuni
 ```
 
-공백이 섞여 있으면 정리합니다.
+## React/Vite가 갑자기 터짐
 
-```sql
-UPDATE users
-SET status = TRIM(status)
-WHERE username = 'admin01';
+확인:
 
-COMMIT;
+```bash
+cd frontend
+npm.cmd run build
 ```
+
+자주 발생한 원인:
+
+- 충돌 마커가 남아 있음
+- JSX 태그가 중복되거나 닫히지 않음
+- import는 제거했는데 JSX에서 여전히 해당 컴포넌트를 사용함
+- 환경 변수가 없는데 Supabase client를 즉시 생성함
+
+최근 정리:
+
+- `EmployeeBoard.tsx`는 Supabase URL/key가 없으면 client를 만들지 않도록 안전 처리했습니다.
+- `BoardManagement.tsx`는 관리자 첨부파일/임시저장 기능을 제거하면서 관련 import와 JSX 잔여 코드도 제거했습니다.
+
+## 게시판 첨부파일 업로드 실패
+
+증상:
+
+```txt
+new row violates row-level security policy
+```
+
+원인:
+
+- 브라우저에서 Supabase Storage에 직접 업로드할 때 bucket policy/RLS 설정과 충돌합니다.
+
+현재 방향:
+
+- 관리자 게시판의 첨부파일 기능은 제거했습니다.
+- 직원 게시판 첨부파일은 Supabase 환경 변수가 없으면 앱이 죽지 않고, 업로드 시 안내 오류를 반환하도록 처리했습니다.
+- 운영 기능으로 확정하려면 backend를 통한 업로드 프록시 또는 Supabase policy 정리가 필요합니다.
 
 ## OpenCV 500 또는 502
 
@@ -100,61 +91,54 @@ OpenCV 상태 확인:
 curl http://127.0.0.1:8000/health
 ```
 
-Docker Compose 환경에서는 백엔드 컨테이너 안에서 확인합니다.
+Docker Compose 환경에서는 backend 컨테이너 내부에서 확인합니다.
 
 ```bash
 docker exec shiftops-backend printenv | grep FASTAPI
 docker exec shiftops-backend wget -qO- http://opencv:8000/health
 ```
 
-백엔드 컨테이너에서 OpenCV 주소는 아래처럼 설정합니다.
+backend 컨테이너에서는 OpenCV 주소를 아래처럼 설정합니다.
 
 ```env
 FASTAPI_BASE_URL=http://opencv:8000
 FASTAPI_DOCUMENT_OCR_URL=http://opencv:8000/api/v1/documents/ocr
 ```
 
-`127.0.0.1:8000`은 백엔드 컨테이너 자기 자신을 의미하므로 사용하지 않습니다.
+`127.0.0.1:8000`은 backend 컨테이너 자기 자신을 의미하므로 Compose 내부 통신에는 사용하지 않습니다.
 
-환경변수 수정 후:
+## Oracle Wallet / DB 연결 문제
 
-```bash
-docker compose up -d --force-recreate backend opencv
-```
-
-## OpenCV 컨테이너에서 `cv2` import 실패
-
-예시:
-
-```txt
-ImportError: libxcb.so.1: cannot open shared object file
-```
-
-OpenCV 이미지에 시스템 라이브러리가 부족한 상태입니다. base image를 다시
-빌드/푸시합니다.
+확인:
 
 ```bash
-docker buildx build --platform linux/amd64 \
-  -t kkmin1106/bitemateopencv-base:py312-yolo \
-  --push ./opencvbase
+docker exec shiftops-backend printenv | grep SPRING_DATASOURCE
+docker exec shiftops-backend ls -al /app/wallet
 ```
 
-그 다음 OpenCV 앱 이미지를 다시 빌드하고 배포합니다.
-
-## 브라우저 웹캠 프레임 업로드가 400 반환
-
-`/api/cctv/frame` 응답에 아래 문구가 있으면 요청은 Spring과 OpenCV까지
-도착했지만 OpenCV 런타임이 깨진 상태입니다.
+필수 파일:
 
 ```txt
-opencv-python and numpy are required for image inference
+cwallet.sso
+ewallet.p12
+ewallet.pem
+keystore.jks
+ojdbc.properties
+sqlnet.ora
+tnsnames.ora
+truststore.jks
 ```
 
-OpenCV base image부터 수정합니다.
+환경 변수 예:
 
-## Docker pull 중 `no space left on device`
+```env
+SPRING_DATASOURCE_DRIVER_CLASS_NAME=oracle.jdbc.OracleDriver
+SPRING_DATASOURCE_HIKARI_DATA_SOURCE_PROPERTIES_ORACLE_NET_TNS_ADMIN=/app/wallet
+```
 
-디스크 사용량 확인:
+## Docker pull 중 no space left on device
+
+확인:
 
 ```bash
 df -h
@@ -162,7 +146,7 @@ docker system df
 sudo du -sh /var/lib/docker /var/lib/containerd /home/dongmin /var/log
 ```
 
-사용하지 않는 Docker 데이터 정리:
+정리:
 
 ```bash
 docker system prune -af
@@ -170,47 +154,46 @@ docker builder prune -af
 sudo systemctl restart docker
 ```
 
-DB가 외부 Oracle이고 중요한 로컬 Docker volume이 없다면 unused volume도 정리할
-수 있습니다.
+중요한 로컬 volume이 없는 환경에서만 아래 명령을 사용합니다.
 
 ```bash
 docker system prune -af --volumes
 ```
 
-OpenCV/Torch 이미지를 사용하는 현재 구조에서는 VM 디스크를 최소 128GB
-Standard SSD 정도로 늘리는 것이 현실적입니다.
+## HTTPS/CORS 로그인 실패
 
-## AI 스케줄 생성 timeout
+운영 frontend는 API를 `/api`로 호출해야 합니다.
 
-공통 axios timeout은 10초입니다. AI 스케줄 생성은 더 오래 걸릴 수 있으므로
-월별 근무표 화면의 아래 요청만 60초 timeout을 사용합니다.
-
-```txt
-POST /api/shift/ai-preview
+```env
+VITE_API_BASE_URL=/api
 ```
 
-그래도 실패하면 백엔드 로그와 `ShiftService.explainGeneratedShifts`가 호출하는
-OpenCV/LLM 엔드포인트를 확인합니다.
+Spring CORS 허용 origin에 운영 도메인이 포함되어야 합니다.
 
-## 메인 대시보드 AI 추천 문구가 너무 구체적임
+```txt
+https://bitemate.kro.kr
+https://www.bitemate.kro.kr
+```
 
-화면 문구가 실제 DB 값과 연결되었는지 확인해야 합니다.
+테스트:
 
-현재 실제 데이터로 판단 가능한 항목:
+```bash
+curl -i -X POST https://www.bitemate.kro.kr/api/users/login \
+  -H "Origin: https://www.bitemate.kro.kr" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin01","password":"123"}'
+```
 
-- `people_log`: 고객 수, 피크 시간
-- `shift`: 예정 근무자, 현재 배치 인원
-- 출퇴근 QR/근태 데이터: 출근, 미출근
-- 대타 모집 데이터
-- 문서 만료 데이터
+## 주급 신청 금액이 안 맞음
 
-고객 연령대, 메뉴 선호도, 프로모션 추천은 POS/회원/고객 통계가 연결되어야
-실제 분석이라고 말할 수 있습니다. 데이터가 없으면 샘플 또는 fallback 문구로
-표시하거나 숨깁니다.
+현재 방향:
 
-## QR 출퇴근 기대 동작
+- 이번 주 예상 급여는 화면에서 shift만으로 임시 계산하지 않고 `/payroll` API를 주간 범위로 다시 조회합니다.
+- 신청 버튼은 `/payroll/weekly-request`로 점주/관리자 알림을 생성합니다.
 
-1. 하루 첫 번째 스캔: 출근
-2. 같은 날 두 번째 스캔: 퇴근
-3. 같은 날 세 번째 이후 스캔: 퇴근 시간 갱신
-4. 다음 날: 다시 출근부터 시작
+확인할 API:
+
+```txt
+GET  /api/payroll
+POST /api/payroll/weekly-request
+```

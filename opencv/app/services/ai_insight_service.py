@@ -1,6 +1,6 @@
 import json
 from datetime import date
-from math import ceil
+from math import ceil, isfinite
 from pathlib import Path
 from typing import Any
 
@@ -134,7 +134,7 @@ class AiInsightService:
             camera_rows = [
                 {
                     "time": "09:00",
-                    "maxCustomerCount": int(round(float(current_count or 0))),
+                    "maxCustomerCount": self._to_int(current_count),
                     "workingStaffCount": 1,
                 }
             ]
@@ -160,8 +160,8 @@ class AiInsightService:
 
         current = data.get("current", {})
         historical_baseline = data.get("historicalBaseline", {})
-        today_visitors = int(self._first_value(current, "todayTotalVisitors", "today_total_visitors", default=0))
-        baseline_visitors = int(
+        today_visitors = self._to_int(self._first_value(current, "todayTotalVisitors", "today_total_visitors", default=0))
+        baseline_visitors = self._to_int(
             self._first_value(
                 historical_baseline,
                 "sameDayAverageVisitors",
@@ -176,7 +176,9 @@ class AiInsightService:
         pos = data.get("pos", {})
         hourly_orders = [self._normalize_order_row(row) for row in pos.get("hourlyOrders", [])]
         low_conversion = min(hourly_orders, key=lambda row: row["conversionRate"]) if hourly_orders else None
-        conversion_rate = int(self._first_value(pos, "conversionRate", "conversion_rate", default=current.get("conversionRate", 0)))
+        conversion_rate = self._to_int(
+            self._first_value(pos, "conversionRate", "conversion_rate", default=current.get("conversionRate", 0))
+        )
 
         return AiInsightFeatures(
             peakTime=peak["time"],
@@ -212,18 +214,18 @@ class AiInsightService:
         if "T" in time_text:
             time_text = time_text.split("T", maxsplit=1)[1][:5]
 
-        max_count = int(round(float(customer_count)))
+        max_count = self._to_int(customer_count)
         return {
             "time": time_text[:5],
             "maxCustomerCount": max_count,
-            "workingStaffCount": max(1, int(staff_count)),
+            "workingStaffCount": max(1, self._to_int(staff_count, default=1)),
         }
 
     def _normalize_order_row(self, row: dict[str, Any]) -> dict[str, Any]:
         conversion_rate = self._first_value(row, "conversionRate", "conversion_rate", default=0)
         return {
             "time": str(self._first_value(row, "time", "measuredAt", "measured_at", default="00:00"))[:5],
-            "conversionRate": int(round(float(conversion_rate))),
+            "conversionRate": self._to_int(conversion_rate),
         }
 
     def _first_value(self, data: dict[str, Any], *keys: str, default: Any = None) -> Any:
@@ -232,6 +234,15 @@ class AiInsightService:
             if value is not None:
                 return value
         return default
+
+    def _to_int(self, value: Any, default: int = 0) -> int:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return default
+        if not isfinite(number):
+            return default
+        return int(round(number))
 
     def _build_response(self, data: dict[str, Any], features: AiInsightFeatures, source: str) -> AiInsightResponse:
         if self._has_no_customer_data(data, features):
@@ -334,7 +345,7 @@ class AiInsightService:
             "last_customer_count",
             default=0,
         )
-        return int(round(float(current_count or 0))) == 0
+        return self._to_int(current_count) == 0
 
     def _row_has_positive_customer_count(self, row: dict[str, Any]) -> bool:
         customer_count = self._first_value(
@@ -349,7 +360,7 @@ class AiInsightService:
             "avg_customer_count",
             default=0,
         )
-        return int(round(float(customer_count or 0))) > 0
+        return self._to_int(customer_count) > 0
 
     def _build_calendar_context(self, date_text: str | None) -> CalendarContext:
         if not date_text:
@@ -465,7 +476,7 @@ class AiInsightService:
         if target_schedule is None:
             return []
 
-        current_staff = target_schedule["currentStaff"]
+        current_staff = self._to_int(target_schedule.get("currentStaff"), default=0)
         recommended_staff = current_staff + features.recommendedExtraStaff
         return [
             ScheduleRecommendation(
@@ -485,11 +496,20 @@ class AiInsightService:
         ]
 
     def _find_schedule_for_time(self, schedule_rows: list[dict[str, Any]], time_text: str) -> dict[str, Any] | None:
-        hour = int(time_text.split(":", maxsplit=1)[0])
+        try:
+            hour = int(time_text.split(":", maxsplit=1)[0])
+        except (AttributeError, ValueError):
+            return None
         for row in schedule_rows:
-            start_text, end_text = row["timeRange"].split("-", maxsplit=1)
-            start_hour = int(start_text.split(":", maxsplit=1)[0])
-            end_hour = int(end_text.split(":", maxsplit=1)[0])
+            time_range = row.get("timeRange")
+            if not isinstance(time_range, str) or "-" not in time_range:
+                continue
+            start_text, end_text = time_range.split("-", maxsplit=1)
+            try:
+                start_hour = int(start_text.split(":", maxsplit=1)[0])
+                end_hour = int(end_text.split(":", maxsplit=1)[0])
+            except ValueError:
+                continue
             if start_hour <= hour < end_hour:
                 return row
         return None

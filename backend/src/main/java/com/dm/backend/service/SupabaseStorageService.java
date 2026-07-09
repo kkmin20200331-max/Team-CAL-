@@ -4,6 +4,7 @@ import com.dm.backend.vo.FileSignedUrlVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -18,7 +19,16 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SupabaseStorageService {
 
-    private final RestClient restClient = RestClient.builder().build();
+    private final RestClient restClient;
+
+    public SupabaseStorageService() {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(5000);
+        requestFactory.setReadTimeout(10000);
+        this.restClient = RestClient.builder()
+                .requestFactory(requestFactory)
+                .build();
+    }
 
     @Value("${supabase.project.url}")
     private String supabaseUrl;
@@ -42,6 +52,8 @@ public class SupabaseStorageService {
     }
 
     private void uploadObject(String storagePath, MultipartFile file) throws IOException {
+        validateStorageConfig();
+
         restClient.post()
                 .uri(normalizedUrl() + "/storage/v1/object/" + bucket + "/" + encodePath(storagePath))
                 .header("apikey", supabaseKey)
@@ -54,6 +66,8 @@ public class SupabaseStorageService {
     }
 
     private void createBucket() {
+        validateStorageConfig();
+
         try {
             restClient.post()
                     .uri(normalizedUrl() + "/storage/v1/bucket")
@@ -85,6 +99,11 @@ public class SupabaseStorageService {
     }
 
     public String createSignedUrl(String storagePath) {
+        if (storagePath == null || storagePath.isBlank()) {
+            throw new IllegalArgumentException("Supabase storage path is empty.");
+        }
+        validateStorageConfig();
+
         FileSignedUrlVO response = restClient.post()
                 .uri(normalizedUrl() + "/storage/v1/object/sign/" + bucket + "/" + encodePath(storagePath))
                 .header("apikey", supabaseKey)
@@ -109,7 +128,22 @@ public class SupabaseStorageService {
     }
 
     private String normalizedUrl() {
+        if (supabaseUrl == null || supabaseUrl.isBlank()) {
+            throw new IllegalStateException("Supabase project URL is not configured.");
+        }
         return supabaseUrl.endsWith("/") ? supabaseUrl.substring(0, supabaseUrl.length() - 1) : supabaseUrl;
+    }
+
+    private void validateStorageConfig() {
+        if (supabaseUrl == null || supabaseUrl.isBlank()) {
+            throw new IllegalStateException("Supabase project URL is not configured.");
+        }
+        if (supabaseKey == null || supabaseKey.isBlank()) {
+            throw new IllegalStateException("Supabase project key is not configured.");
+        }
+        if (bucket == null || bucket.isBlank()) {
+            throw new IllegalStateException("Supabase storage bucket is not configured.");
+        }
     }
 
     private String encodePath(String path) {
