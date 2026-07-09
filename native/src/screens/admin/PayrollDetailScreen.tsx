@@ -5,7 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useSchedule } from '../../contexts/ScheduleContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko, enUS, ja } from 'date-fns/locale';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
@@ -13,7 +13,13 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
   const { colors, isDarkMode } = useTheme();
   const styles = getThemedStyles(colors, isDarkMode);
   const { employees, shifts } = useSchedule();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  
+  const dateLocale = useMemo(() => {
+    if (language === 'English') return enUS;
+    if (language === '日本語') return ja;
+    return ko;
+  }, [language]);
 
   // employee 정보가 ScheduleContext에 없을 수도 있으므로 (빈 배열이거나 로드 지연 등)
   // payrollEntry에 있는 데이터를 최우선으로 사용합니다.
@@ -88,7 +94,7 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
       <React.Fragment key={item.id}>
         <View style={styles.dailyRow}>
           <View>
-            <Text style={styles.dailyDate}>{format(new Date(item.date), 'M월 d일 (eee)', { locale: ko })}</Text>
+            <Text style={styles.dailyDate}>{format(new Date(item.date), t('dateFormatPattern'), { locale: dateLocale })}</Text>
             <Text style={styles.dailyHours}>{item.time || t('시간 미지정')} ({dailyHours.toFixed(1)}{t('시간')})</Text>
           </View>
           <Text style={styles.dailyAmount}>
@@ -106,7 +112,7 @@ const PayrollDetailScreen = ({ route, navigation }: { route: any, navigation: an
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
            <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{month ? format(new Date(month), 'yyyy년 M월', { locale: ko }) : ''} {t('명세서')}</Text>
+        <Text style={styles.headerTitle}>{month ? format(new Date(month), t('monthYearFormatPattern'), { locale: dateLocale }) : ''} {t('명세서')}</Text>
         <View style={{ width: 40 }} />
       </View>
 

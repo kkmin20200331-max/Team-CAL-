@@ -5,7 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
 import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, startOfWeek, addMonths, subMonths } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko, enUS, ja } from 'date-fns/locale';
 import { Shift } from '../../types/Schedule';
 import { User } from '../../types/User';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -26,8 +26,14 @@ interface PayrollSummary {
 }
 
 const PayrollScreen = ({ route, navigation }: any) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { colors, isDarkMode } = useTheme();
+  
+  const dateLocale = useMemo(() => {
+    if (language === 'English') return enUS;
+    if (language === '日本語') return ja;
+    return ko;
+  }, [language]);
   const { userInfo } = useApp();
   const storeId = userInfo?.activeBranchId || userInfo?.store_id || '';
   const activeBranch = useMemo(() => {
@@ -91,7 +97,7 @@ const PayrollScreen = ({ route, navigation }: any) => {
 
           wages.push({
             id: item.id,
-            date: format(shiftDate, "M월 d일 (eee)", { locale: ko }),
+            date: format(shiftDate, t('dateFormatPattern'), { locale: dateLocale }),
             hours: `${dailyHours.toFixed(1)}시간`,
             amount: Math.round(dailyAmount),
           });
@@ -188,7 +194,7 @@ const PayrollScreen = ({ route, navigation }: any) => {
           <TouchableOpacity onPress={handlePrevMonth} style={styles.monthChevron}>
             <Ionicons name="chevron-back" size={20} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.monthText}>{format(currentMonth, 'yyyy년 M월', { locale: ko })}</Text>
+          <Text style={styles.monthText}>{format(currentMonth, t('monthYearFormatPattern'), { locale: dateLocale })}</Text>
           <TouchableOpacity onPress={handleNextMonth} style={styles.monthChevron}>
             <Ionicons name="chevron-forward" size={20} color={colors.text} />
           </TouchableOpacity>

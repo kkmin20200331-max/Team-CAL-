@@ -5,13 +5,18 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useSchedule } from '../../contexts/ScheduleContext';
 import { useApp } from '../../contexts/AppContext';
 import { format, startOfWeek, endOfWeek, parseISO, isWithinInterval } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko, enUS, ja } from 'date-fns/locale';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigation: any }) => {
   const { weekStartDate } = route.params;
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const dateLocale = useMemo(() => {
+    if (language === 'English') return enUS;
+    if (language === '日本語') return ja;
+    return ko;
+  }, [language]);
   const styles = getThemedStyles(colors);
   const { employees, shifts } = useSchedule();
   const { userInfo } = useApp();
@@ -81,7 +86,7 @@ const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigati
 
   const renderWorkHistoryItem = ({ item }: { item: any }) => (
     <View style={styles.historyItem}>
-      <Text style={styles.historyDate}>{format(new Date(item.date), 'M/d (eee)', { locale: ko })}</Text>
+      <Text style={styles.historyDate}>{format(new Date(item.date), t('dateFormatPattern'), { locale: dateLocale })}</Text>
       <Text style={styles.historyTime}>{item.time}</Text>
       <Text style={styles.historyPay}>{item.dailyPay.toLocaleString()}{t('currency')}</Text>
     </View>
@@ -100,7 +105,7 @@ const WeeklyPayrollDetailScreen = ({ route, navigation }: { route: any, navigati
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.summaryCard}>
           <Text style={styles.weekRangeText}>
-            {format(weekStart, 'M월 d일')} ~ {format(weekEnd, 'M월 d일')}
+            {format(weekStart, t('dateFormatMD'), { locale: dateLocale })} ~ {format(weekEnd, t('dateFormatMD'), { locale: dateLocale })}
           </Text>
           <Text style={styles.totalPayLabel}>{t('weeklySalary')} (세전)</Text>
           <Text style={styles.totalPayAmount}>{totalPay.toLocaleString()}{t('currency')}</Text>
