@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -33,7 +34,7 @@ public class AiInsightProxyC {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestClient restClient =
             RestClient.builder()
-                    .requestFactory(new SimpleClientHttpRequestFactory())
+                    .requestFactory(requestFactory())
                     .build();
     private final AiInsightPayloadService aiInsightPayloadService;
 
@@ -60,12 +61,24 @@ public class AiInsightProxyC {
             AiInsightAnalyzeRequestVO request,
             String aiInsightUrl
     ) {
+        Map<String, Object> payload;
         try {
-            Map<String, Object> payload = aiInsightPayloadService.buildPayload(request);
+            payload = aiInsightPayloadService.buildPayload(request);
             String jsonBody = objectMapper.writeValueAsString(payload);
-
             System.out.println("[AI_INSIGHT] request to FastAPI: " + jsonBody);
+        } catch (JsonProcessingException e) {
+            return ResponseEntity
+                    .internalServerError()
+                    .body("{\"message\":\"AI insight request body serialization failed\"}");
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .internalServerError()
+                    .body("{\"message\":\"AI insight payload build failed\",\"detail\":\""
+                            + escapeJson(e.getMessage())
+                            + "\"}");
+        }
 
+        try {
             return restClient
                     .post()
                     .uri(aiInsightUrl)
@@ -88,14 +101,11 @@ public class AiInsightProxyC {
                                 .status(clientResponse.getStatusCode())
                                 .body(responseBody);
                     });
-        } catch (JsonProcessingException e) {
+        } catch (RestClientException e) {
+            System.out.println("[AI_INSIGHT] FastAPI request failed: " + e.getMessage());
             return ResponseEntity
-                    .internalServerError()
-                    .body("{\"message\":\"AI insight request body serialization failed\"}");
-        } catch (RuntimeException e) {
-            return ResponseEntity
-                    .internalServerError()
-                    .body("{\"message\":\"AI insight payload build failed\",\"detail\":\""
+                    .status(502)
+                    .body("{\"message\":\"AI insight upstream request failed\",\"detail\":\""
                             + escapeJson(e.getMessage())
                             + "\"}");
         }
@@ -120,5 +130,12 @@ public class AiInsightProxyC {
                 ? fastApiBaseUrl.substring(0, fastApiBaseUrl.length() - 1)
                 : fastApiBaseUrl;
         return baseUrl + path;
+    }
+
+    private SimpleClientHttpRequestFactory requestFactory() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(10000);
+        return factory;
     }
 }
