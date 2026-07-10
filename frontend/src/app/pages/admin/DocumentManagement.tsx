@@ -97,6 +97,79 @@ const DocumentManagement: React.FC = () => {
 
   const translateBackendNote = (note?: string) => {
     if (!note) return note;
+
+    // 1. Match successful OCR note: e.g., "근로계약서를 네이버 OCR로 처리했습니다. 추출값은 관리자가 최종 확인해야 합니다."
+    const matchOcr = note.match(/^(보건증|근로계약서|신분증|통장사본|문서)[을를]\s+(네이버\s+OCR|fallback\s+OCR)로\s+처리했습니다\.\s+추출값은\s+관리자가\s+최종\s+확인해야\s+합니다\.$/);
+    if (matchOcr) {
+      const docTypeKo = matchOcr[1];
+      const providerKo = matchOcr[2];
+
+      const docTypeTranslations: Record<string, Record<string, string>> = {
+        '보건증': {
+          ko: '보건증',
+          en: 'Health certificate',
+          ja: '健康証明書',
+        },
+        '근로계약서': {
+          ko: '근로계약서',
+          en: 'Employment contract',
+          ja: '雇用契約書',
+        },
+        '신분증': {
+          ko: '신분증',
+          en: 'ID card',
+          ja: '身分証明書',
+        },
+        '통장사본': {
+          ko: '통장사본',
+          en: 'Bankbook copy',
+          ja: '通帳のコピー',
+        },
+        '문서': {
+          ko: '문서',
+          en: 'Document',
+          ja: '文書',
+        },
+      };
+
+      const providerTranslations: Record<string, Record<string, string>> = {
+        '네이버 OCR': {
+          ko: '네이버 OCR',
+          en: 'Naver OCR',
+          ja: 'Naver OCR',
+        },
+        'fallback OCR': {
+          ko: 'fallback OCR',
+          en: 'fallback OCR',
+          ja: 'fallback OCR',
+        },
+      };
+
+      const docType = docTypeTranslations[docTypeKo]?.[language] || docTypeKo;
+      const provider = providerTranslations[providerKo]?.[language] || providerKo;
+
+      if (language === 'ja') {
+        return `${docType}は${provider}で処理されました。抽出された値は管理者が最終確認する必要があります。`;
+      } else if (language === 'en') {
+        return `${docType} processed by ${provider}. Extracted values require admin confirmation.`;
+      } else {
+        const particle = ['보건증', '신분증', '통장사본'].includes(docTypeKo) ? '을' : '를';
+        return `${docType}${particle} ${provider}로 처리했습니다. 추출값은 관리자가 최종 확인해야 합니다.`;
+      }
+    }
+
+    // 2. Match error OCR note: e.g., "OCR 처리 중 오류가 발생했습니다: ..."
+    if (note.startsWith("OCR 처리 중 오류가 발생했습니다:")) {
+      const errMsg = note.substring("OCR 처리 중 오류가 발생했습니다:".length).trim();
+      if (language === 'ja') {
+        return `OCR処理中にエラーが発生しました: ${errMsg}`;
+      } else if (language === 'en') {
+        return `An error occurred during OCR processing: ${errMsg}`;
+      } else {
+        return note;
+      }
+    }
+
     const m = backendNoteTranslations[note];
     return m ? (m[language] || m['en']) : note;
   };
