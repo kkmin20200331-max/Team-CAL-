@@ -9,6 +9,126 @@ import Swipeable from 'react-native-gesture-handler/Swipeable'; // ✅ 스와이
 import { markAllNotificationsAsReadAPI, markNotificationAsReadAPI } from '../../../api/auth';
 import { useApp } from '../../contexts/AppContext';
 
+const translateNotificationText = (text: string, language: string): string => {
+  if (!text) return '';
+  const langCode = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
+
+  // 1. Static Title Translations
+  const titles: Record<string, Record<string, string>> = {
+    '대타 요청 알림': {
+      ko: '대타 요청 알림',
+      en: 'Substitute Request Alert',
+      ja: '代替要請通知',
+    },
+    '주급 신청 요청': {
+      ko: '주급 신청 요청',
+      en: 'Weekly Payroll Request',
+      ja: '週給申請リクエスト',
+    },
+    '근무 지점 승인 완료': {
+      ko: '근무 지점 승인 완료',
+      en: 'Store Approval Completed',
+      ja: '勤務店舗承認完了',
+    },
+    '근무 지점 요청 거절': {
+      ko: '근무 지점 요청 거절',
+      en: 'Store Request Rejected',
+      ja: '勤務店舗要請却下',
+    },
+    '직원 근무 요청': {
+      ko: '직원 근무 요청',
+      en: 'Staff duty request',
+      ja: 'スタッフ勤務申請',
+    },
+    '휴무 신청 승인': {
+      ko: '휴무 신청 승인',
+      en: 'Leave Request Approved',
+      ja: '公休申請承認',
+    },
+    '휴무 신청 거절': {
+      ko: '휴무 신청 거절',
+      en: 'Leave Request Rejected',
+      ja: '公休申請却下',
+    },
+  };
+
+  if (titles[text]) {
+    return titles[text][langCode] || text;
+  }
+
+  // 2. Dynamic Match 1: (YYYY-MM-DD) 대타 근무 가능 여부를 확인해주세요. (reason)
+  const matchSub = text.match(/^(\d{4}-\d{2}-\d{2})\s+대타 근무 가능 여부를 확인해주세요\.\s*\((.*)\)$/);
+  if (matchSub) {
+    const date = matchSub[1];
+    const reason = matchSub[2];
+    if (langCode === 'ja') {
+      return `${date}の代替勤務が可能かご確認ください。(${reason})`;
+    } else if (langCode === 'en') {
+      return `Please check if you can cover the substitute shift on ${date}. (${reason})`;
+    } else {
+      return text;
+    }
+  }
+
+  // 3. Dynamic Match 2: (user_id/name)님이 (date) ~ (date) 주급 신청을 요청했습니다.
+  const matchPayroll = text.match(/^(.*)님이\s+(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})\s+주급\s*신청을\s*요청했습니다\.$/);
+  if (matchPayroll) {
+    const name = matchPayroll[1];
+    const start = matchPayroll[2];
+    const end = matchPayroll[3];
+    if (langCode === 'ja') {
+      return `${name}さんが${start} ~ ${end}の週給申請을リクエストしました。`;
+    } else if (langCode === 'en') {
+      return `${name} requested weekly payroll for ${start} ~ ${end}.`;
+    } else {
+      return text;
+    }
+  }
+
+  // 4. Dynamic Match 3: (user_id/name)님이 매장 근무를 요청했습니다.
+  const matchStore = text.match(/^(.*)님이\s+매장\s+근무를\s+요청했습니다\.$/);
+  if (matchStore) {
+    const name = matchStore[1];
+    if (langCode === 'ja') {
+      return `${name}さんが店舗勤務を申請しました。`;
+    } else if (langCode === 'en') {
+      return `${name} requested to join the store.`;
+    } else {
+      return text;
+    }
+  }
+
+  // 5. Static Message Translations
+  const messages: Record<string, Record<string, string>> = {
+    '매장 근무 요청이 승인되었습니다. 모바일 앱에서 근무 지점에 접속할 수 있습니다.': {
+      ko: '매장 근무 요청이 승인되었습니다. 모바일 앱에서 근무 지점에 접속할 수 있습니다.',
+      en: 'Your store join request has been approved. You can now access the store in the mobile app.',
+      ja: '店舗勤務申請が承認されました。モバイルアプリから勤務店舗にアクセスできます。',
+    },
+    '매장 근무 요청이 거절되었습니다.': {
+      ko: '매장 근무 요청이 거절되었습니다.',
+      en: 'Your store join request has been rejected.',
+      ja: '店舗勤務申請が却下されました。',
+    },
+    '휴무 신청이 승인되었습니다.': {
+      ko: '휴무 신청이 승인되었습니다.',
+      en: 'Your leave request has been approved.',
+      ja: '公休申請が承認されました。',
+    },
+    '휴무 신청이 거절되었습니다.': {
+      ko: '휴무 신청이 거절되었습니다.',
+      en: 'Your leave request has been rejected.',
+      ja: '公休申請が却下されました。',
+    },
+  };
+
+  if (messages[text]) {
+    return messages[text][langCode] || text;
+  }
+
+  return text;
+};
+
 const NotificationListScreen = () => {
   const isFocused = useIsFocused();
   // ✅ 1. 알림 데이터를 나홀로 상태가 아닌 전역 상태(Context)에서 가져옵니다.
@@ -22,7 +142,7 @@ const NotificationListScreen = () => {
   }, [isFocused, userInfo?.id, refreshNotifications]);
   
   // ✅ 전역 언어 설정 가져오기
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // ✅ 테마 색상 상태 가져오기 및 스타일 객체 생성
   const { colors, isDarkMode } = useTheme();
@@ -103,12 +223,12 @@ const NotificationListScreen = () => {
         <View style={styles.contentContainer}>
           <View style={styles.titleRow}>
             <Text style={[styles.titleText, !item.isRead && styles.unreadTitleText]}>
-              {t(item.title) === item.title ? item.title : t(item.title)}
+              {translateNotificationText(item.title, language)}
             </Text>
             {!item.isRead && <View style={styles.unreadDot} />}
           </View>
           <Text style={styles.messageText} numberOfLines={2}>
-            {t(item.message) === item.message ? item.message : t(item.message)}
+            {translateNotificationText(item.message, language)}
           </Text>
           <Text style={styles.timeText}>{t(item.createdAt) === item.createdAt ? item.createdAt : t(item.createdAt)}</Text>
         </View>
@@ -156,11 +276,11 @@ const NotificationListScreen = () => {
                   <Text style={styles.modalIcon}>
                     {selectedNotification.type === 'SCHEDULE' ? '📅' : selectedNotification.type === 'NOTICE' ? '📢' : '⚙️'}
                   </Text>
-                  <Text style={styles.modalTitle}>{t(selectedNotification.title) === selectedNotification.title ? selectedNotification.title : t(selectedNotification.title)}</Text>
+                  <Text style={styles.modalTitle}>{translateNotificationText(selectedNotification.title, language)}</Text>
                   <Text style={styles.modalTime}>{t(selectedNotification.createdAt) === selectedNotification.createdAt ? selectedNotification.createdAt : t(selectedNotification.createdAt)}</Text>
                 </View>
                 <View style={styles.modalBody}>
-                  <Text style={styles.modalMessage}>{t(selectedNotification.message) === selectedNotification.message ? selectedNotification.message : t(selectedNotification.message)}</Text>
+                  <Text style={styles.modalMessage}>{translateNotificationText(selectedNotification.message, language)}</Text>
                 </View>
                 
                 {/* 하단 버튼 그룹 (삭제 / 확인) */}

@@ -87,7 +87,7 @@ const ContractScreen = ({ route, navigation }: any) => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 0.8,
     });
 
@@ -102,7 +102,10 @@ const ContractScreen = ({ route, navigation }: any) => {
     setIsUploading(true);
     try {
       const formData = new FormData();
-      const filename = selectedImage.split('/').pop() || 'contract.jpg';
+      let filename = selectedImage.split('/').pop() || 'contract.jpg';
+      if (!filename.includes('.')) {
+        filename = `${filename}.jpg`;
+      }
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image/jpeg`;
 
@@ -112,7 +115,8 @@ const ContractScreen = ({ route, navigation }: any) => {
         type: type
       } as any);
 
-      formData.append('store_id', userInfo?.store_id || 'STORE_DEFAULT');
+      const storeId = userInfo?.activeBranchId || userInfo?.store_id || 'STORE_DEFAULT';
+      formData.append('store_id', storeId);
       formData.append('user_id', userInfo?.id || '');
       formData.append('file_type', 'contract');
 
