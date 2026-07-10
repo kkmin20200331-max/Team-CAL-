@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 type Props = {
   isAlertVisible: boolean;
@@ -19,8 +20,34 @@ type Props = {
   } | null;
 };
 
+const translateReason = (reason: string, lang: 'ko' | 'en' | 'ja') => {
+  if (!reason) return lang === 'ja' ? '代替リクエスト' : lang === 'en' ? 'Substitute Request' : '대타 요청';
+  
+  if (reason === '개인 사정') {
+    return lang === 'ja' ? '個人都合' : lang === 'en' ? 'Personal reasons' : '개인 사정';
+  }
+
+  // Parse [YYYY-MM-DD] 인원 N명 필요
+  const match = reason.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(?:인원|인원수)?\s*(\d+)명\s*(?:필요)?$/);
+  if (match) {
+    const date = match[1];
+    const count = match[2];
+    if (lang === 'ja') {
+      return `[${date}] 人数 ${count}名必要`;
+    } else if (lang === 'en') {
+      return `[${date}] Needs ${count} staff`;
+    } else {
+      return `[${date}] 인원 ${count}명 필요`;
+    }
+  }
+
+  return reason;
+};
+
 const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitute, setIsAlertVisible, colors, isDarkMode, t, activeSubPost }: Props) => {
   const styles = getThemedStyles(colors, isDarkMode);
+  const { language } = useLanguage();
+  const lang = language === 'English' ? 'en' : language === '日本語' ? 'ja' : 'ko';
 
   // 선민 수정 (2026-07-06): 노출 가능한 실제 대타 요청이 없거나 비활성화인 경우 렌더링 생략
   if (!isAlertVisible || !activeSubPost) {
@@ -29,15 +56,27 @@ const SubstituteAlertCard = ({ isAlertVisible, navigation, handleAcceptSubstitut
 
   const alertColor = isDarkMode ? '#FCD34D' : '#D97706';
 
+  const getDescriptionText = () => {
+    const requester = activeSubPost.requesterName || (lang === 'ja' ? '同僚スタッフ' : lang === 'en' ? 'Co-worker' : '동료 알바생');
+    const reasonText = translateReason(activeSubPost.reason, lang);
+
+    if (lang === 'ja') {
+      return `${requester}さんが${activeSubPost.workDate} (${activeSubPost.workTime})の代替シフトを要請しました。\n理由: ${reasonText}`;
+    } else if (lang === 'en') {
+      return `${requester} requested a substitute for ${activeSubPost.workDate} (${activeSubPost.workTime}).\nReason: ${reasonText}`;
+    } else {
+      return `${requester}님이 ${activeSubPost.workDate} (${activeSubPost.workTime}) 대타를 요청했습니다.\n사유: ${reasonText}`;
+    }
+  };
+
   return (
     <TouchableOpacity style={styles.alertCard} onPress={() => navigation.navigate('Substitute')} activeOpacity={0.8}>
       <View style={styles.alertHeader}> 
         <Ionicons name="alert-circle-outline" size={18} color={alertColor} style={styles.alertIcon} />
         <Text style={styles.alertTitle}>{t('subReqAlertTitle')}</Text>
       </View>
-      {/* 선민 수정 (2026-07-06): 하드코딩된 대타 알림 설명 대신 실제 접수된 대타 요청자명, 일정 일자 및 사유 동적 바인딩 */}
       <Text style={styles.alertDescription}>
-        {activeSubPost.requesterName}님이 {activeSubPost.workDate} ({activeSubPost.workTime}) 대타를 요청했습니다.{"\n"}사유: {activeSubPost.reason}
+        {getDescriptionText()}
       </Text>
       <View style={styles.buttonGroup}>
         <TouchableOpacity style={styles.acceptButton} onPress={handleAcceptSubstitute}>

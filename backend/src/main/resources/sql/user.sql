@@ -80,7 +80,7 @@ insert into users (
 
 select * from users;
 
-DELETE FROM users WHERE name = 'testsmsm';
+DELETE FROM users WHERE name = 'kimseonmin';
 
 DELETE FROM users WHERE username = '1234';
 

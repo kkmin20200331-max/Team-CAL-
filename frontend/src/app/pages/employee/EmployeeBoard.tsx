@@ -15,6 +15,36 @@ const DARK_GREEN = '#07790F';
 const BORDER_GREEN = '#00A200';
 const LIGHT_GREEN = '#E6F5C8';
 
+const displayMultilingualText = (rawStr: string, language: string) => {
+  if (!rawStr) return '';
+  try {
+    if (rawStr.startsWith('{') && rawStr.endsWith('}')) {
+      const obj = JSON.parse(rawStr);
+      if (obj.ko !== undefined || obj.en !== undefined || obj.ja !== undefined) {
+        return obj[language] || obj.ko || rawStr;
+      }
+    }
+  } catch { }
+  return rawStr;
+};
+
+const boardNameTranslations: Record<string, Record<string, string>> = {
+  '공지사항': { ko: '공지사항', en: 'Notice', ja: 'お知らせ' },
+  '메뉴얼': { ko: '메뉴얼', en: 'Manual', ja: 'マニュアル' },
+  '분실물': { ko: '분실물', en: 'Lost Items', ja: '落し物' },
+  '프로모션/이벤트': { ko: '프로모션/이벤트', en: 'Promotions/Events', ja: 'プロモーション/イベント' },
+  '이벤트': { ko: '이벤트', en: 'Event', ja: 'イベント' },
+  '체크리스트': { ko: '체크리스트', en: 'Checklist', ja: 'チェックリスト' },
+  '업무지시': { ko: '업무지시', en: 'Work Orders', ja: '業務指示' },
+};
+
+const translateBoardName = (name?: string, language?: string) => {
+  if (!name) return '';
+  const m = boardNameTranslations[name];
+  const lang = language || 'ko';
+  return m ? (m[lang] || m['en']) : name;
+};
+
 const ADMIN_ROLES = ['ADMIN', 'OWNER', 'MANAGER'];
 
 function AdminBadge({ size = 'md' }: { size?: 'sm' | 'md' }) {
@@ -253,6 +283,7 @@ interface PostModalProps {
 }
 
 function PostModal({ isDark, boards, initialBoardId, initialTitle, initialContent, isEdit, onClose, onSubmit }: PostModalProps) {
+  const language = useLanguage();
   const [boardId, setBoardId] = useState(initialBoardId);
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
@@ -305,7 +336,7 @@ function PostModal({ isDark, boards, initialBoardId, initialTitle, initialConten
               opacity: isEdit ? 0.6 : 1,
             }}
           >
-            {boards.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            {boards.map(b => <option key={b.id} value={b.id}>{translateBoardName(b.name, language)}</option>)}
           </select>
         </div>
 
@@ -472,7 +503,7 @@ export default function EmployeeBoard() {
         users.forEach(u => { if (u.id && u.role) map[u.id] = u.role; });
         setUserRoleMap(map);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [storeId]);
 
   const fetchPosts = () => {
@@ -497,7 +528,7 @@ export default function EmployeeBoard() {
         const all = results.flat().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         setPosts(all);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   };
 
@@ -554,13 +585,16 @@ export default function EmployeeBoard() {
 
   const handleCreate = async (boardId: string, title: string, baseContent: string, files: File[]) => {
     const { content, uploadError } = await buildContent(baseContent, files);
+    const titleObj = { ko: title.trim(), en: title.trim(), ja: title.trim() };
+    const contentObj = { ko: content.trim(), en: content.trim(), ja: content.trim() };
+
     await axiosInstance.post('/board/post', {
       board_id: boardId,
       store_id: storeId,
       writer_id: currentUser.id,
       writer_role: currentUser.role || '',
-      title: title.trim(),
-      content,
+      title: JSON.stringify(titleObj),
+      content: JSON.stringify(contentObj),
     });
     setModal({ open: false, isEdit: false });
     fetchPosts();
@@ -570,10 +604,30 @@ export default function EmployeeBoard() {
   const handleEdit = async (boardId: string, title: string, baseContent: string, files: File[]) => {
     if (!modal.post) return;
     const { content, uploadError } = await buildContent(baseContent, files);
+    let titleObj = { ko: title.trim(), en: title.trim(), ja: title.trim() };
+    let contentObj = { ko: content.trim(), en: content.trim(), ja: content.trim() };
+
+    try {
+      if (modal.post.title.startsWith('{') && modal.post.title.endsWith('}')) {
+        const originalTitle = JSON.parse(modal.post.title);
+        titleObj = { ...titleObj, ...originalTitle, [language]: title.trim() };
+      }
+    } catch { }
+    try {
+      if (modal.post.content.startsWith('{') && modal.post.content.endsWith('}')) {
+        const originalContent = JSON.parse(modal.post.content);
+        contentObj = { ...contentObj, ...originalContent, [language]: content.trim() };
+      }
+    } catch { }
+
     await fetch(`${API_BASE}/board/post`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...modal.post, title: title.trim(), content }),
+      body: JSON.stringify({
+        ...modal.post,
+        title: JSON.stringify(titleObj),
+        content: JSON.stringify(contentObj)
+      }),
     });
     setModal({ open: false, isEdit: false });
     setSelectedPostId(null);
@@ -582,7 +636,7 @@ export default function EmployeeBoard() {
   };
 
   const handleDelete = async (post: PostItem) => {
-    if (!confirm(`"${post.title}" 게시글을 삭제하시겠습니까?`)) return;
+    if (!confirm(`"${displayMultilingualText(post.title, language)}" 게시글을 삭제하시겠습니까?`)) return;
     setPosts(prev => prev.filter(p => p.id !== post.id));
     setSelectedPostId(null);
     await fetch(`${API_BASE}/board/post?id=${post.id}`, { method: 'DELETE' });
@@ -649,10 +703,8 @@ export default function EmployeeBoard() {
   const modalInitialBoardId = modal.isEdit
     ? (modal.post?.board_id ?? '')
     : (selectedBoardId || (boards[0]?.id ?? ''));
-  const modalInitialTitle = modal.isEdit ? (modal.post?.title ?? '') : '';
-  const modalInitialContent = modal.isEdit
-    ? parseContent(modal.post?.content ?? '').body
-    : '';
+  const modalInitialTitle = modal.isEdit ? (displayMultilingualText(modal.post?.title ?? '', language)) : '';
+  const modalInitialContent = modal.isEdit ? parseContent(displayMultilingualText(modal.post?.content ?? '', language)).body : '';
 
   return (
     <div style={{
@@ -732,14 +784,14 @@ export default function EmployeeBoard() {
                       padding: '4px 12px', borderRadius: 20,
                       background: chipStyle.bg, color: chipStyle.color, whiteSpace: 'nowrap',
                     }}>
-                      {post.categoryName}
+                      {translateBoardName(post.categoryName, language)}
                     </span>
                     {isAdminPost(post) && <AdminBadge />}
                     <span style={{
                       flex: 1, fontSize: 16, color: textColor,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
-                      {post.title}
+                      {displayMultilingualText(post.title, language)}
                     </span>
                     {post.isNew && (
                       <span style={{
@@ -829,7 +881,7 @@ export default function EmployeeBoard() {
               </div>
 
               <h2 style={{ fontSize: 22, fontWeight: 700, color: isDark ? '#fff' : '#111', marginBottom: 12, lineHeight: 1.4 }}>
-                {selectedPost.title}
+                {displayMultilingualText(selectedPost.title, language)}
               </h2>
 
               <div style={{
@@ -843,7 +895,7 @@ export default function EmployeeBoard() {
               </div>
 
               {(() => {
-                const { body, attachments } = parseContent(selectedPost.content);
+                const { body, attachments } = parseContent(displayMultilingualText(selectedPost.content, language));
                 return (
                   <>
                     <p style={{ fontSize: 16, color: isDark ? '#fff' : '#333', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
@@ -955,7 +1007,7 @@ export default function EmployeeBoard() {
                   <ChevronLeft size={16} style={{ color: DARK_GREEN, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 12, color: '#5a8a5c', marginBottom: 2 }}>{t.nextPost}</p>
-                    <p style={{ fontSize: 15, color: DARK_GREEN, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prevPost.title}</p>
+                    <p style={{ fontSize: 15, color: DARK_GREEN, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayMultilingualText(prevPost.title, language)}</p>
                   </div>
                 </button>
               )}
@@ -970,7 +1022,7 @@ export default function EmployeeBoard() {
                   <ChevronRight size={16} style={{ color: DARK_GREEN, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 12, color: '#5a8a5c', marginBottom: 2 }}>{t.prevPost}</p>
-                    <p style={{ fontSize: 15, color: DARK_GREEN, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextPost.title}</p>
+                    <p style={{ fontSize: 15, color: DARK_GREEN, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayMultilingualText(nextPost.title, language)}</p>
                   </div>
                 </button>
               )}

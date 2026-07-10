@@ -5,3 +5,5 @@
         FOLLOW_YN CHAR(1) DEFAULT 'N'
     );
 
+select * from user_line;
+
