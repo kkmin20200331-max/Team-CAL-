@@ -95,7 +95,7 @@ const HealthCertScreen = ({ navigation }: any) => {
     // 2. 갤러리에서 이미지 선택
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, // 크롭 등 편집 허용
+      allowsEditing: false, // 문서 전체가 보이도록 편집 해제
       quality: 0.8, // 0~1 사이의 압축률 (서버 전송 용량 최적화)
     });
 
@@ -111,7 +111,10 @@ const HealthCertScreen = ({ navigation }: any) => {
     setIsUploading(true);
     try {
       const formData = new FormData();
-      const filename = selectedImage.split('/').pop() || 'health_cert.jpg';
+      let filename = selectedImage.split('/').pop() || 'health_cert.jpg';
+      if (!filename.includes('.')) {
+        filename = `${filename}.jpg`;
+      }
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image/jpeg`;
       
@@ -121,8 +124,9 @@ const HealthCertScreen = ({ navigation }: any) => {
         type: type
       } as any);
 
-      formData.append('store_id', userInfo.store_id || 'STORE_DEFAULT');
-      formData.append('user_id', userInfo.id);
+      const storeId = userInfo?.activeBranchId || userInfo?.store_id || 'STORE_DEFAULT';
+      formData.append('store_id', storeId);
+      formData.append('user_id', userInfo?.id || '');
       formData.append('file_type', 'health-cert');
 
       await uploadFileAPI(formData);

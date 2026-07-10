@@ -2203,7 +2203,7 @@ const documentManagement = {
     filterBtn: 'フィルター',
     typeAll: 'すべて',
     typeHealth: '衛生証明書',
-    typeContract: '労働契約書',
+    typeContract: '雇用契約書',
     typeId: '身分証明書',
     typeBank: '口座番号',
     typeOther: 'その他',
