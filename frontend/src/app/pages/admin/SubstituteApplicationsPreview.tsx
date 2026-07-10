@@ -45,6 +45,7 @@ const previewTranslations = {
     createdAtText: (date: string) => `생성 ${date}`,
     pendingAppsCount: (count: number) => `대기 신청 ${count}건`,
     noReasonText: '대타 요청',
+    reasonText: (date: string, count: number) => `[${date}] 인원 ${count}명 필요`,
     employeeFallback: '직원',
     noApplicantsText: '아직 지원자가 없습니다. 클릭하면 직원 연락 화면으로 이동합니다.',
     otherCountText: (count: number) => ` 외 ${count}명`,
@@ -72,6 +73,7 @@ const previewTranslations = {
     createdAtText: (date: string) => `Created: ${date}`,
     pendingAppsCount: (count: number) => `${count} Pending Applications`,
     noReasonText: 'Substitute Request',
+    reasonText: (date: string, count: number) => `[${date}] Needs ${count} staff`,
     employeeFallback: 'Employee',
     noApplicantsText: 'No applicants yet. Click to go to the staff contact page.',
     otherCountText: (count: number) => ` and ${count} others`,
@@ -99,6 +101,7 @@ const previewTranslations = {
     createdAtText: (date: string) => `作成日時: ${date}`,
     pendingAppsCount: (count: number) => `待機申請 ${count}件`,
     noReasonText: '代替リクエスト',
+    reasonText: (date: string, count: number) => `[${date}] 人数 ${count}名必要`,
     employeeFallback: 'スタッフ',
     noApplicantsText: 'まだ応募者がいません。クリックするとスタッフ連絡画面へ移動します。',
     otherCountText: (count: number) => ` 外 ${count}名`,
@@ -179,23 +182,19 @@ const extractRequestDate = (reason?: string) => {
 const translateReason = (reason: string, localT: any) => {
   if (!reason) return localT.noReasonText;
   
-  // Match format: [2026-07-06] 인원 1명 필요
-  const match = reason.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(?:인원|인원수)?\s*(\d+)명\s*(?:필요)?$/);
-  if (match) {
-    const date = match[1];
-    const count = parseInt(match[2], 10);
-    return localT.reasonText(date, count);
-  }
-  
-  // If it doesn't match the exact pattern, check if it starts with date
+  // Match format: [2026-07-06] ...
   const matchDate = reason.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(.*)$/);
   if (matchDate) {
     const date = matchDate[1];
     const rest = matchDate[2];
-    const matchCount = rest.match(/(\d+)명/);
+    
+    // Check if the rest of the text contains a headcount (e.g., 1명, 1名, 1 staff)
+    const matchCount = rest.match(/(\d+)\s*(?:명|名|staff)/i);
     if (matchCount) {
       const count = parseInt(matchCount[1], 10);
-      return localT.reasonText(date, count);
+      if (typeof localT.reasonText === 'function') {
+        return localT.reasonText(date, count);
+      }
     }
   }
 
