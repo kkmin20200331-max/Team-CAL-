@@ -635,7 +635,7 @@ const DailySchedule: React.FC = () => {
                     onChange={(e) => setForm({ ...form, fixed_weekly: e.target.checked })}
                     style={{ width: 16, height: 16, accentColor: GREEN }}
                   />
-                  매주 같은 요일 고정 근무로 저장
+                  {t.fixedWeeklyLabel}
                 </label>
               )}
             </div>
