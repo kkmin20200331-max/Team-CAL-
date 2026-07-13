@@ -157,10 +157,14 @@ const formatTimePart = (s: string) => {
   return t ? t.substring(0, 5) : "";
 };
 
-const getDayLabel = (dateStr: string) => {
-  const days = ["일", "월", "화", "수", "목", "금", "토"];
+const getDayLabel = (dateStr: string, days: string[]) => {
   const p = getDatePart(dateStr).split("-");
-  return days[new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getDay()];
+  return days[new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getDay()] || "";
+};
+
+const getApplicantNameFromContent = (content: string) => {
+  if (!content) return "";
+  return content.replace("님이 매장 근무를 요청했습니다.", "");
 };
 
 export default function ProfilePanel() {
@@ -170,11 +174,18 @@ export default function ProfilePanel() {
   const language = useLanguage();
   const t = translations.adminProfilePanel[language];
 
-  const changeLanguage = (lang: "ko" | "en" | "ja") => {
+  const changeLanguage = async (lang: "ko" | "en" | "ja") => {
     sessionStorage.setItem("app-language", lang);
     window.dispatchEvent(
       new CustomEvent("app-language-change", { detail: lang }),
     );
+    if (currentUser?.id) {
+      try {
+        await axiosInstance.put(`/users/${currentUser.id}/language`, { language: lang });
+      } catch (err) {
+        console.error("Failed to update user language in DB:", err);
+      }
+    }
   };
 
   const panelBg = isDark ? "#141416" : "white";
@@ -522,14 +533,14 @@ export default function ProfilePanel() {
 
   const handleApproveJoinNotification = async (notif: BoardNotification) => {
     if (!notif.ref_id) {
-      alert("요청 정보를 찾을 수 없습니다.");
+      alert(t.errNoRequestInfo);
       return;
     }
 
     try {
       await axiosInstance.put(`/store_member/${notif.ref_id}/approve`);
       await markNotificationRead(notif.id);
-      alert("근무 지점 요청을 승인했습니다.");
+      alert(t.storeJoinApproved);
     } catch (error: any) {
       const message =
         typeof error?.response?.data === "string"
@@ -541,10 +552,10 @@ export default function ProfilePanel() {
 
   const handleRejectJoinNotification = async (notif: BoardNotification) => {
     if (!notif.ref_id) {
-      alert("요청 정보를 찾을 수 없습니다.");
+      alert(t.errNoRequestInfo);
       return;
     }
-    if (!confirm("이 근무 지점 요청을 거절하시겠습니까?")) return;
+    if (!confirm(t.confirmRejectStoreJoin)) return;
 
     try {
       await axiosInstance.delete(`/store_member/${notif.ref_id}/reject`);
@@ -795,10 +806,10 @@ export default function ProfilePanel() {
                         )}
                         <div style={{ display: "flex", gap: 8 }}>
                           <button onClick={() => handleApproveSubstitute(app)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#18A022,#07790F)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                            <CheckCircle style={{ width: 15, height: 15 }} />승인
+                            <CheckCircle style={{ width: 15, height: 15 }} />{t.approve}
                           </button>
                           <button onClick={() => handleRejectSubstitute(app)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1.5px solid #e53e3e", background: "transparent", color: "#e53e3e", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                            <XCircle style={{ width: 15, height: 15 }} />거절
+                            <XCircle style={{ width: 15, height: 15 }} />{t.reject}
                           </button>
                         </div>
                       </div>
@@ -813,18 +824,22 @@ export default function ProfilePanel() {
                         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px", background: isDark ? "#0d1f0d" : "#f4fbf0" }}>
                           <UserCheck style={{ width: 14, height: 14, color: "#18A022", flexShrink: 0 }} />
                           <span style={{ fontWeight: 700, fontSize: 13, color: "#18A022" }}>
-                            {language === 'ja' ? 'スタッフ加入リクエスト' : language === 'en' ? 'Employee Join Request' : '직원 근무지 가입 요청'}
+                            {t.storeJoinRequest}
                           </span>
                         </div>
                         <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
-                          <p style={{ fontWeight: 700, fontSize: 15, color: textMain }}>{notif.title}</p>
-                          {notif.content && <p style={{ fontSize: 13, color: textSub, lineHeight: 1.5 }}>{notif.content}</p>}
+                          <p style={{ fontWeight: 700, fontSize: 15, color: textMain }}>{t.storeJoinTitle}</p>
+                          {notif.content && (
+                            <p style={{ fontSize: 13, color: textSub, lineHeight: 1.5 }}>
+                              {t.storeJoinContent(getApplicantNameFromContent(notif.content))}
+                            </p>
+                          )}
                           <div style={{ display: "flex", gap: 8 }}>
                             <button onClick={() => handleApproveJoinNotification(notif)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#18A022,#07790F)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                              <CheckCircle style={{ width: 15, height: 15 }} />승인
+                              <CheckCircle style={{ width: 15, height: 15 }} />{t.approve}
                             </button>
                             <button onClick={() => handleRejectJoinNotification(notif)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1.5px solid #e53e3e", background: "transparent", color: "#e53e3e", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                              <XCircle style={{ width: 15, height: 15 }} />거절
+                              <XCircle style={{ width: 15, height: 15 }} />{t.reject}
                             </button>
                           </div>
                         </div>
@@ -871,7 +886,7 @@ export default function ProfilePanel() {
                             {shift ? (
                               <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: textSub }}>
                                 <Clock style={{ width: 12, height: 12 }} />
-                                {datePart} ({getDayLabel(shift.work_date)}) {formatTimePart(shift.start_at)}~{formatTimePart(shift.end_at)}
+                                {datePart} ({getDayLabel(shift.work_date, t.days || ["일", "월", "화", "수", "목", "금", "토"])}) {formatTimePart(shift.start_at)}~{formatTimePart(shift.end_at)}
                               </div>
                             ) : (
                               <p style={{ fontSize: 13, color: "#aaa" }}>{t.loadingShift}</p>
@@ -883,10 +898,10 @@ export default function ProfilePanel() {
                         </p>
                         <div style={{ display: "flex", gap: 8 }}>
                           <button onClick={() => handleApproveLeave(leave)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#18A022,#07790F)", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                            <CheckCircle style={{ width: 15, height: 15 }} />승인
+                            <CheckCircle style={{ width: 15, height: 15 }} />{t.approve}
                           </button>
                           <button onClick={() => handleRejectLeave(leave)} style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: "1.5px solid #e53e3e", background: "transparent", color: "#e53e3e", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                            <XCircle style={{ width: 15, height: 15 }} />거절
+                            <XCircle style={{ width: 15, height: 15 }} />{t.reject}
                           </button>
                         </div>
                       </div>
