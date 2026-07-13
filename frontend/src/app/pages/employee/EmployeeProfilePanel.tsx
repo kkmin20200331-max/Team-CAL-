@@ -95,11 +95,18 @@ export default function EmployeeProfilePanel() {
   const language = useLanguage();
   const t = translations.employeeProfilePanel[language];
 
-  const changeLanguage = (lang: "ko" | "en" | "ja") => {
+  const changeLanguage = async (lang: "ko" | "en" | "ja") => {
     sessionStorage.setItem("app-language", lang);
     window.dispatchEvent(
       new CustomEvent("app-language-change", { detail: lang }),
     );
+    if (currentUser?.id) {
+      try {
+        await axiosInstance.put(`/users/${currentUser.id}/language`, { language: lang });
+      } catch (err) {
+        console.error("Failed to update user language in DB:", err);
+      }
+    }
   };
 
   const panelBg = isDark ? "#1c1c1e" : "#fff";

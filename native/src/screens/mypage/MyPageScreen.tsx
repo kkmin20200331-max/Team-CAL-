@@ -7,7 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useApp } from '../../contexts/AppContext';
 import Toast from 'react-native-toast-message';
 import { useFocusEffect } from '@react-navigation/native';
-import { getLineInfoAPI, deleteLineInfoAPI } from '../../../api/auth';
+import { getLineInfoAPI, deleteLineInfoAPI, updateUserLanguageAPI } from '../../../api/auth';
 
 type Props = {
   navigation: any;
@@ -275,8 +275,12 @@ const MyPageScreen = ({ navigation }: Props) => {
                 key={lang}
                 style={[styles.modalOption, language === lang && styles.modalOptionSelected]}
                 onPress={() => {
-                  setLanguage(lang as Language);
+                  const targetLang = lang as Language;
+                  setLanguage(targetLang);
                   setLanguageModalVisible(false);
+                  if (userInfo?.id) {
+                    updateUserLanguageAPI(userInfo.id, targetLang).catch(() => {});
+                  }
                 }}
               >
                 <Text style={[styles.modalOptionText, language === lang && styles.modalOptionTextSelected]}>{lang}</Text>
