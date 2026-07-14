@@ -1209,6 +1209,8 @@ const branchSelection = {
     operatingHours: (open: string, close: string) => `운영시간: ${open} ~ ${close}`,
     viewDetails: '지점 상세 보기',
     viewAllBranches: '전체 지점 보기',
+    branchList: '지점 목록',
+    branchCount: (count: number) => `${count}개`,
   },
   en: {
     title: 'Select Branch',
@@ -1219,6 +1221,8 @@ const branchSelection = {
     operatingHours: (open: string, close: string) => `Hours: ${open} ~ ${close}`,
     viewDetails: 'View Details',
     viewAllBranches: 'View All Branches',
+    branchList: 'Branch List',
+    branchCount: (count: number) => `${count} store${count !== 1 ? 's' : ''}`,
   },
   ja: {
     title: '店舗選択',
@@ -1229,6 +1233,8 @@ const branchSelection = {
     operatingHours: (open: string, close: string) => `営業時間: ${open} ~ ${close}`,
     viewDetails: '店舗詳細を見る',
     viewAllBranches: '全店舗を見る',
+    branchList: '店舗一覧',
+    branchCount: (count: number) => `${count}店舗`,
   },
 };
 

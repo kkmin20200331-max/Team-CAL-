@@ -20,7 +20,7 @@ const getStatusText = (status: string, t: (key: string) => string) => {
     case 'IN_PROGRESS': return t('inProgress');
     case 'COMPLETED': return t('completed');
     case 'SUBSTITUTE_REQ': return t('substituteReq');
-    case 'LEAVE_PENDING': return '휴무 대기중';
+    case 'LEAVE_PENDING': return t('leavePending');
     case 'OFF': return t('offDay');
     default: return '';
   }

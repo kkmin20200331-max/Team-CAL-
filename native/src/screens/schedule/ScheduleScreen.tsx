@@ -195,7 +195,7 @@ const ScheduleScreen = () => {
       COMPLETED: { style: styles.badgeCompleted, textStyle: styles.badgeTextCompleted, label: t('completed') },
       SUBSTITUTE_REQ: { style: styles.badgeSubstitute, textStyle: styles.badgeTextSubstitute, label: t('substituteReq') },
       OFF: { style: styles.badgeOff, textStyle: styles.badgeTextOff, label: t('offDay') },
-      LEAVE_PENDING: { style: styles.badgeSubstitute, textStyle: styles.badgeTextSubstitute, label: '휴무 대기중' },
+      LEAVE_PENDING: { style: styles.badgeSubstitute, textStyle: styles.badgeTextSubstitute, label: t('leavePending') },
     };
     const currentStatus = statusMap[status as keyof typeof statusMap];
     if (!currentStatus) return null;
