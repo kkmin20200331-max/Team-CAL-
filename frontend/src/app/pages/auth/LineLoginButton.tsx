@@ -141,7 +141,7 @@ const LineLoginButton = () => {
     }
 
     popupRef.current = window.open(
-      `${API_BASE}/line/login?userId=${encodeURIComponent(userId)}`,
+      `${API_BASE}/line/login?userId=${encodeURIComponent(userId)}&lang=${language}`,
       "_blank",
       "width=500,height=700",
     );

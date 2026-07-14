@@ -2,6 +2,9 @@ package com.dm.backend.controller;
 
 import com.dm.backend.service.LineService;
 import com.dm.backend.service.UserLineService;
+import com.dm.backend.service.LineMessageTemplateService;
+import com.dm.backend.service.UserLanguageService;
+import com.dm.backend.vo.UserLineVO;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,12 @@ public class LineWebhookC {
 
     @Autowired
     private LineService lineService;
+
+    @Autowired
+    private LineMessageTemplateService lineMessageTemplateService;
+
+    @Autowired
+    private UserLanguageService userLanguageService;
 
     @PostMapping("/webhook")
     public ResponseEntity<String> webhook(@RequestBody(required = false) String body) {
@@ -77,9 +86,17 @@ public class LineWebhookC {
     private void sendFollowMessage(String lineUserId) {
 
         try {
+            String language = "ko";
+            UserLineVO userLine = userLineService.findByLineUserId(lineUserId);
+            if (userLine != null && userLine.getUser_id() != null) {
+                language = userLanguageService.getLanguage(userLine.getUser_id());
+            }
+
+            String message = lineMessageTemplateService.followWelcomeMessage(language);
+
             lineService.sendMessage(
                     lineUserId,
-                    "바이트메이트 LINE 알림 수신이 활성화되었습니다."
+                    message
             );
         } catch (Exception e) {
             System.err.println("LINE follow message failed: " + e.getMessage());

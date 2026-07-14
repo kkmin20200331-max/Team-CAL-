@@ -283,4 +283,14 @@ public class LineMessageTemplateService {
             default -> value;
         };
     }
+
+    public String followWelcomeMessage(String language) {
+        if ("en".equals(language)) {
+            return "BiteMate LINE notification has been activated.";
+        }
+        if ("ja".equals(language)) {
+            return "BiteMateのLINE通知受信が有効になりました。";
+        }
+        return "바이트메이트 LINE 알림 수신이 활성화되었습니다.";
+    }
 }

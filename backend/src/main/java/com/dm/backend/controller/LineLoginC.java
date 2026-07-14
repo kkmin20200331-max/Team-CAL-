@@ -2,6 +2,7 @@ package com.dm.backend.controller;
 
 import com.dm.backend.service.LineLoginService;
 import com.dm.backend.service.UserLineService;
+import com.dm.backend.service.UserLanguageService;
 import com.dm.backend.vo.LineProfileVO;
 import com.dm.backend.vo.UserLineVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class LineLoginC {
     @Autowired
     private UserLineService userLineService;
 
+    @Autowired
+    private UserLanguageService userLanguageService;
+
     // =========================
     // LINE 로그인 시작
     // =========================
@@ -41,12 +45,18 @@ public class LineLoginC {
     @GetMapping("/login")
     public RedirectView lineLogin(
             @RequestParam String userId,
-            @RequestParam(required = false, defaultValue = "web") String source
+            @RequestParam(required = false, defaultValue = "web") String source,
+            @RequestParam(required = false) String lang
     ) {
         String normalizedSource =
                 "app".equalsIgnoreCase(source) ? "app" : "web";
         String state =
                 userId + "::" + normalizedSource;
+
+        String uiLocale = lang;
+        if (uiLocale == null || uiLocale.isBlank()) {
+            uiLocale = userLanguageService.getLanguage(userId);
+        }
 
         String url =
                 "https://access.line.me/oauth2/v2.1/authorize"
@@ -63,7 +73,8 @@ public class LineLoginC {
                         StandardCharsets.UTF_8
                 )
                         + "&scope=profile%20openid"
-                        + ("app".equals(normalizedSource) ? "&bot_prompt=aggressive" : "");
+                        + ("app".equals(normalizedSource) ? "&bot_prompt=aggressive" : "")
+                        + (uiLocale != null && !uiLocale.isBlank() ? "&ui_locales=" + uiLocale : "");
 
         System.out.println(
                 "LINE LOGIN URL = " + url
@@ -110,36 +121,55 @@ public class LineLoginC {
                         + error_description
         );
 
-        // =========================
-        // 로그인 취소
-        // =========================
-
-        if (code == null) {
-
-            return new RedirectView(
-                    frontendBaseUrl + "/line/error?message="
-                            + URLEncoder.encode(
-                            "LINE 로그인이 취소되었습니다.",
-                            StandardCharsets.UTF_8
-                    )
-            );
-        }
-
-        String userId = state;
+        String userId = null;
         String source = "web";
 
         if (state != null && state.contains("::")) {
             String[] stateParts = state.split("::", 2);
             userId = stateParts[0];
             source = stateParts.length > 1 ? stateParts[1] : "web";
+        } else {
+            userId = state;
         }
 
-        if (userId == null) {
+        String language = "ko";
+        if (userId != null && !userId.isBlank()) {
+            language = userLanguageService.getLanguage(userId);
+        }
+
+        // =========================
+        // 로그인 취소
+        // =========================
+
+        if (code == null) {
+            String cancelMessage = "LINE 로그인이 취소되었습니다.";
+            if ("ja".equals(language)) {
+                cancelMessage = "LINEログインがキャンセルされました。";
+            } else if ("en".equals(language)) {
+                cancelMessage = "LINE login was cancelled.";
+            }
 
             return new RedirectView(
                     frontendBaseUrl + "/line/error?message="
                             + URLEncoder.encode(
-                            "사용자 정보를 찾을 수 없습니다.",
+                            cancelMessage,
+                            StandardCharsets.UTF_8
+                    )
+            );
+        }
+
+        if (userId == null || userId.isBlank()) {
+            String notFoundMessage = "사용자 정보를 찾을 수 없습니다.";
+            if ("ja".equals(language)) {
+                notFoundMessage = "ユーザー情報が見つかりません。";
+            } else if ("en".equals(language)) {
+                notFoundMessage = "User information not found.";
+            }
+
+            return new RedirectView(
+                    frontendBaseUrl + "/line/error?message="
+                            + URLEncoder.encode(
+                            notFoundMessage,
                             StandardCharsets.UTF_8
                     )
             );

@@ -41,7 +41,7 @@ const ContractScreen = ({ route, navigation }: any) => {
           startDate = latest.created_at.substring(0, 10);
         }
         
-        let wage = '10,030';
+        let wage = '10,320';
         if (latest.extracted_data) {
           try {
             const parsed = JSON.parse(latest.extracted_data);
