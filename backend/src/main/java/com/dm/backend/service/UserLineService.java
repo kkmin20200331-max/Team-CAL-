@@ -14,6 +14,9 @@ public class UserLineService {
     @Autowired
     private UserLineMapper userLineMapper;
 
+    @Autowired
+    private UserLanguageService userLanguageService;
+
     // =========================
     // LINE 연동 등록
     // =========================
@@ -69,10 +72,17 @@ public class UserLineService {
                 );
 
         if(existingLineInfo != null){
-
-            throw new RuntimeException(
-                    "이미 다른 계정에 연동된 LINE 계정입니다."
-            );
+            String language = "ko";
+            if (vo.getUser_id() != null) {
+                language = userLanguageService.getLanguage(vo.getUser_id());
+            }
+            String message = "이미 다른 계정에 연동된 LINE 계정입니다.";
+            if ("ja".equals(language)) {
+                message = "すでに他のアカウントに連携されているLINEアカウントです。";
+            } else if ("en".equals(language)) {
+                message = "This LINE account is already linked to another account.";
+            }
+            throw new RuntimeException(message);
         }
 
         userLineMapper.register(
@@ -222,5 +232,9 @@ public class UserLineService {
         target.setLanguage("ko");
 
         return target;
+    }
+
+    public UserLineVO findByLineUserId(String lineUserId) {
+        return userLineMapper.findByLineUserId(lineUserId);
     }
 }
