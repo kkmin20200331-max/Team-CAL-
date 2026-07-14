@@ -37,6 +37,29 @@ interface Employee {
   username: string;
 }
 
+const parseTimeTo12H = (timeStr: string) => {
+  const [hStr, mStr] = (timeStr || "09:00").split(":");
+  const h = parseInt(hStr, 10);
+  const isPM = h >= 12;
+  const ampm = isPM ? "PM" : "AM";
+  const displayH = h % 12 === 0 ? 12 : h % 12;
+  return {
+    ampm,
+    hour: String(displayH).padStart(2, '0'),
+    minute: mStr || "00"
+  };
+};
+
+const formatTimeFrom12H = (ampm: string, hourStr: string, minuteStr: string) => {
+  let h = parseInt(hourStr, 10);
+  if (ampm === "PM" && h < 12) {
+    h += 12;
+  } else if (ampm === "AM" && h === 12) {
+    h = 0;
+  }
+  return `${String(h).padStart(2, '0')}:${minuteStr}`;
+};
+
 const DailySchedule: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -612,11 +635,83 @@ const DailySchedule: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 6 }}>{t.startTimeLabel}</label>
-                  <input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} style={inputStyle} />
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <select
+                      value={parseTimeTo12H(form.start_time).ampm}
+                      onChange={(e) => {
+                        const parsed = parseTimeTo12H(form.start_time);
+                        setForm({ ...form, start_time: formatTimeFrom12H(e.target.value, parsed.hour, parsed.minute) });
+                      }}
+                      style={{ ...inputStyle, padding: '10px 8px', flex: 1 }}
+                    >
+                      <option value="AM">{language === 'ja' ? '午前' : language === 'en' ? 'AM' : '오전'}</option>
+                      <option value="PM">{language === 'ja' ? '午後' : language === 'en' ? 'PM' : '오후'}</option>
+                    </select>
+                    <select
+                      value={parseTimeTo12H(form.start_time).hour}
+                      onChange={(e) => {
+                        const parsed = parseTimeTo12H(form.start_time);
+                        setForm({ ...form, start_time: formatTimeFrom12H(parsed.ampm, e.target.value, parsed.minute) });
+                      }}
+                      style={{ ...inputStyle, padding: '10px 8px', flex: 1 }}
+                    >
+                      {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(h => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={parseTimeTo12H(form.start_time).minute}
+                      onChange={(e) => {
+                        const parsed = parseTimeTo12H(form.start_time);
+                        setForm({ ...form, start_time: formatTimeFrom12H(parsed.ampm, parsed.hour, e.target.value) });
+                      }}
+                      style={{ ...inputStyle, padding: '10px 8px', flex: 1 }}
+                    >
+                      {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: subTextColor, marginBottom: 6 }}>{t.endTimeLabel}</label>
-                  <input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} style={inputStyle} />
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <select
+                      value={parseTimeTo12H(form.end_time).ampm}
+                      onChange={(e) => {
+                        const parsed = parseTimeTo12H(form.end_time);
+                        setForm({ ...form, end_time: formatTimeFrom12H(e.target.value, parsed.hour, parsed.minute) });
+                      }}
+                      style={{ ...inputStyle, padding: '10px 8px', flex: 1 }}
+                    >
+                      <option value="AM">{language === 'ja' ? '午前' : language === 'en' ? 'AM' : '오전'}</option>
+                      <option value="PM">{language === 'ja' ? '午後' : language === 'en' ? 'PM' : '오후'}</option>
+                    </select>
+                    <select
+                      value={parseTimeTo12H(form.end_time).hour}
+                      onChange={(e) => {
+                        const parsed = parseTimeTo12H(form.end_time);
+                        setForm({ ...form, end_time: formatTimeFrom12H(parsed.ampm, e.target.value, parsed.minute) });
+                      }}
+                      style={{ ...inputStyle, padding: '10px 8px', flex: 1 }}
+                    >
+                      {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(h => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={parseTimeTo12H(form.end_time).minute}
+                      onChange={(e) => {
+                        const parsed = parseTimeTo12H(form.end_time);
+                        setForm({ ...form, end_time: formatTimeFrom12H(parsed.ampm, parsed.hour, e.target.value) });
+                      }}
+                      style={{ ...inputStyle, padding: '10px 8px', flex: 1 }}
+                    >
+                      {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
               <div>
