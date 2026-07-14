@@ -134,12 +134,12 @@ export default function BranchSelection() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {STORE_SVG}
-              <span style={{ fontSize: 15, fontWeight: 700, color: textColor }}>지점 목록</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: textColor }}>{t.branchList}</span>
               <span style={{
                 marginLeft: 4, fontSize: 12, fontWeight: 600,
                 color: GREEN, background: isDark ? 'rgba(24,160,34,0.15)' : '#e6f5e6',
                 borderRadius: 20, padding: '2px 10px',
-              }}>{stores.length}개</span>
+              }}>{t.branchCount(stores.length)}</span>
             </div>
           </div>
         </div>
